@@ -39,7 +39,7 @@ const ReplaceExerciseModal: React.FC<ReplaceExerciseModalProps> = ({ isOpen, onC
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title || "Replace Exercise"}>
-        <div className="flex flex-col h-[80vh] max-h-[600px]">
+        <div className="flex flex-col h-[70vh] max-h-[550px]">
             <div className="flex-shrink-0 space-y-2 mb-4">
                  <div className="relative flex-grow">
                     <input

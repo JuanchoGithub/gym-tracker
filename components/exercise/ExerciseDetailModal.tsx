@@ -56,7 +56,7 @@ const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({ exercise, isO
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
-      <div className="flex flex-col h-[80vh] max-h-[600px]">
+      <div className="flex flex-col h-[70vh] max-h-[550px]">
         {/* Custom Header */}
         <div className="flex items-center justify-between mb-4 flex-shrink-0 gap-1 sm:gap-2">
             <div className="flex-shrink-0">
