@@ -7,7 +7,7 @@ import TemplateExerciseCard from '../components/template/TemplateExerciseCard';
 import ConfirmModal from '../components/modals/ConfirmModal';
 
 const TemplateEditorPage: React.FC = () => {
-    const { editingTemplate, endTemplateEdit, getExerciseById } = useContext(AppContext);
+    const { editingTemplate, endTemplateEdit, getExerciseById, defaultRestTimes } = useContext(AppContext);
     const [template, setTemplate] = useState<Routine>(() => JSON.parse(JSON.stringify(editingTemplate)));
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isConfirmingBack, setIsConfirmingBack] = useState(false);
@@ -43,7 +43,7 @@ const TemplateEditorPage: React.FC = () => {
                 weight: 0,
                 type: 'normal',
             } as PerformedSet)),
-            restTime: { normal: 90, warmup: 60, drop: 30 },
+            restTime: { ...defaultRestTimes },
         }));
 
         setTemplate(prev => ({ ...prev, exercises: [...prev.exercises, ...newExercises] }));

@@ -23,6 +23,8 @@ interface AppContextType {
   discardActiveWorkout: () => void;
   weightUnit: WeightUnit;
   setWeightUnit: (unit: WeightUnit) => void;
+  defaultRestTimes: { normal: number; warmup: number; drop: number; };
+  setDefaultRestTimes: (times: { normal: number; warmup: number; drop: number; }) => void;
   editingTemplate: Routine | null;
   startTemplateEdit: (template: Routine) => void;
   endTemplateEdit: (savedTemplate?: Routine) => void;
@@ -37,6 +39,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [activeWorkout, setActiveWorkout] = useLocalStorage<WorkoutSession | null>('activeWorkout', null);
   const [isWorkoutMinimized, setIsWorkoutMinimized] = useLocalStorage<boolean>('isWorkoutMinimized', false);
   const [weightUnit, setWeightUnit] = useLocalStorage<WeightUnit>('weightUnit', 'kg');
+  const [defaultRestTimes, setDefaultRestTimes] = useLocalStorage<{ normal: number; warmup: number; drop: number; }>('defaultRestTimes', { normal: 90, warmup: 60, drop: 30 });
   const [editingTemplate, setEditingTemplate] = useState<Routine | null>(null);
 
   useEffect(() => {
@@ -173,11 +176,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     discardActiveWorkout,
     weightUnit,
     setWeightUnit,
+    defaultRestTimes,
+    setDefaultRestTimes,
     editingTemplate,
     startTemplateEdit,
     endTemplateEdit,
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [routines, history, exercises, activeWorkout, isWorkoutMinimized, weightUnit, editingTemplate]);
+  }), [routines, history, exercises, activeWorkout, isWorkoutMinimized, weightUnit, defaultRestTimes, editingTemplate]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };

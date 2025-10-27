@@ -22,6 +22,9 @@ export const es = {
   profile_title: 'Perfil y Ajustes',
   profile_settings: 'Ajustes',
   profile_language: 'Idioma',
+  profile_weight_unit: 'Unidad de Peso',
+  profile_default_timers: 'Temporizadores Predeterminados',
+  profile_default_timers_desc: 'Establece el tiempo de descanso predeterminado al añadir nuevos ejercicios.',
 
   // Active Workout
   workout_set: 'Serie',

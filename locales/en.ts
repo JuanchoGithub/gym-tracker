@@ -22,6 +22,9 @@ export const en = {
   profile_title: 'Profile & Settings',
   profile_settings: 'Settings',
   profile_language: 'Language',
+  profile_weight_unit: 'Weight Unit',
+  profile_default_timers: 'Default Rest Timers',
+  profile_default_timers_desc: 'Set the default rest time when adding new exercises.',
 
   // Active Workout
   workout_set: 'Set',

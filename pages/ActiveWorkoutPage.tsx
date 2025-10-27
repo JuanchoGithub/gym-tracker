@@ -10,7 +10,7 @@ import Modal from '../components/common/Modal';
 import ReplaceExerciseModal from '../components/modals/ReplaceExerciseModal';
 
 const ActiveWorkoutPage: React.FC = () => {
-  const { activeWorkout, updateActiveWorkout, endWorkout, getExerciseById, minimizeWorkout } = useContext(AppContext);
+  const { activeWorkout, updateActiveWorkout, endWorkout, getExerciseById, minimizeWorkout, defaultRestTimes } = useContext(AppContext);
   const { t } = useI18n();
   const elapsedTime = useWorkoutTimer(activeWorkout?.startTime);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -61,11 +61,7 @@ const ActiveWorkoutPage: React.FC = () => {
                 isComplete: false,
             }
         ],
-        restTime: {
-            normal: 90,
-            warmup: 60,
-            drop: 30,
-        },
+        restTime: { ...defaultRestTimes },
     };
 
     updateActiveWorkout({
