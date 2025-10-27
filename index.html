@@ -1,0 +1,41 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gym Tracker Pro</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'primary': '#0284c7', // sky-600
+            'secondary': '#475569', // slate-600
+            'background': '#0f172a', // slate-900
+            'surface': '#1e293b', // slate-800
+            'text-primary': '#f8fafc', // slate-50
+            'text-secondary': '#94a3b8', // slate-400
+            'success': '#22c55e', // green-500
+            'warning': '#facc15', // yellow-400
+          }
+        }
+      }
+    }
+  </script>
+<script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0"
+  }
+}
+</script>
+</head>
+<body class="bg-background text-text-primary">
+  <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>

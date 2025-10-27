@@ -1,0 +1,193 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { PerformedSet, SetType } from '../../types';
+import { Icon } from '../common/Icon';
+import SetTypeModal from '../modals/SetTypeModal';
+import { useWeight } from '../../hooks/useWeight';
+
+interface SetRowProps {
+  set: PerformedSet;
+  setIndex: number;
+  onUpdateSet: (updatedSet: PerformedSet) => void;
+  onDeleteSet: () => void;
+}
+
+const SetRow: React.FC<SetRowProps> = ({ set, setIndex, onUpdateSet, onDeleteSet }) => {
+  const { displayWeight, getStoredWeight } = useWeight();
+  const [weight, setWeight] = useState(displayWeight(set.weight));
+  const [reps, setReps] = useState(set.reps.toString());
+  const [isTypeModalOpen, setIsTypeModalOpen] = useState(false);
+  const [offsetX, setOffsetX] = useState(0);
+
+  const swipableNodeRef = useRef<HTMLDivElement>(null);
+  const dragStateRef = useRef({ isDragging: false, startX: 0, startTranslateX: 0 });
+
+  useEffect(() => {
+    if (set.isComplete && offsetX !== 0) setOffsetX(0);
+  }, [set.isComplete, offsetX]);
+
+  useEffect(() => {
+    setWeight(displayWeight(set.weight));
+    setReps(set.reps.toString());
+  }, [set, displayWeight]);
+
+  const getClientX = (e: MouseEvent | TouchEvent) => 'touches' in e ? e.touches[0].clientX : e.clientX;
+  
+  const handleDragMove = (e: MouseEvent | TouchEvent) => {
+    if (!dragStateRef.current.isDragging || !swipableNodeRef.current) return;
+    const currentX = getClientX(e);
+    const diff = currentX - dragStateRef.current.startX;
+    let newOffsetX = dragStateRef.current.startTranslateX + diff;
+    newOffsetX = Math.max(-100, Math.min(20, newOffsetX));
+    swipableNodeRef.current.style.transform = `translateX(${newOffsetX}px)`;
+  };
+  
+  const handleDragEnd = () => {
+    if (!dragStateRef.current.isDragging || !swipableNodeRef.current) return;
+    dragStateRef.current.isDragging = false;
+    window.removeEventListener('mousemove', handleDragMove);
+    window.removeEventListener('touchmove', handleDragMove);
+    window.removeEventListener('mouseup', handleDragEnd);
+    window.removeEventListener('touchend', handleDragEnd);
+
+    swipableNodeRef.current.style.transition = 'transform 0.3s ease-out';
+    const finalTransform = swipableNodeRef.current.style.transform;
+    const currentTranslateX = finalTransform ? parseFloat(finalTransform.split('(')[1]) : 0;
+    const deleteButtonWidth = 80;
+    const openThreshold = -deleteButtonWidth / 2;
+    
+    if (currentTranslateX < openThreshold) {
+        setOffsetX(-deleteButtonWidth);
+    } else {
+        setOffsetX(0);
+    }
+  };
+
+  const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
+    if (set.isComplete || !swipableNodeRef.current) return;
+    dragStateRef.current = { isDragging: true, startX: getClientX(e.nativeEvent), startTranslateX: offsetX };
+    swipableNodeRef.current.style.transition = 'none';
+    window.addEventListener('mousemove', handleDragMove);
+    window.addEventListener('touchmove', handleDragMove, { passive: true });
+    window.addEventListener('mouseup', handleDragEnd);
+    window.addEventListener('touchend', handleDragEnd);
+  };
+
+  useEffect(() => {
+    if (swipableNodeRef.current && !dragStateRef.current.isDragging) {
+      swipableNodeRef.current.style.transform = `translateX(${offsetX}px)`;
+    }
+  }, [offsetX]);
+
+  const handleDelete = () => {
+    setOffsetX(0);
+    setTimeout(() => onDeleteSet(), 300);
+  };
+  
+  const handleWeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newWeight = e.target.value;
+    setWeight(newWeight);
+    onUpdateSet({ ...set, weight: getStoredWeight(parseFloat(newWeight)) });
+  };
+  
+  const handleRepsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setReps(e.target.value);
+    onUpdateSet({ ...set, reps: parseInt(e.target.value) || 0 });
+  };
+  
+  const handleComplete = () => onUpdateSet({ ...set, isComplete: !set.isComplete });
+
+  const handleSelectSetType = (type: SetType) => {
+    onUpdateSet({ ...set, type });
+    setIsTypeModalOpen(false);
+  }
+
+  const getSetTypeStyles = (type: SetType, isComplete: boolean) => {
+    if (isComplete) return 'bg-success/20';
+    switch(type) {
+        case 'warmup': return 'bg-[#1C354C]';
+        case 'drop': return 'bg-[#343536]';
+        case 'failure': return 'bg-[#332C3C]';
+        default: return 'bg-surface';
+    }
+  }
+  
+  const renderSetIdentifier = () => {
+    switch(set.type) {
+        case 'warmup': return 'W';
+        case 'drop': return 'D';
+        case 'failure': return 'F';
+        default: return setIndex + 1;
+    }
+  }
+
+  const inputClasses = "w-16 bg-slate-900/50 border border-secondary/50 rounded-md p-2 text-center disabled:bg-slate-800 text-text-primary";
+
+  return (
+    <>
+      <div className="relative rounded-lg overflow-hidden">
+         <div className="absolute inset-0 bg-surface rounded-lg"></div>
+
+        {!set.isComplete && (
+            <div className="absolute top-0 right-0 h-full flex items-center">
+                <button
+                    onClick={handleDelete}
+                    className="bg-red-600 hover:bg-red-500 text-white h-full w-20 flex items-center justify-center font-bold transition-colors"
+                    aria-label="Delete set"
+                >
+                    Delete
+                </button>
+            </div>
+        )}
+        
+        <div
+            ref={swipableNodeRef}
+            className={`grid grid-cols-5 items-center gap-2 p-2 rounded-lg relative transition-transform duration-300 ease-out ${getSetTypeStyles(set.type, set.isComplete ?? false)} ${!set.isComplete ? 'cursor-grab active:cursor-grabbing' : ''}`}
+            style={{ touchAction: 'pan-y' }}
+            onMouseDown={handleDragStart}
+            onTouchStart={handleDragStart}
+        >
+          <button onClick={() => setIsTypeModalOpen(true)} className="text-center font-bold text-primary bg-primary/10 rounded-full w-8 h-8 mx-auto flex items-center justify-center hover:bg-primary/20">
+            {renderSetIdentifier()}
+          </button>
+          
+          <div className="col-span-1 text-center text-text-secondary text-sm">-</div>
+
+          <div className="col-span-1 flex justify-center">
+            <input 
+              type="number"
+              step="0.5"
+              value={weight}
+              onChange={handleWeightChange}
+              className={inputClasses}
+              disabled={set.isComplete}
+            />
+          </div>
+
+          <div className="col-span-1 flex justify-center">
+            <input
+              type="number"
+              value={reps}
+              onChange={handleRepsChange}
+              className={inputClasses}
+              disabled={set.isComplete}
+            />
+          </div>
+
+          <div className="col-span-1 flex justify-center space-x-2">
+            <button onClick={handleComplete} className={`p-2 rounded-full transition-colors ${set.isComplete ? 'bg-success text-white' : 'bg-secondary'}`}>
+                <Icon name="check" className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      </div>
+      <SetTypeModal
+          isOpen={isTypeModalOpen}
+          onClose={() => setIsTypeModalOpen(false)}
+          currentType={set.type}
+          onSelectType={handleSelectSetType}
+      />
+    </>
+  );
+};
+
+export default SetRow;
