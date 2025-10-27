@@ -57,7 +57,7 @@ const RoutinePanel: React.FC<RoutinePanelProps> = ({ routine, onClick, onEdit })
   return (
     <>
       <div
-        className="bg-surface p-4 rounded-lg shadow cursor-pointer hover:bg-slate-700 transition-colors h-full flex flex-col justify-between relative"
+        className="bg-surface p-3 sm:p-4 rounded-lg shadow cursor-pointer hover:bg-slate-700 transition-colors h-full flex flex-col justify-between relative"
         onClick={() => onClick(routine)}
       >
         <div>

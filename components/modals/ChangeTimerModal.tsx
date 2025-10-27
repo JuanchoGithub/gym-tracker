@@ -65,7 +65,7 @@ const ChangeTimerModal: React.FC<ChangeTimerModalProps> = ({ isOpen, onClose, cu
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={t('timer_modal_title')}>
-            <div className="space-y-6">
+            <div className="space-y-4">
                 <div className="text-center text-sm text-text-secondary -mt-2">
                     <p>{t('timer_modal_subtitle_1')}</p>
                     <p>{t('timer_modal_subtitle_2')}</p>

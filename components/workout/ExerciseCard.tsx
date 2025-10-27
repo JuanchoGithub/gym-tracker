@@ -107,8 +107,8 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseIn
   let normalSetCounter = 0;
 
   return (
-    <div className={`bg-surface rounded-lg shadow-md transition-all ${allSetsCompleted ? 'border-2 border-success' : 'border-2 border-transparent'}`}>
-        <div className="sticky top-[56px] bg-surface z-10 p-4 border-b border-secondary/20 rounded-t-lg">
+    <div className={`bg-surface sm:rounded-lg shadow-md transition-all ${allSetsCompleted ? 'border-2 border-success' : 'border-2 border-transparent'}`}>
+        <div className="sticky top-[56px] bg-surface z-10 p-3 border-b border-secondary/20 sm:rounded-t-lg">
              <ExerciseHeader 
                 workoutExercise={workoutExercise}
                 exerciseInfo={exerciseInfo}
@@ -117,7 +117,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseIn
                 onOpenTimerModal={() => setIsDefaultsTimerModalOpen(true)}
             />
         </div>
-        <div className="p-4 space-y-2">
+        <div className="p-2 sm:p-3 space-y-2">
             {isNoteEditing && (
                 <div className="mb-2">
                     <textarea 
@@ -137,7 +137,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseIn
                 <p className="text-sm text-text-secondary italic my-2 p-2 bg-slate-900/50 rounded-md">"{workoutExercise.note}"</p>
             )}
 
-            <div className="grid grid-cols-5 items-center gap-2 text-xs text-text-secondary">
+            <div className="grid grid-cols-5 items-center gap-1 sm:gap-2 text-xs text-text-secondary">
                 <div className="text-center font-semibold">{t('workout_set')}</div>
                 <div className="text-center">Previous</div>
                 <div className="text-center">Weight ({t(`workout_${unit}`)})</div>

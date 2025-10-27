@@ -20,10 +20,10 @@ const HistoryPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <h1 className="text-3xl font-bold text-center">{t('nav_history')}</h1>
       {history.map((session: WorkoutSession) => (
-        <div key={session.id} className="bg-surface p-4 rounded-lg shadow">
+        <div key={session.id} className="bg-surface p-3 sm:p-4 rounded-lg shadow">
           <div className="flex justify-between items-center mb-3">
             <h2 className="font-bold text-lg">{session.routineName}</h2>
             <span className="text-sm text-text-secondary">

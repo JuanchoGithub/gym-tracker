@@ -24,7 +24,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
 }) => {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title}>
-      <div className="space-y-6">
+      <div className="space-y-4">
         <p className="text-text-secondary">{message}</p>
         <div className="flex justify-end space-x-4">
           <button

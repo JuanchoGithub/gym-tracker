@@ -50,10 +50,10 @@ const ProfilePage: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <h1 className="text-3xl font-bold text-center">{t('profile_title')}</h1>
 
-      <div className="bg-surface p-4 rounded-lg shadow">
+      <div className="bg-surface p-3 sm:p-4 rounded-lg shadow">
         <h2 className="text-xl font-semibold mb-4">{t('profile_settings')}</h2>
         
         <div className="flex items-center justify-between">

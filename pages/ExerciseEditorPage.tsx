@@ -63,7 +63,7 @@ const ExerciseEditorPage: React.FC = () => {
 
     return (
         <div className="space-y-6">
-            <div className="sticky top-0 bg-background/80 backdrop-blur-sm z-20 -mx-4 px-4 py-2 border-b border-secondary/20">
+            <div className="sticky top-0 bg-background/80 backdrop-blur-sm z-20 -mx-2 sm:-mx-4 px-2 sm:px-4 py-2 border-b border-secondary/20">
                 <div className="container mx-auto flex items-center justify-between">
                     <button onClick={handleBack} className="p-2 text-text-secondary hover:text-primary">
                         <Icon name="arrow-down" className="rotate-90"/>

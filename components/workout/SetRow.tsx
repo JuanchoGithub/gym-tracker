@@ -120,7 +120,7 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
     }
   }
 
-  const inputClasses = "w-16 bg-slate-900/50 border border-secondary/50 rounded-md p-2 text-center disabled:bg-slate-800 text-text-primary";
+  const inputClasses = "w-full max-w-16 bg-slate-900/50 border border-secondary/50 rounded-md p-2 text-center disabled:bg-slate-800 text-text-primary";
 
   return (
     <>
@@ -141,7 +141,7 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
         
         <div
             ref={swipableNodeRef}
-            className={`grid grid-cols-5 items-center gap-2 p-2 rounded-lg relative transition-transform duration-300 ease-out ${getSetTypeStyles(set.type, set.isComplete ?? false)} ${!set.isComplete ? 'cursor-grab active:cursor-grabbing' : ''}`}
+            className={`grid grid-cols-5 items-center gap-1 sm:gap-2 py-2 rounded-lg relative transition-transform duration-300 ease-out ${getSetTypeStyles(set.type, set.isComplete ?? false)} ${!set.isComplete ? 'cursor-grab active:cursor-grabbing' : ''}`}
             style={{ touchAction: 'pan-y' }}
             onMouseDown={handleDragStart}
             onTouchStart={handleDragStart}
@@ -174,8 +174,8 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
           </div>
 
           <div className="col-span-1 flex justify-center space-x-2">
-            <button onClick={handleComplete} className={`p-2 rounded-full transition-colors ${set.isComplete ? 'bg-success text-white' : 'bg-secondary'}`}>
-                <Icon name="check" className="w-5 h-5" />
+            <button onClick={handleComplete} className={`p-1.5 rounded-full transition-colors ${set.isComplete ? 'bg-success text-white' : 'bg-secondary'}`}>
+                <Icon name="check" className="w-4 h-4" />
             </button>
           </div>
         </div>

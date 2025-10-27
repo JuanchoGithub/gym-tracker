@@ -101,7 +101,7 @@ const ExercisesPage: React.FC = () => {
           <div
             key={exercise.id}
             onClick={() => setSelectedExercise(exercise)}
-            className="bg-surface p-4 rounded-lg shadow cursor-pointer hover:bg-slate-700 transition-colors flex justify-between items-center"
+            className="bg-surface p-3 sm:p-4 rounded-lg shadow cursor-pointer hover:bg-slate-700 transition-colors flex justify-between items-center"
           >
             <div>
               <h3 className="font-bold text-text-primary">{exercise.name}</h3>

@@ -76,7 +76,7 @@ const ActiveWorkoutPage: React.FC = () => {
   
   return (
     <div className="space-y-4">
-      <div className="sticky top-0 bg-background/80 backdrop-blur-sm z-20 -mx-4 px-4 py-2 border-b border-secondary/20">
+      <div className="sticky top-0 bg-background/80 backdrop-blur-sm z-20 -mx-2 sm:-mx-4 px-2 sm:px-4 py-2 border-b border-secondary/20">
           <div className="container mx-auto flex items-center justify-between">
               <button 
                 onClick={minimizeWorkout} 
@@ -113,22 +113,24 @@ const ActiveWorkoutPage: React.FC = () => {
         </p>
       </div>
 
-      {activeWorkout.exercises.length > 0 ? activeWorkout.exercises.map(exercise => {
-        const exerciseInfo = getExerciseById(exercise.exerciseId);
-        return exerciseInfo ? (
-            <ExerciseCard
-                key={exercise.id}
-                workoutExercise={exercise}
-                exerciseInfo={exerciseInfo}
-                onUpdate={handleUpdateExercise}
-            />
-        ) : null;
-      }) : (
-        <div className="text-center py-10 px-4 bg-surface rounded-lg">
-            <p className="text-lg font-semibold text-text-primary">This workout is empty.</p>
-            <p className="text-text-secondary mt-1">Add an exercise to get started!</p>
-        </div>
-      )}
+      <div className="-mx-2 space-y-4 sm:-mx-4">
+        {activeWorkout.exercises.length > 0 ? activeWorkout.exercises.map(exercise => {
+          const exerciseInfo = getExerciseById(exercise.exerciseId);
+          return exerciseInfo ? (
+              <ExerciseCard
+                  key={exercise.id}
+                  workoutExercise={exercise}
+                  exerciseInfo={exerciseInfo}
+                  onUpdate={handleUpdateExercise}
+              />
+          ) : null;
+        }) : (
+          <div className="mx-2 rounded-lg bg-surface px-4 py-10 text-center sm:mx-4">
+              <p className="text-lg font-semibold text-text-primary">This workout is empty.</p>
+              <p className="mt-1 text-text-secondary">Add an exercise to get started!</p>
+          </div>
+        )}
+      </div>
       
       <button
         onClick={() => setIsAddExerciseModalOpen(true)}

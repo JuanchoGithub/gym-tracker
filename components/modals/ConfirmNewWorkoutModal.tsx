@@ -19,7 +19,7 @@ const ConfirmNewWorkoutModal: React.FC<ConfirmNewWorkoutModalProps> = ({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t('confirm_new_workout_title')}>
-      <div className="space-y-6">
+      <div className="space-y-4">
         <p className="text-text-secondary">{t('confirm_new_workout_message')}</p>
         <div className="flex flex-col space-y-3">
           <button

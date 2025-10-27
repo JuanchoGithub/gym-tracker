@@ -47,10 +47,12 @@ const App: React.FC = () => {
     }
     return renderPage();
   }
+  
+  const mainPaddingBottom = activeWorkout && isWorkoutMinimized ? 'pb-32' : 'pb-20';
 
   return (
     <div className="min-h-screen bg-background text-text-primary font-sans flex flex-col">
-      <main className="flex-grow container mx-auto p-4 pb-32">
+      <main className={`flex-grow container mx-auto px-2 sm:px-4 py-4 ${mainPaddingBottom}`}>
         {renderContent()}
       </main>
       {activeWorkout && isWorkoutMinimized && <MinimizedWorkoutBar />}
