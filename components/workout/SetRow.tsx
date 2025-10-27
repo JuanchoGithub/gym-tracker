@@ -6,12 +6,12 @@ import { useWeight } from '../../hooks/useWeight';
 
 interface SetRowProps {
   set: PerformedSet;
-  setIndex: number;
+  setNumber: number;
   onUpdateSet: (updatedSet: PerformedSet) => void;
   onDeleteSet: () => void;
 }
 
-const SetRow: React.FC<SetRowProps> = ({ set, setIndex, onUpdateSet, onDeleteSet }) => {
+const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSet }) => {
   const { displayWeight, getStoredWeight } = useWeight();
   const [weight, setWeight] = useState(displayWeight(set.weight));
   const [reps, setReps] = useState(set.reps.toString());
@@ -116,7 +116,7 @@ const SetRow: React.FC<SetRowProps> = ({ set, setIndex, onUpdateSet, onDeleteSet
         case 'warmup': return 'W';
         case 'drop': return 'D';
         case 'failure': return 'F';
-        default: return setIndex + 1;
+        default: return setNumber;
     }
   }
 

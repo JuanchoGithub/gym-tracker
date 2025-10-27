@@ -1,4 +1,3 @@
-
 import React, { useContext, useState } from 'react';
 import { AppContext } from '../contexts/AppContext';
 import { useI18n } from '../hooks/useI18n';
@@ -8,6 +7,7 @@ import { useWorkoutTimer } from '../hooks/useWorkoutTimer';
 import { Icon } from '../components/common/Icon';
 import WorkoutDetailsModal from '../components/modals/WorkoutDetailsModal';
 import Modal from '../components/common/Modal';
+import ReplaceExerciseModal from '../components/modals/ReplaceExerciseModal';
 
 const ActiveWorkoutPage: React.FC = () => {
   const { activeWorkout, updateActiveWorkout, endWorkout, getExerciseById, minimizeWorkout } = useContext(AppContext);
@@ -15,6 +15,7 @@ const ActiveWorkoutPage: React.FC = () => {
   const elapsedTime = useWorkoutTimer(activeWorkout?.startTime);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isConfirmingFinish, setIsConfirmingFinish] = useState(false);
+  const [isAddExerciseModalOpen, setIsAddExerciseModalOpen] = useState(false);
 
   const handleUpdateExercise = (updatedExercise: WorkoutExercise) => {
     if (activeWorkout) {
@@ -44,6 +45,34 @@ const ActiveWorkoutPage: React.FC = () => {
         setIsDetailsModalOpen(false);
     }
   }
+
+  const handleAddExercise = (exerciseId: string) => {
+    if (!activeWorkout) return;
+
+    const newWorkoutExercise: WorkoutExercise = {
+        id: `we-${Date.now()}-${Math.random()}`,
+        exerciseId,
+        sets: [
+            {
+                id: `set-${Date.now()}-${Math.random()}`,
+                reps: 0,
+                weight: 0,
+                type: 'normal',
+                isComplete: false,
+            }
+        ],
+        restTime: {
+            normal: 90,
+            warmup: 60,
+            drop: 30,
+        },
+    };
+
+    updateActiveWorkout({
+        ...activeWorkout,
+        exercises: [...activeWorkout.exercises, newWorkoutExercise],
+    });
+  };
 
   if (!activeWorkout) {
     return <div>No active workout.</div>;
@@ -88,7 +117,7 @@ const ActiveWorkoutPage: React.FC = () => {
         </p>
       </div>
 
-      {activeWorkout.exercises.map(exercise => {
+      {activeWorkout.exercises.length > 0 ? activeWorkout.exercises.map(exercise => {
         const exerciseInfo = getExerciseById(exercise.exerciseId);
         return exerciseInfo ? (
             <ExerciseCard
@@ -98,7 +127,20 @@ const ActiveWorkoutPage: React.FC = () => {
                 onUpdate={handleUpdateExercise}
             />
         ) : null;
-      })}
+      }) : (
+        <div className="text-center py-10 px-4 bg-surface rounded-lg">
+            <p className="text-lg font-semibold text-text-primary">This workout is empty.</p>
+            <p className="text-text-secondary mt-1">Add an exercise to get started!</p>
+        </div>
+      )}
+      
+      <button
+        onClick={() => setIsAddExerciseModalOpen(true)}
+        className="w-full flex items-center justify-center space-x-2 bg-secondary/50 text-text-primary font-medium py-3 rounded-lg hover:bg-secondary transition-colors"
+      >
+        <Icon name="plus" className="w-5 h-5" />
+        <span>Add Exercise</span>
+      </button>
 
       {isDetailsModalOpen && activeWorkout && (
         <WorkoutDetailsModal
@@ -108,6 +150,14 @@ const ActiveWorkoutPage: React.FC = () => {
             onSave={handleSaveDetails}
         />
       )}
+
+      <ReplaceExerciseModal
+        isOpen={isAddExerciseModalOpen}
+        onClose={() => setIsAddExerciseModalOpen(false)}
+        onSelectExercise={handleAddExercise}
+        title="Add Exercise"
+        buttonText="Add"
+      />
 
       <Modal
         isOpen={isConfirmingFinish}

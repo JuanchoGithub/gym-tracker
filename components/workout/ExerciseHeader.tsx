@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useContext } from 'react';
 import { Exercise, WorkoutExercise, PerformedSet } from '../../types';
 import { getExerciseHistory } from '../../utils/workoutUtils';
@@ -208,7 +207,13 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = ({ workoutExercise, exerci
                 <button onClick={() => { setIsConfirmReplaceOpen(false); setIsReplaceModalOpen(true); }} className="bg-primary px-4 py-2 rounded-md">Replace</button>
             </div>
         </Modal>
-        <ReplaceExerciseModal isOpen={isReplaceModalOpen} onClose={() => setIsReplaceModalOpen(false)} onReplace={handleReplaceExercise} />
+        <ReplaceExerciseModal 
+            isOpen={isReplaceModalOpen} 
+            onClose={() => setIsReplaceModalOpen(false)} 
+            onSelectExercise={handleReplaceExercise}
+            title="Replace Exercise"
+            buttonText="Replace"
+        />
       </>
     );
 };

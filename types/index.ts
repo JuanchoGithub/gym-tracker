@@ -38,10 +38,14 @@ export interface Routine {
   name: string;
   description: string;
   exercises: WorkoutExercise[];
+  isTemplate?: boolean; // true for templates
+  lastUsed?: number; // timestamp for latest workouts
+  originId?: string; // The ID of the template this was based on
 }
 
 export interface WorkoutSession {
   id:string;
+  routineId: string; // ID of the routine this session was started from
   routineName: string;
   startTime: number; // timestamp
   endTime: number; // timestamp

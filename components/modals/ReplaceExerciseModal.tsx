@@ -9,10 +9,12 @@ import FilterDropdown from '../common/FilterDropdown';
 interface ReplaceExerciseModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onReplace: (newExerciseId: string) => void;
+  onSelectExercise: (newExerciseId: string) => void;
+  title?: string;
+  buttonText?: string;
 }
 
-const ReplaceExerciseModal: React.FC<ReplaceExerciseModalProps> = ({ isOpen, onClose, onReplace }) => {
+const ReplaceExerciseModal: React.FC<ReplaceExerciseModalProps> = ({ isOpen, onClose, onSelectExercise, title, buttonText }) => {
   const { exercises } = useContext(AppContext);
   const { t } = useI18n();
   const [searchTerm, setSearchTerm] = useState('');
@@ -31,12 +33,12 @@ const ReplaceExerciseModal: React.FC<ReplaceExerciseModalProps> = ({ isOpen, onC
   }, [exercises, searchTerm, selectedBodyPart, selectedCategory]);
 
   const handleSelectExercise = (exerciseId: string) => {
-    onReplace(exerciseId);
+    onSelectExercise(exerciseId);
     onClose();
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Replace Exercise">
+    <Modal isOpen={isOpen} onClose={onClose} title={title || "Replace Exercise"}>
         <div className="flex flex-col h-[80vh] max-h-[600px]">
             <div className="flex-shrink-0 space-y-2 mb-4">
                  <div className="relative flex-grow">
@@ -81,7 +83,7 @@ const ReplaceExerciseModal: React.FC<ReplaceExerciseModalProps> = ({ isOpen, onC
                         onClick={() => handleSelectExercise(exercise.id)}
                         className="bg-primary text-white font-bold py-1 px-3 rounded-md text-sm"
                     >
-                        Replace
+                        {buttonText || 'Replace'}
                     </button>
                 </div>
                 )) : <p className="text-center text-text-secondary">No exercises match.</p>}

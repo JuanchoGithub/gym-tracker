@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Exercise, WorkoutExercise, PerformedSet, SetType } from '../../types';
 import SetRow from './SetRow';
@@ -108,6 +107,8 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseIn
 
   const activeSetForTimer = activeTimerSetId ? workoutExercise.sets.find(s => s.id === activeTimerSetId) : undefined;
   const timerDuration = getTimerDuration(activeSetForTimer?.type);
+  
+  let normalSetCounter = 0;
 
   return (
     <div className={`bg-surface rounded-lg shadow-md transition-all ${allSetsCompleted ? 'border-2 border-success' : 'border-2 border-transparent'}`}>
@@ -149,32 +150,37 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseIn
             </div>
             
             <div className="space-y-2">
-                {workoutExercise.sets.map((set, index) => (
-                <React.Fragment key={set.id}>
-                    <SetRow
-                    set={set}
-                    setIndex={index}
-                    onUpdateSet={handleUpdateSet}
-                    onDeleteSet={() => handleDeleteSet(set.id)}
-                    />
-                    {activeTimerSetId === set.id && (
-                    <Timer 
-                        duration={timerDuration} 
-                        onFinish={() => handleTimerFinish(set.id)} 
-                    />
-                    )}
-                    {finishedTimers[set.id] && (
-                    <div className="my-2 flex items-center justify-center text-sm text-success">
-                        <div className="flex-grow h-px bg-success/30"></div>
-                        <span className="mx-4 font-mono">
-                        {String(Math.floor(finishedTimers[set.id] / 60)).padStart(2, '0')}:
-                        {String(finishedTimers[set.id] % 60).padStart(2, '0')}
-                        </span>
-                        <div className="flex-grow h-px bg-success/30"></div>
-                    </div>
-                    )}
-                </React.Fragment>
-                ))}
+                {workoutExercise.sets.map((set) => {
+                  if (set.type === 'normal') {
+                    normalSetCounter++;
+                  }
+                  return (
+                    <React.Fragment key={set.id}>
+                        <SetRow
+                        set={set}
+                        setNumber={normalSetCounter}
+                        onUpdateSet={handleUpdateSet}
+                        onDeleteSet={() => handleDeleteSet(set.id)}
+                        />
+                        {activeTimerSetId === set.id && (
+                        <Timer 
+                            duration={timerDuration} 
+                            onFinish={() => handleTimerFinish(set.id)} 
+                        />
+                        )}
+                        {finishedTimers[set.id] && (
+                        <div className="my-2 flex items-center justify-center text-sm text-success">
+                            <div className="flex-grow h-px bg-success/30"></div>
+                            <span className="mx-4 font-mono">
+                            {String(Math.floor(finishedTimers[set.id] / 60)).padStart(2, '0')}:
+                            {String(finishedTimers[set.id] % 60).padStart(2, '0')}
+                            </span>
+                            <div className="flex-grow h-px bg-success/30"></div>
+                        </div>
+                        )}
+                    </React.Fragment>
+                  );
+                })}
             </div>
             
             <button 

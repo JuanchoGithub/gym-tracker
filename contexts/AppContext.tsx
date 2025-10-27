@@ -8,7 +8,8 @@ export type WeightUnit = 'kg' | 'lbs';
 
 interface AppContextType {
   routines: Routine[];
-  addRoutine: (routine: Routine) => void;
+  upsertRoutine: (routine: Routine) => void;
+  deleteRoutine: (routineId: string) => void;
   history: WorkoutSession[];
   exercises: Exercise[];
   getExerciseById: (id: string) => Exercise | undefined;
@@ -55,10 +56,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeWorkout]);
 
-  const addRoutine = (routine: Routine) => {
-    if (!routines.find(r => r.id === routine.id)) {
-      setRoutines(prev => [...prev, routine]);
-    }
+  const upsertRoutine = (routine: Routine) => {
+    setRoutines(prev => {
+        const existingIndex = prev.findIndex(r => r.id === routine.id);
+        if (existingIndex > -1) {
+            const newRoutines = [...prev];
+            newRoutines[existingIndex] = routine;
+            return newRoutines;
+        } else {
+            return [...prev, routine];
+        }
+    });
+  };
+
+  const deleteRoutine = (routineId: string) => {
+    setRoutines(prev => prev.filter(r => r.id !== routineId));
   };
   
   const getExerciseById = (id: string): Exercise | undefined => {
@@ -68,6 +80,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const startWorkout = (routine: Routine) => {
     const newWorkout: WorkoutSession = {
       id: `session-${Date.now()}`,
+      routineId: routine.id,
       routineName: routine.name,
       startTime: Date.now(),
       endTime: 0,
@@ -94,6 +107,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       if (finishedWorkout.exercises.length > 0) {
         setHistory(prev => [finishedWorkout, ...prev]);
+
+        const newLatestRoutine: Routine = {
+          id: `latest-${finishedWorkout.endTime}-${Math.random()}`,
+          name: finishedWorkout.routineName,
+          description: `Completed on ${new Date(finishedWorkout.startTime).toLocaleDateString()}`,
+          exercises: finishedWorkout.exercises,
+          isTemplate: false,
+          lastUsed: finishedWorkout.endTime,
+          originId: activeWorkout.routineId,
+        };
+
+        const sourceRoutine = routines.find(r => r.id === activeWorkout.routineId);
+
+        setRoutines(prevRoutines => {
+            const routinesWithoutSource = sourceRoutine && !sourceRoutine.isTemplate 
+                ? prevRoutines.filter(r => r.id !== sourceRoutine.id)
+                : prevRoutines;
+            
+            return [...routinesWithoutSource, newLatestRoutine];
+        });
       }
       setActiveWorkout(null);
       setIsWorkoutMinimized(false);
@@ -110,7 +143,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const value = useMemo(() => ({
     routines,
-    addRoutine,
+    upsertRoutine,
+    deleteRoutine,
     history,
     exercises,
     getExerciseById,
