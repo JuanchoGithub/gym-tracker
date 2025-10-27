@@ -11,7 +11,9 @@ const ProfilePage: React.FC = () => {
     weightUnit, 
     setWeightUnit,
     defaultRestTimes,
-    setDefaultRestTimes
+    setDefaultRestTimes,
+    useLocalizedExerciseNames,
+    setUseLocalizedExerciseNames
   } = useContext(AppContext);
 
   const [editingTimerKey, setEditingTimerKey] = useState<keyof typeof defaultRestTimes | null>(null);
@@ -68,6 +70,27 @@ const ProfilePage: React.FC = () => {
             <option value="es">Español</option>
           </select>
         </div>
+
+        {locale !== 'en' && (
+          <div className="mt-6 pt-4 border-t border-secondary/20">
+            <div className="flex items-center justify-between">
+              <div>
+                  <label className="text-text-primary">{t('profile_localized_names')}</label>
+                  <p className="text-xs text-text-secondary">{t('profile_localized_names_desc')}</p>
+              </div>
+              <div className="flex rounded-lg bg-slate-700 p-1">
+                <button 
+                  onClick={() => setUseLocalizedExerciseNames(true)}
+                  className={`px-4 py-1 rounded-md text-sm font-semibold transition-colors ${useLocalizedExerciseNames ? 'bg-primary text-white' : 'text-text-secondary'}`}
+                >{t('common_yes')}</button>
+                <button
+                  onClick={() => setUseLocalizedExerciseNames(false)}
+                  className={`px-4 py-1 rounded-md text-sm font-semibold transition-colors ${!useLocalizedExerciseNames ? 'bg-primary text-white' : 'text-text-secondary'}`}
+                >{t('common_no')}</button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="mt-6 pt-4 border-t border-secondary/20">
           <div className="flex items-center justify-between">

@@ -47,16 +47,16 @@ const App: React.FC = () => {
     }
     return renderPage();
   }
-  
-  const mainPaddingBottom = activeWorkout && isWorkoutMinimized ? 'pb-32' : 'pb-20';
 
   return (
-    <div className="min-h-screen bg-background text-text-primary font-sans flex flex-col">
-      <main className={`flex-grow container mx-auto px-2 sm:px-4 py-4 ${mainPaddingBottom}`}>
+    <div className="h-screen bg-background text-text-primary font-sans flex flex-col overflow-hidden">
+      <main className="flex-grow container mx-auto px-2 sm:px-4 py-4 overflow-y-auto">
         {renderContent()}
       </main>
-      {activeWorkout && isWorkoutMinimized && <MinimizedWorkoutBar />}
-      {(!activeWorkout || isWorkoutMinimized) && !editingTemplate && !editingExercise && <BottomNavBar currentPage={currentPage} onNavigate={handleNavigate} />}
+      <div className="flex-shrink-0">
+        {activeWorkout && isWorkoutMinimized && <MinimizedWorkoutBar />}
+        {(!activeWorkout || isWorkoutMinimized) && !editingTemplate && !editingExercise && <BottomNavBar currentPage={currentPage} onNavigate={handleNavigate} />}
+      </div>
     </div>
   );
 };

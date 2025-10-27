@@ -5,13 +5,12 @@ import { Icon } from '../components/common/Icon';
 import ConfirmModal from '../components/modals/ConfirmModal';
 import TagCloud from '../components/common/TagCloud';
 import { useI18n } from '../hooks/useI18n';
-
-const bodyPartOptions: ReadonlyArray<BodyPart> = ['Chest', 'Back', 'Legs', 'Glutes', 'Shoulders', 'Biceps', 'Triceps', 'Core', 'Full Body', 'Calves', 'Forearms', 'Mobility', 'Cardio'];
-const categoryOptions: ReadonlyArray<ExerciseCategory> = ['Barbell', 'Dumbbell', 'Machine', 'Cable', 'Bodyweight', 'Assisted Bodyweight', 'Kettlebell', 'Plyometrics', 'Reps Only', 'Cardio', 'Duration'];
+import { BODY_PART_OPTIONS, CATEGORY_OPTIONS } from '../constants/filters';
+import { getBodyPartTKey, getCategoryTKey } from '../utils/i18nUtils';
 
 const ExerciseEditorPage: React.FC = () => {
     const { exercises, editingExercise, endExerciseEdit } = useContext(AppContext);
-    const { t_ins } = useI18n();
+    const { t, t_ins } = useI18n();
 
     if (!editingExercise) {
         endExerciseEdit();
@@ -31,8 +30,18 @@ const ExerciseEditorPage: React.FC = () => {
         if (instructions && instructions.steps.length > 0 && instructions.title !== instructionKey) {
             return instructions.steps.join('\n');
         }
-        return 'No instructions available for this exercise.';
-    }, [isStockEdit, editingExercise.id, t_ins]);
+        return t('exercise_editor_no_instructions');
+    }, [isStockEdit, editingExercise.id, t_ins, t]);
+
+    const bodyPartTagOptions = useMemo(() => BODY_PART_OPTIONS.map(bp => ({
+        value: bp,
+        label: t(getBodyPartTKey(bp))
+    })), [t]);
+    
+    const categoryTagOptions = useMemo(() => CATEGORY_OPTIONS.map(cat => ({
+        value: cat,
+        label: t(getCategoryTKey(cat))
+    })), [t]);
 
 
     const handleBack = () => {
@@ -51,7 +60,7 @@ const ExerciseEditorPage: React.FC = () => {
 
     const handleSave = () => {
         if (!exercise.name.trim()) {
-            alert("Exercise name cannot be empty.");
+            alert(t('exercise_editor_name_empty_alert'));
             return;
         }
         endExerciseEdit(exercise);
@@ -69,17 +78,17 @@ const ExerciseEditorPage: React.FC = () => {
                         <Icon name="arrow-down" className="rotate-90"/>
                     </button>
                     <h1 className="text-xl font-bold text-center">
-                        {isNew ? 'Add Exercise' : 'Edit Exercise'}
+                        {isNew ? t('exercise_editor_add_title') : t('exercise_editor_edit_title')}
                     </h1>
                     <button onClick={handleSave} className="bg-success text-white font-bold py-2 px-4 rounded-lg shadow-lg hover:bg-green-400 text-sm">
-                        Save
+                        {t('common_save')}
                     </button>
                 </div>
             </div>
 
             <div className="space-y-4">
                 <div>
-                    <label htmlFor="exercise-name" className="text-sm font-medium text-text-secondary">Name</label>
+                    <label htmlFor="exercise-name" className="text-sm font-medium text-text-secondary">{t('exercise_editor_name_label')}</label>
                     <input 
                         id="exercise-name"
                         type="text"
@@ -89,10 +98,10 @@ const ExerciseEditorPage: React.FC = () => {
                     />
                 </div>
                  <div>
-                    <label className="text-sm font-medium text-text-secondary">Body Part</label>
+                    <label className="text-sm font-medium text-text-secondary">{t('filter_body_part')}</label>
                     <div className="mt-2">
                         <TagCloud
-                            options={bodyPartOptions}
+                            options={bodyPartTagOptions}
                             selected={exercise.bodyPart}
                             onSelect={(val) => handleFieldChange('bodyPart', val)}
                         />
@@ -100,11 +109,11 @@ const ExerciseEditorPage: React.FC = () => {
                 </div>
                 <div>
                     <label className="text-sm font-medium text-text-secondary">
-                        Category {!isNew && <span className="text-xs font-normal text-text-secondary/70">(cannot be changed)</span>}
+                        {t('filter_category')} {!isNew && <span className="text-xs font-normal text-text-secondary/70">{t('exercise_editor_category_locked')}</span>}
                     </label>
                     <div className="mt-2">
                         <TagCloud
-                            options={categoryOptions}
+                            options={categoryTagOptions}
                             selected={exercise.category}
                             onSelect={(val) => handleFieldChange('category', val)}
                             disabled={!isNew}
@@ -112,7 +121,7 @@ const ExerciseEditorPage: React.FC = () => {
                     </div>
                 </div>
                  <div>
-                    <label htmlFor="exercise-notes" className="text-sm font-medium text-text-secondary">Description / Notes</label>
+                    <label htmlFor="exercise-notes" className="text-sm font-medium text-text-secondary">{t('exercise_editor_notes_label')}</label>
                     <textarea
                         id="exercise-notes"
                         value={isStockEdit ? stockInstructions : (exercise.notes || '')}
@@ -120,7 +129,7 @@ const ExerciseEditorPage: React.FC = () => {
                         disabled={isStockEdit}
                         className="w-full bg-surface border border-secondary/50 rounded-lg p-2 mt-1 disabled:bg-slate-900 disabled:text-text-secondary"
                         rows={isStockEdit ? 16 : 8}
-                        placeholder={isStockEdit ? '' : "Add instructions or personal notes..."}
+                        placeholder={isStockEdit ? '' : t('exercise_editor_notes_placeholder')}
                     />
                 </div>
             </div>
@@ -129,10 +138,10 @@ const ExerciseEditorPage: React.FC = () => {
                 isOpen={isConfirmingBack}
                 onClose={() => setIsConfirmingBack(false)}
                 onConfirm={handleConfirmDiscard}
-                title="Discard Changes?"
-                message="You have unsaved changes. Are you sure you want to discard them?"
-                confirmText="Discard"
-                cancelText="Cancel"
+                title={t('confirm_discard_title')}
+                message={t('confirm_discard_message')}
+                confirmText={t('common_discard')}
+                cancelText={t('common_cancel')}
                 confirmButtonClass="bg-red-600 hover:bg-red-700"
             />
         </div>

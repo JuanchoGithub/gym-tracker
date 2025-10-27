@@ -3,6 +3,7 @@ import { Routine } from '../../types';
 import { AppContext } from '../../contexts/AppContext';
 import { Icon } from '../common/Icon';
 import Modal from '../common/Modal';
+import { useI18n } from '../../hooks/useI18n';
 
 interface RoutinePanelProps {
   routine: Routine;
@@ -12,6 +13,7 @@ interface RoutinePanelProps {
 
 const RoutinePanel: React.FC<RoutinePanelProps> = ({ routine, onClick, onEdit }) => {
   const { getExerciseById, deleteRoutine, upsertRoutine } = useContext(AppContext);
+  const { t } = useI18n();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
@@ -25,7 +27,7 @@ const RoutinePanel: React.FC<RoutinePanelProps> = ({ routine, onClick, onEdit })
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (window.confirm(`Are you sure you want to delete "${routine.name}"?`)) {
+    if (window.confirm(t('routine_panel_delete_confirm', { name: routine.name }))) {
       deleteRoutine(routine.id);
     }
     setIsMenuOpen(false);
@@ -70,27 +72,27 @@ const RoutinePanel: React.FC<RoutinePanelProps> = ({ routine, onClick, onEdit })
                       </button>
                       {isMenuOpen && (
                           <div className="absolute right-0 mt-6 w-40 bg-slate-600 rounded-md shadow-lg z-10" onMouseLeave={() => setIsMenuOpen(false)}>
-                             {isEditable && <button onClick={handleEdit} className="w-full text-left px-3 py-2 text-sm text-text-primary hover:bg-slate-500 rounded-t-md">Edit Exercises</button>}
-                             {isEditable && <button onClick={(e) => { e.stopPropagation(); setIsRenameModalOpen(true); setNewName(routine.name); setIsMenuOpen(false); }} className="w-full text-left px-3 py-2 text-sm text-text-primary hover:bg-slate-500">Rename</button>}
-                             {isEditable && <button onClick={(e) => { e.stopPropagation(); setIsNoteModalOpen(true); setNewNote(routine.description); setIsMenuOpen(false); }} className="w-full text-left px-3 py-2 text-sm text-text-primary hover:bg-slate-500">Edit Note</button>}
-                             {isDeletable && <button onClick={handleDelete} className={`w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-slate-500 ${isEditable ? 'rounded-b-md' : 'rounded-md'}`}>Delete</button>}
+                             {isEditable && <button onClick={handleEdit} className="w-full text-left px-3 py-2 text-sm text-text-primary hover:bg-slate-500 rounded-t-md">{t('routine_panel_edit_exercises')}</button>}
+                             {isEditable && <button onClick={(e) => { e.stopPropagation(); setIsRenameModalOpen(true); setNewName(routine.name); setIsMenuOpen(false); }} className="w-full text-left px-3 py-2 text-sm text-text-primary hover:bg-slate-500">{t('common_rename')}</button>}
+                             {isEditable && <button onClick={(e) => { e.stopPropagation(); setIsNoteModalOpen(true); setNewNote(routine.description); setIsMenuOpen(false); }} className="w-full text-left px-3 py-2 text-sm text-text-primary hover:bg-slate-500">{t('routine_panel_edit_note')}</button>}
+                             {isDeletable && <button onClick={handleDelete} className={`w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-slate-500 ${isEditable ? 'rounded-b-md' : 'rounded-md'}`}>{t('common_delete')}</button>}
                           </div>
                       )}
                    </div>
               )}
           </div>
           <p className="text-sm text-text-secondary truncate" title={exerciseNames}>
-            {exerciseNames || 'No exercises yet.'}
+            {exerciseNames || t('routine_panel_no_exercises')}
           </p>
         </div>
         {routine.lastUsed && (
           <p className="text-xs text-text-secondary/70 mt-3 text-right">
-            Last used: {new Date(routine.lastUsed).toLocaleDateString()}
+            {t('routine_panel_last_used', { date: new Date(routine.lastUsed).toLocaleDateString() })}
           </p>
         )}
       </div>
 
-      <Modal isOpen={isRenameModalOpen} onClose={() => setIsRenameModalOpen(false)} title="Rename Template">
+      <Modal isOpen={isRenameModalOpen} onClose={() => setIsRenameModalOpen(false)} title={t('routine_panel_rename_title')}>
           <form onSubmit={handleSaveRename}>
               <input 
                 type="text"
@@ -100,25 +102,25 @@ const RoutinePanel: React.FC<RoutinePanelProps> = ({ routine, onClick, onEdit })
                 autoFocus
               />
               <div className="flex justify-end space-x-2">
-                  <button type="button" onClick={() => setIsRenameModalOpen(false)} className="bg-secondary px-4 py-2 rounded-lg">Cancel</button>
-                  <button type="submit" className="bg-primary px-4 py-2 rounded-lg">Save</button>
+                  <button type="button" onClick={() => setIsRenameModalOpen(false)} className="bg-secondary px-4 py-2 rounded-lg">{t('common_cancel')}</button>
+                  <button type="submit" className="bg-primary px-4 py-2 rounded-lg">{t('common_save')}</button>
               </div>
           </form>
       </Modal>
 
-      <Modal isOpen={isNoteModalOpen} onClose={() => setIsNoteModalOpen(false)} title="Edit Note">
+      <Modal isOpen={isNoteModalOpen} onClose={() => setIsNoteModalOpen(false)} title={t('routine_panel_edit_note_title')}>
           <form onSubmit={handleSaveNote}>
               <textarea
                 value={newNote}
                 onChange={(e) => setNewNote(e.target.value)}
                 className="w-full bg-slate-900 border border-secondary/50 rounded-lg p-2 mb-4"
                 rows={4}
-                placeholder="Add a description for your template..."
+                placeholder={t('routine_panel_note_placeholder')}
                 autoFocus
               />
               <div className="flex justify-end space-x-2">
-                  <button type="button" onClick={() => setIsNoteModalOpen(false)} className="bg-secondary px-4 py-2 rounded-lg">Cancel</button>
-                  <button type="submit" className="bg-primary px-4 py-2 rounded-lg">Save</button>
+                  <button type="button" onClick={() => setIsNoteModalOpen(false)} className="bg-secondary px-4 py-2 rounded-lg">{t('common_cancel')}</button>
+                  <button type="submit" className="bg-primary px-4 py-2 rounded-lg">{t('common_save')}</button>
               </div>
           </form>
       </Modal>

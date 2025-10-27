@@ -5,9 +5,11 @@ import { Icon } from '../components/common/Icon';
 import AddExercisesModal from '../components/modals/AddExercisesModal';
 import TemplateExerciseCard from '../components/template/TemplateExerciseCard';
 import ConfirmModal from '../components/modals/ConfirmModal';
+import { useI18n } from '../hooks/useI18n';
 
 const TemplateEditorPage: React.FC = () => {
     const { editingTemplate, endTemplateEdit, getExerciseById, defaultRestTimes } = useContext(AppContext);
+    const { t } = useI18n();
     const [template, setTemplate] = useState<Routine>(() => JSON.parse(JSON.stringify(editingTemplate)));
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isConfirmingBack, setIsConfirmingBack] = useState(false);
@@ -27,7 +29,7 @@ const TemplateEditorPage: React.FC = () => {
 
     const handleSave = () => {
         if (!template.name.trim()) {
-            alert("Template name cannot be empty.");
+            alert(t('template_editor_name_empty_alert'));
             return;
         }
         endTemplateEdit(template);
@@ -73,38 +75,38 @@ const TemplateEditorPage: React.FC = () => {
                         <Icon name="arrow-down" className="rotate-90"/>
                     </button>
                     <h1 className="text-xl font-bold text-center">
-                        {editingTemplate?.id.startsWith('custom-') ? 'Edit Template' : 'Create Template'}
+                        {editingTemplate?.id.startsWith('custom-') ? t('template_editor_edit_title') : t('template_editor_create_title')}
                     </h1>
                     <button onClick={handleSave} className="bg-success text-white font-bold py-2 px-4 rounded-lg shadow-lg hover:bg-green-400 text-sm">
-                        Save
+                        {t('common_save')}
                     </button>
                 </div>
             </div>
 
             <div className="space-y-4">
                 <div>
-                    <label className="text-sm font-medium text-text-secondary">Template Name</label>
+                    <label className="text-sm font-medium text-text-secondary">{t('template_editor_name_label')}</label>
                     <input 
                         type="text"
                         value={template.name}
                         onChange={(e) => setTemplate(t => ({ ...t, name: e.target.value }))}
                         className="w-full bg-surface border border-secondary/50 rounded-lg p-2 mt-1"
-                        placeholder="e.g., Push Day"
+                        placeholder={t('template_editor_name_placeholder')}
                     />
                 </div>
                  <div>
-                    <label className="text-sm font-medium text-text-secondary">Description</label>
+                    <label className="text-sm font-medium text-text-secondary">{t('template_editor_description_label')}</label>
                     <textarea
                         value={template.description}
                         onChange={(e) => setTemplate(t => ({ ...t, description: e.target.value }))}
                         className="w-full bg-surface border border-secondary/50 rounded-lg p-2 mt-1"
                         rows={3}
-                        placeholder="Add some notes about this template..."
+                        placeholder={t('template_editor_description_placeholder')}
                     />
                 </div>
             </div>
             
-            <h2 className="text-lg font-semibold border-b border-secondary/20 pb-2">Exercises</h2>
+            <h2 className="text-lg font-semibold border-b border-secondary/20 pb-2">{t('template_editor_exercises_title')}</h2>
             <div className="space-y-4">
                 {template.exercises.map(we => {
                     const exerciseInfo = getExerciseById(we.exerciseId);
@@ -122,7 +124,7 @@ const TemplateEditorPage: React.FC = () => {
 
                 {template.exercises.length === 0 && (
                     <div className="text-center py-8 bg-surface rounded-lg">
-                        <p className="text-text-secondary">This template is empty.</p>
+                        <p className="text-text-secondary">{t('template_editor_empty')}</p>
                     </div>
                 )}
             </div>
@@ -132,7 +134,7 @@ const TemplateEditorPage: React.FC = () => {
                 className="w-full flex items-center justify-center space-x-2 bg-secondary/50 text-text-primary font-medium py-3 rounded-lg hover:bg-secondary transition-colors"
             >
                 <Icon name="plus" className="w-5 h-5" />
-                <span>Add Exercises</span>
+                <span>{t('template_editor_add_exercises')}</span>
             </button>
 
             <AddExercisesModal 
@@ -145,10 +147,10 @@ const TemplateEditorPage: React.FC = () => {
                 isOpen={isConfirmingBack}
                 onClose={() => setIsConfirmingBack(false)}
                 onConfirm={handleConfirmDiscard}
-                title="Discard Changes?"
-                message="You have unsaved changes. Are you sure you want to discard them?"
-                confirmText="Discard"
-                cancelText="Cancel"
+                title={t('confirm_discard_title')}
+                message={t('confirm_discard_message')}
+                confirmText={t('common_discard')}
+                cancelText={t('common_cancel')}
                 confirmButtonClass="bg-red-600 hover:bg-red-700"
             />
         </div>

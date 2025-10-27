@@ -78,17 +78,17 @@ const Timer: React.FC<TimerProps> = ({ duration, onFinish }) => {
                     ></div>
                     <span className="relative flex items-center">
                         <Icon name={isPaused ? 'play' : 'pause'} className="w-8 h-8 mr-3"/>
-                        <span>{isPaused ? 'RESUME' : 'PAUSE'}</span>
+                        <span>{isPaused ? t('timer_resume') : t('timer_pause')}</span>
                     </span>
                 </button>
                 <div className="grid grid-cols-2 gap-2 w-full">
-                    <button onClick={() => modifyTime(-10)} className="bg-secondary text-text-primary font-semibold py-3 rounded-lg">-10s</button>
-                    <button onClick={() => modifyTime(10)} className="bg-secondary text-text-primary font-semibold py-3 rounded-lg">+10s</button>
-                    <button onClick={handleReset} className="bg-secondary text-text-primary font-semibold py-3 rounded-lg">RESET</button>
-                    <button onClick={handleSkip} className="bg-secondary text-text-primary font-semibold py-3 rounded-lg">SKIP</button>
+                    <button onClick={() => modifyTime(-10)} className="bg-secondary text-text-primary font-semibold py-3 rounded-lg">{t('workout_timer_sub')}</button>
+                    <button onClick={() => modifyTime(10)} className="bg-secondary text-text-primary font-semibold py-3 rounded-lg">{t('workout_timer_add')}</button>
+                    <button onClick={handleReset} className="bg-secondary text-text-primary font-semibold py-3 rounded-lg">{t('timer_reset')}</button>
+                    <button onClick={handleSkip} className="bg-secondary text-text-primary font-semibold py-3 rounded-lg">{t('timer_skip')}</button>
                 </div>
                 <button onClick={() => setIsKeyboardVisible(false)} className="w-full bg-primary/50 text-white font-bold py-2 rounded-lg mt-2">
-                    HIDE
+                    {t('timer_hide')}
                 </button>
             </div>
         )}

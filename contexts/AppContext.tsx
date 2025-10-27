@@ -4,6 +4,7 @@ import { Routine, WorkoutSession, Exercise, WorkoutExercise } from '../types';
 import { PREDEFINED_ROUTINES } from '../constants/routines';
 import { PREDEFINED_EXERCISES } from '../constants/exercises';
 import { useI18n } from '../hooks/useI18n';
+import { TranslationKey } from './I18nContext';
 
 export type WeightUnit = 'kg' | 'lbs';
 
@@ -34,21 +35,40 @@ interface AppContextType {
   startExerciseEdit: (exercise: Exercise) => void;
   endExerciseEdit: (savedExercise?: Exercise) => void;
   startExerciseDuplicate: (exercise: Exercise) => void;
+  useLocalizedExerciseNames: boolean;
+  setUseLocalizedExerciseNames: (value: boolean) => void;
 }
 
 export const AppContext = createContext<AppContextType>({} as AppContextType);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [routines, setRoutines] = useLocalStorage<Routine[]>('routines', PREDEFINED_ROUTINES);
+  const [rawRoutines, setRawRoutines] = useLocalStorage<Routine[]>('routines', PREDEFINED_ROUTINES);
   const [history, setHistory] = useLocalStorage<WorkoutSession[]>('history', []);
-  const [exercises, setExercises] = useLocalStorage<Exercise[]>('exercises', PREDEFINED_EXERCISES);
+  const [rawExercises, setRawExercises] = useLocalStorage<Exercise[]>('exercises', PREDEFINED_EXERCISES);
   const [activeWorkout, setActiveWorkout] = useLocalStorage<WorkoutSession | null>('activeWorkout', null);
   const [isWorkoutMinimized, setIsWorkoutMinimized] = useLocalStorage<boolean>('isWorkoutMinimized', false);
   const [weightUnit, setWeightUnit] = useLocalStorage<WeightUnit>('weightUnit', 'kg');
   const [defaultRestTimes, setDefaultRestTimes] = useLocalStorage<{ normal: number; warmup: number; drop: number; }>('defaultRestTimes', { normal: 90, warmup: 60, drop: 30 });
   const [editingTemplate, setEditingTemplate] = useState<Routine | null>(null);
   const [editingExercise, setEditingExercise] = useState<Exercise | null>(null);
-  const { t_ins } = useI18n();
+  const { t, locale, t_ins } = useI18n();
+  const [useLocalizedExerciseNames, setUseLocalizedExerciseNames] = useLocalStorage<boolean>('useLocalizedExerciseNames', true);
+
+  const exercises = useMemo(() => {
+    if (useLocalizedExerciseNames && locale !== 'en') {
+      return rawExercises.map(ex => {
+        if (ex.id.startsWith('ex-')) {
+            const translationKey = ex.id.replace(/-/g, '_') as TranslationKey;
+            const translatedName = t(translationKey);
+            if (translatedName !== translationKey) {
+                return { ...ex, name: translatedName };
+            }
+        }
+        return ex; // return original for custom or untranslated
+      });
+    }
+    return rawExercises;
+  }, [rawExercises, useLocalizedExerciseNames, locale, t]);
 
 
   useEffect(() => {
@@ -72,8 +92,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeWorkout]);
 
-  const upsertRoutine = (routine: Routine) => {
-    setRoutines(prev => {
+  const upsertRoutine = useCallback((routine: Routine) => {
+    setRawRoutines(prev => {
         const existingIndex = prev.findIndex(r => r.id === routine.id);
         if (existingIndex > -1) {
             const newRoutines = [...prev];
@@ -83,10 +103,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             return [...prev, routine];
         }
     });
-  };
+  }, [setRawRoutines]);
 
-  const upsertExercise = (exercise: Exercise) => {
-    setExercises(prev => {
+  const upsertExercise = useCallback((exercise: Exercise) => {
+    setRawExercises(prev => {
         const existingIndex = prev.findIndex(e => e.id === exercise.id);
         if (existingIndex > -1) {
             const newExercises = [...prev];
@@ -96,17 +116,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             return [...prev, exercise];
         }
     });
-  };
+  }, [setRawExercises]);
 
-  const deleteRoutine = (routineId: string) => {
-    setRoutines(prev => prev.filter(r => r.id !== routineId));
-  };
+  const deleteRoutine = useCallback((routineId: string) => {
+    setRawRoutines(prev => prev.filter(r => r.id !== routineId));
+  }, [setRawRoutines]);
   
-  const getExerciseById = (id: string): Exercise | undefined => {
+  const getExerciseById = useCallback((id: string): Exercise | undefined => {
     return exercises.find(ex => ex.id === id);
-  };
+  }, [exercises]);
   
-  const startWorkout = (routine: Routine) => {
+  const startWorkout = useCallback((routine: Routine) => {
     const newWorkout: WorkoutSession = {
       id: `session-${Date.now()}`,
       routineId: routine.id,
@@ -117,13 +137,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
     setActiveWorkout(newWorkout);
     setIsWorkoutMinimized(false);
-  };
+  }, [setActiveWorkout, setIsWorkoutMinimized]);
 
-  const updateActiveWorkout = (workout: WorkoutSession) => {
+  const updateActiveWorkout = useCallback((workout: WorkoutSession) => {
     setActiveWorkout(workout);
-  };
+  }, [setActiveWorkout]);
 
-  const endWorkout = () => {
+  const endWorkout = useCallback(() => {
     if (activeWorkout) {
       const finishedWorkout: WorkoutSession = {
         ...activeWorkout,
@@ -147,9 +167,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           originId: activeWorkout.routineId,
         };
 
-        const sourceRoutine = routines.find(r => r.id === activeWorkout.routineId);
+        const sourceRoutine = rawRoutines.find(r => r.id === activeWorkout.routineId);
 
-        setRoutines(prevRoutines => {
+        setRawRoutines(prevRoutines => {
             const routinesWithoutSource = sourceRoutine && !sourceRoutine.isTemplate 
                 ? prevRoutines.filter(r => r.id !== sourceRoutine.id)
                 : prevRoutines;
@@ -160,63 +180,64 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setActiveWorkout(null);
       setIsWorkoutMinimized(false);
     }
-  };
+  }, [activeWorkout, rawRoutines, setActiveWorkout, setHistory, setIsWorkoutMinimized, setRawRoutines]);
 
-  const discardActiveWorkout = () => {
+  const discardActiveWorkout = useCallback(() => {
     setActiveWorkout(null);
     setIsWorkoutMinimized(false);
-  };
+  }, [setActiveWorkout, setIsWorkoutMinimized]);
   
-  const minimizeWorkout = () => setIsWorkoutMinimized(true);
-  const maximizeWorkout = () => setIsWorkoutMinimized(false);
+  const minimizeWorkout = useCallback(() => setIsWorkoutMinimized(true), [setIsWorkoutMinimized]);
+  const maximizeWorkout = useCallback(() => setIsWorkoutMinimized(false), [setIsWorkoutMinimized]);
 
-  const startTemplateEdit = (template: Routine) => {
+  const startTemplateEdit = useCallback((template: Routine) => {
     setEditingTemplate(template);
-  };
+  }, []);
 
-  const endTemplateEdit = (savedTemplate?: Routine) => {
+  const endTemplateEdit = useCallback((savedTemplate?: Routine) => {
     if (savedTemplate) {
       upsertRoutine(savedTemplate);
     }
     setEditingTemplate(null);
-  };
+  }, [upsertRoutine]);
 
-  const startExerciseEdit = (exercise: Exercise) => {
+  const startExerciseEdit = useCallback((exercise: Exercise) => {
     setEditingExercise(exercise);
-  };
+  }, []);
 
-  const endExerciseEdit = (savedExercise?: Exercise) => {
+  const endExerciseEdit = useCallback((savedExercise?: Exercise) => {
     if (savedExercise) {
       upsertExercise(savedExercise);
     }
     setEditingExercise(null);
-  };
+  }, [upsertExercise]);
 
-  const startExerciseDuplicate = (exerciseToDuplicate: Exercise) => {
+  const startExerciseDuplicate = useCallback((exerciseToDuplicate: Exercise) => {
+    const originalExercise = rawExercises.find(e => e.id === exerciseToDuplicate.id) || exerciseToDuplicate;
     let description = '';
-    const isStock = exerciseToDuplicate.id.startsWith('ex-');
+    const isStock = originalExercise.id.startsWith('ex-');
 
     if (isStock) {
-        const instructionKey = exerciseToDuplicate.id.replace('-', '_') + '_ins';
+        const instructionKey = originalExercise.id.replace('-', '_') + '_ins';
         const instructions = t_ins(instructionKey);
         if (instructions && instructions.steps.length > 0 && instructions.title !== instructionKey) {
             description = instructions.steps.join('\n');
         }
     } else {
-        description = exerciseToDuplicate.notes || '';
+        description = originalExercise.notes || '';
     }
     
     const newExercise: Exercise = {
-        ...exerciseToDuplicate,
+        ...originalExercise,
         id: `custom-${Date.now()}`,
         name: `${exerciseToDuplicate.name} (Copy)`,
         notes: description
     };
     startExerciseEdit(newExercise);
-  };
+  }, [rawExercises, t_ins, startExerciseEdit]);
 
   const value = useMemo(() => ({
-    routines,
+    routines: rawRoutines,
     upsertRoutine,
     deleteRoutine,
     history,
@@ -242,8 +263,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     startExerciseEdit,
     endExerciseEdit,
     startExerciseDuplicate,
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [routines, history, exercises, activeWorkout, isWorkoutMinimized, weightUnit, defaultRestTimes, editingTemplate, editingExercise]);
+    useLocalizedExerciseNames,
+    setUseLocalizedExerciseNames,
+  }), [
+    rawRoutines, upsertRoutine, deleteRoutine, history, exercises, getExerciseById,
+    upsertExercise, activeWorkout, startWorkout, updateActiveWorkout, endWorkout,
+    isWorkoutMinimized, minimizeWorkout, maximizeWorkout, discardActiveWorkout,
+    weightUnit, setWeightUnit, defaultRestTimes, setDefaultRestTimes,
+    editingTemplate, startTemplateEdit, endTemplateEdit, editingExercise,
+    startExerciseEdit, endExerciseEdit, startExerciseDuplicate,
+    useLocalizedExerciseNames, setUseLocalizedExerciseNames
+  ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };

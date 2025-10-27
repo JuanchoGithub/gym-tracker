@@ -14,7 +14,7 @@ const HistoryPage: React.FC = () => {
     return (
       <div className="text-center text-text-secondary">
         <h1 className="text-3xl font-bold mb-4">{t('nav_history')}</h1>
-        <p>No workout history found. Complete a workout to see it here!</p>
+        <p>{t('history_page_no_workouts')}</p>
       </div>
     );
   }
@@ -35,7 +35,7 @@ const HistoryPage: React.FC = () => {
               const exerciseInfo = getExerciseById(ex.exerciseId);
               return (
                 <div key={ex.id}>
-                  <h4 className="font-semibold text-primary">{exerciseInfo?.name || 'Unknown Exercise'}</h4>
+                  <h4 className="font-semibold text-primary">{exerciseInfo?.name || t('history_page_unknown_exercise')}</h4>
                   <ul className="text-sm text-text-secondary pl-4">
                     {ex.sets.filter(s => s.isComplete).map((set, i) => (
                       <li key={set.id}>

@@ -38,7 +38,7 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({ currentPage, onNavigate }) 
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 h-16 bg-surface shadow-lg border-t border-secondary/20 flex z-50">
+    <nav className="h-16 bg-surface shadow-lg border-t border-secondary/20 flex z-50">
       {navItems.map(item => (
         <NavItem
           key={item.page}

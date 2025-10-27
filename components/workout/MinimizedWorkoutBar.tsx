@@ -12,7 +12,7 @@ const MinimizedWorkoutBar: React.FC = () => {
     return (
         <button
             onClick={maximizeWorkout}
-            className="fixed bottom-16 left-0 right-0 h-14 bg-primary text-white flex items-center justify-between px-4 z-40 shadow-lg w-full transition-transform hover:scale-[1.02]"
+            className="h-14 bg-primary text-white flex items-center justify-between px-4 z-40 shadow-lg w-full transition-transform hover:scale-[1.02]"
             aria-label="Maximize workout"
         >
             <div className="flex items-center space-x-3 overflow-hidden">

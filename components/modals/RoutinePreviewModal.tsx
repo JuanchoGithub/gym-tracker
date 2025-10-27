@@ -5,6 +5,7 @@ import { useI18n } from '../../hooks/useI18n';
 import Modal from '../common/Modal';
 import { Icon } from '../common/Icon';
 import ExerciseDetailModal from '../exercise/ExerciseDetailModal';
+import { getBodyPartTKey } from '../../utils/i18nUtils';
 
 interface RoutinePreviewModalProps {
   routine: Routine;
@@ -37,7 +38,7 @@ const RoutinePreviewModal: React.FC<RoutinePreviewModalProps> = ({ routine, isOp
                   <div>
                     <p className="font-bold text-text-primary">{exerciseInfo.name}</p>
                     <p className="text-sm text-text-secondary">
-                      {ex.sets.length} {t('workout_sets')} - {exerciseInfo.bodyPart}
+                      {ex.sets.length} {t('workout_sets')} - {t(getBodyPartTKey(exerciseInfo.bodyPart))}
                     </p>
                   </div>
                   <button

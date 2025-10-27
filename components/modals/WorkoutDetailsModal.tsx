@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import Modal from '../common/Modal';
 import { WorkoutSession } from '../../types';
 import { formatTime, toDateTimeLocal } from '../../utils/timeUtils';
+import { useI18n } from '../../hooks/useI18n';
 
 interface WorkoutDetailsModalProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface WorkoutDetailsModalProps {
 }
 
 const WorkoutDetailsModal: React.FC<WorkoutDetailsModalProps> = ({ isOpen, onClose, workout, onSave }) => {
+  const { t } = useI18n();
   const [name, setName] = useState(workout.routineName);
   const [isAuto, setIsAuto] = useState(workout.endTime === 0);
   const [start, setStart] = useState(toDateTimeLocal(workout.startTime));
@@ -40,11 +42,11 @@ const WorkoutDetailsModal: React.FC<WorkoutDetailsModalProps> = ({ isOpen, onClo
     const newEndTime = isAuto || !end ? 0 : new Date(end).getTime();
 
     if (isNaN(newStartTime) || (!isAuto && isNaN(newEndTime))) {
-        alert("Invalid date format.");
+        alert(t('workout_details_modal_invalid_date_alert'));
         return;
     }
     if (!isAuto && newEndTime < newStartTime) {
-        alert("End time cannot be before start time.");
+        alert(t('workout_details_modal_end_before_start_alert'));
         return;
     }
 
@@ -66,10 +68,10 @@ const WorkoutDetailsModal: React.FC<WorkoutDetailsModalProps> = ({ isOpen, onClo
   );
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Edit Workout Details">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('workout_details_modal_title')}>
       <div className="space-y-4 text-text-primary">
         <div>
-          <label htmlFor="workout-name" className="block text-sm font-medium text-text-secondary mb-1">Workout Name</label>
+          <label htmlFor="workout-name" className="block text-sm font-medium text-text-secondary mb-1">{t('workout_details_modal_name_label')}</label>
           <input
             id="workout-name"
             type="text"
@@ -81,21 +83,21 @@ const WorkoutDetailsModal: React.FC<WorkoutDetailsModalProps> = ({ isOpen, onClo
 
         <div className="flex items-center justify-between">
             <div>
-                <label className="block text-sm font-medium text-text-secondary">Automatic Timer</label>
-                <p className="text-xs text-text-secondary">Track duration automatically.</p>
+                <label className="block text-sm font-medium text-text-secondary">{t('workout_details_modal_auto_timer_label')}</label>
+                <p className="text-xs text-text-secondary">{t('workout_details_modal_auto_timer_desc')}</p>
             </div>
             <ToggleSwitch checked={isAuto} onChange={setIsAuto} />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
             <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">Duration</label>
+                <label className="block text-sm font-medium text-text-secondary mb-1">{t('workout_details_modal_duration_label')}</label>
                 <div className="font-mono text-lg bg-slate-900 rounded-lg p-2 text-center" aria-live="polite">{duration}</div>
             </div>
              <div>
-                <label htmlFor="end-date" className="block text-sm font-medium text-text-secondary mb-1">End Date</label>
+                <label htmlFor="end-date" className="block text-sm font-medium text-text-secondary mb-1">{t('workout_details_modal_end_date_label')}</label>
                 {isAuto ? (
-                    <div className="text-lg bg-slate-900 rounded-lg p-2 text-center text-warning">Active Now</div>
+                    <div className="text-lg bg-slate-900 rounded-lg p-2 text-center text-warning">{t('workout_details_modal_active_now')}</div>
                 ) : (
                     <input
                         id="end-date"
@@ -110,7 +112,7 @@ const WorkoutDetailsModal: React.FC<WorkoutDetailsModalProps> = ({ isOpen, onClo
         </div>
 
         <div>
-            <label htmlFor="start-date" className="block text-sm font-medium text-text-secondary mb-1">Start Date</label>
+            <label htmlFor="start-date" className="block text-sm font-medium text-text-secondary mb-1">{t('workout_details_modal_start_date_label')}</label>
             <input
                 id="start-date"
                 type="datetime-local"
@@ -121,7 +123,7 @@ const WorkoutDetailsModal: React.FC<WorkoutDetailsModalProps> = ({ isOpen, onClo
         </div>
         
         <button onClick={handleSave} className="w-full bg-primary text-white font-bold py-3 rounded-lg mt-4">
-          Save Changes
+          {t('workout_details_modal_save_button')}
         </button>
       </div>
     </Modal>

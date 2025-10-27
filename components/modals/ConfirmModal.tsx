@@ -1,5 +1,6 @@
 import React from 'react';
 import Modal from '../common/Modal';
+import { useI18n } from '../../hooks/useI18n';
 
 interface ConfirmModalProps {
   isOpen: boolean;
@@ -18,10 +19,11 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
   onConfirm,
   title,
   message,
-  confirmText = 'Confirm',
-  cancelText = 'Cancel',
+  confirmText,
+  cancelText,
   confirmButtonClass = 'bg-primary hover:bg-sky-600',
 }) => {
+  const { t } = useI18n();
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title}>
       <div className="space-y-4">
@@ -31,13 +33,13 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
             onClick={onClose}
             className="bg-secondary hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-lg transition-colors"
           >
-            {cancelText}
+            {cancelText || t('common_cancel')}
           </button>
           <button
             onClick={onConfirm}
             className={`${confirmButtonClass} text-white font-bold py-2 px-4 rounded-lg transition-colors`}
           >
-            {confirmText}
+            {confirmText || t('common_confirm')}
           </button>
         </div>
       </div>

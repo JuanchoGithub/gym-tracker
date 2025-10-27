@@ -3,6 +3,7 @@ import { PerformedSet, SetType } from '../../types';
 import { Icon } from '../common/Icon';
 import SetTypeModal from '../modals/SetTypeModal';
 import { useWeight } from '../../hooks/useWeight';
+import { useI18n } from '../../hooks/useI18n';
 
 interface SetRowProps {
   set: PerformedSet;
@@ -13,6 +14,7 @@ interface SetRowProps {
 
 const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSet }) => {
   const { displayWeight, getStoredWeight } = useWeight();
+  const { t } = useI18n();
   const [weight, setWeight] = useState(displayWeight(set.weight));
   const [reps, setReps] = useState(set.reps.toString());
   const [isTypeModalOpen, setIsTypeModalOpen] = useState(false);
@@ -134,7 +136,7 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
                     className="bg-red-600 hover:bg-red-500 text-white h-full w-20 flex items-center justify-center font-bold transition-colors"
                     aria-label="Delete set"
                 >
-                    Delete
+                    {t('set_row_delete_button')}
                 </button>
             </div>
         )}

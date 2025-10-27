@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Routine } from '../../types';
 import RoutinePanel from './RoutinePanel';
 import { Icon } from '../common/Icon';
+import { useI18n } from '../../hooks/useI18n';
 
 interface RoutineSectionProps {
   title: string;
@@ -14,8 +15,9 @@ interface RoutineSectionProps {
 
 const RoutineSection: React.FC<RoutineSectionProps> = ({ title, routines, onRoutineSelect, onRoutineEdit, startOpen = true, headerAction }) => {
   const [isOpen, setIsOpen] = useState(startOpen);
+  const { t } = useI18n();
 
-  if (routines.length === 0 && title !== 'My Templates') {
+  if (routines.length === 0 && title !== t('train_my_templates')) {
     return null;
   }
 
@@ -46,7 +48,7 @@ const RoutineSection: React.FC<RoutineSectionProps> = ({ title, routines, onRout
           </div>
         ) : (
           <p className="text-center text-text-secondary mt-2">
-            {title === 'My Templates' ? 'Create a template to see it here.' : `No ${title.toLowerCase()} yet.`}
+            {title === t('train_my_templates') ? t('routine_section_create_prompt') : t('routine_section_no_items', { title: title.toLowerCase() })}
           </p>
         )
       )}

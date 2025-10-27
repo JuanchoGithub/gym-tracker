@@ -5,6 +5,8 @@ import { useI18n } from '../../hooks/useI18n';
 import { BodyPart, ExerciseCategory } from '../../types';
 import { Icon } from '../common/Icon';
 import FilterDropdown from '../common/FilterDropdown';
+import { BODY_PART_OPTIONS, CATEGORY_OPTIONS } from '../../constants/filters';
+import { getBodyPartTKey, getCategoryTKey } from '../../utils/i18nUtils';
 
 interface AddExercisesModalProps {
   isOpen: boolean;
@@ -20,8 +22,15 @@ const AddExercisesModal: React.FC<AddExercisesModalProps> = ({ isOpen, onClose, 
   const [selectedCategory, setSelectedCategory] = useState<ExerciseCategory | 'All'>('All');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
-  const bodyParts: (BodyPart | 'All')[] = ['All', 'Chest', 'Back', 'Legs', 'Shoulders', 'Biceps', 'Triceps', 'Core', 'Full Body', 'Calves', 'Forearms', 'Cardio'];
-  const categories: (ExerciseCategory | 'All')[] = ['All', 'Barbell', 'Dumbbell', 'Machine', 'Cable', 'Bodyweight', 'Assisted Bodyweight', 'Reps Only', 'Cardio', 'Duration'];
+  const bodyPartFilterOptions = useMemo(() => [
+    { value: 'All' as const, label: t('body_part_all') },
+    ...BODY_PART_OPTIONS.map(bp => ({ value: bp, label: t(getBodyPartTKey(bp)) }))
+  ], [t]);
+
+  const categoryFilterOptions = useMemo(() => [
+      { value: 'All' as const, label: t('category_all') },
+      ...CATEGORY_OPTIONS.map(cat => ({ value: cat, label: t(getCategoryTKey(cat)) }))
+  ], [t]);
 
   const filteredExercises = useMemo(() => {
     return exercises
@@ -46,9 +55,16 @@ const AddExercisesModal: React.FC<AddExercisesModalProps> = ({ isOpen, onClose, 
     onClose();
     setSelectedIds([]);
   };
+  
+  const getButtonText = () => {
+    const count = selectedIds.length;
+    if (count === 0) return t('add_exercises_button_empty');
+    if (count === 1) return t('add_exercises_button_single');
+    return t('add_exercises_button_plural', { count });
+  };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={"Add Exercises"}>
+    <Modal isOpen={isOpen} onClose={onClose} title={t('add_exercises_modal_title')}>
         <div className="flex flex-col h-[70vh] max-h-[550px]">
             <div className="flex-shrink-0 space-y-2 mb-4">
                  <div className="relative flex-grow">
@@ -64,14 +80,14 @@ const AddExercisesModal: React.FC<AddExercisesModalProps> = ({ isOpen, onClose, 
                     </div>
                 </div>
                  <div className="flex flex-col sm:flex-row gap-2">
-                    <FilterDropdown<BodyPart | 'All'>
-                        options={bodyParts}
+                    <FilterDropdown
+                        options={bodyPartFilterOptions}
                         selected={selectedBodyPart}
                         onSelect={setSelectedBodyPart}
                         label={t('filter_body_part')}
                     />
-                    <FilterDropdown<ExerciseCategory | 'All'>
-                        options={categories}
+                    <FilterDropdown
+                        options={categoryFilterOptions}
                         selected={selectedCategory}
                         onSelect={setSelectedCategory}
                         label={t('filter_category')}
@@ -90,7 +106,7 @@ const AddExercisesModal: React.FC<AddExercisesModalProps> = ({ isOpen, onClose, 
                     >
                         <div>
                             <h3 className="font-semibold text-text-primary">{exercise.name}</h3>
-                            <p className="text-sm text-text-secondary">{exercise.bodyPart}</p>
+                            <p className="text-sm text-text-secondary">{t(getBodyPartTKey(exercise.bodyPart))}</p>
                         </div>
                         <div className={`w-6 h-6 rounded-full flex items-center justify-center border-2 ${isSelected ? 'bg-primary border-primary' : 'border-secondary'}`}>
                             {isSelected && <Icon name="check" className="w-4 h-4 text-white" />}
@@ -106,7 +122,7 @@ const AddExercisesModal: React.FC<AddExercisesModalProps> = ({ isOpen, onClose, 
                     disabled={selectedIds.length === 0}
                     className="w-full bg-primary text-white font-bold py-3 rounded-lg hover:bg-sky-600 transition-colors disabled:bg-secondary disabled:cursor-not-allowed"
                 >
-                    Add {selectedIds.length > 0 ? `${selectedIds.length} ` : ''}Exercise{selectedIds.length !== 1 ? 's' : ''}
+                    {getButtonText()}
                 </button>
             </div>
         </div>

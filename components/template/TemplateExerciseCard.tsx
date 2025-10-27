@@ -4,6 +4,7 @@ import { Icon } from '../common/Icon';
 import TemplateSetRow from './TemplateSetRow';
 import ChangeTimerModal from '../modals/ChangeTimerModal';
 import EditSetTimerModal from '../modals/EditSetTimerModal';
+import { useI18n } from '../../hooks/useI18n';
 
 interface TemplateExerciseCardProps {
   workoutExercise: WorkoutExercise;
@@ -13,6 +14,7 @@ interface TemplateExerciseCardProps {
 }
 
 const TemplateExerciseCard: React.FC<TemplateExerciseCardProps> = ({ workoutExercise, exerciseInfo, onUpdate, onRemove }) => {
+  const { t } = useI18n();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNoteEditing, setIsNoteEditing] = useState(false);
   const [isDefaultsTimerModalOpen, setIsDefaultsTimerModalOpen] = useState(false);
@@ -95,9 +97,9 @@ const TemplateExerciseCard: React.FC<TemplateExerciseCardProps> = ({ workoutExer
           </button>
           {isMenuOpen && (
             <div className="absolute right-0 mt-2 w-48 bg-slate-700 rounded-md shadow-lg z-10" onMouseLeave={() => setIsMenuOpen(false)}>
-              <button onClick={() => { setIsNoteEditing(true); setIsMenuOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">Add/Edit Note</button>
-              <button onClick={() => { setIsDefaultsTimerModalOpen(true); setIsMenuOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">Edit Default Timers</button>
-              <button onClick={() => onRemove(workoutExercise.id)} className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-slate-600">Remove Exercise</button>
+              <button onClick={() => { setIsNoteEditing(true); setIsMenuOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">{t('template_card_add_edit_note')}</button>
+              <button onClick={() => { setIsDefaultsTimerModalOpen(true); setIsMenuOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">{t('template_card_edit_timers')}</button>
+              <button onClick={() => onRemove(workoutExercise.id)} className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-slate-600">{t('template_card_remove_exercise')}</button>
             </div>
           )}
         </div>
@@ -105,19 +107,19 @@ const TemplateExerciseCard: React.FC<TemplateExerciseCardProps> = ({ workoutExer
       <div className="p-4 space-y-2">
         {isNoteEditing && (
           <div className="mb-2">
-            <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Add a note for this exercise..." className="w-full bg-slate-900 border border-secondary/50 rounded-lg p-2 text-sm" rows={2} />
+            <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder={t('template_editor_description_placeholder')} className="w-full bg-slate-900 border border-secondary/50 rounded-lg p-2 text-sm" rows={2} />
             <div className="flex justify-end space-x-2 mt-1">
-              <button onClick={() => setIsNoteEditing(false)} className="text-text-secondary text-sm px-3 py-1 hover:bg-secondary/50 rounded-md">Cancel</button>
-              <button onClick={handleSaveNote} className="bg-primary text-white px-3 py-1 rounded-md text-sm">Save</button>
+              <button onClick={() => setIsNoteEditing(false)} className="text-text-secondary text-sm px-3 py-1 hover:bg-secondary/50 rounded-md">{t('common_cancel')}</button>
+              <button onClick={handleSaveNote} className="bg-primary text-white px-3 py-1 rounded-md text-sm">{t('common_save')}</button>
             </div>
           </div>
         )}
         {!isNoteEditing && workoutExercise.note && <p className="text-sm text-text-secondary italic my-2 p-2 bg-slate-900/50 rounded-md">"{workoutExercise.note}"</p>}
 
         <div className="grid grid-cols-12 items-center gap-2 text-xs text-text-secondary">
-          <div className="col-span-2 text-center font-semibold">Set</div>
-          <div className="col-span-4 text-center">Weight</div>
-          <div className="col-span-4 text-center">Reps</div>
+          <div className="col-span-2 text-center font-semibold">{t('workout_set')}</div>
+          <div className="col-span-4 text-center">{t('weight_unit')}</div>
+          <div className="col-span-4 text-center">{t('workout_reps')}</div>
           <div className="col-span-2 text-center"></div>
         </div>
 
@@ -140,7 +142,7 @@ const TemplateExerciseCard: React.FC<TemplateExerciseCardProps> = ({ workoutExer
 
         <button onClick={handleAddSet} className="mt-3 w-full flex items-center justify-center space-x-2 bg-secondary/50 text-text-primary font-medium py-2 rounded-lg hover:bg-secondary transition-colors">
           <Icon name="plus" className="w-5 h-5" />
-          <span>Add Set</span>
+          <span>{t('active_workout_add_exercise')}</span>
         </button>
       </div>
     </div>

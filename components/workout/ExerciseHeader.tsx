@@ -9,6 +9,8 @@ import SelectBarModal from '../modals/SelectBarModal';
 import Modal from '../common/Modal';
 import { useI18n } from '../../hooks/useI18n';
 import { useWeight } from '../../hooks/useWeight';
+// FIX: Import 'TranslationKey' type to resolve TypeScript error.
+import { TranslationKey } from '../../contexts/I18nContext';
 
 interface ExerciseHeaderProps {
     workoutExercise: WorkoutExercise;
@@ -129,18 +131,22 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = ({ workoutExercise, exerci
 
     const renderFocusContent = () => {
         switch (focusType) {
-            // FIX: Used a template literal to construct a valid translation key for the weight unit.
             case 'total_volume': return `${displayWeight(totalVolume, true)} ${t(`workout_${unit}`)}`;
             case 'volume_increase': 
                 if (volumeIncrease === null) return 'N/A';
-                // FIX: Used a template literal to construct a valid translation key for the weight unit.
                 return `${volumeIncrease > 0 ? '+' : ''}${displayWeight(volumeIncrease, true)} ${t(`workout_${unit}`)}`;
-            case 'total_reps': return `${totalReps} reps`;
-            // FIX: Used a template literal to construct a valid translation key for the weight unit.
+            case 'total_reps': return `${totalReps} ${t('workout_reps')}`;
             case 'weight_by_rep': return `${displayWeight(avgWeightPerRep)} ${t(`workout_${unit}`)}/rep`;
             default: return <Icon name="question-mark-circle" className="w-5 h-5"/>;
         }
     };
+
+    const focusOptions: { labelKey: TranslationKey, focusType: FocusType }[] = [
+        { labelKey: 'exercise_header_focus_total_volume', focusType: 'total_volume' },
+        { labelKey: 'exercise_header_focus_volume_increase', focusType: 'volume_increase' },
+        { labelKey: 'exercise_header_focus_total_reps', focusType: 'total_reps' },
+        { labelKey: 'exercise_header_focus_weight_by_rep', focusType: 'weight_by_rep' },
+    ]
     
     return (
       <>
@@ -153,9 +159,9 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = ({ workoutExercise, exerci
                     </button>
                     {isFocusMenuOpen && (
                         <div className="absolute right-0 mt-2 w-40 bg-slate-700 rounded-md shadow-lg z-30">
-                            {['Total volume', 'Volume increase', 'Total reps', 'Weight by rep'].map(label => (
-                                <button key={label} onClick={() => handleSetFocus(label.toLowerCase().replace(/ /g, '_') as FocusType)} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">
-                                    {label}
+                            {focusOptions.map(({ labelKey, focusType }) => (
+                                <button key={labelKey} onClick={() => handleSetFocus(focusType)} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">
+                                    {t(labelKey)}
                                 </button>
                             ))}
                         </div>
@@ -168,10 +174,10 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = ({ workoutExercise, exerci
                     </button>
                     {isOptionsMenuOpen && (
                         <div className="absolute right-0 mt-2 w-48 bg-slate-700 rounded-md shadow-lg z-30" onMouseLeave={() => setIsOptionsMenuOpen(false)}>
-                            <button onClick={() => { onAddNote(); setIsOptionsMenuOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">Add Note</button>
-                            <button onClick={handleAddWarmupSets} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">Add Warmup Sets</button>
-                            <button onClick={() => { onOpenTimerModal(); setIsOptionsMenuOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">Change Timer</button>
-                            <button onClick={() => { setIsConfirmReplaceOpen(true); setIsOptionsMenuOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">Replace Exercise</button>
+                            <button onClick={() => { onAddNote(); setIsOptionsMenuOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">{t('exercise_header_menu_add_note')}</button>
+                            <button onClick={handleAddWarmupSets} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">{t('exercise_header_menu_add_warmup')}</button>
+                            <button onClick={() => { onOpenTimerModal(); setIsOptionsMenuOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">{t('exercise_header_menu_change_timer')}</button>
+                            <button onClick={() => { setIsConfirmReplaceOpen(true); setIsOptionsMenuOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">{t('exercise_header_menu_replace')}</button>
                             <button onClick={() => { setIsBarModalOpen(true); setIsOptionsMenuOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">{t('bar_type')}</button>
                             <button 
                                 onClick={() => {
@@ -190,19 +196,19 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = ({ workoutExercise, exerci
         </div>
 
         <SelectBarModal isOpen={isBarModalOpen} onClose={() => setIsBarModalOpen(false)} onSelect={handleSelectBar} currentBarWeight={workoutExercise.barWeight || 0} />
-        <Modal isOpen={isConfirmReplaceOpen} onClose={() => setIsConfirmReplaceOpen(false)} title="Replace Exercise?">
-            <p className="text-text-secondary mb-4">Are you sure you want to replace this exercise? Current sets will be kept.</p>
+        <Modal isOpen={isConfirmReplaceOpen} onClose={() => setIsConfirmReplaceOpen(false)} title={t('replace_exercise_modal_confirm_title')}>
+            <p className="text-text-secondary mb-4">{t('replace_exercise_modal_confirm_message')}</p>
             <div className="flex justify-end space-x-2">
-                <button onClick={() => setIsConfirmReplaceOpen(false)} className="bg-secondary px-4 py-2 rounded-md">Cancel</button>
-                <button onClick={() => { setIsConfirmReplaceOpen(false); setIsReplaceModalOpen(true); }} className="bg-primary px-4 py-2 rounded-md">Replace</button>
+                <button onClick={() => setIsConfirmReplaceOpen(false)} className="bg-secondary px-4 py-2 rounded-md">{t('common_cancel')}</button>
+                <button onClick={() => { setIsConfirmReplaceOpen(false); setIsReplaceModalOpen(true); }} className="bg-primary px-4 py-2 rounded-md">{t('replace_exercise_modal_button')}</button>
             </div>
         </Modal>
         <ReplaceExerciseModal 
             isOpen={isReplaceModalOpen} 
             onClose={() => setIsReplaceModalOpen(false)} 
             onSelectExercise={handleReplaceExercise}
-            title="Replace Exercise"
-            buttonText="Replace"
+            title={t('replace_exercise_modal_title')}
+            buttonText={t('replace_exercise_modal_button')}
         />
       </>
     );

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import { formatSecondsToMMSS, parseTimerInput } from '../../utils/timeUtils';
+import { useI18n } from '../../hooks/useI18n';
 
 interface EditSetTimerModalProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface EditSetTimerModalProps {
 }
 
 const EditSetTimerModal: React.FC<EditSetTimerModalProps> = ({ isOpen, onClose, currentValue, defaultValue, onSave }) => {
+    const { t } = useI18n();
     const [inputValue, setInputValue] = useState('');
 
     useEffect(() => {
@@ -41,10 +43,10 @@ const EditSetTimerModal: React.FC<EditSetTimerModalProps> = ({ isOpen, onClose, 
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title="Edit Rest Timer">
+        <Modal isOpen={isOpen} onClose={onClose} title={t('edit_set_timer_modal_title')}>
             <div className="space-y-4">
                 <p className="text-sm text-text-secondary text-center">
-                    Set a custom rest time for this set or reset to the default ({formatSecondsToMMSS(defaultValue)}).
+                    {t('edit_set_timer_modal_desc', { time: formatSecondsToMMSS(defaultValue) })}
                 </p>
                 <input
                     type="text"
@@ -62,13 +64,13 @@ const EditSetTimerModal: React.FC<EditSetTimerModalProps> = ({ isOpen, onClose, 
                         onClick={handleSave}
                         className="w-full bg-primary text-white font-bold py-3 rounded-lg"
                     >
-                        Save Custom Timer
+                        {t('edit_set_timer_modal_save_button')}
                     </button>
                      <button
                         onClick={handleReset}
                         className="w-full bg-secondary text-white font-bold py-2 rounded-lg"
                     >
-                        Reset to Default
+                        {t('edit_set_timer_modal_reset_button')}
                     </button>
                 </div>
             </div>

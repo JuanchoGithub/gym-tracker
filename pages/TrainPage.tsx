@@ -37,8 +37,8 @@ const TrainPage: React.FC = () => {
   const handleStartEmptyWorkout = () => {
     const emptyRoutine: Routine = {
       id: `empty-${Date.now()}`,
-      name: 'Empty Workout',
-      description: 'An empty workout to build on the fly.',
+      name: t('train_empty_workout_name'),
+      description: t('train_empty_workout_desc'),
       exercises: [],
       isTemplate: true, // Treat it like a template so it doesn't pollute "Latest"
     };
@@ -49,7 +49,7 @@ const TrainPage: React.FC = () => {
       const newTemplate: Routine = {
           id: `custom-${Date.now()}`,
           originId: `custom-${Date.now()}`,
-          name: 'New Custom Template',
+          name: t('train_new_custom_template_name'),
           description: '',
           exercises: [],
           isTemplate: true,
@@ -87,12 +87,12 @@ const TrainPage: React.FC = () => {
           className="w-full bg-primary/80 hover:bg-primary text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center space-x-2"
         >
           <Icon name="plus" />
-          <span>Start Empty Workout</span>
+          <span>{t('train_start_empty')}</span>
         </button>
 
-        <RoutineSection title="Latest Workouts" routines={latestWorkouts} onRoutineSelect={handleRoutineSelect} />
+        <RoutineSection title={t('train_latest_workouts')} routines={latestWorkouts} onRoutineSelect={handleRoutineSelect} />
         <RoutineSection
-            title="My Templates"
+            title={t('train_my_templates')}
             routines={customTemplates}
             onRoutineSelect={handleRoutineSelect}
             onRoutineEdit={startTemplateEdit}
@@ -102,11 +102,11 @@ const TrainPage: React.FC = () => {
                     className="bg-secondary hover:bg-slate-500 text-white font-bold py-2 px-3 rounded-lg transition-colors flex items-center justify-center space-x-2 text-sm"
                 >
                     <Icon name="plus" className="w-4 h-4" />
-                    <span>New</span>
+                    <span>{t('common_new')}</span>
                 </button>
             }
         />
-        <RoutineSection title="Example Templates" routines={exampleTemplates} onRoutineSelect={setSelectedRoutine} />
+        <RoutineSection title={t('train_example_templates')} routines={exampleTemplates} onRoutineSelect={setSelectedRoutine} />
       </div>
 
       {selectedRoutine && (

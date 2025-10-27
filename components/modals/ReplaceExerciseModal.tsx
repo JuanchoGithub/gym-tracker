@@ -5,6 +5,8 @@ import { useI18n } from '../../hooks/useI18n';
 import { Exercise, BodyPart, ExerciseCategory } from '../../types';
 import { Icon } from '../common/Icon';
 import FilterDropdown from '../common/FilterDropdown';
+import { BODY_PART_OPTIONS, CATEGORY_OPTIONS } from '../../constants/filters';
+import { getBodyPartTKey, getCategoryTKey } from '../../utils/i18nUtils';
 
 interface ReplaceExerciseModalProps {
   isOpen: boolean;
@@ -21,8 +23,15 @@ const ReplaceExerciseModal: React.FC<ReplaceExerciseModalProps> = ({ isOpen, onC
   const [selectedBodyPart, setSelectedBodyPart] = useState<BodyPart | 'All'>('All');
   const [selectedCategory, setSelectedCategory] = useState<ExerciseCategory | 'All'>('All');
 
-  const bodyParts: (BodyPart | 'All')[] = ['All', 'Chest', 'Back', 'Legs', 'Shoulders', 'Biceps', 'Triceps', 'Core', 'Full Body', 'Calves', 'Forearms', 'Cardio'];
-  const categories: (ExerciseCategory | 'All')[] = ['All', 'Barbell', 'Dumbbell', 'Machine', 'Cable', 'Bodyweight', 'Assisted Bodyweight', 'Reps Only', 'Cardio', 'Duration'];
+  const bodyPartFilterOptions = useMemo(() => [
+    { value: 'All' as const, label: t('body_part_all') },
+    ...BODY_PART_OPTIONS.map(bp => ({ value: bp, label: t(getBodyPartTKey(bp)) }))
+  ], [t]);
+
+  const categoryFilterOptions = useMemo(() => [
+      { value: 'All' as const, label: t('category_all') },
+      ...CATEGORY_OPTIONS.map(cat => ({ value: cat, label: t(getCategoryTKey(cat)) }))
+  ], [t]);
 
   const filteredExercises = useMemo(() => {
     return exercises
@@ -38,7 +47,7 @@ const ReplaceExerciseModal: React.FC<ReplaceExerciseModalProps> = ({ isOpen, onC
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={title || "Replace Exercise"}>
+    <Modal isOpen={isOpen} onClose={onClose} title={title || t('replace_exercise_modal_title')}>
         <div className="flex flex-col h-[70vh] max-h-[550px]">
             <div className="flex-shrink-0 space-y-2 mb-4">
                  <div className="relative flex-grow">
@@ -54,14 +63,14 @@ const ReplaceExerciseModal: React.FC<ReplaceExerciseModalProps> = ({ isOpen, onC
                     </div>
                 </div>
                  <div className="flex flex-col sm:flex-row gap-2">
-                    <FilterDropdown<BodyPart | 'All'>
-                        options={bodyParts}
+                    <FilterDropdown
+                        options={bodyPartFilterOptions}
                         selected={selectedBodyPart}
                         onSelect={setSelectedBodyPart}
                         label={t('filter_body_part')}
                     />
-                    <FilterDropdown<ExerciseCategory | 'All'>
-                        options={categories}
+                    <FilterDropdown
+                        options={categoryFilterOptions}
                         selected={selectedCategory}
                         onSelect={setSelectedCategory}
                         label={t('filter_category')}
@@ -76,17 +85,17 @@ const ReplaceExerciseModal: React.FC<ReplaceExerciseModalProps> = ({ isOpen, onC
                     className="bg-slate-900/50 p-3 rounded-lg flex justify-between items-center"
                 >
                     <div>
-                        <h3 className="font-semibold text-text-primary">{exercise.name}</h3>
-                        <p className="text-sm text-text-secondary">{exercise.bodyPart}</p>
+                        <h3 className="font-semibold text-text-primary">{t(getBodyPartTKey(exercise.name))}</h3>
+                        <p className="text-sm text-text-secondary">{t(getBodyPartTKey(exercise.bodyPart))}</p>
                     </div>
                     <button 
                         onClick={() => handleSelectExercise(exercise.id)}
                         className="bg-primary text-white font-bold py-1 px-3 rounded-md text-sm"
                     >
-                        {buttonText || 'Replace'}
+                        {buttonText || t('replace_exercise_modal_button')}
                     </button>
                 </div>
-                )) : <p className="text-center text-text-secondary">No exercises match.</p>}
+                )) : <p className="text-center text-text-secondary">{t('replace_exercise_modal_no_match')}</p>}
             </div>
         </div>
     </Modal>

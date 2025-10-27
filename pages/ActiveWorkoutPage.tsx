@@ -71,7 +71,7 @@ const ActiveWorkoutPage: React.FC = () => {
   };
 
   if (!activeWorkout) {
-    return <div>No active workout.</div>;
+    return <div>{t('active_workout_no_active')}</div>;
   }
   
   return (
@@ -81,7 +81,7 @@ const ActiveWorkoutPage: React.FC = () => {
               <button 
                 onClick={minimizeWorkout} 
                 className="p-2 text-text-secondary hover:text-primary"
-                aria-label="Minimize workout"
+                aria-label={t('active_workout_minimize_aria')}
               >
                   <Icon name="arrow-down" />
               </button>
@@ -101,7 +101,7 @@ const ActiveWorkoutPage: React.FC = () => {
             <button
                 onClick={() => setIsDetailsModalOpen(true)}
                 className="text-text-secondary hover:text-primary p-1 flex-shrink-0"
-                aria-label="Edit workout details"
+                aria-label={t('active_workout_edit_details_aria')}
             >
                 <Icon name="ellipsis" />
             </button>
@@ -126,8 +126,8 @@ const ActiveWorkoutPage: React.FC = () => {
           ) : null;
         }) : (
           <div className="mx-2 rounded-lg bg-surface px-4 py-10 text-center sm:mx-4">
-              <p className="text-lg font-semibold text-text-primary">This workout is empty.</p>
-              <p className="mt-1 text-text-secondary">Add an exercise to get started!</p>
+              <p className="text-lg font-semibold text-text-primary">{t('active_workout_empty_title')}</p>
+              <p className="mt-1 text-text-secondary">{t('active_workout_empty_desc')}</p>
           </div>
         )}
       </div>
@@ -137,7 +137,7 @@ const ActiveWorkoutPage: React.FC = () => {
         className="w-full flex items-center justify-center space-x-2 bg-secondary/50 text-text-primary font-medium py-3 rounded-lg hover:bg-secondary transition-colors"
       >
         <Icon name="plus" className="w-5 h-5" />
-        <span>Add Exercise</span>
+        <span>{t('active_workout_add_exercise')}</span>
       </button>
 
       {isDetailsModalOpen && activeWorkout && (
@@ -153,8 +153,8 @@ const ActiveWorkoutPage: React.FC = () => {
         isOpen={isAddExerciseModalOpen}
         onClose={() => setIsAddExerciseModalOpen(false)}
         onSelectExercise={handleAddExercise}
-        title="Add Exercise"
-        buttonText="Add"
+        title={t('active_workout_add_exercise')}
+        buttonText={t('common_add')}
       />
 
       <Modal
