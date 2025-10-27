@@ -39,38 +39,40 @@ const ExercisesPage: React.FC = () => {
     <div className="space-y-4">
       <h1 className="text-3xl font-bold text-center">{t('nav_exercises')}</h1>
 
-      <div className="sticky top-4 bg-background/80 backdrop-blur-sm z-10 py-2 space-y-2">
-        <div className="relative flex-grow">
-            <input
-                type="text"
-                placeholder={t('search_placeholder')}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-surface border border-secondary/50 rounded-lg shadow-sm py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Icon name="search" className="w-5 h-5 text-text-secondary" />
+      <div className="sticky top-4 bg-background/80 backdrop-blur-sm z-10 py-2">
+        <div className="flex flex-col sm:flex-row gap-2 items-center">
+            <div className="relative w-full sm:flex-grow">
+                <input
+                    type="text"
+                    placeholder={t('search_placeholder')}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full bg-surface border border-secondary/50 rounded-lg shadow-sm py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Icon name="search" className="w-5 h-5 text-text-secondary" />
+                </div>
             </div>
-        </div>
-        <div className="flex flex-col sm:flex-row gap-2">
-            <FilterDropdown<BodyPart | 'All'>
-                options={bodyParts}
-                selected={selectedBodyPart}
-                onSelect={setSelectedBodyPart}
-                label={t('filter_body_part')}
-            />
-            <FilterDropdown<ExerciseCategory | 'All'>
-                options={categories}
-                selected={selectedCategory}
-                onSelect={setSelectedCategory}
-                label={t('filter_category')}
-            />
-            <button
-              onClick={toggleSortOrder}
-              className="w-full sm:w-auto flex items-center justify-center bg-surface border border-secondary/50 text-text-primary font-medium py-2 px-4 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              <Icon name={sortOrder === 'asc' ? 'arrow-down' : 'arrow-up'} className="w-5 h-5" />
-            </button>
+            <div className="flex w-full sm:w-auto gap-2">
+                <FilterDropdown<BodyPart | 'All'>
+                    options={bodyParts}
+                    selected={selectedBodyPart}
+                    onSelect={setSelectedBodyPart}
+                    label={t('filter_body_part')}
+                />
+                <FilterDropdown<ExerciseCategory | 'All'>
+                    options={categories}
+                    selected={selectedCategory}
+                    onSelect={setSelectedCategory}
+                    label={t('filter_category')}
+                />
+                <button
+                  onClick={toggleSortOrder}
+                  className="flex-shrink-0 flex items-center justify-center bg-surface border border-secondary/50 text-text-primary font-medium py-2 px-4 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <Icon name={sortOrder === 'asc' ? 'arrow-down' : 'arrow-up'} className="w-5 h-5" />
+                </button>
+            </div>
         </div>
       </div>
 

@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useContext } from 'react';
 import { Exercise, WorkoutExercise, PerformedSet } from '../../types';
 import { getExerciseHistory } from '../../utils/workoutUtils';
@@ -22,7 +23,7 @@ type FocusType = 'q_mark' | 'total_volume' | 'volume_increase' | 'total_reps' | 
 const ExerciseHeader: React.FC<ExerciseHeaderProps> = ({ workoutExercise, exerciseInfo, onUpdate, onAddNote }) => {
     const { history: allHistory } = useContext(AppContext);
     const { t } = useI18n();
-    const { unit, setUnit } = useWeight();
+    const { unit, setUnit, displayWeight } = useWeight();
 
     const [isFocusMenuOpen, setIsFocusMenuOpen] = useState(false);
     const [isOptionsMenuOpen, setIsOptionsMenuOpen] = useState(false);
@@ -30,7 +31,6 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = ({ workoutExercise, exerci
     const [isTimerModalOpen, setIsTimerModalOpen] = useState(false);
     const [isReplaceModalOpen, setIsReplaceModalOpen] = useState(false);
     const [isConfirmReplaceOpen, setIsConfirmReplaceOpen] = useState(false);
-    const [isWarmupMenuOpen, setIsWarmupMenuOpen] = useState(false);
     const [isBarModalOpen, setIsBarModalOpen] = useState(false);
 
     const previousHistory = useMemo(() => getExerciseHistory(allHistory, exerciseInfo.id), [allHistory, exerciseInfo.id]);
@@ -50,33 +50,79 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = ({ workoutExercise, exerci
         setIsFocusMenuOpen(false);
     };
 
-    const handleAddWarmupSets = (count: number) => {
+    const handleAddWarmupSets = () => {
         setIsOptionsMenuOpen(false);
-        setIsWarmupMenuOpen(false);
-        const firstWorkingSet = workoutExercise.sets.find(s => s.type === 'normal');
-        if (!firstWorkingSet) {
-            alert("Cannot add warmup sets without a normal set to base the weight on.");
-            return;
-        }
-        const targetWeight = firstWorkingSet.weight;
-        const newWarmupSets: PerformedSet[] = [];
-        const reps = firstWorkingSet.reps > 5 ? 5 : firstWorkingSet.reps;
 
-        const weights: number[] = [];
-        if (count === 1) weights.push(targetWeight * 0.5);
-        if (count === 2) weights.push(targetWeight * 0.5, targetWeight * 0.75);
-        if (count === 3) weights.push(targetWeight * 0.4, targetWeight * 0.6, targetWeight * 0.8);
-        
-        for (const weight of weights) {
+        const firstWorkingSet = workoutExercise.sets.find(s => s.type === 'normal');
+        const targetWeight = firstWorkingSet?.weight || 0;
+        const barWeight = workoutExercise.barWeight || 0;
+        const newWarmupSets: PerformedSet[] = [];
+        const reps = 10;
+
+        if (targetWeight === 0) {
             newWarmupSets.push({
                 id: `set-${Date.now()}-${Math.random()}`,
                 reps,
-                weight: Math.round(weight / 2.5) * 2.5, // Round to nearest 2.5kg
+                weight: barWeight,
                 type: 'warmup',
                 isComplete: false,
             });
+        } else if (targetWeight <= barWeight + 10 && barWeight > 0) {
+            newWarmupSets.push({
+                id: `set-${Date.now()}-${Math.random()}`,
+                reps,
+                weight: barWeight,
+                type: 'warmup',
+                isComplete: false,
+            });
+        } else if (targetWeight < 40) {
+            const warmupWeight = Math.round((targetWeight * 0.5) / 2.5) * 2.5;
+            if (warmupWeight < targetWeight) {
+                newWarmupSets.push({
+                    id: `set-${Date.now()}-${Math.random()}`,
+                    reps,
+                    weight: warmupWeight,
+                    type: 'warmup',
+                    isComplete: false,
+                });
+            }
+        } else { // targetWeight >= 40
+            const useThreeSets = targetWeight >= 80;
+            const percentages = useThreeSets ? [0.4, 0.6, 0.8] : [0.5, 0.75];
+            
+            const weights = percentages
+                .map(p => targetWeight * p)
+                .map(w => Math.max(w, barWeight))
+                .map(w => Math.round(w / 2.5) * 2.5)
+                .filter(w => w < targetWeight);
+
+            const finalWeights = [...new Set(weights)].sort((a, b) => a - b);
+
+            for (const weight of finalWeights) {
+                 newWarmupSets.push({
+                    id: `set-${Date.now()}-${Math.random()}`,
+                    reps,
+                    weight,
+                    type: 'warmup',
+                    isComplete: false,
+                });
+            }
+            if (finalWeights.length === 0 && targetWeight > barWeight && barWeight > 0) {
+                 newWarmupSets.push({
+                    id: `set-${Date.now()}-${Math.random()}`,
+                    reps,
+                    weight: barWeight,
+                    type: 'warmup',
+                    isComplete: false,
+                });
+            }
         }
-        onUpdate({ ...workoutExercise, sets: [...newWarmupSets, ...workoutExercise.sets] });
+        
+        if (newWarmupSets.length > 0) {
+            onUpdate({ ...workoutExercise, sets: [...newWarmupSets, ...workoutExercise.sets] });
+        } else if (targetWeight > 0) {
+            alert("Could not generate warmup sets. Target weight might be too low.");
+        }
     };
 
     const handleSaveTimer = (newTimers: { normal: number; warmup: number; drop: number; }) => {
@@ -87,7 +133,6 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = ({ workoutExercise, exerci
     const handleSelectBar = (barWeight: number) => onUpdate({ ...workoutExercise, barWeight });
 
     const renderFocusContent = () => {
-        const { displayWeight } = useWeight(); // Call hook inside render function
         switch (focusType) {
             // FIX: Used a template literal to construct a valid translation key for the weight unit.
             case 'total_volume': return `${displayWeight(totalVolume, true)} ${t(`workout_${unit}`)}`;
@@ -129,7 +174,7 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = ({ workoutExercise, exerci
                     {isOptionsMenuOpen && (
                         <div className="absolute right-0 mt-2 w-48 bg-slate-700 rounded-md shadow-lg z-30" onMouseLeave={() => setIsOptionsMenuOpen(false)}>
                             <button onClick={() => { onAddNote(); setIsOptionsMenuOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">Add Note</button>
-                            <button onClick={() => setIsWarmupMenuOpen(true)} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">Add Warmup Sets</button>
+                            <button onClick={handleAddWarmupSets} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">Add Warmup Sets</button>
                             <button onClick={() => { setIsTimerModalOpen(true); setIsOptionsMenuOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">Change Timer</button>
                             <button onClick={() => { setIsConfirmReplaceOpen(true); setIsOptionsMenuOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">Replace Exercise</button>
                             <button onClick={() => { setIsBarModalOpen(true); setIsOptionsMenuOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">{t('bar_type')}</button>
@@ -164,15 +209,6 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = ({ workoutExercise, exerci
             </div>
         </Modal>
         <ReplaceExerciseModal isOpen={isReplaceModalOpen} onClose={() => setIsReplaceModalOpen(false)} onReplace={handleReplaceExercise} />
-        <Modal isOpen={isWarmupMenuOpen} onClose={() => setIsWarmupMenuOpen(false)} title="Add how many warmup sets?">
-            <div className="flex justify-around items-center p-4">
-                {[1, 2, 3].map(count => (
-                    <button key={count} onClick={() => handleAddWarmupSets(count)} className="bg-primary text-white font-bold w-12 h-12 rounded-full text-xl">
-                        {count}
-                    </button>
-                ))}
-            </div>
-        </Modal>
       </>
     );
 };
