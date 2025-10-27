@@ -6,6 +6,9 @@ import { Icon } from '../common/Icon';
 import { useI18n } from '../../hooks/useI18n';
 import ExerciseHeader from './ExerciseHeader';
 import { useWeight } from '../../hooks/useWeight';
+import ChangeTimerModal from '../modals/ChangeTimerModal';
+import EditSetTimerModal from '../modals/EditSetTimerModal';
+import { formatSecondsToMMSS } from '../../utils/timeUtils';
 
 interface ExerciseCardProps {
   workoutExercise: WorkoutExercise;
@@ -17,39 +20,34 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseIn
   const { t } = useI18n();
   const { unit } = useWeight();
   const [activeTimerSetId, setActiveTimerSetId] = useState<string | null>(null);
-  const [finishedTimers, setFinishedTimers] = useState<Record<string, number>>({});
   const [completedSets, setCompletedSets] = useState(workoutExercise.sets.filter(s => s.isComplete).length);
-  const [lastManualWeightChangeIndex, setLastManualWeightChangeIndex] = useState<number | null>(null);
   const [isNoteEditing, setIsNoteEditing] = useState(false);
   const [note, setNote] = useState(workoutExercise.note || '');
+  const [isDefaultsTimerModalOpen, setIsDefaultsTimerModalOpen] = useState(false);
+  const [editingSetTimer, setEditingSetTimer] = useState<PerformedSet | null>(null);
 
+  const getTimerDuration = (set?: PerformedSet): number => {
+    if (!set) return workoutExercise.restTime.normal; // Fallback for safety
+    if (set.rest !== undefined && set.rest !== null) return set.rest;
+
+    switch (set.type) {
+        case 'warmup': return workoutExercise.restTime.warmup;
+        case 'drop': return workoutExercise.restTime.drop;
+        case 'normal':
+        case 'failure':
+        default: return workoutExercise.restTime.normal;
+    }
+  };
+  
   const handleUpdateSet = (updatedSet: PerformedSet) => {
     const oldSet = workoutExercise.sets.find(s => s.id === updatedSet.id);
-    const setIndex = workoutExercise.sets.findIndex(s => s.id === updatedSet.id);
-
-    let updatedSets;
-
-    if (oldSet && oldSet.weight !== updatedSet.weight && setIndex !== -1) {
-      setLastManualWeightChangeIndex(setIndex);
-      updatedSets = workoutExercise.sets.map((s, i) => {
-        if (i < setIndex) return s;
-        if (i === setIndex) return updatedSet;
-        return { ...s, weight: updatedSet.weight };
-      });
-    } else {
-      updatedSets = workoutExercise.sets.map(s => (s.id === updatedSet.id ? updatedSet : s));
-    }
+    const updatedSets = workoutExercise.sets.map(s => (s.id === updatedSet.id ? updatedSet : s));
     
     if (oldSet && !oldSet.isComplete && updatedSet.isComplete) {
       setActiveTimerSetId(updatedSet.id);
       setCompletedSets(prev => prev + 1);
     } else if (oldSet && oldSet.isComplete && !updatedSet.isComplete) {
         if(activeTimerSetId === oldSet.id) setActiveTimerSetId(null);
-        setFinishedTimers(prev => {
-            const newTimers = { ...prev };
-            if (newTimers[oldSet.id]) delete newTimers[oldSet.id];
-            return newTimers;
-        });
         setCompletedSets(prev => prev - 1);
     }
     
@@ -73,27 +71,9 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseIn
     const updatedSets = [...workoutExercise.sets, newSet];
     onUpdate({ ...workoutExercise, sets: updatedSets });
   };
-
-  const getTimerDuration = (setType: SetType | undefined): number => {
-    const defaultDuration = 90;
-    if (!setType || !workoutExercise.restTime || typeof workoutExercise.restTime !== 'object') {
-        // Fallback for older data structure
-        return typeof workoutExercise.restTime === 'number' ? workoutExercise.restTime : defaultDuration;
-    }
-    switch (setType) {
-        case 'warmup': return workoutExercise.restTime.warmup;
-        case 'drop': return workoutExercise.restTime.drop;
-        case 'normal':
-        case 'failure':
-        default: return workoutExercise.restTime.normal;
-    }
-  };
   
   const handleTimerFinish = (finishedSetId: string) => {
     if (activeTimerSetId === finishedSetId) {
-      const set = workoutExercise.sets.find(s => s.id === finishedSetId);
-      const duration = getTimerDuration(set?.type);
-      setFinishedTimers(prev => ({ ...prev, [finishedSetId]: duration }));
       setActiveTimerSetId(null);
     }
   };
@@ -102,11 +82,27 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseIn
     onUpdate({ ...workoutExercise, note });
     setIsNoteEditing(false);
   };
+  
+  const handleSaveDefaultsTimer = (newTimers: { normal: number; warmup: number; drop: number; }) => {
+    onUpdate({ ...workoutExercise, restTime: newTimers });
+  };
+
+  const handleSaveSetTimer = (newTime: number | null) => {
+    if (!editingSetTimer) return;
+    const updatedSet = { ...editingSetTimer };
+
+    if (newTime === null) {
+      delete updatedSet.rest;
+    } else {
+      updatedSet.rest = newTime;
+    }
+
+    const updatedSets = workoutExercise.sets.map(s => s.id === updatedSet.id ? updatedSet : s);
+    onUpdate({ ...workoutExercise, sets: updatedSets });
+    setEditingSetTimer(null);
+  }
 
   const allSetsCompleted = completedSets === workoutExercise.sets.length && workoutExercise.sets.length > 0;
-
-  const activeSetForTimer = activeTimerSetId ? workoutExercise.sets.find(s => s.id === activeTimerSetId) : undefined;
-  const timerDuration = getTimerDuration(activeSetForTimer?.type);
   
   let normalSetCounter = 0;
 
@@ -118,6 +114,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseIn
                 exerciseInfo={exerciseInfo}
                 onUpdate={onUpdate}
                 onAddNote={() => { setIsNoteEditing(true); setNote(workoutExercise.note || ''); }}
+                onOpenTimerModal={() => setIsDefaultsTimerModalOpen(true)}
             />
         </div>
         <div className="p-4 space-y-2">
@@ -143,17 +140,19 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseIn
             <div className="grid grid-cols-5 items-center gap-2 text-xs text-text-secondary">
                 <div className="text-center font-semibold">{t('workout_set')}</div>
                 <div className="text-center">Previous</div>
-                {/* FIX: Used a template literal to construct a valid translation key for the weight unit. */}
                 <div className="text-center">Weight ({t(`workout_${unit}`)})</div>
                 <div className="text-center">Reps</div>
                 <div className="text-center">Actions</div>
             </div>
             
             <div className="space-y-2">
-                {workoutExercise.sets.map((set) => {
+                {workoutExercise.sets.map((set, setIndex) => {
                   if (set.type === 'normal') {
                     normalSetCounter++;
                   }
+                  const isLastSet = setIndex === workoutExercise.sets.length - 1;
+                  const showFinishedTimer = set.isComplete && activeTimerSetId !== set.id && !isLastSet;
+                  
                   return (
                     <React.Fragment key={set.id}>
                         <SetRow
@@ -163,20 +162,23 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseIn
                         onDeleteSet={() => handleDeleteSet(set.id)}
                         />
                         {activeTimerSetId === set.id && (
-                        <Timer 
-                            duration={timerDuration} 
-                            onFinish={() => handleTimerFinish(set.id)} 
-                        />
+                          <button onClick={() => setEditingSetTimer(set)} className="w-full rounded-lg" aria-label="Adjust timer settings">
+                            <Timer 
+                                duration={getTimerDuration(set)} 
+                                onFinish={() => handleTimerFinish(set.id)} 
+                            />
+                          </button>
                         )}
-                        {finishedTimers[set.id] && (
-                        <div className="my-2 flex items-center justify-center text-sm text-success">
-                            <div className="flex-grow h-px bg-success/30"></div>
-                            <span className="mx-4 font-mono">
-                            {String(Math.floor(finishedTimers[set.id] / 60)).padStart(2, '0')}:
-                            {String(finishedTimers[set.id] % 60).padStart(2, '0')}
-                            </span>
-                            <div className="flex-grow h-px bg-success/30"></div>
-                        </div>
+                        {showFinishedTimer && (
+                          <button onClick={() => setEditingSetTimer(set)} className="w-full" aria-label="Adjust timer settings">
+                            <div className="my-2 flex items-center justify-center text-sm text-success">
+                                <div className="flex-grow h-px bg-success/30"></div>
+                                <span className="mx-4 font-mono">
+                                  {formatSecondsToMMSS(getTimerDuration(set))}
+                                </span>
+                                <div className="flex-grow h-px bg-success/30"></div>
+                            </div>
+                          </button>
                         )}
                     </React.Fragment>
                   );
@@ -191,6 +193,21 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseIn
                 <span>Add Set</span>
             </button>
         </div>
+        <ChangeTimerModal 
+            isOpen={isDefaultsTimerModalOpen}
+            onClose={() => setIsDefaultsTimerModalOpen(false)}
+            currentRestTimes={workoutExercise.restTime}
+            onSave={handleSaveDefaultsTimer}
+        />
+        {editingSetTimer && (
+          <EditSetTimerModal
+            isOpen={!!editingSetTimer}
+            onClose={() => setEditingSetTimer(null)}
+            currentValue={editingSetTimer.rest}
+            defaultValue={getTimerDuration(editingSetTimer)}
+            onSave={handleSaveSetTimer}
+          />
+        )}
     </div>
   );
 };

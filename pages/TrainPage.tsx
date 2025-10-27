@@ -8,7 +8,7 @@ import { Icon } from '../components/common/Icon';
 import RoutineSection from '../components/train/RoutineSection';
 
 const TrainPage: React.FC = () => {
-  const { routines, startWorkout, activeWorkout, discardActiveWorkout, maximizeWorkout, upsertRoutine } = useContext(AppContext);
+  const { routines, startWorkout, activeWorkout, discardActiveWorkout, maximizeWorkout, startTemplateEdit } = useContext(AppContext);
   const { t } = useI18n();
   const [selectedRoutine, setSelectedRoutine] = useState<Routine | null>(null);
   const [isConfirmingNewWorkout, setIsConfirmingNewWorkout] = useState(false);
@@ -19,8 +19,8 @@ const TrainPage: React.FC = () => {
       .filter(r => !r.isTemplate)
       .sort((a, b) => (b.lastUsed || 0) - (a.lastUsed || 0));
 
-    const custom = routines.filter(r => r.isTemplate && r.id.startsWith('custom-'));
-    const examples = routines.filter(r => r.isTemplate && !r.id.startsWith('custom-'));
+    const custom = routines.filter(r => r.isTemplate && !r.id.startsWith('rt-'));
+    const examples = routines.filter(r => r.isTemplate && r.id.startsWith('rt-'));
 
     return { latestWorkouts: latest, customTemplates: custom, exampleTemplates: examples };
   }, [routines]);
@@ -45,17 +45,16 @@ const TrainPage: React.FC = () => {
     handleRoutineSelect(emptyRoutine);
   };
   
-  const handleCreateNewRoutine = () => {
-      const newRoutine: Routine = {
+  const handleCreateNewTemplate = () => {
+      const newTemplate: Routine = {
           id: `custom-${Date.now()}`,
           originId: `custom-${Date.now()}`,
-          name: 'New Custom Routine',
-          description: 'A new routine ready to be built.',
+          name: 'New Custom Template',
+          description: '',
           exercises: [],
           isTemplate: true,
       };
-      upsertRoutine(newRoutine);
-      // Maybe open the builder modal in the future
+      startTemplateEdit(newTemplate);
   };
 
   const handleConfirmStartNew = () => {
@@ -83,25 +82,30 @@ const TrainPage: React.FC = () => {
       <h1 className="text-3xl font-bold text-center">{t('nav_train')}</h1>
       
       <div className="space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <button
-            onClick={handleStartEmptyWorkout}
-            className="w-full bg-primary/80 hover:bg-primary text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center space-x-2"
-          >
-            <Icon name="plus" />
-            <span>Start Empty Workout</span>
-          </button>
-          <button
-            onClick={handleCreateNewRoutine}
-            className="w-full bg-secondary hover:bg-slate-500 text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center space-x-2"
-          >
-            <Icon name="edit" />
-            <span>Create New Routine</span>
-          </button>
-        </div>
+        <button
+          onClick={handleStartEmptyWorkout}
+          className="w-full bg-primary/80 hover:bg-primary text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center space-x-2"
+        >
+          <Icon name="plus" />
+          <span>Start Empty Workout</span>
+        </button>
 
         <RoutineSection title="Latest Workouts" routines={latestWorkouts} onRoutineSelect={handleRoutineSelect} />
-        <RoutineSection title="My Routines" routines={customTemplates} onRoutineSelect={handleRoutineSelect} />
+        <RoutineSection
+            title="My Templates"
+            routines={customTemplates}
+            onRoutineSelect={handleRoutineSelect}
+            onRoutineEdit={startTemplateEdit}
+            headerAction={
+                <button
+                    onClick={handleCreateNewTemplate}
+                    className="bg-secondary hover:bg-slate-500 text-white font-bold py-2 px-3 rounded-lg transition-colors flex items-center justify-center space-x-2 text-sm"
+                >
+                    <Icon name="plus" className="w-4 h-4" />
+                    <span>New</span>
+                </button>
+            }
+        />
         <RoutineSection title="Example Templates" routines={exampleTemplates} onRoutineSelect={setSelectedRoutine} />
       </div>
 

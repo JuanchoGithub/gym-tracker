@@ -18,6 +18,7 @@ export interface PerformedSet {
   weight: number;
   type: SetType;
   isComplete?: boolean; // Added for tracking during workout
+  rest?: number; // Optional override for rest time in seconds
 }
 
 export interface WorkoutExercise {
@@ -34,7 +35,7 @@ export interface WorkoutExercise {
 }
 
 export interface Routine {
-  id: string;
+  id:string;
   name: string;
   description: string;
   exercises: WorkoutExercise[];

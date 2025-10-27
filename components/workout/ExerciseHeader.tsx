@@ -15,11 +15,12 @@ interface ExerciseHeaderProps {
     exerciseInfo: Exercise;
     onUpdate: (updatedExercise: WorkoutExercise) => void;
     onAddNote: () => void;
+    onOpenTimerModal: () => void;
 }
 
 type FocusType = 'q_mark' | 'total_volume' | 'volume_increase' | 'total_reps' | 'weight_by_rep';
 
-const ExerciseHeader: React.FC<ExerciseHeaderProps> = ({ workoutExercise, exerciseInfo, onUpdate, onAddNote }) => {
+const ExerciseHeader: React.FC<ExerciseHeaderProps> = ({ workoutExercise, exerciseInfo, onUpdate, onAddNote, onOpenTimerModal }) => {
     const { history: allHistory } = useContext(AppContext);
     const { t } = useI18n();
     const { unit, setUnit, displayWeight } = useWeight();
@@ -27,7 +28,6 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = ({ workoutExercise, exerci
     const [isFocusMenuOpen, setIsFocusMenuOpen] = useState(false);
     const [isOptionsMenuOpen, setIsOptionsMenuOpen] = useState(false);
     const [focusType, setFocusType] = useState<FocusType>('q_mark');
-    const [isTimerModalOpen, setIsTimerModalOpen] = useState(false);
     const [isReplaceModalOpen, setIsReplaceModalOpen] = useState(false);
     const [isConfirmReplaceOpen, setIsConfirmReplaceOpen] = useState(false);
     const [isBarModalOpen, setIsBarModalOpen] = useState(false);
@@ -124,10 +124,6 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = ({ workoutExercise, exerci
         }
     };
 
-    const handleSaveTimer = (newTimers: { normal: number; warmup: number; drop: number; }) => {
-        onUpdate({ ...workoutExercise, restTime: newTimers });
-    };
-    
     const handleReplaceExercise = (newExerciseId: string) => onUpdate({ ...workoutExercise, exerciseId: newExerciseId });
     const handleSelectBar = (barWeight: number) => onUpdate({ ...workoutExercise, barWeight });
 
@@ -174,7 +170,7 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = ({ workoutExercise, exerci
                         <div className="absolute right-0 mt-2 w-48 bg-slate-700 rounded-md shadow-lg z-30" onMouseLeave={() => setIsOptionsMenuOpen(false)}>
                             <button onClick={() => { onAddNote(); setIsOptionsMenuOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">Add Note</button>
                             <button onClick={handleAddWarmupSets} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">Add Warmup Sets</button>
-                            <button onClick={() => { setIsTimerModalOpen(true); setIsOptionsMenuOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">Change Timer</button>
+                            <button onClick={() => { onOpenTimerModal(); setIsOptionsMenuOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">Change Timer</button>
                             <button onClick={() => { setIsConfirmReplaceOpen(true); setIsOptionsMenuOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">Replace Exercise</button>
                             <button onClick={() => { setIsBarModalOpen(true); setIsOptionsMenuOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">{t('bar_type')}</button>
                             <button 
@@ -193,12 +189,6 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = ({ workoutExercise, exerci
             </div>
         </div>
 
-        <ChangeTimerModal 
-            isOpen={isTimerModalOpen}
-            onClose={() => setIsTimerModalOpen(false)}
-            currentRestTimes={workoutExercise.restTime}
-            onSave={handleSaveTimer}
-        />
         <SelectBarModal isOpen={isBarModalOpen} onClose={() => setIsBarModalOpen(false)} onSelect={handleSelectBar} currentBarWeight={workoutExercise.barWeight || 0} />
         <Modal isOpen={isConfirmReplaceOpen} onClose={() => setIsConfirmReplaceOpen(false)} title="Replace Exercise?">
             <p className="text-text-secondary mb-4">Are you sure you want to replace this exercise? Current sets will be kept.</p>

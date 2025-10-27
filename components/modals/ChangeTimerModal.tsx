@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import { useI18n } from '../../hooks/useI18n';
 import { TranslationKey } from '../../contexts/I18nContext';
+import { formatSecondsToMMSS, parseTimerInput } from '../../utils/timeUtils';
 
 interface ChangeTimerModalProps {
   isOpen: boolean;
@@ -9,40 +10,6 @@ interface ChangeTimerModalProps {
   currentRestTimes: { normal: number; warmup: number; drop: number; };
   onSave: (newTimes: { normal: number; warmup: number; drop: number; }) => void;
 }
-
-const formatSecondsToMMSS = (totalSeconds: number): string => {
-    if (isNaN(totalSeconds) || totalSeconds < 0) return '0:00';
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${String(minutes)}:${String(seconds).padStart(2, '0')}`;
-};
-
-const parseTimerInput = (input: string): number => {
-    const digits = input.replace(/\D/g, '');
-    const len = digits.length;
-
-    if (len === 0) return 0;
-    
-    // For 1 or 2 digits, always treat as total seconds
-    // e.g., "45" -> 45s; "90" -> 90s (1:30)
-    if (len <= 2) {
-        return parseInt(digits, 10);
-    }
-
-    // For 3-5 digits, try to parse as m:ss, mm:ss, or mmm:ss
-    // If the last two digits are < 60, parse it that way
-    // e.g., "148" -> 1m 48s = 108s
-    const secondsPart = parseInt(digits.slice(-2), 10);
-    if (secondsPart < 60) {
-        const minutesPart = parseInt(digits.slice(0, -2), 10);
-        return minutesPart * 60 + secondsPart;
-    }
-    
-    // Otherwise (last two digits >= 60), treat the whole number as seconds
-    // e.g., "199" -> 199s
-    return parseInt(digits, 10);
-};
-
 
 const ChangeTimerModal: React.FC<ChangeTimerModalProps> = ({ isOpen, onClose, currentRestTimes, onSave }) => {
     const { t } = useI18n();

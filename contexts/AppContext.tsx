@@ -23,6 +23,9 @@ interface AppContextType {
   discardActiveWorkout: () => void;
   weightUnit: WeightUnit;
   setWeightUnit: (unit: WeightUnit) => void;
+  editingTemplate: Routine | null;
+  startTemplateEdit: (template: Routine) => void;
+  endTemplateEdit: (savedTemplate?: Routine) => void;
 }
 
 export const AppContext = createContext<AppContextType>({} as AppContextType);
@@ -34,6 +37,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [activeWorkout, setActiveWorkout] = useLocalStorage<WorkoutSession | null>('activeWorkout', null);
   const [isWorkoutMinimized, setIsWorkoutMinimized] = useLocalStorage<boolean>('isWorkoutMinimized', false);
   const [weightUnit, setWeightUnit] = useLocalStorage<WeightUnit>('weightUnit', 'kg');
+  const [editingTemplate, setEditingTemplate] = useState<Routine | null>(null);
 
   useEffect(() => {
     if (activeWorkout) {
@@ -141,6 +145,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const minimizeWorkout = () => setIsWorkoutMinimized(true);
   const maximizeWorkout = () => setIsWorkoutMinimized(false);
 
+  const startTemplateEdit = (template: Routine) => {
+    setEditingTemplate(template);
+  };
+
+  const endTemplateEdit = (savedTemplate?: Routine) => {
+    if (savedTemplate) {
+      upsertRoutine(savedTemplate);
+    }
+    setEditingTemplate(null);
+  };
+
   const value = useMemo(() => ({
     routines,
     upsertRoutine,
@@ -158,8 +173,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     discardActiveWorkout,
     weightUnit,
     setWeightUnit,
+    editingTemplate,
+    startTemplateEdit,
+    endTemplateEdit,
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [routines, history, exercises, activeWorkout, isWorkoutMinimized, weightUnit]);
+  }), [routines, history, exercises, activeWorkout, isWorkoutMinimized, weightUnit, editingTemplate]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };
