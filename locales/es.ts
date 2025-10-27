@@ -220,7 +220,7 @@ export const es = {
   workout_details_modal_end_before_start_alert: 'La hora de finalización no puede ser anterior a la de inicio.',
 
   // Body Parts
-  body_part_all: 'Todas las Partes',
+  body_part_all: 'Musculos',
   body_part_chest: 'Pecho',
   body_part_back: 'Espalda',
   body_part_legs: 'Piernas',
@@ -236,7 +236,7 @@ export const es = {
   body_part_cardio: 'Cardio',
 
   // Categories
-  category_all: 'Todas las Categorías',
+  category_all: 'Categorías',
   category_barbell: 'Barra',
   category_dumbbell: 'Mancuerna',
   category_machine: 'Máquina',
