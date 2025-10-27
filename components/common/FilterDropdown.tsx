@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, Dispatch, SetStateAction } from 'react';
 import { Icon } from './Icon';
 
 interface FilterOption<T> {
@@ -9,7 +9,7 @@ interface FilterOption<T> {
 interface FilterDropdownProps<T extends string> {
   options: FilterOption<T>[];
   selected: T;
-  onSelect: (option: T) => void;
+  onSelect: Dispatch<SetStateAction<T>>;
   label: string;
 }
 

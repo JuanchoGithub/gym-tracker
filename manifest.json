@@ -1,0 +1,23 @@
+{
+  "name": "Gym Tracker Pro",
+  "short_name": "GymTracker",
+  "description": "A comprehensive gym application to create, track, and manage your workout routines with detailed history and customizable features.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ]
+}
