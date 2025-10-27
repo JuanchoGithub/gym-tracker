@@ -56,5 +56,42 @@ export const fullBodyInstructionsEn = {
 
             "Excellent for a warm-up, cool-down, or active recovery."
         ]
+    },
+    ex_145_ins: {
+        title: "Turkish Get-Up",
+        steps: [
+            "Lie on your back holding a kettlebell in one hand with your arm extended towards the ceiling.",
+            "Bend the knee on the same side as the kettlebell.",
+            "Push up onto your opposite elbow, then your hand.",
+            "Lift your hips, sweep the straight leg under you, and come to a kneeling position, then stand up.",
+            "Reverse the sequence to lie back down. This is a complex, full-body movement."
+        ]
+    },
+    ex_146_ins: {
+        title: "Kettlebell Clean & Press",
+        steps: [
+            "Start with a kettlebell between your feet. Hinge at your hips to grab it.",
+            "Hike the kettlebell back between your legs, then drive your hips forward.",
+            "Use the momentum to 'clean' the kettlebell to the rack position at your shoulder.",
+            "From the rack position, press the kettlebell straight overhead."
+        ]
+    },
+    ex_147_ins: {
+        title: "Kettlebell Snatch",
+        steps: [
+            "Start with a kettlebell between your feet. Hinge and hike it back.",
+            "Drive your hips forward explosively.",
+            "Pull the kettlebell upward, keeping it close to your body.",
+            "As it reaches shoulder height, punch your hand through and catch it overhead in one fluid motion."
+        ]
+    },
+    ex_149_ins: {
+        title: "Medicine Ball Slam",
+        steps: [
+            "Stand with your feet shoulder-width apart, holding a medicine ball.",
+            "Raise the ball overhead, fully extending your body.",
+            "Forcefully slam the ball down on the floor in front of you.",
+            "Squat down to catch the ball on the bounce and repeat."
+        ]
     }
 };

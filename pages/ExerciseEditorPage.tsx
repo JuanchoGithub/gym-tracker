@@ -6,8 +6,8 @@ import ConfirmModal from '../components/modals/ConfirmModal';
 import TagCloud from '../components/common/TagCloud';
 import { useI18n } from '../hooks/useI18n';
 
-const bodyPartOptions: ReadonlyArray<BodyPart> = ['Chest', 'Back', 'Legs', 'Shoulders', 'Biceps', 'Triceps', 'Core', 'Full Body', 'Calves', 'Forearms', 'Cardio'];
-const categoryOptions: ReadonlyArray<ExerciseCategory> = ['Barbell', 'Dumbbell', 'Machine', 'Cable', 'Bodyweight', 'Assisted Bodyweight', 'Reps Only', 'Cardio', 'Duration'];
+const bodyPartOptions: ReadonlyArray<BodyPart> = ['Chest', 'Back', 'Legs', 'Glutes', 'Shoulders', 'Biceps', 'Triceps', 'Core', 'Full Body', 'Calves', 'Forearms', 'Mobility', 'Cardio'];
+const categoryOptions: ReadonlyArray<ExerciseCategory> = ['Barbell', 'Dumbbell', 'Machine', 'Cable', 'Bodyweight', 'Assisted Bodyweight', 'Kettlebell', 'Plyometrics', 'Reps Only', 'Cardio', 'Duration'];
 
 const ExerciseEditorPage: React.FC = () => {
     const { exercises, editingExercise, endExerciseEdit } = useContext(AppContext);

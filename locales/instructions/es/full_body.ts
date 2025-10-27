@@ -54,5 +54,42 @@ export const fullBodyInstructionsEs = {
             "Coordina el movimiento con la respiración.",
             "Excelente para un calentamiento, enfriamiento o recuperación activa."
         ]
+    },
+    ex_145_ins: {
+        title: "Levantamiento Turco (Turkish Get-Up)",
+        steps: [
+            "Acuéstate boca arriba sosteniendo una kettlebell en una mano con el brazo extendido hacia el techo.",
+            "Flexiona la rodilla del mismo lado de la kettlebell.",
+            "Empuja hacia arriba sobre el codo opuesto, luego sobre la mano.",
+            "Levanta las caderas, pasa la pierna recta por debajo de ti y llega a una posición de rodillas, luego ponte de pie.",
+            "Invierte la secuencia para volver a acostarte. Es un movimiento complejo de cuerpo completo."
+        ]
+    },
+    ex_146_ins: {
+        title: "Cargada y Press con Kettlebell",
+        steps: [
+            "Comienza con una kettlebell entre tus pies. Haz una bisagra de cadera para agarrarla.",
+            "Balancea la kettlebell hacia atrás entre tus piernas, luego impulsa las caderas hacia adelante.",
+            "Usa el impulso para 'cargar' la kettlebell a la posición de rack en tu hombro.",
+            "Desde la posición de rack, empuja la kettlebell directamente sobre la cabeza."
+        ]
+    },
+    ex_147_ins: {
+        title: "Arranque con Kettlebell (Snatch)",
+        steps: [
+            "Comienza con una kettlebell entre tus pies. Haz una bisagra y balancéala hacia atrás.",
+            "Impulsa las caderas hacia adelante explosivamente.",
+            "Tira de la kettlebell hacia arriba, manteniéndola cerca de tu cuerpo.",
+            "Cuando llegue a la altura del hombro, pasa la mano por debajo y atrápala sobre la cabeza en un solo movimiento fluido."
+        ]
+    },
+    ex_149_ins: {
+        title: "Lanzamiento de Balón Medicinal (Slam)",
+        steps: [
+            "Párate con los pies separados al ancho de los hombros, sosteniendo un balón medicinal.",
+            "Levanta el balón sobre la cabeza, extendiendo completamente tu cuerpo.",
+            "Lanza con fuerza el balón al suelo frente a ti.",
+            "Agáchate para atrapar el balón en el rebote y repite."
+        ]
     }
 };

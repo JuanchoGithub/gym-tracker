@@ -125,4 +125,13 @@ export const coreInstructionsEs = {
       "Esto apunta al músculo transverso del abdomen."
     ]
   },
+  ex_156_ins: {
+    title: "Elevación de Piernas Colgado",
+    steps: [
+        "Cuélgate de una barra de dominadas con los brazos completamente extendidos.",
+        "Manteniendo las piernas rectas, elévalas hacia la barra tan alto como puedas.",
+        "Controla el movimiento y evita usar impulso o balancearte.",
+        "Baja lentamente las piernas a la posición inicial. Para una variación más fácil, flexiona las rodillas."
+    ]
+  },
 };

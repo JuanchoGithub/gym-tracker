@@ -125,4 +125,13 @@ export const coreInstructionsEn = {
       "This targets the deep transverse abdominis muscle."
     ]
   },
+  ex_156_ins: {
+    title: "Hanging Leg Raise",
+    steps: [
+        "Hang from a pull-up bar with your arms fully extended.",
+        "Keeping your legs straight, raise them up towards the bar as high as you can.",
+        "Control the movement and avoid using momentum or swinging.",
+        "Slowly lower your legs back to the starting position. For an easier variation, bend your knees."
+    ]
+  },
 };

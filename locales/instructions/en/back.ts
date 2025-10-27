@@ -204,5 +204,14 @@ export const backInstructionsEn = {
       "Lower your torso until it is nearly parallel to the floor.",
       "Use your hamstrings and glutes to return to the standing position. Use light weight."
     ]
+  },
+  ex_148_ins: {
+    title: "Kettlebell High Pull",
+    steps: [
+        "Start with a kettlebell between your feet in a squat stance.",
+        "Perform a swing, but as the kettlebell moves upward, pull your elbow up and back.",
+        "The kettlebell should end up near your shoulder.",
+        "This is a powerful, explosive movement for the upper back and shoulders."
+    ]
   }
 };

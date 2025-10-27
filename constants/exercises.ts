@@ -23,7 +23,7 @@ export const PREDEFINED_EXERCISES: Exercise[] = [
   { id: 'ex-36', name: 'Isometric Chest Squeeze', bodyPart: 'Chest', category: 'Bodyweight' },
   { id: 'ex-37', name: 'Speed Bench Press', bodyPart: 'Chest', category: 'Barbell' },
   
-  // Back (22)
+  // Back (23)
   { id: 'ex-5', name: 'Barbell Row', bodyPart: 'Back', category: 'Barbell' },
   { id: 'ex-10', name: 'Lat Pulldown', bodyPart: 'Back', category: 'Cable' },
   { id: 'ex-3', name: 'Deadlift', bodyPart: 'Back', category: 'Barbell' },
@@ -46,6 +46,7 @@ export const PREDEFINED_EXERCISES: Exercise[] = [
   { id: 'ex-53', name: 'Band Pull-Apart', bodyPart: 'Back', category: 'Reps Only' },
   { id: 'ex-54', name: 'Farmer\'s Carry', bodyPart: 'Back', category: 'Dumbbell' },
   { id: 'ex-55', name: 'Good Morning', bodyPart: 'Back', category: 'Barbell' },
+  { id: 'ex-148', name: 'Kettlebell High Pull', bodyPart: 'Back', category: 'Kettlebell' },
 
   // Shoulders (18)
   { id: 'ex-4', name: 'Overhead Press', bodyPart: 'Shoulders', category: 'Barbell' },
@@ -67,7 +68,7 @@ export const PREDEFINED_EXERCISES: Exercise[] = [
   { id: 'ex-71', name: 'Dumbbell Shrugs', bodyPart: 'Shoulders', category: 'Dumbbell' },
   { id: 'ex-72', name: 'Wall Slide', bodyPart: 'Shoulders', category: 'Bodyweight' },
 
-  // Biceps (15)
+  // Biceps (14)
   { id: 'ex-7', name: 'Barbell Curl', bodyPart: 'Biceps', category: 'Barbell' },
   { id: 'ex-13', name: 'Bicep Curl', bodyPart: 'Biceps', category: 'Dumbbell' },
   { id: 'ex-73', name: 'Hammer Curl', bodyPart: 'Biceps', category: 'Dumbbell' },
@@ -83,7 +84,7 @@ export const PREDEFINED_EXERCISES: Exercise[] = [
   { id: 'ex-83', name: 'Band Curl', bodyPart: 'Biceps', category: 'Reps Only' },
   { id: 'ex-84', name: 'Drag Curl', bodyPart: 'Biceps', category: 'Barbell' },
 
-  // Triceps (16)
+  // Triceps (15)
   { id: 'ex-8', name: 'Skull Crusher', bodyPart: 'Triceps', category: 'Barbell' },
   { id: 'ex-14', name: 'Tricep Extension', bodyPart: 'Triceps', category: 'Cable' },
   { id: 'ex-85', name: 'Tricep Pushdown', bodyPart: 'Triceps', category: 'Cable' },
@@ -100,22 +101,17 @@ export const PREDEFINED_EXERCISES: Exercise[] = [
   { id: 'ex-96', name: 'Partial Tricep Extension', bodyPart: 'Triceps', category: 'Cable' },
   { id: 'ex-97', name: 'Isometric Tricep Squeeze', bodyPart: 'Triceps', category: 'Bodyweight' },
 
-  // Legs (25)
+  // Legs (21)
   { id: 'ex-16', name: 'Leg Curl', bodyPart: 'Legs', category: 'Machine' },
   { id: 'ex-17', name: 'Leg Extension', bodyPart: 'Legs', category: 'Machine' },
   { id: 'ex-9', name: 'Leg Press', bodyPart: 'Legs', category: 'Machine' },
   { id: 'ex-2', name: 'Squat', bodyPart: 'Legs', category: 'Barbell' },
-  { id: 'ex-18', name: 'Calf Raise', bodyPart: 'Calves', category: 'Machine' },
   { id: 'ex-98', name: 'Romanian Deadlift', bodyPart: 'Legs', category: 'Barbell' },
   { id: 'ex-99', name: 'Walking Lunge', bodyPart: 'Legs', category: 'Dumbbell' },
   { id: 'ex-100', name: 'Bulgarian Split Squat', bodyPart: 'Legs', category: 'Dumbbell' },
   { id: 'ex-101', name: 'Front Squat', bodyPart: 'Legs', category: 'Barbell' },
   { id: 'ex-102', name: 'Hack Squat', bodyPart: 'Legs', category: 'Machine' },
   { id: 'ex-103', name: 'Step-Up', bodyPart: 'Legs', category: 'Dumbbell' },
-  { id: 'ex-104', name: 'Glute Bridge', bodyPart: 'Legs', category: 'Bodyweight' },
-  { id: 'ex-105', name: 'Seated Calf Raise', bodyPart: 'Calves', category: 'Machine' },
-  { id: 'ex-106', name: 'Donkey Calf Raise', bodyPart: 'Calves', category: 'Machine' },
-  { id: 'ex-107', name: 'Leg Press Calf Raise', bodyPart: 'Calves', category: 'Machine' },
   { id: 'ex-108', name: 'Sumo Squat', bodyPart: 'Legs', category: 'Dumbbell' },
   { id: 'ex-109', name: 'Goblet Squat', bodyPart: 'Legs', category: 'Dumbbell' },
   { id: 'ex-110', name: 'Pistol Squat', bodyPart: 'Legs', category: 'Bodyweight' },
@@ -123,10 +119,25 @@ export const PREDEFINED_EXERCISES: Exercise[] = [
   { id: 'ex-112', name: 'Sissy Squat', bodyPart: 'Legs', category: 'Bodyweight' },
   { id: 'ex-113', name: 'Jefferson Squat', bodyPart: 'Legs', category: 'Barbell' },
   { id: 'ex-114', name: 'Band Leg Curl', bodyPart: 'Legs', category: 'Reps Only' },
-  { id: 'ex-115', name: 'Cycling (Stationary)', bodyPart: 'Cardio', category: 'Cardio' },
-  { id: 'ex-116', name: 'Box Jump', bodyPart: 'Legs', category: 'Bodyweight' },
+  { id: 'ex-116', name: 'Box Jump', bodyPart: 'Legs', category: 'Plyometrics' },
+  { id: 'ex-150', name: 'Broad Jump', bodyPart: 'Legs', category: 'Plyometrics' },
+  { id: 'ex-151', name: 'Tuck Jump', bodyPart: 'Legs', category: 'Plyometrics' },
+  { id: 'ex-152', name: 'Depth Jump', bodyPart: 'Legs', category: 'Plyometrics' },
 
-  // Core (15)
+  // Glutes (5)
+  { id: 'ex-104', name: 'Glute Bridge', bodyPart: 'Glutes', category: 'Bodyweight' },
+  { id: 'ex-141', name: 'Barbell Hip Thrust', bodyPart: 'Glutes', category: 'Barbell' },
+  { id: 'ex-142', name: 'Glute Kickback', bodyPart: 'Glutes', category: 'Cable' },
+  { id: 'ex-143', name: 'Hip Abduction Machine', bodyPart: 'Glutes', category: 'Machine' },
+  { id: 'ex-144', name: 'Single-Leg Glute Bridge', bodyPart: 'Glutes', category: 'Bodyweight' },
+
+  // Calves (4)
+  { id: 'ex-18', name: 'Calf Raise', bodyPart: 'Calves', category: 'Machine' },
+  { id: 'ex-105', name: 'Seated Calf Raise', bodyPart: 'Calves', category: 'Machine' },
+  { id: 'ex-106', name: 'Donkey Calf Raise', bodyPart: 'Calves', category: 'Machine' },
+  { id: 'ex-107', name: 'Leg Press Calf Raise', bodyPart: 'Calves', category: 'Machine' },
+
+  // Core (16)
   { id: 'ex-20', name: 'Crunches', bodyPart: 'Core', category: 'Bodyweight' },
   { id: 'ex-15', name: 'Plank', bodyPart: 'Core', category: 'Duration' },
   { id: 'ex-117', name: 'Russian Twist', bodyPart: 'Core', category: 'Dumbbell' },
@@ -141,22 +152,34 @@ export const PREDEFINED_EXERCISES: Exercise[] = [
   { id: 'ex-126', name: 'V-Up', bodyPart: 'Core', category: 'Bodyweight' },
   { id: 'ex-127', name: 'Side Bend', bodyPart: 'Core', category: 'Dumbbell' },
   { id: 'ex-128', name: 'Vacuum', bodyPart: 'Core', category: 'Bodyweight' },
+  { id: 'ex-156', name: 'Hanging Leg Raise', bodyPart: 'Core', category: 'Assisted Bodyweight' },
 
-  // Cardio & Full Body (11)
+  // Cardio (6)
   { id: 'ex-19', name: 'Running', bodyPart: 'Cardio', category: 'Cardio' },
+  { id: 'ex-115', name: 'Cycling (Stationary)', bodyPart: 'Cardio', category: 'Cardio' },
   { id: 'ex-129', name: 'Jumping Jacks', bodyPart: 'Cardio', category: 'Cardio' },
-  { id: 'ex-130', name: 'Burpee', bodyPart: 'Full Body', category: 'Cardio' },
   { id: 'ex-131', name: 'Mountain Climber', bodyPart: 'Cardio', category: 'Cardio' },
-  { id: 'ex-132', name: 'Rowing (Machine)', bodyPart: 'Full Body', category: 'Cardio' },
-  { id: 'ex-133', name: 'Battle Rope', bodyPart: 'Full Body', category: 'Cardio' },
-  { id: 'ex-134', name: 'Kettlebell Swing', bodyPart: 'Full Body', category: 'Reps Only' },
   { id: 'ex-135', name: 'Jump Rope', bodyPart: 'Cardio', category: 'Cardio' },
   { id: 'ex-136', name: 'Stair Climber', bodyPart: 'Cardio', category: 'Cardio' },
+  
+  // Full Body (9)
+  { id: 'ex-130', name: 'Burpee', bodyPart: 'Full Body', category: 'Cardio' },
+  { id: 'ex-132', name: 'Rowing (Machine)', bodyPart: 'Full Body', category: 'Cardio' },
+  { id: 'ex-133', name: 'Battle Rope', bodyPart: 'Full Body', category: 'Cardio' },
+  { id: 'ex-134', name: 'Kettlebell Swing', bodyPart: 'Full Body', category: 'Kettlebell' },
   { id: 'ex-137', name: 'Swimming', bodyPart: 'Full Body', category: 'Cardio' },
-  { id: 'ex-138', name: 'Sun Salutation', bodyPart: 'Full Body', category: 'Duration' },
+  { id: 'ex-145', name: 'Turkish Get-Up', bodyPart: 'Full Body', category: 'Kettlebell' },
+  { id: 'ex-146', name: 'Kettlebell Clean & Press', bodyPart: 'Full Body', category: 'Kettlebell' },
+  { id: 'ex-147', name: 'Kettlebell Snatch', bodyPart: 'Full Body', category: 'Kettlebell' },
+  { id: 'ex-149', name: 'Medicine Ball Slam', bodyPart: 'Full Body', category: 'Reps Only' },
 
-  // Forearms (from Zottman Curl and Reverse Grip Pushdown)
+  // Forearms (2)
   { id: 'ex-139', name: 'Wrist Curl', bodyPart: 'Forearms', category: 'Dumbbell'},
   { id: 'ex-140', name: 'Reverse Wrist Curl', bodyPart: 'Forearms', category: 'Dumbbell'},
 
+  // Mobility (4)
+  { id: 'ex-138', name: 'Sun Salutation', bodyPart: 'Mobility', category: 'Duration' },
+  { id: 'ex-153', name: 'Foam Rolling', bodyPart: 'Mobility', category: 'Duration' },
+  { id: 'ex-154', name: 'Hip Flexor Stretch', bodyPart: 'Mobility', category: 'Duration' },
+  { id: 'ex-155', name: 'Cat-Cow Stretch', bodyPart: 'Mobility', category: 'Duration' },
 ];

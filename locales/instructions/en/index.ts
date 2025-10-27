@@ -9,6 +9,7 @@ import { shouldersInstructionsEn } from './shoulders';
 import { calvesInstructionsEn } from './calves';
 import { cardioInstructionsEn } from './cardio';
 import { fullBodyInstructionsEn } from './full_body';
+import { mobilityInstructionsEn } from './mobility';
 
 
 export const instructionsEn = {
@@ -22,4 +23,5 @@ export const instructionsEn = {
   ...calvesInstructionsEn,
   ...cardioInstructionsEn,
   ...fullBodyInstructionsEn,
+  ...mobilityInstructionsEn,
 };

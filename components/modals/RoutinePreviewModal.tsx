@@ -23,7 +23,7 @@ const RoutinePreviewModal: React.FC<RoutinePreviewModalProps> = ({ routine, isOp
   return (
     <>
       <Modal isOpen={isOpen && !viewingExercise} onClose={onClose} title={routine.name}>
-        <div className="flex flex-col h-full max-h-[70vh]">
+        <div className="flex flex-col h-full max-h-[60vh]">
           <p className="text-text-secondary mb-4 flex-shrink-0">{routine.description}</p>
 
           <div className="flex-grow space-y-3 overflow-y-auto pr-2">

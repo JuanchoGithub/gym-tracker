@@ -169,5 +169,68 @@ export const legsInstructionsEs = {
         "Aterriza suavemente en una posición de sentadilla.",
         "Baja del cajón, no saltes hacia abajo. Esto desarrolla la potencia explosiva."
     ]
+  },
+  ex_141_ins: {
+    title: "Empuje de Cadera con Barra (Hip Thrust)",
+    steps: [
+        "Siéntate en el suelo con la parte superior de la espalda contra un banco.",
+        "Coloca una barra acolchada sobre tus caderas.",
+        "Impulsa con los talones para levantar las caderas hacia el techo hasta que tu cuerpo esté en una posición de mesa.",
+        "Aprieta los glúteos en la parte superior. Baja las caderas de nuevo con control."
+    ]
+  },
+  ex_142_ins: {
+    title: "Patada de Glúteo con Cable",
+    steps: [
+        "Engancha una tobillera a una polea baja y ajústala a tu tobillo.",
+        "De cara a la máquina, sujétate para mantener el equilibrio.",
+        "Manteniendo la pierna recta, extiéndela hacia atrás y hacia arriba, apretando el glúteo en el punto máximo.",
+        "Regresa a la posición inicial de manera controlada."
+    ]
+  },
+  ex_143_ins: {
+    title: "Máquina de Abducción de Cadera",
+    steps: [
+        "Siéntate en la máquina con la parte exterior de tus rodillas contra las almohadillas.",
+        "Separa las piernas contra la resistencia.",
+        "Mantén la contracción máxima por un momento.",
+        "Vuelve lentamente a la posición inicial."
+    ]
+  },
+  ex_144_ins: {
+    title: "Puente de Glúteo a una Pierna",
+    steps: [
+        "Acuéstate boca arriba con una rodilla flexionada y el pie plano en el suelo.",
+        "Extiende la otra pierna recta.",
+        "Impulsa con el talón de tu pie apoyado para levantar las caderas.",
+        "Mantén las caderas niveladas. Baja de nuevo y repite."
+    ]
+  },
+  ex_150_ins: {
+    title: "Salto de Longitud sin Carrera",
+    steps: [
+        "Párate con los pies separados al ancho de los hombros.",
+        "Balancea los brazos hacia atrás y flexiona las rodillas en una sentadilla parcial.",
+        "Balancea explosivamente los brazos hacia adelante y salta lo más lejos que puedas.",
+        "Aterriza suavemente sobre la punta de los pies y absorbe el impacto flexionando las rodillas."
+    ]
+  },
+  ex_151_ins: {
+    title: "Salto Agrupado (Tuck Jump)",
+    steps: [
+        "Párate con los pies separados al ancho de los hombros.",
+        "Realiza una pequeña sentadilla, luego salta verticalmente lo más alto que puedas.",
+        "En el punto más alto de tu salto, lleva las rodillas hacia el pecho.",
+        "Extiende las piernas para aterrizar suavemente. Intenta minimizar el tiempo de contacto con el suelo entre saltos."
+    ]
+  },
+  ex_152_ins: {
+    title: "Salto de Profundidad (Depth Jump)",
+    steps: [
+        "Párate en un cajón o superficie elevada (30-45 cm de altura).",
+        "Baja del cajón, no saltes. Aterriza con ambos pies.",
+        "Inmediatamente después de aterrizar, salta verticalmente lo más alto posible.",
+        "El objetivo es minimizar el tiempo de contacto con el suelo y maximizar la altura del salto."
+    ]
   }
 };

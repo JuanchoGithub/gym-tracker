@@ -15,8 +15,8 @@ const ExercisesPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<ExerciseCategory | 'All'>('All');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
-  const bodyParts: (BodyPart | 'All')[] = ['All', 'Chest', 'Back', 'Legs', 'Shoulders', 'Biceps', 'Triceps', 'Core', 'Full Body', 'Calves', 'Forearms', 'Cardio'];
-  const categories: (ExerciseCategory | 'All')[] = ['All', 'Barbell', 'Dumbbell', 'Machine', 'Cable', 'Bodyweight', 'Assisted Bodyweight', 'Reps Only', 'Cardio', 'Duration'];
+  const bodyParts: (BodyPart | 'All')[] = ['All', 'Chest', 'Back', 'Legs', 'Glutes', 'Shoulders', 'Biceps', 'Triceps', 'Core', 'Full Body', 'Calves', 'Forearms', 'Mobility', 'Cardio'];
+  const categories: (ExerciseCategory | 'All')[] = ['All', 'Barbell', 'Dumbbell', 'Machine', 'Cable', 'Bodyweight', 'Assisted Bodyweight', 'Kettlebell', 'Plyometrics', 'Reps Only', 'Cardio', 'Duration'];
 
   const filteredExercises = useMemo(() => {
     return exercises

@@ -203,5 +203,14 @@ export const backInstructionsEs = {
       "Baja el torso hasta que esté casi paralelo al suelo.",
       "Usa los isquiotibiales y glúteos para volver a la posición de pie. Usa poco peso."
     ]
+  },
+  ex_148_ins: {
+    title: "Tirón Alto con Kettlebell",
+    steps: [
+        "Comienza con una kettlebell entre tus pies en una postura de sentadilla.",
+        "Realiza un swing, pero a medida que la kettlebell sube, tira del codo hacia arriba y hacia atrás.",
+        "La kettlebell debe terminar cerca de tu hombro.",
+        "Este es un movimiento potente y explosivo para la parte superior de la espalda y los hombros."
+    ]
   }
 };
