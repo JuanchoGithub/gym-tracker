@@ -1,8 +1,9 @@
-import React, { createContext, useState, ReactNode, useMemo, useEffect } from 'react';
+import React, { createContext, useState, ReactNode, useMemo, useEffect, useCallback } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { Routine, WorkoutSession, Exercise, WorkoutExercise } from '../types';
 import { PREDEFINED_ROUTINES } from '../constants/routines';
 import { PREDEFINED_EXERCISES } from '../constants/exercises';
+import { useI18n } from '../hooks/useI18n';
 
 export type WeightUnit = 'kg' | 'lbs';
 
@@ -13,6 +14,7 @@ interface AppContextType {
   history: WorkoutSession[];
   exercises: Exercise[];
   getExerciseById: (id: string) => Exercise | undefined;
+  upsertExercise: (exercise: Exercise) => void;
   activeWorkout: WorkoutSession | null;
   startWorkout: (routine: Routine) => void;
   updateActiveWorkout: (workout: WorkoutSession) => void;
@@ -28,6 +30,10 @@ interface AppContextType {
   editingTemplate: Routine | null;
   startTemplateEdit: (template: Routine) => void;
   endTemplateEdit: (savedTemplate?: Routine) => void;
+  editingExercise: Exercise | null;
+  startExerciseEdit: (exercise: Exercise) => void;
+  endExerciseEdit: (savedExercise?: Exercise) => void;
+  startExerciseDuplicate: (exercise: Exercise) => void;
 }
 
 export const AppContext = createContext<AppContextType>({} as AppContextType);
@@ -35,12 +41,15 @@ export const AppContext = createContext<AppContextType>({} as AppContextType);
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [routines, setRoutines] = useLocalStorage<Routine[]>('routines', PREDEFINED_ROUTINES);
   const [history, setHistory] = useLocalStorage<WorkoutSession[]>('history', []);
-  const [exercises] = useState<Exercise[]>(PREDEFINED_EXERCISES);
+  const [exercises, setExercises] = useLocalStorage<Exercise[]>('exercises', PREDEFINED_EXERCISES);
   const [activeWorkout, setActiveWorkout] = useLocalStorage<WorkoutSession | null>('activeWorkout', null);
   const [isWorkoutMinimized, setIsWorkoutMinimized] = useLocalStorage<boolean>('isWorkoutMinimized', false);
   const [weightUnit, setWeightUnit] = useLocalStorage<WeightUnit>('weightUnit', 'kg');
   const [defaultRestTimes, setDefaultRestTimes] = useLocalStorage<{ normal: number; warmup: number; drop: number; }>('defaultRestTimes', { normal: 90, warmup: 60, drop: 30 });
   const [editingTemplate, setEditingTemplate] = useState<Routine | null>(null);
+  const [editingExercise, setEditingExercise] = useState<Exercise | null>(null);
+  const { t_ins } = useI18n();
+
 
   useEffect(() => {
     if (activeWorkout) {
@@ -72,6 +81,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             return newRoutines;
         } else {
             return [...prev, routine];
+        }
+    });
+  };
+
+  const upsertExercise = (exercise: Exercise) => {
+    setExercises(prev => {
+        const existingIndex = prev.findIndex(e => e.id === exercise.id);
+        if (existingIndex > -1) {
+            const newExercises = [...prev];
+            newExercises[existingIndex] = exercise;
+            return newExercises;
+        } else {
+            return [...prev, exercise];
         }
     });
   };
@@ -159,6 +181,40 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setEditingTemplate(null);
   };
 
+  const startExerciseEdit = (exercise: Exercise) => {
+    setEditingExercise(exercise);
+  };
+
+  const endExerciseEdit = (savedExercise?: Exercise) => {
+    if (savedExercise) {
+      upsertExercise(savedExercise);
+    }
+    setEditingExercise(null);
+  };
+
+  const startExerciseDuplicate = (exerciseToDuplicate: Exercise) => {
+    let description = '';
+    const isStock = exerciseToDuplicate.id.startsWith('ex-');
+
+    if (isStock) {
+        const instructionKey = exerciseToDuplicate.id.replace('-', '_') + '_ins';
+        const instructions = t_ins(instructionKey);
+        if (instructions && instructions.steps.length > 0 && instructions.title !== instructionKey) {
+            description = instructions.steps.join('\n');
+        }
+    } else {
+        description = exerciseToDuplicate.notes || '';
+    }
+    
+    const newExercise: Exercise = {
+        ...exerciseToDuplicate,
+        id: `custom-${Date.now()}`,
+        name: `${exerciseToDuplicate.name} (Copy)`,
+        notes: description
+    };
+    startExerciseEdit(newExercise);
+  };
+
   const value = useMemo(() => ({
     routines,
     upsertRoutine,
@@ -166,6 +222,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     history,
     exercises,
     getExerciseById,
+    upsertExercise,
     activeWorkout,
     startWorkout,
     updateActiveWorkout,
@@ -181,8 +238,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     editingTemplate,
     startTemplateEdit,
     endTemplateEdit,
+    editingExercise,
+    startExerciseEdit,
+    endExerciseEdit,
+    startExerciseDuplicate,
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [routines, history, exercises, activeWorkout, isWorkoutMinimized, weightUnit, defaultRestTimes, editingTemplate]);
+  }), [routines, history, exercises, activeWorkout, isWorkoutMinimized, weightUnit, defaultRestTimes, editingTemplate, editingExercise]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };

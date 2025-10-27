@@ -22,6 +22,26 @@ export const backInstructionsEs = {
       "Baja lentamente la barra a la posición inicial.",
     ],
   },
+  ex_6_ins: {
+    title: "Dominada (Pull Up)",
+    steps: [
+      "Agarra la barra de dominadas con un agarre prono (palmas hacia afuera), un poco más ancho que el ancho de los hombros.",
+      "Cuélgate de la barra con los brazos completamente extendidos y el cuerpo recto.",
+      "Sube tu cuerpo apretando los músculos de la espalda hasta que tu barbilla esté sobre la barra.",
+      "Mantén el pecho erguido y los hombros hacia abajo y atrás.",
+      "Baja tu cuerpo de vuelta a la posición inicial de manera controlada.",
+    ],
+  },
+  ex_10_ins: {
+    title: "Jalón al Pecho (Lat Pulldown)",
+    steps: [
+      "Siéntate en la máquina de jalón al pecho y ajusta la almohadilla de las rodillas para que se ajuste firmemente contra tus muslos.",
+      "Agarra la barra con un agarre ancho y prono (palmas hacia afuera).",
+      "Manteniendo el torso erguido, tira de la barra hacia la parte superior de tu pecho.",
+      "Junta los omóplatos y concéntrate en usar los músculos de la espalda, no los bíceps.",
+      "Regresa lentamente la barra a la posición inicial, manteniendo el control.",
+    ],
+  },
   ex_38_ins: {
     title: "Remo Sentado",
     steps: [

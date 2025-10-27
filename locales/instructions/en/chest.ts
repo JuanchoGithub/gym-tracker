@@ -9,6 +9,16 @@ export const chestInstructionsEn = {
       "Press the bar back up until your arms are fully extended.",
     ],
   },
+  ex_11_ins: {
+    title: "Dumbbell Fly",
+    steps: [
+      "Lie on a flat bench with a dumbbell in each hand, palms facing each other.",
+      "Press the dumbbells up above your chest with a slight bend in your elbows.",
+      "Lower the weights out to your sides in a wide arc, feeling a stretch in your chest.",
+      "Keep the slight bend in your elbows throughout the movement.",
+      "Bring the dumbbells back together over your chest using your pectoral muscles.",
+    ],
+  },
   ex_12_ins: {
     title: "Incline Dumbbell Press",
     steps: [

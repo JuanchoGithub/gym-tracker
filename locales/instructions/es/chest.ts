@@ -9,6 +9,16 @@ export const chestInstructionsEs = {
       "Empuja la barra hacia arriba hasta que tus brazos estén completamente extendidos.",
     ],
   },
+  ex_11_ins: {
+    title: "Aperturas con Mancuernas (Dumbbell Fly)",
+    steps: [
+      "Acuéstate en un banco plano con una mancuerna en cada mano, con las palmas una frente a la otra.",
+      "Empuja las mancuernas hacia arriba sobre tu pecho con una ligera flexión en los codos.",
+      "Baja las pesas hacia los lados en un arco amplio, sintiendo un estiramiento en tu pecho.",
+      "Mantén la ligera flexión en los codos durante todo el movimiento.",
+      "Vuelve a juntar las mancuernas sobre tu pecho usando los músculos pectorales.",
+    ],
+  },
   ex_12_ins: {
     title: "Press Inclinado con Mancuernas",
     steps: [

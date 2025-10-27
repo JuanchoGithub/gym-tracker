@@ -1,4 +1,3 @@
-
 import React, { useMemo, useRef, useState } from 'react';
 import { useI18n } from '../../hooks/useI18n';
 import { ExerciseHistory } from '../../utils/workoutUtils';
@@ -84,12 +83,12 @@ const GraphsTab: React.FC<GraphsTabProps> = ({ exercise, history }) => {
           </div>
         </div>
         <div ref={chartRef as any}>
-          <Chart data={chartData.totalVolumeData} width={350} height={150} />
+          <Chart data={chartData.totalVolumeData} />
         </div>
       </div>
       <div className="bg-slate-900/50 p-3 rounded-lg">
         <h3 className="font-bold text-text-primary mb-2">{t('graphs_max_reps')}</h3>
-        <Chart data={chartData.maxRepsData} width={350} height={150} color="#facc15" />
+        <Chart data={chartData.maxRepsData} color="#facc15" />
       </div>
     </div>
   );

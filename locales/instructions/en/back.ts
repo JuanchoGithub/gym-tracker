@@ -22,6 +22,26 @@ export const backInstructionsEn = {
       "Slowly lower the barbell back to the starting position.",
     ],
   },
+  ex_6_ins: {
+    title: "Pull Up",
+    steps: [
+      "Grasp the pull-up bar with an overhand grip, slightly wider than shoulder-width.",
+      "Hang from the bar with your arms fully extended and your body straight.",
+      "Pull your body up by squeezing your back muscles until your chin is over the bar.",
+      "Keep your chest up and your shoulders down and back.",
+      "Lower your body back down to the starting position in a controlled manner.",
+    ],
+  },
+  ex_10_ins: {
+    title: "Lat Pulldown",
+    steps: [
+      "Sit down at the lat pulldown machine and adjust the knee pad to fit snugly against your thighs.",
+      "Grasp the bar with a wide, overhand grip.",
+      "Keeping your torso upright, pull the bar down to your upper chest.",
+      "Squeeze your shoulder blades together and focus on using your back muscles, not your biceps.",
+      "Slowly return the bar to the starting position, maintaining control.",
+    ],
+  },
   ex_38_ins: {
     title: "Seated Row",
     steps: [

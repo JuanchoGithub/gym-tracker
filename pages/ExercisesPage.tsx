@@ -7,7 +7,7 @@ import { Icon } from '../components/common/Icon';
 import FilterDropdown from '../components/common/FilterDropdown';
 
 const ExercisesPage: React.FC = () => {
-  const { exercises } = useContext(AppContext);
+  const { exercises, startExerciseEdit } = useContext(AppContext);
   const { t } = useI18n();
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -35,9 +35,29 @@ const ExercisesPage: React.FC = () => {
     setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
   }
 
+  const handleAddNew = () => {
+    const newExercise: Exercise = {
+      id: `custom-${Date.now()}`,
+      name: 'New Exercise',
+      bodyPart: 'Chest',
+      category: 'Barbell',
+      notes: '',
+    };
+    startExerciseEdit(newExercise);
+  };
+
   return (
     <div className="space-y-4">
-      <h1 className="text-3xl font-bold text-center">{t('nav_exercises')}</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">{t('nav_exercises')}</h1>
+        <button
+          onClick={handleAddNew}
+          className="bg-primary hover:bg-sky-500 text-white font-bold py-2 px-3 rounded-lg transition-colors flex items-center justify-center space-x-2 text-sm"
+        >
+          <Icon name="plus" className="w-4 h-4" />
+          <span>Add</span>
+        </button>
+      </div>
 
       <div className="sticky top-4 bg-background/80 backdrop-blur-sm z-10 py-2">
         <div className="flex flex-col sm:flex-row gap-2 items-center">
