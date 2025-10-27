@@ -14,7 +14,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50" onClick={onClose}>
       <div
-        className="bg-surface rounded-lg shadow-xl w-full max-w-md m-4 p-6"
+        className="bg-surface rounded-lg shadow-xl w-full max-w-sm sm:max-w-md m-4 p-4 sm:p-6"
         onClick={(e) => e.stopPropagation()}
       >
         {title !== undefined && (

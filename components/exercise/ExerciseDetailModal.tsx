@@ -27,8 +27,6 @@ const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({ exercise, isO
   const exerciseHistory = useMemo(() => getExerciseHistory(allHistory, exercise.id), [allHistory, exercise.id]);
   const personalRecords = useMemo(() => calculateRecords(exerciseHistory), [exerciseHistory]);
   
-  const titleTooLong = exercise.name.length > 25;
-
   const TABS: { id: Tab; label: string }[] = [
     { id: 'description', label: t('tab_description') },
     { id: 'history', label: t('tab_history') },
@@ -60,13 +58,13 @@ const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({ exercise, isO
     <Modal isOpen={isOpen} onClose={onClose}>
       <div className="flex flex-col h-[80vh] max-h-[600px]">
         {/* Custom Header */}
-        <div className="flex items-center justify-between mb-4 flex-shrink-0 gap-2">
+        <div className="flex items-center justify-between mb-4 flex-shrink-0 gap-1 sm:gap-2">
             <div className="flex-shrink-0">
                 <button onClick={onClose} className="text-text-secondary hover:text-text-primary p-1">
                     <Icon name="x" className="w-6 h-6" />
                 </button>
             </div>
-            <h2 className={`font-bold text-text-primary text-center flex-grow min-w-0 ${titleTooLong ? 'text-base sm:text-lg' : 'text-lg sm:text-xl'}`}>
+            <h2 className="font-bold text-text-primary text-center flex-grow min-w-0 text-base sm:text-xl">
                 {exercise.name}
             </h2>
             <div className="flex-shrink-0 flex items-center space-x-1">
