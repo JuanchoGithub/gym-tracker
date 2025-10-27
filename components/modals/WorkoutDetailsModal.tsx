@@ -3,6 +3,7 @@ import Modal from '../common/Modal';
 import { WorkoutSession } from '../../types';
 import { formatTime, toDateTimeLocal } from '../../utils/timeUtils';
 import { useI18n } from '../../hooks/useI18n';
+import ToggleSwitch from '../common/ToggleSwitch';
 
 interface WorkoutDetailsModalProps {
   isOpen: boolean;
@@ -56,16 +57,6 @@ const WorkoutDetailsModal: React.FC<WorkoutDetailsModalProps> = ({ isOpen, onClo
       endTime: newEndTime,
     });
   };
-  
-  const ToggleSwitch = ({ checked, onChange }: { checked: boolean; onChange: (checked: boolean) => void }) => (
-    <button
-      onClick={() => onChange(!checked)}
-      className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors ${checked ? 'bg-primary' : 'bg-secondary'}`}
-      aria-pressed={checked}
-    >
-      <span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${checked ? 'translate-x-6' : 'translate-x-1'}`} />
-    </button>
-  );
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t('workout_details_modal_title')}>

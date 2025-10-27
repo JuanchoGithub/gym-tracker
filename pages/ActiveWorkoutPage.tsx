@@ -8,14 +8,17 @@ import { Icon } from '../components/common/Icon';
 import WorkoutDetailsModal from '../components/modals/WorkoutDetailsModal';
 import Modal from '../components/common/Modal';
 import ReplaceExerciseModal from '../components/modals/ReplaceExerciseModal';
+import { useWakeLock } from '../hooks/useWakeLock';
 
 const ActiveWorkoutPage: React.FC = () => {
-  const { activeWorkout, updateActiveWorkout, endWorkout, getExerciseById, minimizeWorkout, defaultRestTimes } = useContext(AppContext);
+  const { activeWorkout, updateActiveWorkout, endWorkout, getExerciseById, minimizeWorkout, defaultRestTimes, keepScreenAwake } = useContext(AppContext);
   const { t } = useI18n();
   const elapsedTime = useWorkoutTimer(activeWorkout?.startTime);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isConfirmingFinish, setIsConfirmingFinish] = useState(false);
   const [isAddExerciseModalOpen, setIsAddExerciseModalOpen] = useState(false);
+  
+  useWakeLock(keepScreenAwake);
 
   const handleUpdateExercise = (updatedExercise: WorkoutExercise) => {
     if (activeWorkout) {

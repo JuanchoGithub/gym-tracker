@@ -49,6 +49,11 @@ export const es = {
   profile_default_timers_desc: 'Establecé el tiempo de descanso predeterminado al agregar nuevos ejercicios.',
   profile_localized_names: 'Nombres de Ejercicios Localizados',
   profile_localized_names_desc: 'Mostrar nombres de ejercicios en el idioma seleccionado.',
+  profile_app_behaviour: 'Comportamiento de la App',
+  profile_keep_screen_awake: 'Mantener Pantalla Encendida',
+  profile_keep_screen_awake_desc: 'Evita que la pantalla se bloquee durante un entrenamiento.',
+  profile_enable_notifications: 'Habilitar Notificaciones',
+  profile_enable_notifications_desc: 'Recibir una alerta cuando el temporizador de descanso termine.',
 
   // Active Workout
   workout_set: 'Serie',
@@ -248,6 +253,10 @@ export const es = {
   category_reps_only: 'Solo Reps',
   category_cardio: 'Cardio',
   category_duration: 'Duración',
+
+  // Notifications
+  notification_timer_finished_title: '¡Descanso Terminado!',
+  notification_timer_finished_body: 'Hora de empezar tu próxima serie de {exercise}. ¡Vamos!',
 
   // Spanish Exercise Names
   ex_1: 'Press de Banca',

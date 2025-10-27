@@ -37,6 +37,10 @@ interface AppContextType {
   startExerciseDuplicate: (exercise: Exercise) => void;
   useLocalizedExerciseNames: boolean;
   setUseLocalizedExerciseNames: (value: boolean) => void;
+  keepScreenAwake: boolean;
+  setKeepScreenAwake: (value: boolean) => void;
+  enableNotifications: boolean;
+  setEnableNotifications: (value: boolean) => void;
 }
 
 export const AppContext = createContext<AppContextType>({} as AppContextType);
@@ -53,6 +57,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [editingExercise, setEditingExercise] = useState<Exercise | null>(null);
   const { t, locale, t_ins } = useI18n();
   const [useLocalizedExerciseNames, setUseLocalizedExerciseNames] = useLocalStorage<boolean>('useLocalizedExerciseNames', true);
+  const [keepScreenAwake, setKeepScreenAwake] = useLocalStorage<boolean>('keepScreenAwake', true);
+  const [enableNotifications, setEnableNotifications] = useLocalStorage<boolean>('enableNotifications', true);
 
   const exercises = useMemo(() => {
     if (useLocalizedExerciseNames && locale !== 'en') {
@@ -265,6 +271,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     startExerciseDuplicate,
     useLocalizedExerciseNames,
     setUseLocalizedExerciseNames,
+    keepScreenAwake,
+    setKeepScreenAwake,
+    enableNotifications,
+    setEnableNotifications,
   }), [
     rawRoutines, upsertRoutine, deleteRoutine, history, exercises, getExerciseById,
     upsertExercise, activeWorkout, startWorkout, updateActiveWorkout, endWorkout,
@@ -272,7 +282,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     weightUnit, setWeightUnit, defaultRestTimes, setDefaultRestTimes,
     editingTemplate, startTemplateEdit, endTemplateEdit, editingExercise,
     startExerciseEdit, endExerciseEdit, startExerciseDuplicate,
-    useLocalizedExerciseNames, setUseLocalizedExerciseNames
+    useLocalizedExerciseNames, setUseLocalizedExerciseNames,
+    keepScreenAwake, setKeepScreenAwake, enableNotifications, setEnableNotifications
   ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

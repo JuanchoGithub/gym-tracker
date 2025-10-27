@@ -49,6 +49,11 @@ export const en = {
   profile_default_timers_desc: 'Set the default rest time when adding new exercises.',
   profile_localized_names: 'Localized Exercise Names',
   profile_localized_names_desc: 'Display exercise names in the selected language.',
+  profile_app_behaviour: 'App Behaviour',
+  profile_keep_screen_awake: 'Keep Screen Awake',
+  profile_keep_screen_awake_desc: 'Prevents the screen from locking during a workout.',
+  profile_enable_notifications: 'Enable Notifications',
+  profile_enable_notifications_desc: 'Get an alert when your rest timer is complete.',
 
   // Active Workout
   workout_set: 'Set',
@@ -248,4 +253,8 @@ export const en = {
   category_reps_only: 'Reps Only',
   category_cardio: 'Cardio',
   category_duration: 'Duration',
+  
+  // Notifications
+  notification_timer_finished_title: 'Rest Over!',
+  notification_timer_finished_body: 'Time to start your next set of {exercise}. Let\'s go!',
 };

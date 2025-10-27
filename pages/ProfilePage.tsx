@@ -3,6 +3,8 @@ import { I18nContext, TranslationKey } from '../contexts/I18nContext';
 import { useI18n } from '../hooks/useI18n';
 import { AppContext } from '../contexts/AppContext';
 import { formatSecondsToMMSS, parseTimerInput } from '../utils/timeUtils';
+import ToggleSwitch from '../components/common/ToggleSwitch';
+import { requestNotificationPermission } from '../services/notificationService';
 
 const ProfilePage: React.FC = () => {
   const { locale, setLocale } = useContext(I18nContext);
@@ -13,11 +15,28 @@ const ProfilePage: React.FC = () => {
     defaultRestTimes,
     setDefaultRestTimes,
     useLocalizedExerciseNames,
-    setUseLocalizedExerciseNames
+    setUseLocalizedExerciseNames,
+    keepScreenAwake,
+    setKeepScreenAwake,
+    enableNotifications,
+    setEnableNotifications,
   } = useContext(AppContext);
 
   const [editingTimerKey, setEditingTimerKey] = useState<keyof typeof defaultRestTimes | null>(null);
   const [tempTimerValue, setTempTimerValue] = useState('');
+  
+  const handleNotificationToggle = async (checked: boolean) => {
+    if (checked) {
+      if (Notification.permission !== 'granted') {
+        const permissionGranted = await requestNotificationPermission();
+        setEnableNotifications(permissionGranted);
+      } else {
+        setEnableNotifications(true);
+      }
+    } else {
+      setEnableNotifications(false);
+    }
+  };
 
   const handleTimerEdit = (key: keyof typeof defaultRestTimes) => {
     setEditingTimerKey(key);
@@ -138,6 +157,26 @@ const ProfilePage: React.FC = () => {
                     )}
                 </div>
               ))}
+            </div>
+        </div>
+
+        <div className="mt-6 pt-4 border-t border-secondary/20">
+            <h3 className="text-text-primary mb-2">{t('profile_app_behaviour')}</h3>
+            <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <label className="text-text-primary">{t('profile_keep_screen_awake')}</label>
+                        <p className="text-xs text-text-secondary">{t('profile_keep_screen_awake_desc')}</p>
+                    </div>
+                    <ToggleSwitch checked={keepScreenAwake} onChange={setKeepScreenAwake} />
+                </div>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <label className="text-text-primary">{t('profile_enable_notifications')}</label>
+                        <p className="text-xs text-text-secondary">{t('profile_enable_notifications_desc')}</p>
+                    </div>
+                    <ToggleSwitch checked={enableNotifications} onChange={handleNotificationToggle} />
+                </div>
             </div>
         </div>
 

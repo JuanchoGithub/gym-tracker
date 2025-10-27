@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { Exercise, WorkoutExercise, PerformedSet, SetType } from '../../types';
 import SetRow from './SetRow';
 import Timer from './Timer';
@@ -9,6 +9,8 @@ import { useWeight } from '../../hooks/useWeight';
 import ChangeTimerModal from '../modals/ChangeTimerModal';
 import EditSetTimerModal from '../modals/EditSetTimerModal';
 import { formatSecondsToMMSS } from '../../utils/timeUtils';
+import { showTimerNotification } from '../../services/notificationService';
+import { AppContext } from '../../contexts/AppContext';
 
 interface ExerciseCardProps {
   workoutExercise: WorkoutExercise;
@@ -19,6 +21,7 @@ interface ExerciseCardProps {
 const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseInfo, onUpdate }) => {
   const { t } = useI18n();
   const { unit } = useWeight();
+  const { enableNotifications } = useContext(AppContext);
   const [activeTimerSetId, setActiveTimerSetId] = useState<string | null>(null);
   const [completedSets, setCompletedSets] = useState(workoutExercise.sets.filter(s => s.isComplete).length);
   const [isNoteEditing, setIsNoteEditing] = useState(false);
@@ -75,6 +78,14 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseIn
   const handleTimerFinish = (finishedSetId: string) => {
     if (activeTimerSetId === finishedSetId) {
       setActiveTimerSetId(null);
+      if (enableNotifications && 'Notification' in window && Notification.permission === 'granted' && document.visibilityState === 'hidden') {
+          showTimerNotification(t('notification_timer_finished_title'), {
+            body: t('notification_timer_finished_body', { exercise: exerciseInfo.name }),
+            icon: '/icon-192x192.png',
+            tag: 'rest-timer-finished',
+            // FIX: Removed the deprecated 'renotify' property which was causing a TypeScript error.
+          });
+      }
     }
   };
   
