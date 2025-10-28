@@ -1,4 +1,3 @@
-
 export const cardioInstructionsEs = {
     ex_19_ins: {
         title: "Correr",
@@ -51,6 +50,15 @@ export const cardioInstructionsEs = {
             "Intentá no apoyarte demasiado en las barandillas.",
             "Mantené una postura erguida.",
             "Esta es una gran opción de cardio de bajo impacto que también trabaja los glúteos y cuádriceps."
+        ]
+    },
+    ex_158_ins: {
+        title: "Rodillas Arriba (High Knees)",
+        steps: [
+            "Parate en el lugar con los pies separados al ancho de las caderas.",
+            "Comenzá a trotar en el lugar, pero llevá las rodillas hacia el pecho lo más alto posible.",
+            "Movè los brazos en oposición a las piernas.",
+            "Mantené el core activado y aterrizá suavemente sobre la punta de los pies."
         ]
     }
 };

@@ -1,6 +1,6 @@
 import React, { createContext, useState, ReactNode, useMemo, useEffect, useCallback } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import { Routine, WorkoutSession, Exercise, WorkoutExercise, PerformedSet } from '../types';
+import { Routine, WorkoutSession, Exercise, WorkoutExercise, PerformedSet, ActiveHiitSession } from '../types';
 import { PREDEFINED_ROUTINES } from '../constants/routines';
 import { PREDEFINED_EXERCISES } from '../constants/exercises';
 import { useI18n } from '../hooks/useI18n';
@@ -48,6 +48,11 @@ interface AppContextType {
   enableNotifications: boolean;
   setEnableNotifications: (value: boolean) => void;
   allTimeBestSets: Record<string, PerformedSet>;
+  activeHiitSession: ActiveHiitSession | null;
+  startHiitSession: (routine: Routine) => void;
+  endHiitSession: () => void;
+  selectedVoiceURI: string | null;
+  setSelectedVoiceURI: (uri: string | null) => void;
 }
 
 export const AppContext = createContext<AppContextType>({} as AppContextType);
@@ -68,6 +73,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [keepScreenAwake, setKeepScreenAwake] = useLocalStorage<boolean>('keepScreenAwake', true);
   const [enableNotifications, setEnableNotifications] = useLocalStorage<boolean>('enableNotifications', true);
   const [exerciseEditCallback, setExerciseEditCallback] = useState<((exercise: Exercise) => void) | null>(null);
+  const [activeHiitSession, setActiveHiitSession] = useLocalStorage<ActiveHiitSession | null>('activeHiitSession', null);
+  const [selectedVoiceURI, setSelectedVoiceURI] = useLocalStorage<string | null>('selectedVoiceURI', null);
 
   const exercises = useMemo(() => {
     if (useLocalizedExerciseNames && locale !== 'en') {
@@ -278,6 +285,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const minimizeWorkout = useCallback(() => setIsWorkoutMinimized(true), [setIsWorkoutMinimized]);
   const maximizeWorkout = useCallback(() => setIsWorkoutMinimized(false), [setIsWorkoutMinimized]);
 
+  const startHiitSession = useCallback((routine: Routine) => {
+    const newSession: ActiveHiitSession = {
+        routine: JSON.parse(JSON.stringify(routine)), // deep copy
+        startTime: Date.now(),
+    };
+    setActiveHiitSession(newSession);
+  }, [setActiveHiitSession]);
+
+  const endHiitSession = useCallback(() => {
+      setActiveHiitSession(null);
+  }, [setActiveHiitSession]);
+
   const startTemplateEdit = useCallback((template: Routine) => {
     setEditingTemplate(template);
   }, []);
@@ -424,6 +443,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     enableNotifications,
     setEnableNotifications,
     allTimeBestSets,
+    activeHiitSession,
+    startHiitSession,
+    endHiitSession,
+    selectedVoiceURI,
+    setSelectedVoiceURI,
   }), [
     rawRoutines, upsertRoutine, deleteRoutine, history, deleteHistorySession, updateHistorySession, exercises, getExerciseById,
     upsertExercise, activeWorkout, startWorkout, updateActiveWorkout, endWorkout,
@@ -434,7 +458,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     editingHistorySession, startHistoryEdit, endHistoryEdit,
     useLocalizedExerciseNames, setUseLocalizedExerciseNames,
     keepScreenAwake, setKeepScreenAwake, enableNotifications, setEnableNotifications,
-    allTimeBestSets
+    allTimeBestSets, activeHiitSession, startHiitSession, endHiitSession,
+    selectedVoiceURI, setSelectedVoiceURI,
   ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

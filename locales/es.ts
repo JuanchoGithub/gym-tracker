@@ -29,7 +29,8 @@ export const es = {
   train_start_empty: 'Empezar Entrenamiento Vacío',
   train_latest_workouts: 'Últimos Entrenamientos',
   train_my_templates: 'Mis Plantillas',
-  train_example_templates: 'Plantillas de Ejemplo',
+  train_sample_workouts: 'Entrenamientos de Muestra',
+  train_sample_hiit: 'HIIT de Muestra',
   train_empty_workout_name: 'Entrenamiento Vacío',
   train_empty_workout_desc: 'Un entrenamiento vacío para armar sobre la marcha.',
   train_new_custom_template_name: 'Nueva Plantilla Personalizada',
@@ -74,6 +75,10 @@ export const es = {
   profile_enable_notifications: 'Habilitar Notificaciones',
   profile_enable_notifications_desc: 'Recibir una alerta cuando el temporizador de descanso termine.',
   profile_notifications_blocked: 'Notificaciones bloqueadas. Por favor, actívelas en la configuración de su navegador.',
+  profile_voice_selection: 'Selección de Voz',
+  profile_voice_selection_desc: 'Seleccioná una voz para los anuncios del entrenamiento.',
+  profile_test_voice: 'Probar Voz',
+  profile_voice_greeting: 'Hola, soy {voiceName}',
 
   // Active Workout
   workout_set: 'Serie',
@@ -90,6 +95,8 @@ export const es = {
   active_workout_empty_desc: '¡Agregá un ejercicio para empezar!',
   active_workout_edit_details_aria: 'Editar detalles del entrenamiento',
   active_workout_minimize_aria: 'Minimizar entrenamiento',
+  workout_finished_congrats: '¡Entrenamiento finalizado, felicitaciones!',
+  you_worked_for: 'Trabajaste durante {minutes} minutos.',
   
   // Set Type Modal
   set_type_modal_title: 'Tipo de Serie',
@@ -268,6 +275,7 @@ export const es = {
   timers_prepare: 'Preparate',
   timers_minute_abbreviation: 'm',
   timers_second_abbreviation: 's',
+  timers_next: 'Siguiente',
 
   // Body Parts
   body_part_all: 'Musculos',
@@ -460,4 +468,7 @@ export const es = {
   ex_154: 'Estiramiento de Flexor de Cadera',
   ex_155: 'Estiramiento Gato-Vaca',
   ex_156: 'Elevación de Piernas Colgado',
+  ex_157: 'Plancha Lateral',
+  ex_158: 'Rodillas Arriba',
+  ex_159: 'Flexión con Rotación',
 };

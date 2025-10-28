@@ -16,9 +16,12 @@ export type Page = 'TRAIN' | 'HISTORY' | 'EXERCISES' | 'TIMERS' | 'PROFILE' | 'A
 
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>('TRAIN');
-  const { activeWorkout, isWorkoutMinimized, editingTemplate, editingExercise, editingHistorySession } = useContext(AppContext);
+  const { activeWorkout, isWorkoutMinimized, editingTemplate, editingExercise, editingHistorySession, activeHiitSession } = useContext(AppContext);
 
   const renderPage = () => {
+    if (activeHiitSession) {
+      return <TimersPage />;
+    }
     switch (currentPage) {
       case 'TRAIN':
         return <TrainPage />;
@@ -60,7 +63,7 @@ const App: React.FC = () => {
       </main>
       <div className="flex-shrink-0">
         {activeWorkout && isWorkoutMinimized && <MinimizedWorkoutBar />}
-        {(!activeWorkout || isWorkoutMinimized) && !editingTemplate && !editingExercise && !editingHistorySession && <BottomNavBar currentPage={currentPage} onNavigate={handleNavigate} />}
+        {(!activeWorkout || isWorkoutMinimized) && !editingTemplate && !editingExercise && !editingHistorySession && !activeHiitSession && <BottomNavBar currentPage={currentPage} onNavigate={handleNavigate} />}
       </div>
     </div>
   );

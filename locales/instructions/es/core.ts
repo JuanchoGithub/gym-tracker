@@ -1,4 +1,3 @@
-
 export const coreInstructionsEs = {
   ex_15_ins: {
     title: "Plancha",
@@ -133,6 +132,24 @@ export const coreInstructionsEs = {
         "Manteniendo las piernas rectas, elevalas hacia la barra tan alto como puedas.",
         "Controlá el movimiento y evitá usar impulso o balancearte.",
         "Bajá lentamente las piernas a la posición inicial. Para una variación más fácil, flexioná las rodillas."
+    ]
+  },
+  ex_157_ins: {
+    title: "Plancha Lateral",
+    steps: [
+        "Acostate de lado con las piernas rectas y una encima de la otra.",
+        "Apoyá la parte superior del cuerpo sobre el antebrazo, con el codo directamente debajo del hombro.",
+        "Levantá las caderas del suelo, creando una línea recta desde la cabeza hasta los pies.",
+        "Activá el core y mantené la posición. Repetí del otro lado."
+    ]
+  },
+  ex_159_ins: {
+    title: "Flexión con Rotación",
+    steps: [
+        "Realizá una flexión estándar.",
+        "En la parte superior del movimiento, desplazá tu peso sobre una mano.",
+        "Girá el torso y extendé el otro brazo hacia el techo, formando una 'T' con tu cuerpo.",
+        "Regresá a la posición de plancha y repetí, alternando los lados después de cada flexión."
     ]
   },
 };

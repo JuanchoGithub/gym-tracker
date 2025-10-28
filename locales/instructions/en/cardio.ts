@@ -51,5 +51,14 @@ export const cardioInstructionsEn = {
             "Maintain an upright posture.",
             "This is a great low-impact cardio option that also targets the glutes and quads."
         ]
+    },
+    ex_158_ins: {
+        title: "High Knees",
+        steps: [
+            "Stand in place with your feet hip-width apart.",
+            "Start jogging in place, but drive your knees up towards your chest as high as possible.",
+            "Pump your arms in opposition to your legs.",
+            "Keep your core engaged and land softly on the balls of your feet."
+        ]
     }
 };

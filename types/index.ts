@@ -45,6 +45,12 @@ export interface Routine {
   isTemplate?: boolean; // true for templates
   lastUsed?: number; // timestamp for latest workouts
   originId?: string; // The ID of the template this was based on
+  routineType?: 'strength' | 'hiit';
+  hiitConfig?: {
+    workTime: number;
+    restTime: number;
+    prepareTime?: number;
+  };
 }
 
 export interface WorkoutSession {
@@ -55,6 +61,11 @@ export interface WorkoutSession {
   endTime: number; // timestamp
   exercises: WorkoutExercise[]; // This will store the completed sets
   prCount?: number;
+}
+
+export interface ActiveHiitSession {
+    routine: Routine;
+    startTime: number;
 }
 
 export interface ChartDataPoint {

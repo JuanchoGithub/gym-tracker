@@ -153,6 +153,8 @@ export const PREDEFINED_EXERCISES: Exercise[] = [
   { id: 'ex-127', name: 'Side Bend', bodyPart: 'Core', category: 'Dumbbell' },
   { id: 'ex-128', name: 'Vacuum', bodyPart: 'Core', category: 'Bodyweight' },
   { id: 'ex-156', name: 'Hanging Leg Raise', bodyPart: 'Core', category: 'Assisted Bodyweight' },
+  { id: 'ex-157', name: 'Side Plank', bodyPart: 'Core', category: 'Duration' },
+  { id: 'ex-159', name: 'Push-up and Rotation', bodyPart: 'Core', category: 'Bodyweight' },
 
   // Cardio (6)
   { id: 'ex-19', name: 'Running', bodyPart: 'Cardio', category: 'Cardio' },
@@ -161,6 +163,7 @@ export const PREDEFINED_EXERCISES: Exercise[] = [
   { id: 'ex-131', name: 'Mountain Climber', bodyPart: 'Cardio', category: 'Cardio' },
   { id: 'ex-135', name: 'Jump Rope', bodyPart: 'Cardio', category: 'Cardio' },
   { id: 'ex-136', name: 'Stair Climber', bodyPart: 'Cardio', category: 'Cardio' },
+  { id: 'ex-158', name: 'High Knees', bodyPart: 'Cardio', category: 'Cardio' },
   
   // Full Body (9)
   { id: 'ex-130', name: 'Burpee', bodyPart: 'Full Body', category: 'Cardio' },

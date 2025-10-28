@@ -134,4 +134,22 @@ export const coreInstructionsEn = {
         "Slowly lower your legs back to the starting position. For an easier variation, bend your knees."
     ]
   },
+  ex_157_ins: {
+    title: "Side Plank",
+    steps: [
+        "Lie on your side with your legs straight and stacked on top of each other.",
+        "Prop your upper body up on your forearm, with your elbow directly under your shoulder.",
+        "Lift your hips off the floor, creating a straight line from your head to your feet.",
+        "Engage your core and hold the position. Repeat on the other side."
+    ]
+  },
+  ex_159_ins: {
+    title: "Push-up and Rotation",
+    steps: [
+        "Perform a standard push-up.",
+        "At the top of the movement, shift your weight onto one hand.",
+        "Rotate your torso and extend your other arm towards the ceiling, forming a 'T' shape.",
+        "Return to the plank position and repeat, alternating sides after each push-up."
+    ]
+  },
 };

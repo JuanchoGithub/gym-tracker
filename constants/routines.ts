@@ -19,6 +19,14 @@ const createWorkoutExercise = (exerciseId: string, sets: PerformedSet[], restTim
     }
 });
 
+const createHiitExercise = (exerciseId: string): WorkoutExercise => ({
+    id: `we-${exerciseId}-${Math.random()}`,
+    exerciseId,
+    sets: [{ id: `set-${Math.random()}`, reps: 1, weight: 0, type: 'normal', isComplete: false }], // Dummy set for type compatibility
+    restTime: { normal: 0, warmup: 0, drop: 0 },
+});
+
+
 const strongLiftsA: Routine = {
     id: 'rt-1',
     name: 'StrongLifts 5x5 - Workout A',
@@ -139,6 +147,57 @@ const fullBody: Routine = {
     originId: 'rt-full-body'
 };
 
+const sevenMinWorkout: Routine = {
+    id: 'rt-hiit-7min',
+    name: 'Classic 7-Minute Workout',
+    description: '12 bodyweight exercises performed for 30 seconds with 10 seconds of rest in between.',
+    exercises: [
+        createHiitExercise('ex-129'), // Jumping Jacks
+        createHiitExercise('ex-111'), // Wall Sit
+        createHiitExercise('ex-23'),  // Push-Up
+        createHiitExercise('ex-20'),  // Crunches
+        createHiitExercise('ex-103'), // Step-Up
+        createHiitExercise('ex-2'),   // Squat
+        createHiitExercise('ex-89'),  // Bench Dip
+        createHiitExercise('ex-15'),  // Plank
+        createHiitExercise('ex-158'), // High Knees
+        createHiitExercise('ex-99'),  // Lunge
+        createHiitExercise('ex-159'), // Push-up and Rotation
+        createHiitExercise('ex-157'), // Side Plank
+    ],
+    isTemplate: true,
+    routineType: 'hiit',
+    hiitConfig: {
+        workTime: 30,
+        restTime: 10,
+        prepareTime: 10,
+    },
+    originId: 'rt-hiit-7min'
+};
+
+const beginnerHiitExercises = [
+    createHiitExercise('ex-129'), // Jumping Jacks
+    createHiitExercise('ex-2'),   // Squat
+    createHiitExercise('ex-131'), // Mountain Climber
+    createHiitExercise('ex-23'),  // Push-up
+    createHiitExercise('ex-104'), // Glute Bridge
+];
+
+const beginnerHiit: Routine = {
+    id: 'rt-hiit-beginner',
+    name: 'Beginner HIIT Circuit',
+    description: 'A 15-minute workout with 30s work and 30s rest. Complete 3 rounds.',
+    exercises: [...beginnerHiitExercises, ...beginnerHiitExercises, ...beginnerHiitExercises],
+    isTemplate: true,
+    routineType: 'hiit',
+    hiitConfig: {
+        workTime: 30,
+        restTime: 30,
+        prepareTime: 10,
+    },
+    originId: 'rt-hiit-beginner'
+};
+
 
 export const PREDEFINED_ROUTINES: Routine[] = [
   strongLiftsA,
@@ -149,4 +208,6 @@ export const PREDEFINED_ROUTINES: Routine[] = [
   pplPull,
   pplLegs,
   fullBody,
+  sevenMinWorkout,
+  beginnerHiit,
 ];

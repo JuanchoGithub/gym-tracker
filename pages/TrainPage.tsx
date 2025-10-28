@@ -8,24 +8,37 @@ import { Icon } from '../components/common/Icon';
 import RoutineSection from '../components/train/RoutineSection';
 
 const TrainPage: React.FC = () => {
-  const { routines, startWorkout, activeWorkout, discardActiveWorkout, maximizeWorkout, startTemplateEdit } = useContext(AppContext);
+  const { routines, startWorkout, activeWorkout, discardActiveWorkout, maximizeWorkout, startTemplateEdit, startHiitSession } = useContext(AppContext);
   const { t } = useI18n();
   const [selectedRoutine, setSelectedRoutine] = useState<Routine | null>(null);
   const [isConfirmingNewWorkout, setIsConfirmingNewWorkout] = useState(false);
   const [routineToStart, setRoutineToStart] = useState<Routine | null>(null);
 
-  const { latestWorkouts, customTemplates, exampleTemplates } = useMemo(() => {
+  const { latestWorkouts, customTemplates, sampleWorkouts, sampleHiit } = useMemo(() => {
     const latest = routines
       .filter(r => !r.isTemplate)
       .sort((a, b) => (b.lastUsed || 0) - (a.lastUsed || 0));
 
-    const custom = routines.filter(r => r.isTemplate && !r.id.startsWith('rt-'));
-    const examples = routines.filter(r => r.isTemplate && r.id.startsWith('rt-'));
-
-    return { latestWorkouts: latest, customTemplates: custom, exampleTemplates: examples };
+    const templates = routines.filter(r => r.isTemplate);
+    const custom = templates.filter(r => !r.id.startsWith('rt-') && r.routineType !== 'hiit');
+    const samples = templates.filter(r => r.id.startsWith('rt-') && r.routineType !== 'hiit');
+    const hiit = templates.filter(r => r.routineType === 'hiit');
+    
+    return { latestWorkouts: latest, customTemplates: custom, sampleWorkouts: samples, sampleHiit: hiit };
   }, [routines]);
 
   const handleRoutineSelect = (routine: Routine) => {
+    if (routine.routineType === 'hiit') {
+        // Prime the speech synthesis engine on user interaction to bypass autoplay restrictions.
+        if ('speechSynthesis' in window) {
+          const utterance = new SpeechSynthesisUtterance(' ');
+          utterance.volume = 0;
+          window.speechSynthesis.speak(utterance);
+        }
+        startHiitSession(routine);
+        return;
+    }
+
     if (activeWorkout) {
       setRoutineToStart(routine);
       setIsConfirmingNewWorkout(true);
@@ -106,7 +119,8 @@ const TrainPage: React.FC = () => {
                 </button>
             }
         />
-        <RoutineSection title={t('train_example_templates')} routines={exampleTemplates} onRoutineSelect={setSelectedRoutine} />
+        <RoutineSection title={t('train_sample_hiit')} routines={sampleHiit} onRoutineSelect={setSelectedRoutine} />
+        <RoutineSection title={t('train_sample_workouts')} routines={sampleWorkouts} onRoutineSelect={setSelectedRoutine} />
       </div>
 
       {selectedRoutine && (
