@@ -1,4 +1,4 @@
-import React, { useState, useContext, useMemo } from 'react';
+import React, { useState, useContext, useMemo, useRef, useEffect } from 'react';
 import Modal from '../common/Modal';
 import { AppContext } from '../../contexts/AppContext';
 import { useI18n } from '../../hooks/useI18n';
@@ -16,13 +16,15 @@ interface AddExercisesModalProps {
 }
 
 const AddExercisesModal: React.FC<AddExercisesModalProps> = ({ isOpen, onClose, onAdd }) => {
-  const { exercises } = useContext(AppContext);
+  const { exercises, startExerciseEdit } = useContext(AppContext);
   const { t } = useI18n();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBodyPart, setSelectedBodyPart] = useState<BodyPart | 'All'>('All');
   const [selectedCategory, setSelectedCategory] = useState<ExerciseCategory | 'All'>('All');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [viewingExercise, setViewingExercise] = useState<Exercise | null>(null);
+  const [newlyCreatedId, setNewlyCreatedId] = useState<string | null>(null);
+  const exerciseRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
 
   const bodyPartFilterOptions = useMemo(() => [
     { value: 'All' as const, label: t('body_part_all') },
@@ -42,6 +44,17 @@ const AddExercisesModal: React.FC<AddExercisesModalProps> = ({ isOpen, onClose, 
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [exercises, searchTerm, selectedBodyPart, selectedCategory]);
   
+  useEffect(() => {
+    if (newlyCreatedId) {
+        const node = exerciseRefs.current.get(newlyCreatedId);
+        if (node) {
+            node.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        // Reset the ID so it doesn't scroll again on re-renders
+        setNewlyCreatedId(null);
+    }
+  }, [newlyCreatedId, filteredExercises]);
+
   const handleToggleSelect = (id: string) => {
     setSelectedIds(prev => {
         if (prev.includes(id)) {
@@ -77,6 +90,21 @@ const AddExercisesModal: React.FC<AddExercisesModalProps> = ({ isOpen, onClose, 
     setViewingExercise(null);
     handleClose();
   };
+  
+  const handleCreateNewAndSelect = () => {
+    const newExercise: Exercise = {
+        id: `custom-${Date.now()}`,
+        name: 'New Exercise',
+        bodyPart: 'Chest',
+        category: 'Barbell',
+        notes: '',
+    };
+    startExerciseEdit(newExercise, (createdExercise) => {
+        // This callback runs after the exercise editor closes and the new exercise is saved
+        setSelectedIds(prev => [...new Set([...prev, createdExercise.id])]);
+        setNewlyCreatedId(createdExercise.id);
+    });
+  };
 
   return (
     <>
@@ -95,9 +123,14 @@ const AddExercisesModal: React.FC<AddExercisesModalProps> = ({ isOpen, onClose, 
                       <Icon name="x" className="w-6 h-6" />
                   </button>
                   <h2 className="text-xl font-bold text-text-primary">{t('add_exercises_modal_title')}</h2>
-                  <button onClick={handleAdd} className="text-primary font-bold py-1 px-3 rounded-lg text-base disabled:text-text-secondary disabled:cursor-not-allowed" disabled={selectedIds.length === 0}>
-                      {selectedIds.length > 0 ? `${t('common_add')} (${selectedIds.length})` : t('common_add')}
-                  </button>
+                  <div className="flex items-center gap-2 sm:gap-4">
+                      <button onClick={handleCreateNewAndSelect} className="text-primary font-semibold py-1 px-3 text-base">
+                          {t('common_create')}
+                      </button>
+                      <button onClick={handleAdd} className="text-primary font-bold py-1 px-3 rounded-lg text-base disabled:text-text-secondary disabled:cursor-not-allowed" disabled={selectedIds.length === 0}>
+                          {selectedIds.length > 0 ? `${t('common_add')} (${selectedIds.length})` : t('common_add')}
+                      </button>
+                  </div>
               </div>
 
               <div className="flex-shrink-0 space-y-2 mb-4">
@@ -135,6 +168,14 @@ const AddExercisesModal: React.FC<AddExercisesModalProps> = ({ isOpen, onClose, 
                     return (
                       <div
                           key={exercise.id}
+                          // FIX: Corrected the ref callback to ensure it returns `void` and handles component unmounting by deleting the ref from the map. This resolves a TypeScript type error where the `Map.set` return value was incompatible with the expected ref callback return type.
+                          ref={el => {
+                            if (el) {
+                              exerciseRefs.current.set(exercise.id, el);
+                            } else {
+                              exerciseRefs.current.delete(exercise.id);
+                            }
+                          }}
                           onClick={() => handleToggleSelect(exercise.id)}
                           className={`p-3 rounded-lg flex justify-between items-center cursor-pointer transition-colors ${isSelected ? 'bg-primary/30 ring-2 ring-primary' : 'bg-slate-900/50 hover:bg-slate-700'}`}
                       >
@@ -170,6 +211,11 @@ const AddExercisesModal: React.FC<AddExercisesModalProps> = ({ isOpen, onClose, 
             exercise={viewingExercise}
             onSelectForAdd={handleSelectFromDetail}
             onAddAndClose={handleAddAndCloseFromDetail}
+            onExerciseCreated={(createdExercise) => {
+              setSelectedIds(prev => [...new Set([...prev, createdExercise.id])]);
+              setNewlyCreatedId(createdExercise.id);
+              setViewingExercise(null);
+            }}
         />
       )}
     </>

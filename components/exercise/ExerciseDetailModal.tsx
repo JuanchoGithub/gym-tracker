@@ -17,11 +17,12 @@ interface ExerciseDetailModalProps {
   onClose: () => void;
   onSelectForAdd?: (exerciseId: string) => void;
   onAddAndClose?: (exerciseId: string) => void;
+  onExerciseCreated?: (createdExercise: Exercise) => void;
 }
 
 type Tab = 'description' | 'history' | 'graphs' | 'records';
 
-const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({ exercise, isOpen, onClose, onSelectForAdd, onAddAndClose }) => {
+const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({ exercise, isOpen, onClose, onSelectForAdd, onAddAndClose, onExerciseCreated }) => {
   const { t } = useI18n();
   const { history: allHistory, startExerciseEdit, startExerciseDuplicate } = useContext(AppContext);
   const [activeTab, setActiveTab] = useState<Tab>('description');
@@ -52,7 +53,7 @@ const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({ exercise, isO
   };
 
   const handleDuplicate = () => {
-    startExerciseDuplicate(exercise);
+    startExerciseDuplicate(exercise, onExerciseCreated);
     onClose();
   };
 

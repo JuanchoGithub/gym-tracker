@@ -40,9 +40,6 @@ const App: React.FC = () => {
     if (editingHistorySession) {
       return <HistoryWorkoutEditorPage />;
     }
-    if (editingExercise) {
-      return <ExerciseEditorPage />;
-    }
     if (editingTemplate) {
       return <TemplateEditorPage />;
     }
@@ -54,8 +51,9 @@ const App: React.FC = () => {
 
   return (
     <div className="h-screen bg-background text-text-primary font-sans flex flex-col overflow-hidden">
-      <main className="flex-grow container mx-auto px-2 sm:px-4 py-4 overflow-y-auto">
+      <main className="flex-grow container mx-auto px-2 sm:px-4 py-4 overflow-y-auto relative">
         {renderContent()}
+        {editingExercise && <ExerciseEditorPage />}
       </main>
       <div className="flex-shrink-0">
         {activeWorkout && isWorkoutMinimized && <MinimizedWorkoutBar />}

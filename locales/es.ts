@@ -15,6 +15,7 @@ export const es = {
   common_save_changes: 'Guardar Cambios',
   common_select: 'Seleccionar',
   common_add_and_close: 'Agregar y Cerrar',
+  common_create: 'Crear',
   
   // Navigation
   nav_train: 'Entrenar',

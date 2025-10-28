@@ -35,9 +35,9 @@ interface AppContextType {
   startTemplateEdit: (template: Routine) => void;
   endTemplateEdit: (savedTemplate?: Routine) => void;
   editingExercise: Exercise | null;
-  startExerciseEdit: (exercise: Exercise) => void;
+  startExerciseEdit: (exercise: Exercise, onSaveCallback?: (savedExercise: Exercise) => void) => void;
   endExerciseEdit: (savedExercise?: Exercise) => void;
-  startExerciseDuplicate: (exercise: Exercise) => void;
+  startExerciseDuplicate: (exercise: Exercise, onSaveCallback?: (savedExercise: Exercise) => void) => void;
   editingHistorySession: WorkoutSession | null;
   startHistoryEdit: (session: WorkoutSession) => void;
   endHistoryEdit: (savedSession?: WorkoutSession) => void;
@@ -67,6 +67,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [useLocalizedExerciseNames, setUseLocalizedExerciseNames] = useLocalStorage<boolean>('useLocalizedExerciseNames', true);
   const [keepScreenAwake, setKeepScreenAwake] = useLocalStorage<boolean>('keepScreenAwake', true);
   const [enableNotifications, setEnableNotifications] = useLocalStorage<boolean>('enableNotifications', true);
+  const [exerciseEditCallback, setExerciseEditCallback] = useState<((exercise: Exercise) => void) | null>(null);
 
   const exercises = useMemo(() => {
     if (useLocalizedExerciseNames && locale !== 'en') {
@@ -288,18 +289,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setEditingTemplate(null);
   }, [upsertRoutine]);
 
-  const startExerciseEdit = useCallback((exercise: Exercise) => {
+  const startExerciseEdit = useCallback((exercise: Exercise, onSaveCallback?: (savedExercise: Exercise) => void) => {
     setEditingExercise(exercise);
+    if (onSaveCallback) {
+        setExerciseEditCallback(() => onSaveCallback);
+    }
   }, []);
 
   const endExerciseEdit = useCallback((savedExercise?: Exercise) => {
     if (savedExercise) {
       upsertExercise(savedExercise);
+      if (exerciseEditCallback) {
+          exerciseEditCallback(savedExercise);
+      }
     }
     setEditingExercise(null);
-  }, [upsertExercise]);
+    setExerciseEditCallback(null);
+  }, [upsertExercise, exerciseEditCallback]);
 
-  const startExerciseDuplicate = useCallback((exerciseToDuplicate: Exercise) => {
+  const startExerciseDuplicate = useCallback((exerciseToDuplicate: Exercise, onSaveCallback?: (savedExercise: Exercise) => void) => {
     const originalExercise = rawExercises.find(e => e.id === exerciseToDuplicate.id) || exerciseToDuplicate;
     let description = '';
     const isStock = originalExercise.id.startsWith('ex-');
@@ -320,7 +328,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         name: `${exerciseToDuplicate.name} (Copy)`,
         notes: description
     };
-    startExerciseEdit(newExercise);
+    startExerciseEdit(newExercise, onSaveCallback);
   }, [rawExercises, t_ins, startExerciseEdit]);
 
   const deleteHistorySession = useCallback((sessionId: string) => {

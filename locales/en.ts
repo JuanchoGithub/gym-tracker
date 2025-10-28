@@ -15,6 +15,7 @@ export const en = {
   common_save_changes: 'Save Changes',
   common_select: 'Select',
   common_add_and_close: 'Add and Close',
+  common_create: 'Create',
 
   // Navigation
   nav_train: 'Train',
