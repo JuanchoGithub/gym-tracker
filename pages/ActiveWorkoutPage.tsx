@@ -2,33 +2,133 @@ import React, { useContext, useState } from 'react';
 import { AppContext } from '../contexts/AppContext';
 import { useI18n } from '../hooks/useI18n';
 import ExerciseCard from '../components/workout/ExerciseCard';
-import { WorkoutExercise, WorkoutSession } from '../types';
+import { WorkoutExercise, WorkoutSession, PerformedSet } from '../types';
 import { useWorkoutTimer } from '../hooks/useWorkoutTimer';
 import { Icon } from '../components/common/Icon';
 import WorkoutDetailsModal from '../components/modals/WorkoutDetailsModal';
 import Modal from '../components/common/Modal';
 import ReplaceExerciseModal from '../components/modals/ReplaceExerciseModal';
 import { useWakeLock } from '../hooks/useWakeLock';
+import { scheduleTimerNotification, cancelTimerNotification } from '../services/notificationService';
 
 const ActiveWorkoutPage: React.FC = () => {
-  const { activeWorkout, updateActiveWorkout, endWorkout, getExerciseById, minimizeWorkout, defaultRestTimes, keepScreenAwake } = useContext(AppContext);
+  const { activeWorkout, updateActiveWorkout, endWorkout, discardActiveWorkout, getExerciseById, minimizeWorkout, defaultRestTimes, keepScreenAwake, enableNotifications } = useContext(AppContext);
   const { t } = useI18n();
   const elapsedTime = useWorkoutTimer(activeWorkout?.startTime);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isConfirmingFinish, setIsConfirmingFinish] = useState(false);
   const [isAddExerciseModalOpen, setIsAddExerciseModalOpen] = useState(false);
+  const [activeTimerInfo, setActiveTimerInfo] = useState<{ exerciseId: string; setId: string; startTime: number } | null>(null);
   
   useWakeLock(keepScreenAwake);
 
-  const handleUpdateExercise = (updatedExercise: WorkoutExercise) => {
-    if (activeWorkout) {
-      const updatedExercises = activeWorkout.exercises.map(ex =>
-        ex.id === updatedExercise.id ? updatedExercise : ex
-      );
-      updateActiveWorkout({ ...activeWorkout, exercises: updatedExercises });
+  const getTimerDuration = (set: PerformedSet, workoutExercise: WorkoutExercise): number => {
+    if (set.rest !== undefined && set.rest !== null) return set.rest;
+    switch (set.type) {
+        case 'warmup': return workoutExercise.restTime.warmup;
+        case 'drop': return workoutExercise.restTime.drop;
+        default: return workoutExercise.restTime.normal;
     }
   };
+
+  const handleUpdateExercise = (updatedExercise: WorkoutExercise) => {
+    if (!activeWorkout) return;
+
+    const originalExercise = activeWorkout.exercises.find(ex => ex.id === updatedExercise.id);
+    if (!originalExercise) return;
+
+    let justCompletedSet: PerformedSet | null = null;
+    let justUncompletedSet: PerformedSet | null = null;
+    for (const updatedSet of updatedExercise.sets) {
+        const originalSet = originalExercise.sets.find(s => s.id === updatedSet.id);
+        if (originalSet && !originalSet.isComplete && updatedSet.isComplete) {
+            justCompletedSet = updatedSet;
+            break;
+        }
+        if (originalSet && originalSet.isComplete && !updatedSet.isComplete) {
+            justUncompletedSet = updatedSet;
+            break;
+        }
+    }
+
+    let workoutToUpdate = { ...activeWorkout };
+
+    // Stop the old timer if a new one is starting
+    if (justCompletedSet && activeTimerInfo) {
+        const elapsedSeconds = Math.round((Date.now() - activeTimerInfo.startTime) / 1000);
+        
+        const prevExerciseIndex = workoutToUpdate.exercises.findIndex(e => e.id === activeTimerInfo.exerciseId);
+        if (prevExerciseIndex > -1) {
+            const prevSetIndex = workoutToUpdate.exercises[prevExerciseIndex].sets.findIndex(s => s.id === activeTimerInfo.setId);
+            if (prevSetIndex > -1) {
+                workoutToUpdate.exercises[prevExerciseIndex].sets[prevSetIndex].actualRest = elapsedSeconds;
+            }
+        }
+    }
+    
+    // Update the workout with the changes from the card
+    const updatedExercises = workoutToUpdate.exercises.map(ex =>
+        ex.id === updatedExercise.id ? updatedExercise : ex
+    );
+    workoutToUpdate = { ...workoutToUpdate, exercises: updatedExercises };
+
+    // Set new timer or clear existing one
+    if (justCompletedSet) {
+        setActiveTimerInfo({
+            exerciseId: updatedExercise.id,
+            setId: justCompletedSet.id,
+            startTime: Date.now(),
+        });
+        if (enableNotifications) {
+            const exerciseInfo = getExerciseById(updatedExercise.exerciseId);
+            const timerDuration = getTimerDuration(justCompletedSet, updatedExercise);
+            if (timerDuration > 0 && exerciseInfo) {
+                scheduleTimerNotification(timerDuration, t('notification_timer_finished_title'), {
+                    body: t('notification_timer_finished_body', { exercise: exerciseInfo.name }),
+                    icon: '/icon-192x192.png',
+                    tag: 'rest-timer-finished',
+                    requireInteraction: true,
+                });
+            }
+        }
+    } else if (justUncompletedSet && activeTimerInfo && activeTimerInfo.setId === justUncompletedSet.id) {
+        setActiveTimerInfo(null);
+        cancelTimerNotification('rest-timer-finished');
+    }
+    
+    updateActiveWorkout(workoutToUpdate);
+  };
   
+  const handleTimerFinish = (finishedExerciseId: string, finishedSetId: string) => {
+    if (activeWorkout && activeTimerInfo && activeTimerInfo.exerciseId === finishedExerciseId && activeTimerInfo.setId === finishedSetId) {
+        const elapsedSeconds = Math.round((Date.now() - activeTimerInfo.startTime) / 1000);
+
+        const updatedExercises = activeWorkout.exercises.map(ex => {
+            if (ex.id === finishedExerciseId) {
+                return {
+                    ...ex,
+                    sets: ex.sets.map(s => s.id === finishedSetId ? { ...s, actualRest: elapsedSeconds } : s)
+                };
+            }
+            return ex;
+        });
+
+        updateActiveWorkout({ ...activeWorkout, exercises: updatedExercises });
+        setActiveTimerInfo(null);
+    }
+  };
+
+  const handleTimerChange = (newDuration: number, exerciseName: string) => {
+    if (enableNotifications) {
+        scheduleTimerNotification(newDuration, t('notification_timer_finished_title'), {
+            body: t('notification_timer_finished_body', { exercise: exerciseName }),
+            icon: '/icon-192x192.png',
+            tag: 'rest-timer-finished',
+            requireInteraction: true,
+        });
+    }
+  };
+
   const handleFinishWorkout = () => {
     setIsConfirmingFinish(true);
   };
@@ -40,6 +140,11 @@ const ActiveWorkoutPage: React.FC = () => {
 
   const cancelFinishWorkout = () => {
     setIsConfirmingFinish(false);
+  };
+
+  const handleDiscardWorkout = () => {
+    discardActiveWorkout();
+    // Component will unmount, no need to close modal
   };
 
   const handleSaveDetails = (updatedDetails: Partial<WorkoutSession>) => {
@@ -125,6 +230,9 @@ const ActiveWorkoutPage: React.FC = () => {
                   workoutExercise={exercise}
                   exerciseInfo={exerciseInfo}
                   onUpdate={handleUpdateExercise}
+                  activeTimerInfo={activeTimerInfo}
+                  onTimerFinish={handleTimerFinish}
+                  onTimerChange={handleTimerChange}
               />
           ) : null;
         }) : (
@@ -167,12 +275,18 @@ const ActiveWorkoutPage: React.FC = () => {
       >
         <div className="space-y-6">
           <p className="text-text-secondary">{t('finish_workout_confirm_message')}</p>
-          <div className="flex justify-end space-x-4">
+          <div className="flex flex-col sm:flex-row justify-end gap-3">
             <button
               onClick={cancelFinishWorkout}
               className="bg-secondary hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-lg transition-colors"
             >
               {t('finish_workout_confirm_cancel')}
+            </button>
+            <button
+              onClick={handleDiscardWorkout}
+              className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+            >
+              {t('finish_workout_confirm_discard')}
             </button>
             <button
               onClick={confirmFinishWorkout}

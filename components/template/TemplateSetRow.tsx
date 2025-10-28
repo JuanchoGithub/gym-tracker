@@ -92,7 +92,9 @@ const TemplateSetRow: React.FC<TemplateSetRowProps> = ({ set, setNumber, onUpdat
         <div className="col-span-4">
           <input 
             type="number"
+            inputMode="decimal"
             step="0.5"
+            min="0"
             value={weight}
             onChange={handleWeightChange}
             className={inputClasses}
@@ -102,6 +104,9 @@ const TemplateSetRow: React.FC<TemplateSetRowProps> = ({ set, setNumber, onUpdat
         <div className="col-span-4">
           <input
             type="number"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            min="0"
             value={reps}
             onChange={handleRepsChange}
             className={inputClasses}

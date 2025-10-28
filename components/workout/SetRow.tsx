@@ -10,15 +10,17 @@ interface SetRowProps {
   setNumber: number;
   onUpdateSet: (updatedSet: PerformedSet) => void;
   onDeleteSet: () => void;
+  previousSetData?: PerformedSet;
 }
 
-const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSet }) => {
+const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSet, previousSetData }) => {
   const { displayWeight, getStoredWeight } = useWeight();
   const { t } = useI18n();
   const [weight, setWeight] = useState(displayWeight(set.weight));
   const [reps, setReps] = useState(set.reps.toString());
   const [isTypeModalOpen, setIsTypeModalOpen] = useState(false);
   const [offsetX, setOffsetX] = useState(0);
+  const [isWeightFocused, setIsWeightFocused] = useState(false);
 
   const swipableNodeRef = useRef<HTMLDivElement>(null);
   const dragStateRef = useRef({ isDragging: false, startX: 0, startTranslateX: 0 });
@@ -88,7 +90,7 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
   const handleWeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newWeight = e.target.value;
     setWeight(newWeight);
-    onUpdateSet({ ...set, weight: getStoredWeight(parseFloat(newWeight)) });
+    onUpdateSet({ ...set, weight: getStoredWeight(parseFloat(newWeight)), isWeightInherited: false });
   };
   
   const handleRepsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -122,7 +124,7 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
     }
   }
 
-  const inputClasses = "w-full max-w-16 bg-slate-900/50 border border-secondary/50 rounded-md p-2 text-center disabled:bg-slate-800 text-text-primary";
+  const inputClasses = "w-full max-w-16 bg-slate-900/50 border border-secondary/50 rounded-md p-2 text-center disabled:bg-slate-800";
 
   return (
     <>
@@ -152,15 +154,21 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
             {renderSetIdentifier()}
           </button>
           
-          <div className="col-span-1 text-center text-text-secondary text-sm">-</div>
+          <div className="col-span-1 text-center text-text-secondary text-sm">
+            {previousSetData ? `${displayWeight(previousSetData.weight)} x ${previousSetData.reps}` : '-'}
+          </div>
 
           <div className="col-span-1 flex justify-center">
             <input 
               type="number"
+              inputMode="decimal"
               step="0.5"
+              min="0"
               value={weight}
               onChange={handleWeightChange}
-              className={inputClasses}
+              onFocus={() => setIsWeightFocused(true)}
+              onBlur={() => setIsWeightFocused(false)}
+              className={`${inputClasses} ${set.isWeightInherited && !isWeightFocused ? 'text-text-secondary' : 'text-text-primary'}`}
               disabled={set.isComplete}
             />
           </div>
@@ -168,9 +176,12 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
           <div className="col-span-1 flex justify-center">
             <input
               type="number"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              min="0"
               value={reps}
               onChange={handleRepsChange}
-              className={inputClasses}
+              className={`${inputClasses} text-text-primary`}
               disabled={set.isComplete}
             />
           </div>

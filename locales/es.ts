@@ -109,9 +109,10 @@ export const es = {
 
   // Finish Workout Confirmation
   finish_workout_confirm_title: '¿Finalizar Entrenamiento?',
-  finish_workout_confirm_message: '¿Estás seguro que querés finalizar este entrenamiento? Las series incompletas se descartarán.',
-  finish_workout_confirm_cancel: 'Cancelar',
-  finish_workout_confirm_finish: 'Finalizar',
+  finish_workout_confirm_message: 'Podés finalizar y guardar tu progreso, o descartar esta sesión por completo. Las series incompletas no se guardarán.',
+  finish_workout_confirm_cancel: 'Continuar',
+  finish_workout_confirm_finish: 'Finalizar y Guardar',
+  finish_workout_confirm_discard: 'Descartar Entrenamiento',
 
   // Confirm New Workout Modal
   confirm_new_workout_title: 'Entrenamiento en Progreso',

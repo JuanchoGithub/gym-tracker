@@ -85,7 +85,7 @@ const ReplaceExerciseModal: React.FC<ReplaceExerciseModalProps> = ({ isOpen, onC
                     className="bg-slate-900/50 p-3 rounded-lg flex justify-between items-center"
                 >
                     <div>
-                        <h3 className="font-semibold text-text-primary">{t(getBodyPartTKey(exercise.name))}</h3>
+                        <h3 className="font-semibold text-text-primary">{exercise.name}</h3>
                         <p className="text-sm text-text-secondary">{t(getBodyPartTKey(exercise.bodyPart))}</p>
                     </div>
                     <button 

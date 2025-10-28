@@ -1,6 +1,6 @@
 import React, { createContext, useState, ReactNode, useMemo, useEffect, useCallback } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import { Routine, WorkoutSession, Exercise, WorkoutExercise } from '../types';
+import { Routine, WorkoutSession, Exercise, WorkoutExercise, PerformedSet } from '../types';
 import { PREDEFINED_ROUTINES } from '../constants/routines';
 import { PREDEFINED_EXERCISES } from '../constants/exercises';
 import { useI18n } from '../hooks/useI18n';
@@ -133,13 +133,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [exercises]);
   
   const startWorkout = useCallback((routine: Routine) => {
+    // Deep copy to avoid mutating the original routine/template
+    const newWorkoutExercises: WorkoutExercise[] = JSON.parse(JSON.stringify(routine.exercises));
+    
+    // Reset sets for the new session, giving them new IDs
+    newWorkoutExercises.forEach((ex, exIndex) => {
+        ex.id = `we-${Date.now()}-${exIndex}`; 
+        ex.sets.forEach((set: PerformedSet, setIndex: number) => {
+            set.id = `set-${Date.now()}-${exIndex}-${setIndex}`;
+            set.isComplete = false;
+            set.isWeightInherited = false;
+        });
+    });
+
     const newWorkout: WorkoutSession = {
       id: `session-${Date.now()}`,
       routineId: routine.id,
       routineName: routine.name,
       startTime: Date.now(),
       endTime: 0,
-      exercises: JSON.parse(JSON.stringify(routine.exercises)), // Deep copy
+      exercises: newWorkoutExercises,
     };
     setActiveWorkout(newWorkout);
     setIsWorkoutMinimized(false);
@@ -151,25 +164,33 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const endWorkout = useCallback(() => {
     if (activeWorkout) {
-      const finishedWorkout: WorkoutSession = {
+      const workoutEndTime = activeWorkout.endTime > 0 ? activeWorkout.endTime : Date.now();
+      
+      // Create a version for history, which only includes completed sets.
+      const finishedWorkoutForHistory: WorkoutSession = {
         ...activeWorkout,
-        endTime: activeWorkout.endTime > 0 ? activeWorkout.endTime : Date.now(),
+        endTime: workoutEndTime,
         exercises: activeWorkout.exercises.map(ex => ({
             ...ex,
             sets: ex.sets.filter(s => s.isComplete)
         })).filter(ex => ex.sets.length > 0)
       };
 
-      if (finishedWorkout.exercises.length > 0) {
-        setHistory(prev => [finishedWorkout, ...prev]);
+      // Only save history and create a "latest workout" if at least one set was completed.
+      if (finishedWorkoutForHistory.exercises.length > 0) {
+        setHistory(prev => [finishedWorkoutForHistory, ...prev]);
+
+        // Create the "Latest Workout" routine. It should include *all* sets from the session,
+        // both completed and incomplete, to allow the user to repeat the full workout.
+        const exercisesForLatestRoutine = activeWorkout.exercises.filter(ex => ex.sets.length > 0);
 
         const newLatestRoutine: Routine = {
-          id: `latest-${finishedWorkout.endTime}-${Math.random()}`,
-          name: finishedWorkout.routineName,
-          description: `Completed on ${new Date(finishedWorkout.startTime).toLocaleDateString()}`,
-          exercises: finishedWorkout.exercises,
+          id: `latest-${workoutEndTime}-${Math.random()}`,
+          name: activeWorkout.routineName,
+          description: `Completed on ${new Date(activeWorkout.startTime).toLocaleDateString()}`,
+          exercises: exercisesForLatestRoutine, // Use all original sets
           isTemplate: false,
-          lastUsed: finishedWorkout.endTime,
+          lastUsed: workoutEndTime,
           originId: activeWorkout.routineId,
         };
 

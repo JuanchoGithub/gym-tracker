@@ -109,9 +109,10 @@ export const en = {
 
   // Finish Workout Confirmation
   finish_workout_confirm_title: 'Finish Workout?',
-  finish_workout_confirm_message: 'Are you sure you want to finish this workout? Any incomplete sets will be discarded.',
-  finish_workout_confirm_cancel: 'Cancel',
-  finish_workout_confirm_finish: 'Finish',
+  finish_workout_confirm_message: 'You can finish and save your progress, or discard this session entirely. Any incomplete sets will not be saved.',
+  finish_workout_confirm_cancel: 'Continue Workout',
+  finish_workout_confirm_finish: 'Finish & Save',
+  finish_workout_confirm_discard: 'Discard Workout',
 
   // Confirm New Workout Modal
   confirm_new_workout_title: 'Workout in Progress',

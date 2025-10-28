@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useMemo } from 'react';
 import { Exercise, WorkoutExercise, PerformedSet, SetType } from '../../types';
 import SetRow from './SetRow';
 import Timer from './Timer';
@@ -8,24 +8,31 @@ import ExerciseHeader from './ExerciseHeader';
 import { useWeight } from '../../hooks/useWeight';
 import ChangeTimerModal from '../modals/ChangeTimerModal';
 import { formatSecondsToMMSS } from '../../utils/timeUtils';
-import { scheduleTimerNotification, cancelTimerNotification } from '../../services/notificationService';
 import { AppContext } from '../../contexts/AppContext';
+import { getExerciseHistory } from '../../utils/workoutUtils';
 
 interface ExerciseCardProps {
   workoutExercise: WorkoutExercise;
   exerciseInfo: Exercise;
   onUpdate: (updatedExercise: WorkoutExercise) => void;
+  activeTimerInfo: { exerciseId: string; setId: string; startTime: number } | null;
+  onTimerFinish: (finishedExerciseId: string, finishedSetId: string) => void;
+  onTimerChange: (newDuration: number, exerciseName: string) => void;
 }
 
-const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseInfo, onUpdate }) => {
+const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseInfo, onUpdate, activeTimerInfo, onTimerFinish, onTimerChange }) => {
   const { t } = useI18n();
   const { unit } = useWeight();
-  const { enableNotifications } = useContext(AppContext);
-  const [activeTimerSetId, setActiveTimerSetId] = useState<string | null>(null);
+  const { history: allHistory } = useContext(AppContext);
   const [completedSets, setCompletedSets] = useState(workoutExercise.sets.filter(s => s.isComplete).length);
   const [isNoteEditing, setIsNoteEditing] = useState(false);
   const [note, setNote] = useState(workoutExercise.note || '');
   const [isDefaultsTimerModalOpen, setIsDefaultsTimerModalOpen] = useState(false);
+
+  const lastPerformance = useMemo(() => {
+    const history = getExerciseHistory(allHistory, exerciseInfo.id);
+    return history.length > 0 ? history[0] : null;
+  }, [allHistory, exerciseInfo.id]);
 
   const getTimerDuration = (set?: PerformedSet): number => {
     if (!set) return workoutExercise.restTime.normal; // Fallback for safety
@@ -41,32 +48,29 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseIn
   };
   
   const handleUpdateSet = (updatedSet: PerformedSet) => {
-    const oldSet = workoutExercise.sets.find(s => s.id === updatedSet.id);
-    const updatedSets = workoutExercise.sets.map(s => (s.id === updatedSet.id ? updatedSet : s));
-    
-    if (oldSet && !oldSet.isComplete && updatedSet.isComplete) {
-      setActiveTimerSetId(updatedSet.id);
-      setCompletedSets(prev => prev + 1);
-      if (enableNotifications) {
-        const timerDuration = getTimerDuration(updatedSet);
-        if (timerDuration > 0) {
-            scheduleTimerNotification(timerDuration, t('notification_timer_finished_title'), {
-                body: t('notification_timer_finished_body', { exercise: exerciseInfo.name }),
-                icon: '/icon-192x192.png',
-                tag: 'rest-timer-finished',
-                requireInteraction: true,
-            });
-        }
-      }
-    } else if (oldSet && oldSet.isComplete && !updatedSet.isComplete) {
-        if(activeTimerSetId === oldSet.id) setActiveTimerSetId(null);
-        setCompletedSets(prev => prev - 1);
-        if (enableNotifications) {
-           cancelTimerNotification('rest-timer-finished');
+    const oldSetIndex = workoutExercise.sets.findIndex(s => s.id === updatedSet.id);
+    const oldSet = workoutExercise.sets[oldSetIndex];
+
+    let newSets = [...workoutExercise.sets];
+    newSets[oldSetIndex] = updatedSet;
+
+    // Cascade weight change if applicable.
+    if (oldSet.weight !== updatedSet.weight && updatedSet.isWeightInherited === false && !updatedSet.isComplete) {
+        for (let i = oldSetIndex + 1; i < newSets.length; i++) {
+            if (!newSets[i].isComplete) {
+                newSets[i] = { ...newSets[i], weight: updatedSet.weight, isWeightInherited: true };
+            }
         }
     }
     
-    onUpdate({ ...workoutExercise, sets: updatedSets });
+    // Update local completed count for UI purposes (e.g., green border)
+    if (!oldSet.isComplete && updatedSet.isComplete) {
+      setCompletedSets(prev => prev + 1);
+    } else if (oldSet.isComplete && !updatedSet.isComplete) {
+      setCompletedSets(prev => prev - 1);
+    }
+    
+    onUpdate({ ...workoutExercise, sets: newSets });
   };
   
   const handleDeleteSet = (setId: string) => {
@@ -85,23 +89,6 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseIn
     };
     const updatedSets = [...workoutExercise.sets, newSet];
     onUpdate({ ...workoutExercise, sets: updatedSets });
-  };
-  
-  const handleTimerFinish = (finishedSetId: string) => {
-    if (activeTimerSetId === finishedSetId) {
-      setActiveTimerSetId(null);
-    }
-  };
-
-  const handleTimerChange = (newDuration: number) => {
-    if (enableNotifications) {
-        scheduleTimerNotification(newDuration, t('notification_timer_finished_title'), {
-            body: t('notification_timer_finished_body', { exercise: exerciseInfo.name }),
-            icon: '/icon-192x192.png',
-            tag: 'rest-timer-finished',
-            requireInteraction: true,
-        });
-    }
   };
   
   const handleSaveNote = () => {
@@ -161,32 +148,34 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseIn
                   if (set.type === 'normal') {
                     normalSetCounter++;
                   }
-                  const isLastSet = setIndex === workoutExercise.sets.length - 1;
-                  const showFinishedTimer = set.isComplete && activeTimerSetId !== set.id && !isLastSet;
+                  const isActiveTimer = activeTimerInfo?.exerciseId === workoutExercise.id && activeTimerInfo?.setId === set.id;
+                  const showFinishedTimer = set.isComplete && !isActiveTimer;
+                  const previousSetData = lastPerformance?.exerciseData.sets[setIndex];
                   
                   return (
                     <React.Fragment key={set.id}>
                         <SetRow
-                        set={set}
-                        setNumber={normalSetCounter}
-                        onUpdateSet={handleUpdateSet}
-                        onDeleteSet={() => handleDeleteSet(set.id)}
+                            set={set}
+                            setNumber={normalSetCounter}
+                            onUpdateSet={handleUpdateSet}
+                            onDeleteSet={() => handleDeleteSet(set.id)}
+                            previousSetData={previousSetData}
                         />
-                        {activeTimerSetId === set.id && (
+                        {isActiveTimer && (
                           <div className="w-full rounded-lg">
                             <Timer 
                                 duration={getTimerDuration(set)} 
-                                onFinish={() => handleTimerFinish(set.id)} 
-                                onTimeChange={handleTimerChange}
+                                onFinish={() => onTimerFinish(workoutExercise.id, set.id)} 
+                                onTimeChange={(newTime) => onTimerChange(newTime, exerciseInfo.name)}
                             />
                           </div>
                         )}
-                        {showFinishedTimer && (
+                        {showFinishedTimer && set.actualRest !== undefined && (
                           <div className="w-full">
                             <div className="my-2 flex items-center justify-center text-sm text-success">
                                 <div className="flex-grow h-px bg-success/30"></div>
                                 <span className="mx-4 font-mono">
-                                  {formatSecondsToMMSS(getTimerDuration(set))}
+                                  {formatSecondsToMMSS(set.actualRest)}
                                 </span>
                                 <div className="flex-grow h-px bg-success/30"></div>
                             </div>
