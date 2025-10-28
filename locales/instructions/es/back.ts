@@ -1,4 +1,3 @@
-
 // FIX: Populated the file with Spanish instructions for back exercises.
 export const backInstructionsEs = {
   ex_3_ins: {

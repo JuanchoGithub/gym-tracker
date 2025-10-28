@@ -1,4 +1,3 @@
-
 // FIX: Populated the file with Spanish instructions for arm exercises.
 export const armsInstructionsEs = {
   // Biceps

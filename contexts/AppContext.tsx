@@ -59,7 +59,7 @@ interface AppContextType {
 export const AppContext = createContext<AppContextType>({} as AppContextType);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [rawRoutines, setRawRoutines] = useLocalStorage<Routine[]>('routines', PREDEFINED_ROUTINES);
+  const [userRoutines, setUserRoutines] = useLocalStorage<Routine[]>('userRoutines', []);
   const [history, setHistory] = useLocalStorage<WorkoutSession[]>('history', []);
   const [rawExercises, setRawExercises] = useLocalStorage<Exercise[]>('exercises', PREDEFINED_EXERCISES);
   const [activeWorkout, setActiveWorkout] = useLocalStorage<WorkoutSession | null>('activeWorkout', null);
@@ -77,6 +77,41 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [activeHiitSession, setActiveHiitSession] = useLocalStorage<ActiveHiitSession | null>('activeHiitSession', null);
   const [selectedVoiceURI, setSelectedVoiceURI] = useLocalStorage<string | null>('selectedVoiceURI', null);
 
+  useEffect(() => {
+    // One-time migration from old 'routines' storage to new 'userRoutines'
+    const oldRoutinesRaw = window.localStorage.getItem('routines');
+    if (oldRoutinesRaw) {
+      try {
+        const oldRoutinesFromStorage = JSON.parse(oldRoutinesRaw) as Routine[];
+        const predefinedIds = new Set(PREDEFINED_ROUTINES.map(r => r.id));
+        
+        const nonPredefinedRoutines = oldRoutinesFromStorage.filter(r => !predefinedIds.has(r.id));
+        
+        // Merge with any existing userRoutines to be safe, avoiding duplicates.
+        setUserRoutines(currentUserRoutines => {
+            const existingIds = new Set(currentUserRoutines.map(r => r.id));
+            const routinesToMigrate = nonPredefinedRoutines.filter(r => !existingIds.has(r.id));
+            if (routinesToMigrate.length > 0) {
+                return [...currentUserRoutines, ...routinesToMigrate];
+            }
+            return currentUserRoutines;
+        });
+
+        window.localStorage.removeItem('routines');
+      } catch (e) {
+        console.error("Failed to migrate old routines:", e);
+        // still remove the old key to prevent re-running failed migration
+        window.localStorage.removeItem('routines');
+      }
+    }
+  }, [setUserRoutines]);
+  
+  const routines = useMemo(() => {
+    const predefinedIds = new Set(PREDEFINED_ROUTINES.map(r => r.id));
+    // Filter out any predefined routines that might have snuck into userRoutines
+    const filteredUserRoutines = userRoutines.filter(r => !predefinedIds.has(r.id));
+    return [...PREDEFINED_ROUTINES, ...filteredUserRoutines];
+  }, [userRoutines]);
 
   const exercises = useMemo(() => {
     if (useLocalizedExerciseNames && locale !== 'en') {
@@ -143,7 +178,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [activeWorkout]);
 
   const upsertRoutine = useCallback((routine: Routine) => {
-    setRawRoutines(prev => {
+    if (routine.id.startsWith('rt-')) {
+      console.warn("Attempted to upsert a predefined routine. This is not allowed.");
+      return;
+    }
+    setUserRoutines(prev => {
         const existingIndex = prev.findIndex(r => r.id === routine.id);
         if (existingIndex > -1) {
             const newRoutines = [...prev];
@@ -153,7 +192,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             return [...prev, routine];
         }
     });
-  }, [setRawRoutines]);
+  }, [setUserRoutines]);
 
   const upsertExercise = useCallback((exercise: Exercise) => {
     setRawExercises(prev => {
@@ -169,8 +208,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [setRawExercises]);
 
   const deleteRoutine = useCallback((routineId: string) => {
-    setRawRoutines(prev => prev.filter(r => r.id !== routineId));
-  }, [setRawRoutines]);
+    if (routineId.startsWith('rt-')) {
+        console.warn("Attempted to delete a predefined routine. This is not allowed.");
+        return;
+    }
+    setUserRoutines(prev => prev.filter(r => r.id !== routineId));
+  }, [setUserRoutines]);
   
   const getExerciseById = useCallback((id: string): Exercise | undefined => {
     return exercises.find(ex => ex.id === id);
@@ -264,12 +307,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           originId: activeWorkout.routineId,
         };
 
-        const sourceRoutine = rawRoutines.find(r => r.id === activeWorkout.routineId);
+        const sourceRoutine = routines.find(r => r.id === activeWorkout.routineId);
 
-        setRawRoutines(prevRoutines => {
+        setUserRoutines(prevUserRoutines => {
             const routinesWithoutSource = sourceRoutine && !sourceRoutine.isTemplate 
-                ? prevRoutines.filter(r => r.id !== sourceRoutine.id)
-                : prevRoutines;
+                ? prevUserRoutines.filter(r => r.id !== sourceRoutine.id)
+                : prevUserRoutines;
             
             return [...routinesWithoutSource, newLatestRoutine];
         });
@@ -277,7 +320,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setActiveWorkout(null);
       setIsWorkoutMinimized(false);
     }
-  }, [activeWorkout, history, rawRoutines, setActiveWorkout, setHistory, setIsWorkoutMinimized, setRawRoutines]);
+  }, [activeWorkout, history, routines, setActiveWorkout, setHistory, setIsWorkoutMinimized, setUserRoutines]);
 
   const discardActiveWorkout = useCallback(() => {
     setActiveWorkout(null);
@@ -411,7 +454,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [updateHistorySession]);
 
   const value = useMemo(() => ({
-    routines: rawRoutines,
+    routines: routines,
     upsertRoutine,
     deleteRoutine,
     history,
@@ -455,7 +498,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     selectedVoiceURI,
     setSelectedVoiceURI,
   }), [
-    rawRoutines, upsertRoutine, deleteRoutine, history, deleteHistorySession, updateHistorySession, exercises, getExerciseById,
+    routines, upsertRoutine, deleteRoutine, history, deleteHistorySession, updateHistorySession, exercises, getExerciseById,
     upsertExercise, activeWorkout, startWorkout, updateActiveWorkout, endWorkout,
     isWorkoutMinimized, minimizeWorkout, maximizeWorkout, discardActiveWorkout,
     weightUnit, setWeightUnit, defaultRestTimes, setDefaultRestTimes,

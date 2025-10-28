@@ -1,4 +1,3 @@
-
 export const shouldersInstructionsEs = {
     ex_4_ins: {
         title: "Press Militar",

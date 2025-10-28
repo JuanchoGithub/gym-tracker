@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useRef, useMemo, useContext } from 'react';
-import { useI18n } from '../hooks/useI18n';
-import { useWakeLock } from '../hooks/useWakeLock';
-import { playWarningSound, playEndSound } from '../services/audioService';
-import { Icon } from '../components/common/Icon';
-import { formatSecondsToMMSS } from '../utils/timeUtils';
+import React, { useState, useEffect, useRef, useMemo, useContext, useCallback } from 'react';
+import { useI18n } from '../../hooks/useI18n';
+import { useWakeLock } from '../../hooks/useWakeLock';
+import { playWarningSound, playEndSound } from '../../services/audioService';
+import { Icon } from '../common/Icon';
+import { formatSecondsToMMSS } from '../../utils/timeUtils';
 import { AppContext } from '../contexts/AppContext';
 import { Routine } from '../types';
-import { speak } from '../services/speechService';
+import { speak } from '../../services/speechService';
 
 type TimerMode = 'quick' | 'hiit';
 
@@ -43,12 +43,52 @@ const TimersPage: React.FC = () => {
   const playSoundRef = useRef({ playWarningSound, playEndSound });
   const prevActiveTimerRef = useRef<ActiveTimerState>();
 
+  const startHiitTimer = useCallback((routine?: Routine) => {
+    const hasRoutine = !!routine;
+    
+    let workTime: number;
+    let restTime: number;
+    let rounds: number;
+    let prepareTime: number;
+    let exercises: (string | undefined)[] | null;
+
+    if (hasRoutine) {
+        workTime = routine.hiitConfig!.workTime;
+        restTime = routine.hiitConfig!.restTime;
+        rounds = routine.exercises.length;
+        prepareTime = routine.hiitConfig!.prepareTime ?? 10;
+        exercises = routine.exercises.map(ex => getExerciseById(ex.exerciseId)?.name);
+    } else {
+        workTime = hiitConfig.work;
+        restTime = hiitConfig.rest;
+        rounds = hiitConfig.rounds;
+        prepareTime = 10; // Default prepare time for custom HIIT
+        exercises = null;
+    }
+    
+    targetTimeRef.current = Date.now() + prepareTime * 1000;
+    setActiveTimer({
+      isActive: true,
+      mode: 'hiit',
+      timeLeft: prepareTime,
+      totalDuration: prepareTime,
+      isPaused: false,
+      hiitState: 'prepare',
+      currentRound: 1,
+      totalRounds: rounds,
+      workTime: workTime,
+      restTime: restTime,
+      exerciseList: exercises,
+      exerciseIndex: 0,
+      sessionStartTime: Date.now(),
+    });
+  }, [getExerciseById, hiitConfig]);
 
   useEffect(() => {
     if (activeHiitSession && !activeTimer.isActive) {
       startHiitTimer(activeHiitSession.routine);
     }
-  }, [activeHiitSession]);
+  }, [activeHiitSession, activeTimer.isActive, startHiitTimer]);
 
   useEffect(() => {
     if (!activeTimer.isActive || activeTimer.isPaused) {
@@ -146,47 +186,6 @@ const TimersPage: React.FC = () => {
     targetTimeRef.current = Date.now() + seconds * 1000;
     setActiveTimer({
       isActive: true, mode: 'quick', timeLeft: seconds, totalDuration: seconds, isPaused: false,
-    });
-  };
-
-  const startHiitTimer = (routine?: Routine) => {
-    const hasRoutine = !!routine;
-    
-    let workTime: number;
-    let restTime: number;
-    let rounds: number;
-    let prepareTime: number;
-    let exercises: (string | undefined)[] | null;
-
-    if (hasRoutine) {
-        workTime = routine.hiitConfig!.workTime;
-        restTime = routine.hiitConfig!.restTime;
-        rounds = routine.exercises.length;
-        prepareTime = routine.hiitConfig!.prepareTime ?? 10;
-        exercises = routine.exercises.map(ex => getExerciseById(ex.exerciseId)?.name);
-    } else {
-        workTime = hiitConfig.work;
-        restTime = hiitConfig.rest;
-        rounds = hiitConfig.rounds;
-        prepareTime = 10; // Default prepare time for custom HIIT
-        exercises = null;
-    }
-    
-    targetTimeRef.current = Date.now() + prepareTime * 1000;
-    setActiveTimer({
-      isActive: true,
-      mode: 'hiit',
-      timeLeft: prepareTime,
-      totalDuration: prepareTime,
-      isPaused: false,
-      hiitState: 'prepare',
-      currentRound: 1,
-      totalRounds: rounds,
-      workTime: workTime,
-      restTime: restTime,
-      exerciseList: exercises,
-      exerciseIndex: 0,
-      sessionStartTime: Date.now(),
     });
   };
 

@@ -1,4 +1,3 @@
-
 // FIX: Populated the file with Spanish instructions for chest exercises.
 export const chestInstructionsEs = {
   ex_1_ins: {
