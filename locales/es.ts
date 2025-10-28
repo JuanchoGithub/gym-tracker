@@ -54,6 +54,7 @@ export const es = {
   profile_keep_screen_awake_desc: 'Evita que la pantalla se bloquee durante un entrenamiento.',
   profile_enable_notifications: 'Habilitar Notificaciones',
   profile_enable_notifications_desc: 'Recibir una alerta cuando el temporizador de descanso termine.',
+  profile_notifications_blocked: 'Notificaciones bloqueadas. Por favor, actívelas en la configuración de su navegador.',
 
   // Active Workout
   workout_set: 'Serie',

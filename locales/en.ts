@@ -54,6 +54,7 @@ export const en = {
   profile_keep_screen_awake_desc: 'Prevents the screen from locking during a workout.',
   profile_enable_notifications: 'Enable Notifications',
   profile_enable_notifications_desc: 'Get an alert when your rest timer is complete.',
+  profile_notifications_blocked: 'Notifications blocked. Please enable them in your browser settings.',
 
   // Active Workout
   workout_set: 'Set',

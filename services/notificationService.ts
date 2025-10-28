@@ -13,6 +13,14 @@ export const showTimerNotification = (title: string, options: NotificationOption
   }
 
   navigator.serviceWorker.ready.then(registration => {
-    registration.showNotification(title, options);
+    // To ensure re-notification, close any existing notification with the same tag.
+    if (options.tag) {
+      registration.getNotifications({ tag: options.tag }).then(notifications => {
+        notifications.forEach(notification => notification.close());
+        registration.showNotification(title, options);
+      });
+    } else {
+      registration.showNotification(title, options);
+    }
   });
 };

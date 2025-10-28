@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { I18nContext, TranslationKey } from '../contexts/I18nContext';
 import { useI18n } from '../hooks/useI18n';
 import { AppContext } from '../contexts/AppContext';
@@ -25,16 +25,44 @@ const ProfilePage: React.FC = () => {
   const [editingTimerKey, setEditingTimerKey] = useState<keyof typeof defaultRestTimes | null>(null);
   const [tempTimerValue, setTempTimerValue] = useState('');
   
-  const handleNotificationToggle = async (checked: boolean) => {
-    if (checked) {
-      if (Notification.permission !== 'granted') {
-        const permissionGranted = await requestNotificationPermission();
-        setEnableNotifications(permissionGranted);
-      } else {
-        setEnableNotifications(true);
+  const [permissionStatus, setPermissionStatus] = useState(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      return Notification.permission;
+    }
+    return 'denied';
+  });
+
+  // Update status if changed outside the app, e.g., in browser settings
+  useEffect(() => {
+    if (!('Notification' in window)) return;
+    
+    const updateStatus = () => {
+      if (Notification.permission !== permissionStatus) {
+        const newPermission = Notification.permission;
+        setPermissionStatus(newPermission);
+        if (newPermission !== 'granted') {
+          setEnableNotifications(false);
+        }
       }
-    } else {
-      setEnableNotifications(false);
+    };
+    
+    const interval = setInterval(updateStatus, 1000);
+    return () => clearInterval(interval);
+  }, [permissionStatus, setEnableNotifications]);
+
+  const handleNotificationToggle = async (checked: boolean) => {
+    if (checked) { // Trying to enable
+      if (permissionStatus === 'granted') {
+          setEnableNotifications(true);
+      } else {
+          const newPermission = await Notification.requestPermission();
+          if (newPermission === 'granted') {
+              setEnableNotifications(true);
+          }
+          setPermissionStatus(newPermission);
+      }
+    } else { // Trying to disable
+        setEnableNotifications(false);
     }
   };
 
@@ -60,6 +88,7 @@ const ProfilePage: React.FC = () => {
   const handleTimerInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value.replace(/\D/g, '');
     if (val.length <= 5) {
+        // FIX: Corrected a typo from `setTempValue` to `setTempTimerValue`.
         setTempTimerValue(val);
     }
   };
@@ -174,8 +203,11 @@ const ProfilePage: React.FC = () => {
                     <div>
                         <label className="text-text-primary">{t('profile_enable_notifications')}</label>
                         <p className="text-xs text-text-secondary">{t('profile_enable_notifications_desc')}</p>
+                        {permissionStatus === 'denied' && (
+                          <p className="text-xs text-warning mt-1">{t('profile_notifications_blocked')}</p>
+                        )}
                     </div>
-                    <ToggleSwitch checked={enableNotifications} onChange={handleNotificationToggle} />
+                    <ToggleSwitch checked={enableNotifications && permissionStatus === 'granted'} onChange={handleNotificationToggle} />
                 </div>
             </div>
         </div>

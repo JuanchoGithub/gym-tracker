@@ -81,7 +81,6 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseIn
             body: t('notification_timer_finished_body', { exercise: exerciseInfo.name }),
             icon: '/icon-192x192.png',
             tag: 'rest-timer-finished',
-            // FIX: Removed the deprecated 'renotify' property which was causing a TypeScript error.
           });
       }
     }
