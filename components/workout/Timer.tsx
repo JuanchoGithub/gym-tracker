@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { playWarningSound, playEndSound } from '../../services/audioService';
 import { Icon } from '../common/Icon';
 import { useI18n } from '../../hooks/useI18n';
@@ -13,38 +13,83 @@ const Timer: React.FC<TimerProps> = ({ duration, onFinish }) => {
   const [timeLeft, setTimeLeft] = useState(duration);
   const [isPaused, setIsPaused] = useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  
+  const targetTimeRef = useRef<number>(0);
+  const onFinishRef = useRef(onFinish);
 
   useEffect(() => {
-    if (isPaused) return;
+    onFinishRef.current = onFinish;
+  }, [onFinish]);
 
-    if (timeLeft <= 0) {
-      playEndSound();
-      onFinish();
+  const resetTimer = (newDuration: number) => {
+    setIsPaused(false);
+    setTimeLeft(newDuration);
+    targetTimeRef.current = Date.now() + newDuration * 1000;
+  };
+
+  useEffect(() => {
+    if (duration > 0) {
+      resetTimer(duration);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [duration]);
+
+  useEffect(() => {
+    if (isPaused || timeLeft <= 0) {
       return;
     }
 
-    if (timeLeft === 10) {
-      playWarningSound();
-    }
-
-    const intervalId = setInterval(() => {
-      setTimeLeft(prev => prev - 1);
+    const interval = setInterval(() => {
+      const remainingMs = targetTimeRef.current - Date.now();
+      const newTimeLeft = Math.max(0, Math.round(remainingMs / 1000));
+      
+      setTimeLeft(prevTimeLeft => {
+        if (prevTimeLeft > 10 && newTimeLeft <= 10) {
+          playWarningSound();
+        }
+        if (newTimeLeft <= 0 && prevTimeLeft > 0) {
+          playEndSound();
+          onFinishRef.current();
+        }
+        return newTimeLeft;
+      });
+      
+      if (newTimeLeft <= 0) {
+        setIsPaused(true);
+      }
     }, 1000);
 
-    return () => clearInterval(intervalId);
-  }, [timeLeft, onFinish, isPaused]);
-  
+    return () => clearInterval(interval);
+  }, [isPaused, timeLeft]);
+
+  const togglePause = () => {
+    setIsPaused(prevIsPaused => {
+      const nextIsPaused = !prevIsPaused;
+      if (!nextIsPaused) { // Resuming
+        targetTimeRef.current = Date.now() + timeLeft * 1000;
+      }
+      return nextIsPaused;
+    });
+  };
+
   const modifyTime = (amount: number) => {
-    setTimeLeft(prev => Math.max(0, prev + amount));
-  }
+    setTimeLeft(prev => {
+      const newTime = Math.max(0, prev + amount);
+      if (!isPaused) {
+        targetTimeRef.current = Date.now() + newTime * 1000;
+      }
+      return newTime;
+    });
+  };
 
   const handleReset = () => {
-    setTimeLeft(duration);
-    setIsPaused(false);
+    resetTimer(duration);
   };
 
   const handleSkip = () => {
-    onFinish();
+    setIsPaused(true);
+    setTimeLeft(0);
+    onFinishRef.current();
   };
 
   const minutes = Math.floor(timeLeft / 60);
@@ -69,7 +114,7 @@ const Timer: React.FC<TimerProps> = ({ duration, onFinish }) => {
         ) : (
             <div className="p-4 flex flex-col items-center justify-center space-y-4">
                 <button
-                    onClick={() => setIsPaused(!isPaused)}
+                    onClick={togglePause}
                     className="relative w-full bg-surface text-text-primary font-bold py-4 rounded-lg text-2xl flex items-center justify-center shadow-lg overflow-hidden"
                 >
                     <div

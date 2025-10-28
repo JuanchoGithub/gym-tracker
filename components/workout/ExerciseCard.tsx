@@ -7,7 +7,6 @@ import { useI18n } from '../../hooks/useI18n';
 import ExerciseHeader from './ExerciseHeader';
 import { useWeight } from '../../hooks/useWeight';
 import ChangeTimerModal from '../modals/ChangeTimerModal';
-import EditSetTimerModal from '../modals/EditSetTimerModal';
 import { formatSecondsToMMSS } from '../../utils/timeUtils';
 import { showTimerNotification } from '../../services/notificationService';
 import { AppContext } from '../../contexts/AppContext';
@@ -27,7 +26,6 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseIn
   const [isNoteEditing, setIsNoteEditing] = useState(false);
   const [note, setNote] = useState(workoutExercise.note || '');
   const [isDefaultsTimerModalOpen, setIsDefaultsTimerModalOpen] = useState(false);
-  const [editingSetTimer, setEditingSetTimer] = useState<PerformedSet | null>(null);
 
   const getTimerDuration = (set?: PerformedSet): number => {
     if (!set) return workoutExercise.restTime.normal; // Fallback for safety
@@ -98,21 +96,6 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseIn
     onUpdate({ ...workoutExercise, restTime: newTimers });
   };
 
-  const handleSaveSetTimer = (newTime: number | null) => {
-    if (!editingSetTimer) return;
-    const updatedSet = { ...editingSetTimer };
-
-    if (newTime === null) {
-      delete updatedSet.rest;
-    } else {
-      updatedSet.rest = newTime;
-    }
-
-    const updatedSets = workoutExercise.sets.map(s => s.id === updatedSet.id ? updatedSet : s);
-    onUpdate({ ...workoutExercise, sets: updatedSets });
-    setEditingSetTimer(null);
-  }
-
   const allSetsCompleted = completedSets === workoutExercise.sets.length && workoutExercise.sets.length > 0;
   
   let normalSetCounter = 0;
@@ -173,15 +156,15 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseIn
                         onDeleteSet={() => handleDeleteSet(set.id)}
                         />
                         {activeTimerSetId === set.id && (
-                          <button onClick={() => setEditingSetTimer(set)} className="w-full rounded-lg" aria-label="Adjust timer settings">
+                          <div className="w-full rounded-lg">
                             <Timer 
                                 duration={getTimerDuration(set)} 
                                 onFinish={() => handleTimerFinish(set.id)} 
                             />
-                          </button>
+                          </div>
                         )}
                         {showFinishedTimer && (
-                          <button onClick={() => setEditingSetTimer(set)} className="w-full" aria-label="Adjust timer settings">
+                          <div className="w-full">
                             <div className="my-2 flex items-center justify-center text-sm text-success">
                                 <div className="flex-grow h-px bg-success/30"></div>
                                 <span className="mx-4 font-mono">
@@ -189,7 +172,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseIn
                                 </span>
                                 <div className="flex-grow h-px bg-success/30"></div>
                             </div>
-                          </button>
+                          </div>
                         )}
                     </React.Fragment>
                   );
@@ -210,15 +193,6 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseIn
             currentRestTimes={workoutExercise.restTime}
             onSave={handleSaveDefaultsTimer}
         />
-        {editingSetTimer && (
-          <EditSetTimerModal
-            isOpen={!!editingSetTimer}
-            onClose={() => setEditingSetTimer(null)}
-            currentValue={editingSetTimer.rest}
-            defaultValue={getTimerDuration(editingSetTimer)}
-            onSave={handleSaveSetTimer}
-          />
-        )}
     </div>
   );
 };
