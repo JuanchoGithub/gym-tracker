@@ -76,10 +76,10 @@ export const en = {
   profile_enable_notifications: 'Enable Notifications',
   profile_enable_notifications_desc: 'Get an alert when your rest timer is complete.',
   profile_notifications_blocked: 'Notifications blocked. Please enable them in your browser settings.',
-  profile_voice_selection: 'Voice Selection',
-  profile_voice_selection_desc: 'Select a voice for workout announcements.',
-  profile_test_voice: 'Test Voice',
-  profile_voice_greeting: 'Hi, I am {voiceName}',
+  profile_voice_settings: 'Voice Settings',
+  profile_voice: 'Voice',
+  profile_voice_desc: 'Select a voice for workout announcements.',
+  profile_voice_sample: 'Hi, I am {voiceName}. I will be helping you train!',
 
   // Active Workout
   workout_set: 'Set',
@@ -96,8 +96,6 @@ export const en = {
   active_workout_empty_desc: 'Add an exercise to get started!',
   active_workout_edit_details_aria: 'Edit workout details',
   active_workout_minimize_aria: 'Minimize workout',
-  workout_finished_congrats: 'Workout finished, congratulations!',
-  you_worked_for: 'You worked for {minutes} minutes.',
   
   // Set Type Modal
   set_type_modal_title: 'Set Type',
@@ -276,7 +274,10 @@ export const en = {
   timers_prepare: 'Prepare',
   timers_minute_abbreviation: 'm',
   timers_second_abbreviation: 's',
-  timers_next: 'Next',
+  timers_announce_prepare: 'Prepare. Next: {exercise}',
+  timers_announce_rest: 'Rest. Next: {exercise}',
+  timers_announce_finish: 'Workout finished. Congratulations! You worked for {minutes} minutes.',
+
 
   // Body Parts
   body_part_all: 'All Body Parts',

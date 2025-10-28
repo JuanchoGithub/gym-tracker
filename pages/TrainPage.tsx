@@ -29,12 +29,6 @@ const TrainPage: React.FC = () => {
 
   const handleRoutineSelect = (routine: Routine) => {
     if (routine.routineType === 'hiit') {
-        // Prime the speech synthesis engine on user interaction to bypass autoplay restrictions.
-        if ('speechSynthesis' in window) {
-          const utterance = new SpeechSynthesisUtterance(' ');
-          utterance.volume = 0;
-          window.speechSynthesis.speak(utterance);
-        }
         startHiitSession(routine);
         return;
     }

@@ -75,10 +75,10 @@ export const es = {
   profile_enable_notifications: 'Habilitar Notificaciones',
   profile_enable_notifications_desc: 'Recibir una alerta cuando el temporizador de descanso termine.',
   profile_notifications_blocked: 'Notificaciones bloqueadas. Por favor, actívelas en la configuración de su navegador.',
-  profile_voice_selection: 'Selección de Voz',
-  profile_voice_selection_desc: 'Seleccioná una voz para los anuncios del entrenamiento.',
-  profile_test_voice: 'Probar Voz',
-  profile_voice_greeting: 'Hola, soy {voiceName}',
+  profile_voice_settings: 'Configuración de Voz',
+  profile_voice: 'Voz',
+  profile_voice_desc: 'Seleccioná una voz para los anuncios del entrenamiento.',
+  profile_voice_sample: 'Hola, soy {voiceName}. ¡Te ayudaré a entrenar!',
 
   // Active Workout
   workout_set: 'Serie',
@@ -95,8 +95,6 @@ export const es = {
   active_workout_empty_desc: '¡Agregá un ejercicio para empezar!',
   active_workout_edit_details_aria: 'Editar detalles del entrenamiento',
   active_workout_minimize_aria: 'Minimizar entrenamiento',
-  workout_finished_congrats: '¡Entrenamiento finalizado, felicitaciones!',
-  you_worked_for: 'Trabajaste durante {minutes} minutos.',
   
   // Set Type Modal
   set_type_modal_title: 'Tipo de Serie',
@@ -275,7 +273,9 @@ export const es = {
   timers_prepare: 'Preparate',
   timers_minute_abbreviation: 'm',
   timers_second_abbreviation: 's',
-  timers_next: 'Siguiente',
+  timers_announce_prepare: 'Preparate. Siguiente: {exercise}',
+  timers_announce_rest: 'Descanso. Siguiente: {exercise}',
+  timers_announce_finish: 'Entrenamiento finalizado. ¡Felicitaciones! Trabajaste durante {minutes} minutos.',
 
   // Body Parts
   body_part_all: 'Musculos',

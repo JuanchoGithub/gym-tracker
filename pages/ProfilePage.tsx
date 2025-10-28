@@ -1,11 +1,11 @@
-import React, { useContext, useState, useEffect, useMemo } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { I18nContext, TranslationKey } from '../contexts/I18nContext';
 import { useI18n } from '../hooks/useI18n';
 import { AppContext } from '../contexts/AppContext';
 import { formatSecondsToMMSS, parseTimerInput } from '../utils/timeUtils';
 import ToggleSwitch from '../components/common/ToggleSwitch';
 import { requestNotificationPermission } from '../services/notificationService';
-import { useSpeechSynthesis } from '../hooks/useSpeechSynthesis';
+import { getAvailableVoices, speak } from '../services/speechService';
 import { Icon } from '../components/common/Icon';
 
 const ProfilePage: React.FC = () => {
@@ -28,6 +28,7 @@ const ProfilePage: React.FC = () => {
 
   const [editingTimerKey, setEditingTimerKey] = useState<keyof typeof defaultRestTimes | null>(null);
   const [tempTimerValue, setTempTimerValue] = useState('');
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   
   const [permissionStatus, setPermissionStatus] = useState(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -36,12 +37,10 @@ const ProfilePage: React.FC = () => {
     return 'denied';
   });
 
-  const { speak, voices, isSupported } = useSpeechSynthesis();
-
-  const voiceOptions = useMemo(() => {
-      if (!voices) return [];
-      return voices.filter(voice => voice.lang.startsWith(locale));
-  }, [voices, locale]);
+  // Load available speech synthesis voices
+  useEffect(() => {
+    getAvailableVoices(locale).then(setVoices);
+  }, [locale]);
 
   // Update status if changed outside the app, e.g., in browser settings
   useEffect(() => {
@@ -99,27 +98,25 @@ const ProfilePage: React.FC = () => {
   const handleTimerInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value.replace(/\D/g, '');
     if (val.length <= 5) {
+        // FIX: Corrected a typo from `setTempValue` to `setTempTimerValue`.
         setTempTimerValue(val);
     }
   };
 
-  const handleVoiceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newVoiceURI = e.target.value || null;
-    setSelectedVoiceURI(newVoiceURI);
-  };
+  const handlePlayVoiceSample = () => {
+    let voiceName: string;
 
-  const handleTestVoice = () => {
-    const voiceToTest = voices.find(voice => voice.voiceURI === selectedVoiceURI);
-    
-    if (voiceToTest) {
-        const greeting = t('profile_voice_greeting', { voiceName: voiceToTest.name });
-        speak(greeting, voiceToTest);
-    } else if (voiceOptions.length > 0) {
-        // If no voice is selected yet, test the first one in the list.
-        const firstVoice = voiceOptions[0];
-        const greeting = t('profile_voice_greeting', { voiceName: firstVoice.name });
-        speak(greeting, firstVoice);
+    if (selectedVoiceURI) {
+        const selectedVoice = voices.find(v => v.voiceURI === selectedVoiceURI);
+        voiceName = selectedVoice?.name || 'your selected voice';
+    } else {
+        // If no voice is selected, use the first available one for the sample,
+        // which is a good guess for the default.
+        voiceName = voices[0]?.name || 'the default voice';
     }
+
+    const sampleText = t('profile_voice_sample', { voiceName });
+    speak(sampleText, selectedVoiceURI, locale);
   };
 
   const timerSettings: { key: keyof typeof defaultRestTimes; labelKey: TranslationKey }[] = [
@@ -241,40 +238,40 @@ const ProfilePage: React.FC = () => {
             </div>
         </div>
 
-        {isSupported && (
-            <div className="mt-6 pt-4 border-t border-secondary/20">
-                <div className="flex items-start sm:items-center justify-between gap-4">
-                    <div className="flex-grow">
-                        <h3 className="text-text-primary">{t('profile_voice_selection')}</h3>
-                        <p className="text-sm text-text-secondary mt-1">{t('profile_voice_selection_desc')}</p>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                        <select
-                            id="voice-select"
-                            value={selectedVoiceURI || ''}
-                            onChange={handleVoiceChange}
-                            className="w-40 sm:w-48 truncate bg-slate-700 border border-secondary/50 rounded-md p-2 disabled:opacity-50"
-                            disabled={voiceOptions.length === 0}
-                        >
-                            {voiceOptions.length > 0 ? voiceOptions.map(voice => (
-                                <option key={voice.voiceURI} value={voice.voiceURI}>
-                                    {voice.name} ({voice.lang})
-                                </option>
-                            )) : <option>No voices found for this language</option>}
-                        </select>
-                        <button
-                            onClick={handleTestVoice}
-                            className="flex-shrink-0 bg-primary hover:bg-sky-500 text-white font-bold p-3 rounded-lg disabled:bg-secondary disabled:cursor-not-allowed"
-                            aria-label={t('profile_test_voice')}
-                            title={t('profile_test_voice')}
-                            disabled={voiceOptions.length === 0}
-                        >
-                            <Icon name="play" className="w-5 h-5"/>
-                        </button>
-                    </div>
+        <div className="mt-6 pt-4 border-t border-secondary/20">
+            <h3 className="text-text-primary mb-2">{t('profile_voice_settings')}</h3>
+            <div className="flex items-center justify-between">
+                <div>
+                    <label htmlFor="voice-select" className="text-text-primary">{t('profile_voice')}</label>
+                    <p className="text-xs text-text-secondary">{t('profile_voice_desc')}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <select
+                      id="voice-select"
+                      value={selectedVoiceURI || ''}
+                      onChange={(e) => setSelectedVoiceURI(e.target.value || null)}
+                      className="bg-slate-700 border border-secondary/50 rounded-md p-2 max-w-[150px] sm:max-w-xs truncate"
+                      disabled={voices.length === 0}
+                  >
+                      <option value="">Default</option>
+                      {voices.map((voice) => (
+                          <option key={voice.voiceURI} value={voice.voiceURI}>
+                              {voice.name}
+                          </option>
+                      ))}
+                  </select>
+                  <button
+                      onClick={handlePlayVoiceSample}
+                      className="p-2 bg-secondary hover:bg-slate-500 rounded-md disabled:opacity-50"
+                      disabled={voices.length === 0}
+                      aria-label="Play voice sample"
+                  >
+                      <Icon name="play" className="w-5 h-5" />
+                  </button>
                 </div>
             </div>
-        )}
+        </div>
+
       </div>
     </div>
   );

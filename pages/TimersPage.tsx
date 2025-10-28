@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, useContext, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useContext } from 'react';
 import { useI18n } from '../hooks/useI18n';
 import { useWakeLock } from '../hooks/useWakeLock';
 import { playWarningSound, playEndSound } from '../services/audioService';
@@ -6,7 +6,7 @@ import { Icon } from '../components/common/Icon';
 import { formatSecondsToMMSS } from '../utils/timeUtils';
 import { AppContext } from '../contexts/AppContext';
 import { Routine } from '../types';
-import { useSpeechSynthesis } from '../hooks/useSpeechSynthesis';
+import { speak } from '../services/speechService';
 
 type TimerMode = 'quick' | 'hiit';
 
@@ -23,12 +23,12 @@ interface ActiveTimerState {
   restTime?: number;
   exerciseList?: (string | undefined)[] | null;
   exerciseIndex?: number;
+  sessionStartTime?: number;
 }
 
 const TimersPage: React.FC = () => {
-  const { t } = useI18n();
-  const { activeHiitSession, endHiitSession, getExerciseById } = useContext(AppContext);
-  const { speak, cancel } = useSpeechSynthesis();
+  const { t, locale } = useI18n();
+  const { activeHiitSession, endHiitSession, getExerciseById, selectedVoiceURI } = useContext(AppContext);
 
   const [quickTime, setQuickTime] = useState(300); // 5 minutes default
   const [hiitConfig, setHiitConfig] = useState({ work: 30, rest: 15, rounds: 10 });
@@ -41,26 +41,115 @@ const TimersPage: React.FC = () => {
   const intervalRef = useRef<number | null>(null);
   const targetTimeRef = useRef<number>(0);
   const playSoundRef = useRef({ playWarningSound, playEndSound });
+  const prevActiveTimerRef = useRef<ActiveTimerState>();
+
 
   useEffect(() => {
-    let keepAliveInterval: number | null = null;
-    if (activeTimer.isActive && !activeTimer.isPaused) {
-      // This is a workaround for some browsers that stop speech synthesis
-      // if it's not triggered by a direct user action after a while.
-      keepAliveInterval = window.setInterval(() => {
-        if ('speechSynthesis' in window) {
-          window.speechSynthesis.resume();
-        }
-      }, 14000); // every 14 seconds
+    if (activeHiitSession && !activeTimer.isActive) {
+      startHiitTimer(activeHiitSession.routine);
     }
-    return () => {
-      if (keepAliveInterval) {
-        clearInterval(keepAliveInterval);
-      }
-    };
-  }, [activeTimer.isActive, activeTimer.isPaused]);
+  }, [activeHiitSession]);
 
-  const startHiitTimer = useCallback((routine?: Routine) => {
+  useEffect(() => {
+    if (!activeTimer.isActive || activeTimer.isPaused) {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      return;
+    }
+
+    intervalRef.current = window.setInterval(() => {
+      const newTimeLeft = Math.max(0, Math.round((targetTimeRef.current - Date.now()) / 1000));
+      
+      setActiveTimer(prev => {
+        if (newTimeLeft === prev.timeLeft && newTimeLeft > 0) return prev; // No change
+
+        if (newTimeLeft <= 3 && newTimeLeft > 0 && prev.timeLeft > newTimeLeft) {
+            playSoundRef.current.playWarningSound();
+        }
+
+        if (newTimeLeft === 0) {
+            playSoundRef.current.playEndSound();
+            if (prev.mode === 'quick') {
+                return { ...prev, timeLeft: 0 };
+            }
+            if (prev.mode === 'hiit') {
+                const isLastRound = prev.currentRound! >= prev.totalRounds!;
+                
+                if (prev.hiitState === 'prepare') {
+                    targetTimeRef.current = Date.now() + prev.workTime! * 1000;
+                    return { ...prev, hiitState: 'work', timeLeft: prev.workTime!, totalDuration: prev.workTime! };
+                }
+                if (prev.hiitState === 'work') {
+                    if (isLastRound) {
+                        return { ...prev, timeLeft: 0 };
+                    }
+                    targetTimeRef.current = Date.now() + prev.restTime! * 1000;
+                    return { ...prev, hiitState: 'rest', timeLeft: prev.restTime!, totalDuration: prev.restTime! };
+                }
+                if (prev.hiitState === 'rest') {
+                    targetTimeRef.current = Date.now() + prev.workTime! * 1000;
+                    const nextIndex = (prev.exerciseIndex ?? -1) + 1;
+                    const nextRound = prev.currentRound! + 1;
+                    return { 
+                        ...prev, 
+                        hiitState: 'work', 
+                        timeLeft: prev.workTime!, 
+                        totalDuration: prev.workTime!, 
+                        currentRound: nextRound,
+                        exerciseIndex: nextIndex,
+                    };
+                }
+            }
+        }
+
+        return { ...prev, timeLeft: newTimeLeft };
+      });
+    }, 200);
+
+    return () => { if(intervalRef.current) clearInterval(intervalRef.current) };
+  }, [activeTimer.isActive, activeTimer.isPaused]);
+  
+  // Effect for handling voice announcements
+  useEffect(() => {
+    const prevTimer = prevActiveTimerRef.current;
+    if (!activeTimer.isActive || !prevTimer || !activeTimer.sessionStartTime) {
+        prevActiveTimerRef.current = activeTimer;
+        return;
+    }
+
+    // State transition detection for announcements
+    if (activeTimer.hiitState !== prevTimer.hiitState) {
+        if (activeTimer.hiitState === 'rest') {
+            const nextExerciseName = activeTimer.exerciseList?.[(activeTimer.exerciseIndex ?? -1) + 1] || '';
+            if (nextExerciseName) {
+                speak(t('timers_announce_rest', { exercise: nextExerciseName }), selectedVoiceURI, locale);
+            }
+        }
+    }
+
+    // Finish detection
+    const isFinishedNow = activeTimer.timeLeft === 0 && (activeTimer.mode === 'quick' || (activeTimer.hiitState === 'work' && activeTimer.currentRound === activeTimer.totalRounds));
+    const wasFinishedBefore = prevTimer.timeLeft === 0 && (prevTimer.mode === 'quick' || (prevTimer.hiitState === 'work' && prevTimer.currentRound === prevTimer.totalRounds));
+    
+    if (isFinishedNow && !wasFinishedBefore) {
+        if (activeTimer.mode === 'hiit') {
+            const durationMs = Date.now() - activeTimer.sessionStartTime;
+            const durationMinutes = Math.round(durationMs / 60000);
+            speak(t('timers_announce_finish', { minutes: durationMinutes }), selectedVoiceURI, locale);
+        }
+    }
+
+    prevActiveTimerRef.current = activeTimer;
+  }, [activeTimer, t, locale, selectedVoiceURI]);
+
+  const startQuickTimer = (seconds: number) => {
+    setQuickTime(seconds);
+    targetTimeRef.current = Date.now() + seconds * 1000;
+    setActiveTimer({
+      isActive: true, mode: 'quick', timeLeft: seconds, totalDuration: seconds, isPaused: false,
+    });
+  };
+
+  const startHiitTimer = (routine?: Routine) => {
     const hasRoutine = !!routine;
     
     let workTime: number;
@@ -97,114 +186,16 @@ const TimersPage: React.FC = () => {
       restTime: restTime,
       exerciseList: exercises,
       exerciseIndex: 0,
-    });
-  }, [getExerciseById, hiitConfig, t]);
-  
-  useEffect(() => {
-    if (activeHiitSession && !activeTimer.isActive) {
-      startHiitTimer(activeHiitSession.routine);
-    }
-  }, [activeHiitSession, activeTimer.isActive, startHiitTimer]);
-  
-  useEffect(() => {
-    if (
-        activeTimer.isActive && 
-        !activeTimer.isPaused && 
-        activeTimer.mode === 'hiit' && 
-        activeTimer.hiitState === 'prepare' &&
-        activeTimer.timeLeft === activeTimer.totalDuration // This prevents re-speaking on resume
-    ) {
-        const firstExerciseName = activeTimer.exerciseList?.[0];
-        if (firstExerciseName) {
-            const text = `${t('timers_prepare')}. ${t('timers_next')}: ${firstExerciseName}`;
-            speak(text);
-        }
-    }
-  }, [activeTimer, speak, t]);
-
-  useEffect(() => {
-    if (!activeTimer.isActive || activeTimer.isPaused) {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      return;
-    }
-
-    intervalRef.current = window.setInterval(() => {
-      const newTimeLeft = Math.max(0, Math.round((targetTimeRef.current - Date.now()) / 1000));
-      
-      setActiveTimer(prev => {
-        if (newTimeLeft === prev.timeLeft && newTimeLeft > 0) return prev; // No change
-
-        if (newTimeLeft <= 3 && newTimeLeft > 0 && prev.timeLeft > newTimeLeft) {
-            playSoundRef.current.playWarningSound();
-        }
-
-        if (newTimeLeft === 0) {
-            playSoundRef.current.playEndSound();
-            if (prev.mode === 'quick') {
-                return { ...prev, timeLeft: 0 };
-            }
-            if (prev.mode === 'hiit') {
-                const isLastRound = prev.currentRound! >= prev.totalRounds!;
-                
-                if (prev.hiitState === 'prepare') {
-                    targetTimeRef.current = Date.now() + prev.workTime! * 1000;
-                    return { ...prev, hiitState: 'work', timeLeft: prev.workTime!, totalDuration: prev.workTime! };
-                }
-                if (prev.hiitState === 'work') {
-                    if (isLastRound) {
-                        if (activeHiitSession) {
-                            const durationSeconds = (Date.now() - activeHiitSession.startTime) / 1000;
-                            const durationMinutes = Math.round(durationSeconds / 60);
-                            const text = `${t('workout_finished_congrats')} ${t('you_worked_for', { minutes: String(durationMinutes) })}`;
-                            speak(text);
-                        }
-                        return { ...prev, timeLeft: 0 };
-                    }
-                    const nextExerciseName = prev.exerciseList?.[(prev.exerciseIndex ?? -1) + 1];
-                    if (nextExerciseName) {
-                        const text = `${t('timers_hiit_rest')}. ${t('timers_next')}: ${nextExerciseName}`;
-                        speak(text);
-                    }
-                    targetTimeRef.current = Date.now() + prev.restTime! * 1000;
-                    return { ...prev, hiitState: 'rest', timeLeft: prev.restTime!, totalDuration: prev.restTime! };
-                }
-                if (prev.hiitState === 'rest') {
-                    targetTimeRef.current = Date.now() + prev.workTime! * 1000;
-                    const nextIndex = (prev.exerciseIndex ?? -1) + 1;
-                    const nextRound = prev.currentRound! + 1;
-                    return { 
-                        ...prev, 
-                        hiitState: 'work', 
-                        timeLeft: prev.workTime!, 
-                        totalDuration: prev.workTime!, 
-                        currentRound: nextRound,
-                        exerciseIndex: nextIndex,
-                    };
-                }
-            }
-        }
-
-        return { ...prev, timeLeft: newTimeLeft };
-      });
-    }, 200);
-
-    return () => { if(intervalRef.current) clearInterval(intervalRef.current) };
-  }, [activeTimer.isActive, activeTimer.isPaused, activeHiitSession, speak, t]);
-
-  const startQuickTimer = (seconds: number) => {
-    setQuickTime(seconds);
-    targetTimeRef.current = Date.now() + seconds * 1000;
-    setActiveTimer({
-      isActive: true, mode: 'quick', timeLeft: seconds, totalDuration: seconds, isPaused: false,
+      sessionStartTime: Date.now(),
     });
   };
 
   const stopTimer = () => {
-    cancel();
     if (activeHiitSession) {
       endHiitSession();
     }
     setActiveTimer({ ...activeTimer, isActive: false });
+    window.speechSynthesis.cancel(); // Stop any announcements
   };
 
   const togglePause = () => setActiveTimer(p => {
@@ -254,10 +245,10 @@ const TimersPage: React.FC = () => {
                         )}
                         
                         {hiitState === 'prepare' && currentExerciseName && !isFinished && (
-                            <p className="text-lg mt-2 text-text-secondary">{t('timers_next')}: {currentExerciseName}</p>
+                            <p className="text-lg mt-2 text-text-secondary">Next: {currentExerciseName}</p>
                         )}
                         {hiitState === 'rest' && nextExerciseName && !isFinished && (
-                            <p className="text-lg mt-2 text-text-secondary">{t('timers_next')}: {nextExerciseName}</p>
+                            <p className="text-lg mt-2 text-text-secondary">Next: {nextExerciseName}</p>
                         )}
                     </div>
                 )}

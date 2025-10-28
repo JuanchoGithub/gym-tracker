@@ -6,6 +6,7 @@ import { PREDEFINED_EXERCISES } from '../constants/exercises';
 import { useI18n } from '../hooks/useI18n';
 import { TranslationKey } from './I18nContext';
 import { calculateRecords, getExerciseHistory, calculate1RM } from '../utils/workoutUtils';
+import { speak } from '../services/speechService';
 
 export type WeightUnit = 'kg' | 'lbs';
 
@@ -75,6 +76,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [exerciseEditCallback, setExerciseEditCallback] = useState<((exercise: Exercise) => void) | null>(null);
   const [activeHiitSession, setActiveHiitSession] = useLocalStorage<ActiveHiitSession | null>('activeHiitSession', null);
   const [selectedVoiceURI, setSelectedVoiceURI] = useLocalStorage<string | null>('selectedVoiceURI', null);
+
 
   const exercises = useMemo(() => {
     if (useLocalizedExerciseNames && locale !== 'en') {
@@ -286,12 +288,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const maximizeWorkout = useCallback(() => setIsWorkoutMinimized(false), [setIsWorkoutMinimized]);
 
   const startHiitSession = useCallback((routine: Routine) => {
+    // Announce prepare state and first exercise
+    const firstExerciseName = getExerciseById(routine.exercises[0]?.exerciseId)?.name || '';
+    speak(t('timers_announce_prepare', { exercise: firstExerciseName }), selectedVoiceURI, locale);
+
     const newSession: ActiveHiitSession = {
         routine: JSON.parse(JSON.stringify(routine)), // deep copy
         startTime: Date.now(),
     };
     setActiveHiitSession(newSession);
-  }, [setActiveHiitSession]);
+  }, [setActiveHiitSession, getExerciseById, t, selectedVoiceURI, locale]);
 
   const endHiitSession = useCallback(() => {
       setActiveHiitSession(null);
@@ -459,7 +465,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     useLocalizedExerciseNames, setUseLocalizedExerciseNames,
     keepScreenAwake, setKeepScreenAwake, enableNotifications, setEnableNotifications,
     allTimeBestSets, activeHiitSession, startHiitSession, endHiitSession,
-    selectedVoiceURI, setSelectedVoiceURI,
+    selectedVoiceURI, setSelectedVoiceURI
   ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
