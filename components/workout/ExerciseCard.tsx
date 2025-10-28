@@ -8,7 +8,7 @@ import ExerciseHeader from './ExerciseHeader';
 import { useWeight } from '../../hooks/useWeight';
 import ChangeTimerModal from '../modals/ChangeTimerModal';
 import { formatSecondsToMMSS } from '../../utils/timeUtils';
-import { showTimerNotification } from '../../services/notificationService';
+import { scheduleTimerNotification, cancelTimerNotification } from '../../services/notificationService';
 import { AppContext } from '../../contexts/AppContext';
 
 interface ExerciseCardProps {
@@ -47,9 +47,23 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseIn
     if (oldSet && !oldSet.isComplete && updatedSet.isComplete) {
       setActiveTimerSetId(updatedSet.id);
       setCompletedSets(prev => prev + 1);
+      if (enableNotifications) {
+        const timerDuration = getTimerDuration(updatedSet);
+        if (timerDuration > 0) {
+            scheduleTimerNotification(timerDuration, t('notification_timer_finished_title'), {
+                body: t('notification_timer_finished_body', { exercise: exerciseInfo.name }),
+                icon: '/icon-192x192.png',
+                tag: 'rest-timer-finished',
+                requireInteraction: true,
+            });
+        }
+      }
     } else if (oldSet && oldSet.isComplete && !updatedSet.isComplete) {
         if(activeTimerSetId === oldSet.id) setActiveTimerSetId(null);
         setCompletedSets(prev => prev - 1);
+        if (enableNotifications) {
+           cancelTimerNotification('rest-timer-finished');
+        }
     }
     
     onUpdate({ ...workoutExercise, sets: updatedSets });
@@ -76,13 +90,17 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseIn
   const handleTimerFinish = (finishedSetId: string) => {
     if (activeTimerSetId === finishedSetId) {
       setActiveTimerSetId(null);
-      if (enableNotifications && 'Notification' in window && Notification.permission === 'granted' && document.visibilityState === 'hidden') {
-          showTimerNotification(t('notification_timer_finished_title'), {
+    }
+  };
+
+  const handleTimerChange = (newDuration: number) => {
+    if (enableNotifications) {
+        scheduleTimerNotification(newDuration, t('notification_timer_finished_title'), {
             body: t('notification_timer_finished_body', { exercise: exerciseInfo.name }),
             icon: '/icon-192x192.png',
             tag: 'rest-timer-finished',
-          });
-      }
+            requireInteraction: true,
+        });
     }
   };
   
@@ -159,6 +177,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseIn
                             <Timer 
                                 duration={getTimerDuration(set)} 
                                 onFinish={() => handleTimerFinish(set.id)} 
+                                onTimeChange={handleTimerChange}
                             />
                           </div>
                         )}

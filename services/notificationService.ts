@@ -7,6 +7,26 @@ export const requestNotificationPermission = async (): Promise<boolean> => {
   return permission === 'granted';
 };
 
+export const scheduleTimerNotification = (duration: number, title: string, options: NotificationOptions): void => {
+  if (Notification.permission !== 'granted' || !navigator.serviceWorker.controller) {
+    return;
+  }
+  navigator.serviceWorker.controller.postMessage({
+    type: 'SCHEDULE_NOTIFICATION',
+    payload: { duration, title, options }
+  });
+};
+
+export const cancelTimerNotification = (tag: string): void => {
+  if (!navigator.serviceWorker.controller) {
+    return;
+  }
+  navigator.serviceWorker.controller.postMessage({
+    type: 'CANCEL_NOTIFICATION',
+    payload: { tag }
+  });
+};
+
 export const showTimerNotification = (title: string, options: NotificationOptions): void => {
   if (Notification.permission !== 'granted') {
     return;

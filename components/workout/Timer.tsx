@@ -6,9 +6,10 @@ import { useI18n } from '../../hooks/useI18n';
 interface TimerProps {
   duration: number; // in seconds
   onFinish: () => void;
+  onTimeChange?: (newTimeLeft: number) => void;
 }
 
-const Timer: React.FC<TimerProps> = ({ duration, onFinish }) => {
+const Timer: React.FC<TimerProps> = ({ duration, onFinish, onTimeChange }) => {
   const { t } = useI18n();
   const [timeLeft, setTimeLeft] = useState(duration);
   const [isPaused, setIsPaused] = useState(false);
@@ -16,10 +17,15 @@ const Timer: React.FC<TimerProps> = ({ duration, onFinish }) => {
   
   const targetTimeRef = useRef<number>(0);
   const onFinishRef = useRef(onFinish);
+  const onTimeChangeRef = useRef(onTimeChange);
 
   useEffect(() => {
     onFinishRef.current = onFinish;
   }, [onFinish]);
+
+  useEffect(() => {
+    onTimeChangeRef.current = onTimeChange;
+  }, [onTimeChange]);
 
   const resetTimer = (newDuration: number) => {
     setIsPaused(false);
@@ -78,17 +84,23 @@ const Timer: React.FC<TimerProps> = ({ duration, onFinish }) => {
       if (!isPaused) {
         targetTimeRef.current = Date.now() + newTime * 1000;
       }
+      onTimeChangeRef.current?.(newTime);
+      if (newTime === 0) {
+        onFinishRef.current();
+      }
       return newTime;
     });
   };
 
   const handleReset = () => {
     resetTimer(duration);
+    onTimeChangeRef.current?.(duration);
   };
 
   const handleSkip = () => {
     setIsPaused(true);
     setTimeLeft(0);
+    onTimeChangeRef.current?.(0);
     onFinishRef.current();
   };
 

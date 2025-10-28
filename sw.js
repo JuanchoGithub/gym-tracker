@@ -64,6 +64,38 @@ self.addEventListener('fetch', event => {
   );
 });
 
+let notificationTimeoutId;
+
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'SCHEDULE_NOTIFICATION') {
+    if (notificationTimeoutId) {
+      clearTimeout(notificationTimeoutId);
+    }
+    const { duration, title, options } = event.data.payload;
+
+    if (duration > 0) {
+      notificationTimeoutId = setTimeout(() => {
+        self.registration.getNotifications({ tag: options.tag }).then(notifications => {
+          notifications.forEach(notification => notification.close());
+          self.registration.showNotification(title, options);
+        });
+        notificationTimeoutId = null;
+      }, duration * 1000);
+    }
+  } else if (event.data && event.data.type === 'CANCEL_NOTIFICATION') {
+    if (notificationTimeoutId) {
+      clearTimeout(notificationTimeoutId);
+      notificationTimeoutId = null;
+    }
+    if (event.data.payload && event.data.payload.tag) {
+        self.registration.getNotifications({ tag: event.data.payload.tag }).then(notifications => {
+            notifications.forEach(notification => notification.close());
+        });
+    }
+  }
+});
+
+
 self.addEventListener('notificationclick', event => {
   event.notification.close();
 
