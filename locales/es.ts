@@ -12,6 +12,7 @@ export const es = {
   common_discard: 'Descartar',
   common_yes: 'Sí',
   common_no: 'No',
+  common_save_changes: 'Guardar Cambios',
   
   // Navigation
   nav_train: 'Entrenar',
@@ -33,6 +34,20 @@ export const es = {
   history_no_data: 'No se encontró historial de entrenamiento para este ejercicio.',
   history_page_no_workouts: 'No se encontró historial de entrenamientos. ¡Completá un entrenamiento para verlo acá!',
   history_page_unknown_exercise: 'Ejercicio Desconocido',
+  history_total_time: 'Tiempo Total',
+  history_total_volume: 'Volumen Total',
+  history_prs: 'Récords Personales',
+  history_best_set: 'Mejor Serie',
+  history_menu_edit: 'Editar Entrenamiento',
+  history_menu_save_template: 'Guardar como Plantilla',
+  history_menu_repeat: 'Repetir Entrenamiento',
+  history_menu_delete: 'Borrar Entrenamiento',
+  history_save_template_title: 'Guardar como Plantilla',
+  history_template_name_label: 'Nombre de la Plantilla',
+  history_template_name_placeholder: 'Ej: Mi Súper Entrenamiento',
+  history_delete_confirm_title: '¿Borrar Entrenamiento?',
+  history_delete_confirm_message: '¿Estás seguro de que querés borrar permanentemente esta sesión de entrenamiento?',
+  history_workout_editor_title: 'Editar Entrenamiento',
 
   // Exercises Page
   search_placeholder: 'Buscar un ejercicio...',
@@ -165,6 +180,7 @@ export const es = {
 
   // Routine Panel
   routine_panel_delete_confirm: '¿Estás seguro de que querés borrar "{name}"?',
+  routine_panel_delete_confirm_title: '¿Borrar Plantilla?',
   routine_panel_no_exercises: 'Aún no hay ejercicios.',
   routine_panel_last_used: 'Última vez: {date}',
   routine_panel_edit_exercises: 'Editar Ejercicios',

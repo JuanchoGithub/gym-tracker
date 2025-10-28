@@ -12,6 +12,7 @@ export const en = {
   common_discard: 'Discard',
   common_yes: 'Yes',
   common_no: 'No',
+  common_save_changes: 'Save Changes',
 
   // Navigation
   nav_train: 'Train',
@@ -33,6 +34,21 @@ export const en = {
   history_no_data: 'No workout history found for this exercise.',
   history_page_no_workouts: 'No workout history found. Complete a workout to see it here!',
   history_page_unknown_exercise: 'Unknown Exercise',
+  history_total_time: 'Total Time',
+  history_total_volume: 'Total Volume',
+  history_prs: 'Personal Records',
+  history_best_set: 'Best Set',
+  history_menu_edit: 'Edit Workout',
+  history_menu_save_template: 'Save as Template',
+  history_menu_repeat: 'Repeat Workout',
+  history_menu_delete: 'Delete Workout',
+  history_save_template_title: 'Save as Template',
+  history_template_name_label: 'Template Name',
+  history_template_name_placeholder: 'e.g., My Awesome Workout',
+  history_delete_confirm_title: 'Delete Workout?',
+  history_delete_confirm_message: 'Are you sure you want to permanently delete this workout session?',
+  history_workout_editor_title: 'Edit Workout',
+
 
   // Exercises Page
   search_placeholder: 'Search for an exercise...',
@@ -165,6 +181,7 @@ export const en = {
   
   // Routine Panel
   routine_panel_delete_confirm: 'Are you sure you want to delete "{name}"?',
+  routine_panel_delete_confirm_title: 'Delete Template?',
   routine_panel_no_exercises: 'No exercises yet.',
   routine_panel_last_used: 'Last used: {date}',
   routine_panel_edit_exercises: 'Edit Exercises',

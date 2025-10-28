@@ -1,4 +1,3 @@
-
 import { WorkoutSession, PerformedSet } from '../types';
 
 export type ExerciseHistory = {
@@ -61,4 +60,17 @@ export const calculateRecords = (exerciseHistory: ExerciseHistory): PersonalReco
   });
 
   return records;
+};
+
+export const findBestSet = (sets: PerformedSet[]): PerformedSet | null => {
+    if (!sets || sets.length === 0) {
+        return null;
+    }
+
+    return sets.reduce((best, current) => {
+        if (!best) return current;
+        const best1RM = calculate1RM(best.weight, best.reps);
+        const current1RM = calculate1RM(current.weight, current.reps);
+        return current1RM > best1RM ? current : best;
+    }, sets[0]);
 };

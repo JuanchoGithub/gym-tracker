@@ -9,12 +9,13 @@ import { AppContext } from './contexts/AppContext';
 import MinimizedWorkoutBar from './components/workout/MinimizedWorkoutBar';
 import TemplateEditorPage from './pages/TemplateEditorPage';
 import ExerciseEditorPage from './pages/ExerciseEditorPage';
+import HistoryWorkoutEditorPage from './pages/HistoryWorkoutEditorPage';
 
 export type Page = 'TRAIN' | 'HISTORY' | 'EXERCISES' | 'PROFILE' | 'ACTIVE_WORKOUT';
 
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>('TRAIN');
-  const { activeWorkout, isWorkoutMinimized, editingTemplate, editingExercise } = useContext(AppContext);
+  const { activeWorkout, isWorkoutMinimized, editingTemplate, editingExercise, editingHistorySession } = useContext(AppContext);
 
   const renderPage = () => {
     switch (currentPage) {
@@ -36,6 +37,9 @@ const App: React.FC = () => {
   }
 
   const renderContent = () => {
+    if (editingHistorySession) {
+      return <HistoryWorkoutEditorPage />;
+    }
     if (editingExercise) {
       return <ExerciseEditorPage />;
     }
@@ -55,7 +59,7 @@ const App: React.FC = () => {
       </main>
       <div className="flex-shrink-0">
         {activeWorkout && isWorkoutMinimized && <MinimizedWorkoutBar />}
-        {(!activeWorkout || isWorkoutMinimized) && !editingTemplate && !editingExercise && <BottomNavBar currentPage={currentPage} onNavigate={handleNavigate} />}
+        {(!activeWorkout || isWorkoutMinimized) && !editingTemplate && !editingExercise && !editingHistorySession && <BottomNavBar currentPage={currentPage} onNavigate={handleNavigate} />}
       </div>
     </div>
   );

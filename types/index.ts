@@ -53,6 +53,7 @@ export interface WorkoutSession {
   startTime: number; // timestamp
   endTime: number; // timestamp
   exercises: WorkoutExercise[]; // This will store the completed sets
+  prCount?: number;
 }
 
 export interface ChartDataPoint {

@@ -4,6 +4,7 @@ import { AppContext } from '../../contexts/AppContext';
 import { Icon } from '../common/Icon';
 import Modal from '../common/Modal';
 import { useI18n } from '../../hooks/useI18n';
+import ConfirmModal from '../modals/ConfirmModal';
 
 interface RoutinePanelProps {
   routine: Routine;
@@ -17,6 +18,7 @@ const RoutinePanel: React.FC<RoutinePanelProps> = ({ routine, onClick, onEdit })
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [newName, setNewName] = useState(routine.name);
   const [newNote, setNewNote] = useState(routine.description);
 
@@ -25,13 +27,16 @@ const RoutinePanel: React.FC<RoutinePanelProps> = ({ routine, onClick, onEdit })
     .filter(Boolean)
     .join(', ');
 
-  const handleDelete = (e: React.MouseEvent) => {
+  const handleOpenDeleteConfirm = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (window.confirm(t('routine_panel_delete_confirm', { name: routine.name }))) {
-      deleteRoutine(routine.id);
-    }
+    setIsConfirmingDelete(true);
     setIsMenuOpen(false);
   };
+  
+  const handleConfirmDelete = () => {
+    deleteRoutine(routine.id);
+    setIsConfirmingDelete(false);
+  }
 
   const handleEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -75,7 +80,7 @@ const RoutinePanel: React.FC<RoutinePanelProps> = ({ routine, onClick, onEdit })
                              {isEditable && <button onClick={handleEdit} className="w-full text-left px-3 py-2 text-sm text-text-primary hover:bg-slate-500 rounded-t-md">{t('routine_panel_edit_exercises')}</button>}
                              {isEditable && <button onClick={(e) => { e.stopPropagation(); setIsRenameModalOpen(true); setNewName(routine.name); setIsMenuOpen(false); }} className="w-full text-left px-3 py-2 text-sm text-text-primary hover:bg-slate-500">{t('common_rename')}</button>}
                              {isEditable && <button onClick={(e) => { e.stopPropagation(); setIsNoteModalOpen(true); setNewNote(routine.description); setIsMenuOpen(false); }} className="w-full text-left px-3 py-2 text-sm text-text-primary hover:bg-slate-500">{t('routine_panel_edit_note')}</button>}
-                             {isDeletable && <button onClick={handleDelete} className={`w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-slate-500 ${isEditable ? 'rounded-b-md' : 'rounded-md'}`}>{t('common_delete')}</button>}
+                             {isDeletable && <button onClick={handleOpenDeleteConfirm} className={`w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-slate-500 ${isEditable ? 'rounded-b-md' : 'rounded-md'}`}>{t('common_delete')}</button>}
                           </div>
                       )}
                    </div>
@@ -91,6 +96,16 @@ const RoutinePanel: React.FC<RoutinePanelProps> = ({ routine, onClick, onEdit })
           </p>
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={isConfirmingDelete}
+        onClose={() => setIsConfirmingDelete(false)}
+        onConfirm={handleConfirmDelete}
+        title={routine.isTemplate ? t('routine_panel_delete_confirm_title') : t('history_delete_confirm_title')}
+        message={t('routine_panel_delete_confirm', { name: routine.name })}
+        confirmText={t('common_delete')}
+        confirmButtonClass="bg-red-600 hover:bg-red-700"
+      />
 
       <Modal isOpen={isRenameModalOpen} onClose={() => setIsRenameModalOpen(false)} title={t('routine_panel_rename_title')}>
           <form onSubmit={handleSaveRename}>

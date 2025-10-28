@@ -15,9 +15,9 @@ interface ExerciseCardProps {
   workoutExercise: WorkoutExercise;
   exerciseInfo: Exercise;
   onUpdate: (updatedExercise: WorkoutExercise) => void;
-  activeTimerInfo: { exerciseId: string; setId: string; startTime: number } | null;
-  onTimerFinish: (finishedExerciseId: string, finishedSetId: string) => void;
-  onTimerChange: (newDuration: number, exerciseName: string) => void;
+  activeTimerInfo?: { exerciseId: string; setId: string; startTime: number } | null;
+  onTimerFinish?: (finishedExerciseId: string, finishedSetId: string) => void;
+  onTimerChange?: (newDuration: number, exerciseName: string) => void;
 }
 
 const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseInfo, onUpdate, activeTimerInfo, onTimerFinish, onTimerChange }) => {
@@ -161,7 +161,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseIn
                             onDeleteSet={() => handleDeleteSet(set.id)}
                             previousSetData={previousSetData}
                         />
-                        {isActiveTimer && (
+                        {isActiveTimer && onTimerFinish && onTimerChange && (
                           <div className="w-full rounded-lg">
                             <Timer 
                                 duration={getTimerDuration(set)} 

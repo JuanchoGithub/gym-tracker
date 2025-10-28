@@ -5,6 +5,7 @@ import { PREDEFINED_ROUTINES } from '../constants/routines';
 import { PREDEFINED_EXERCISES } from '../constants/exercises';
 import { useI18n } from '../hooks/useI18n';
 import { TranslationKey } from './I18nContext';
+import { calculateRecords, getExerciseHistory } from '../utils/workoutUtils';
 
 export type WeightUnit = 'kg' | 'lbs';
 
@@ -13,6 +14,8 @@ interface AppContextType {
   upsertRoutine: (routine: Routine) => void;
   deleteRoutine: (routineId: string) => void;
   history: WorkoutSession[];
+  deleteHistorySession: (sessionId: string) => void;
+  updateHistorySession: (session: WorkoutSession) => void;
   exercises: Exercise[];
   getExerciseById: (id: string) => Exercise | undefined;
   upsertExercise: (exercise: Exercise) => void;
@@ -35,6 +38,9 @@ interface AppContextType {
   startExerciseEdit: (exercise: Exercise) => void;
   endExerciseEdit: (savedExercise?: Exercise) => void;
   startExerciseDuplicate: (exercise: Exercise) => void;
+  editingHistorySession: WorkoutSession | null;
+  startHistoryEdit: (session: WorkoutSession) => void;
+  endHistoryEdit: (savedSession?: WorkoutSession) => void;
   useLocalizedExerciseNames: boolean;
   setUseLocalizedExerciseNames: (value: boolean) => void;
   keepScreenAwake: boolean;
@@ -55,6 +61,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [defaultRestTimes, setDefaultRestTimes] = useLocalStorage<{ normal: number; warmup: number; drop: number; }>('defaultRestTimes', { normal: 90, warmup: 60, drop: 30 });
   const [editingTemplate, setEditingTemplate] = useState<Routine | null>(null);
   const [editingExercise, setEditingExercise] = useState<Exercise | null>(null);
+  const [editingHistorySession, setEditingHistorySession] = useState<WorkoutSession | null>(null);
   const { t, locale, t_ins } = useI18n();
   const [useLocalizedExerciseNames, setUseLocalizedExerciseNames] = useLocalStorage<boolean>('useLocalizedExerciseNames', true);
   const [keepScreenAwake, setKeepScreenAwake] = useLocalStorage<boolean>('keepScreenAwake', true);
@@ -166,7 +173,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (activeWorkout) {
       const workoutEndTime = activeWorkout.endTime > 0 ? activeWorkout.endTime : Date.now();
       
-      // Create a version for history, which only includes completed sets.
       const finishedWorkoutForHistory: WorkoutSession = {
         ...activeWorkout,
         endTime: workoutEndTime,
@@ -176,8 +182,34 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         })).filter(ex => ex.sets.length > 0)
       };
 
-      // Only save history and create a "latest workout" if at least one set was completed.
       if (finishedWorkoutForHistory.exercises.length > 0) {
+        // Calculate PRs before saving
+        let prCount = 0;
+        const previousHistory = [...history];
+        
+        finishedWorkoutForHistory.exercises.forEach(ex => {
+            const exerciseHistory = getExerciseHistory(previousHistory, ex.exerciseId);
+            const oldRecords = calculateRecords(exerciseHistory);
+            
+            ex.sets.forEach(set => {
+                let isPr = false;
+                const volume = set.weight * set.reps;
+
+                if (!oldRecords.maxWeight || set.weight > oldRecords.maxWeight.value) {
+                    isPr = true;
+                } else if (!oldRecords.maxReps || set.reps > oldRecords.maxReps.value) {
+                    isPr = true;
+                } else if (!oldRecords.maxVolume || volume > oldRecords.maxVolume.value) {
+                    isPr = true;
+                }
+                
+                if (isPr) {
+                    prCount++;
+                }
+            });
+        });
+        finishedWorkoutForHistory.prCount = prCount;
+
         setHistory(prev => [finishedWorkoutForHistory, ...prev]);
 
         // Create the "Latest Workout" routine. It should include *all* sets from the session,
@@ -207,7 +239,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setActiveWorkout(null);
       setIsWorkoutMinimized(false);
     }
-  }, [activeWorkout, rawRoutines, setActiveWorkout, setHistory, setIsWorkoutMinimized, setRawRoutines]);
+  }, [activeWorkout, history, rawRoutines, setActiveWorkout, setHistory, setIsWorkoutMinimized, setRawRoutines]);
 
   const discardActiveWorkout = useCallback(() => {
     setActiveWorkout(null);
@@ -263,11 +295,67 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     startExerciseEdit(newExercise);
   }, [rawExercises, t_ins, startExerciseEdit]);
 
+  const deleteHistorySession = useCallback((sessionId: string) => {
+    setHistory(prev => prev.filter(s => s.id !== sessionId));
+  }, [setHistory]);
+
+  const updateHistorySession = useCallback((session: WorkoutSession) => {
+    const previousHistory = history.filter(h => h.startTime < session.startTime && h.id !== session.id);
+    
+    let prCount = 0;
+    session.exercises.forEach(ex => {
+        const exerciseHistory = getExerciseHistory(previousHistory, ex.exerciseId);
+        const oldRecords = calculateRecords(exerciseHistory);
+        
+        ex.sets.forEach(set => {
+            if (set.isComplete) {
+                let isPrForSet = false;
+                const volume = set.weight * set.reps;
+
+                if (!oldRecords.maxWeight || set.weight > oldRecords.maxWeight.value) {
+                    isPrForSet = true;
+                } else if (!oldRecords.maxReps || set.reps > oldRecords.maxReps.value) {
+                    isPrForSet = true;
+                } else if (!oldRecords.maxVolume || volume > oldRecords.maxVolume.value) {
+                    isPrForSet = true;
+                }
+                
+                if (isPrForSet) {
+                    prCount++;
+                }
+            }
+        });
+    });
+    const sessionWithRecalculatedPRs = { ...session, prCount };
+
+    setHistory(prev => {
+        const index = prev.findIndex(s => s.id === session.id);
+        if (index === -1) return prev;
+        const newHistory = [...prev];
+        newHistory[index] = sessionWithRecalculatedPRs;
+        newHistory.sort((a, b) => b.startTime - a.startTime);
+        return newHistory;
+    });
+  }, [history, setHistory]);
+
+  const startHistoryEdit = useCallback((session: WorkoutSession) => {
+    setEditingHistorySession(session);
+  }, []);
+
+  const endHistoryEdit = useCallback((savedSession?: WorkoutSession) => {
+    if (savedSession) {
+      updateHistorySession(savedSession);
+    }
+    setEditingHistorySession(null);
+  }, [updateHistorySession]);
+
   const value = useMemo(() => ({
     routines: rawRoutines,
     upsertRoutine,
     deleteRoutine,
     history,
+    deleteHistorySession,
+    updateHistorySession,
     exercises,
     getExerciseById,
     upsertExercise,
@@ -290,6 +378,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     startExerciseEdit,
     endExerciseEdit,
     startExerciseDuplicate,
+    editingHistorySession,
+    startHistoryEdit,
+    endHistoryEdit,
     useLocalizedExerciseNames,
     setUseLocalizedExerciseNames,
     keepScreenAwake,
@@ -297,12 +388,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     enableNotifications,
     setEnableNotifications,
   }), [
-    rawRoutines, upsertRoutine, deleteRoutine, history, exercises, getExerciseById,
+    rawRoutines, upsertRoutine, deleteRoutine, history, deleteHistorySession, updateHistorySession, exercises, getExerciseById,
     upsertExercise, activeWorkout, startWorkout, updateActiveWorkout, endWorkout,
     isWorkoutMinimized, minimizeWorkout, maximizeWorkout, discardActiveWorkout,
     weightUnit, setWeightUnit, defaultRestTimes, setDefaultRestTimes,
     editingTemplate, startTemplateEdit, endTemplateEdit, editingExercise,
     startExerciseEdit, endExerciseEdit, startExerciseDuplicate,
+    editingHistorySession, startHistoryEdit, endHistoryEdit,
     useLocalizedExerciseNames, setUseLocalizedExerciseNames,
     keepScreenAwake, setKeepScreenAwake, enableNotifications, setEnableNotifications
   ]);
