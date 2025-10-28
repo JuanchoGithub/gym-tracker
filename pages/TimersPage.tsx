@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef, useMemo, useContext, useCallback } from 'react';
-import { useI18n } from '../../hooks/useI18n';
-import { useWakeLock } from '../../hooks/useWakeLock';
-import { playWarningSound, playEndSound } from '../../services/audioService';
-import { Icon } from '../common/Icon';
-import { formatSecondsToMMSS } from '../../utils/timeUtils';
-import { AppContext } from '../../contexts/AppContext';
-import { Routine } from '../../types';
-import { speak } from '../../services/speechService';
+import { useI18n } from '../hooks/useI18n';
+import { useWakeLock } from '../hooks/useWakeLock';
+import { playWarningSound, playEndSound } from '../services/audioService';
+import { Icon } from '../components/common/Icon';
+import { formatSecondsToMMSS } from '../utils/timeUtils';
+import { AppContext } from '../contexts/AppContext';
+import { Routine } from '../types';
+import { speak } from '../services/speechService';
 
 type TimerMode = 'quick' | 'hiit';
 
@@ -41,8 +41,7 @@ const TimersPage: React.FC = () => {
   const intervalRef = useRef<number | null>(null);
   const targetTimeRef = useRef<number>(0);
   const playSoundRef = useRef({ playWarningSound, playEndSound });
-  // FIX: Corrected a TypeScript error by explicitly providing `undefined` as the initial value to `useRef`. This resolves an issue where the type checker incorrectly reported that `useRef()` was called with zero arguments when one was expected.
-  const prevActiveTimerRef = useRef<ActiveTimerState | undefined>(undefined);
+  const prevActiveTimerRef = useRef<ActiveTimerState>();
 
   const startHiitTimer = useCallback((routine?: Routine) => {
     const hasRoutine = !!routine;
@@ -335,13 +334,15 @@ const TimersPage: React.FC = () => {
                         <input
                             type="number"
                             value={hiitConfig[key]}
-                            onChange={e => setHiitConfig({...hiitConfig, [key]: Math.max(0, parseInt(e.target.value) || 0)})}
+                            // FIX: Added radix to parseInt for safety and best practices.
+                            onChange={e => setHiitConfig({...hiitConfig, [key]: Math.max(0, parseInt(e.target.value, 10) || 0)})}
                             className="w-full bg-slate-900 border border-secondary/50 rounded-lg p-2 text-center text-lg"
                         />
                     </div>
                 ))}
             </div>
-            <button onClick={() => startHiitTimer()} className="w-full bg-primary text-white font-bold py-3 rounded-lg hover:bg-sky-600 transition-colors">
+            {/* FIX: Explicitly pass undefined to startHiitTimer to resolve "Expected 1 arguments, but got 0" error. */}
+            <button onClick={() => startHiitTimer(undefined)} className="w-full bg-primary text-white font-bold py-3 rounded-lg hover:bg-sky-600 transition-colors">
                 {t('timers_hiit_start_button')}
             </button>
         </div>
