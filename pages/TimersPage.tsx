@@ -4,8 +4,8 @@ import { useWakeLock } from '../../hooks/useWakeLock';
 import { playWarningSound, playEndSound } from '../../services/audioService';
 import { Icon } from '../common/Icon';
 import { formatSecondsToMMSS } from '../../utils/timeUtils';
-import { AppContext } from '../contexts/AppContext';
-import { Routine } from '../types';
+import { AppContext } from '../../contexts/AppContext';
+import { Routine } from '../../types';
 import { speak } from '../../services/speechService';
 
 type TimerMode = 'quick' | 'hiit';
@@ -41,7 +41,8 @@ const TimersPage: React.FC = () => {
   const intervalRef = useRef<number | null>(null);
   const targetTimeRef = useRef<number>(0);
   const playSoundRef = useRef({ playWarningSound, playEndSound });
-  const prevActiveTimerRef = useRef<ActiveTimerState>();
+  // FIX: Corrected a TypeScript error by explicitly providing `undefined` as the initial value to `useRef`. This resolves an issue where the type checker incorrectly reported that `useRef()` was called with zero arguments when one was expected.
+  const prevActiveTimerRef = useRef<ActiveTimerState | undefined>(undefined);
 
   const startHiitTimer = useCallback((routine?: Routine) => {
     const hasRoutine = !!routine;

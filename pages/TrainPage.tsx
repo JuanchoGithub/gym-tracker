@@ -20,9 +20,18 @@ const TrainPage: React.FC = () => {
       .sort((a, b) => (b.lastUsed || 0) - (a.lastUsed || 0));
 
     const templates = routines.filter(r => r.isTemplate);
-    const custom = templates.filter(r => !r.id.startsWith('rt-') && r.routineType !== 'hiit');
-    const samples = templates.filter(r => r.id.startsWith('rt-') && r.routineType !== 'hiit');
-    const hiit = templates.filter(r => r.routineType === 'hiit');
+
+    // All custom templates (HIIT and Strength)
+    const custom = templates.filter(r => !r.id.startsWith('rt-'));
+
+    // All sample templates
+    const sampleTemplates = templates.filter(r => r.id.startsWith('rt-'));
+
+    // Sample strength workouts
+    const samples = sampleTemplates.filter(r => r.routineType !== 'hiit');
+
+    // Sample HIIT workouts
+    const hiit = sampleTemplates.filter(r => r.routineType === 'hiit');
     
     return { latestWorkouts: latest, customTemplates: custom, sampleWorkouts: samples, sampleHiit: hiit };
   }, [routines]);
