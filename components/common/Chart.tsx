@@ -10,7 +10,7 @@ const VIEWBOX_WIDTH = 350;
 const VIEWBOX_HEIGHT = 150;
 
 const Chart: React.FC<ChartProps> = ({ data, color = '#0284c7' }) => {
-  if (data.length < 2) {
+  if (data.length === 0) {
     return (
       <div style={{ height: VIEWBOX_HEIGHT }} className="flex w-full items-center justify-center text-text-secondary">
         Not enough data to display chart.
@@ -25,7 +25,13 @@ const Chart: React.FC<ChartProps> = ({ data, color = '#0284c7' }) => {
   const maxValue = Math.max(...data.map(d => d.value), 0);
   const minValue = 0;
 
-  const xScale = (index: number) => padding.left + (index / (data.length - 1)) * chartWidth;
+  const xScale = (index: number) => {
+    if (data.length === 1) {
+      return padding.left + chartWidth / 2;
+    }
+    return padding.left + (index / (data.length - 1)) * chartWidth;
+  };
+
   const yScale = (value: number) => {
     if (maxValue === minValue) {
       return padding.top + chartHeight / 2;
@@ -33,17 +39,25 @@ const Chart: React.FC<ChartProps> = ({ data, color = '#0284c7' }) => {
     return padding.top + chartHeight - ((value - minValue) / (maxValue - minValue)) * chartHeight;
   };
   
-  const path = data.map((d, i) => `${i === 0 ? 'M' : 'L'} ${xScale(i)} ${yScale(d.value)}`).join(' ');
+  const path = data.length > 1 ? data.map((d, i) => `${i === 0 ? 'M' : 'L'} ${xScale(i)} ${yScale(d.value)}`).join(' ') : '';
 
   const yAxisLabels = [minValue, (minValue + maxValue) / 2, maxValue].map(val => ({
     value: Math.round(val),
     y: yScale(val),
   }));
 
-  const xAxisLabels = [data[0], data[Math.floor(data.length / 2)], data[data.length - 1]].map((d, i) => ({
-      value: d.label,
-      x: xScale(i === 1 ? Math.floor(data.length/2) : (i === 0 ? 0 : data.length -1)),
-  }));
+  let xAxisLabels: { value: string; x: number }[];
+  if (data.length === 1) {
+    xAxisLabels = [{ value: data[0].label, x: xScale(0) }];
+  } else {
+    const midIndex = Math.floor(data.length / 2);
+    const indices = [0, midIndex, data.length - 1];
+    const uniqueIndices = [...new Set(indices)];
+    xAxisLabels = uniqueIndices.map(index => ({
+      value: data[index].label,
+      x: xScale(index),
+    }));
+  }
 
   return (
     <svg width="100%" viewBox={`0 0 ${VIEWBOX_WIDTH} ${VIEWBOX_HEIGHT}`}>
@@ -65,7 +79,7 @@ const Chart: React.FC<ChartProps> = ({ data, color = '#0284c7' }) => {
       ))}
 
       {/* Line Path */}
-      <path d={path} fill="none" stroke={color} strokeWidth="2" />
+      {path && <path d={path} fill="none" stroke={color} strokeWidth="2" />}
 
       {/* Data Points */}
       {data.map((d, i) => (

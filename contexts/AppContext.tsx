@@ -5,7 +5,7 @@ import { PREDEFINED_ROUTINES } from '../constants/routines';
 import { PREDEFINED_EXERCISES } from '../constants/exercises';
 import { useI18n } from '../hooks/useI18n';
 import { TranslationKey } from './I18nContext';
-import { calculateRecords, getExerciseHistory } from '../utils/workoutUtils';
+import { calculateRecords, getExerciseHistory, calculate1RM } from '../utils/workoutUtils';
 
 export type WeightUnit = 'kg' | 'lbs';
 
@@ -47,6 +47,7 @@ interface AppContextType {
   setKeepScreenAwake: (value: boolean) => void;
   enableNotifications: boolean;
   setEnableNotifications: (value: boolean) => void;
+  allTimeBestSets: Record<string, PerformedSet>;
 }
 
 export const AppContext = createContext<AppContextType>({} as AppContextType);
@@ -82,6 +83,32 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
     return rawExercises;
   }, [rawExercises, useLocalizedExerciseNames, locale, t]);
+
+  const allTimeBestSets = useMemo(() => {
+    const bestSets: Record<string, PerformedSet> = {};
+    for (const exercise of rawExercises) {
+        const exerciseHistory = getExerciseHistory(history, exercise.id);
+        if (exerciseHistory.length > 0) {
+            let bestSet: PerformedSet | null = null;
+            let best1RM = -1;
+            for (const entry of exerciseHistory) {
+                for (const set of entry.exerciseData.sets) {
+                    if (set.type === 'normal' && set.isComplete) {
+                        const current1RM = calculate1RM(set.weight, set.reps);
+                        if (current1RM > best1RM) {
+                            best1RM = current1RM;
+                            bestSet = set;
+                        }
+                    }
+                }
+            }
+            if (bestSet) {
+                bestSets[exercise.id] = bestSet;
+            }
+        }
+    }
+    return bestSets;
+  }, [history, rawExercises]);
 
 
   useEffect(() => {
@@ -387,6 +414,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setKeepScreenAwake,
     enableNotifications,
     setEnableNotifications,
+    allTimeBestSets,
   }), [
     rawRoutines, upsertRoutine, deleteRoutine, history, deleteHistorySession, updateHistorySession, exercises, getExerciseById,
     upsertExercise, activeWorkout, startWorkout, updateActiveWorkout, endWorkout,
@@ -396,7 +424,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     startExerciseEdit, endExerciseEdit, startExerciseDuplicate,
     editingHistorySession, startHistoryEdit, endHistoryEdit,
     useLocalizedExerciseNames, setUseLocalizedExerciseNames,
-    keepScreenAwake, setKeepScreenAwake, enableNotifications, setEnableNotifications
+    keepScreenAwake, setKeepScreenAwake, enableNotifications, setEnableNotifications,
+    allTimeBestSets
   ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

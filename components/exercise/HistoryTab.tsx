@@ -2,8 +2,8 @@
 import React from 'react';
 import { useI18n } from '../../hooks/useI18n';
 import { ExerciseHistory, calculate1RM } from '../../utils/workoutUtils';
-import Pill from '../common/Pill';
 import { useWeight } from '../../hooks/useWeight';
+import { Icon } from '../common/Icon';
 
 interface HistoryTabProps {
   history: ExerciseHistory;
@@ -16,25 +16,40 @@ const HistoryTab: React.FC<HistoryTabProps> = ({ history }) => {
   if (history.length === 0) {
     return <p className="text-text-secondary text-center p-4">{t('history_no_data')}</p>;
   }
-  
-  const getComparisonPill = (current: number, prev: number | undefined) => {
-    if (prev === undefined || current === prev) return null;
+
+  const getComparisonIcon = (current: number, prev: number | undefined) => {
+    if (prev === undefined || isNaN(current) || isNaN(prev)) return null;
     const diff = current - prev;
-    const diffStr = `${diff > 0 ? '+' : ''}${displayWeight(diff, true)}`;
-    const type = diff > 0 ? 'increase' : 'decrease';
-    return <Pill value={diffStr} type={type} />;
-  }
+    if (Math.abs(diff) < 0.01) return null; // No significant change
+
+    if (diff > 0) {
+        return <Icon name="arrow-up" className="w-4 h-4 text-green-400 ml-1"/>;
+    }
+    return <Icon name="arrow-down" className="w-4 h-4 text-red-400 ml-1"/>;
+  };
 
   return (
     <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
       {history.map((entry, entryIndex) => {
         const prevEntry = history[entryIndex + 1];
+        const date = new Date(entry.session.startTime);
+        
         return (
           <div key={entry.session.id} className="bg-slate-900/50 p-3 rounded-lg">
-            <h3 className="font-bold text-text-primary mb-2">
-              {new Date(entry.session.startTime).toLocaleDateString()}
-            </h3>
+            <div>
+                <h3 className="font-bold text-text-primary">{entry.session.routineName}</h3>
+                <p className="text-xs text-text-secondary mb-2">
+                    {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}, {date.toLocaleDateString()}
+                </p>
+            </div>
+            
             <div className="text-xs space-y-1">
+              <div className="grid grid-cols-12 gap-2 font-semibold text-text-secondary border-b border-secondary/20 pb-1">
+                  <div className="col-span-6">{t('workout_sets')}</div>
+                  <div className="col-span-3 text-right">{t('history_volume')}</div>
+                  <div className="col-span-3 text-right">{t('history_1rm')}</div>
+              </div>
+              
               {entry.exerciseData.sets.map((set, setIndex) => {
                 const prevSet = prevEntry?.exerciseData.sets[setIndex];
                 const volume = set.weight * set.reps;
@@ -43,16 +58,19 @@ const HistoryTab: React.FC<HistoryTabProps> = ({ history }) => {
                 const prevEst1RM = prevSet ? calculate1RM(prevSet.weight, prevSet.reps) : undefined;
 
                 return (
-                  <div key={set.id} className="grid grid-cols-4 gap-2 items-center">
-                    {/* FIX: Used a template literal to construct a valid translation key for the weight unit. */}
-                    <div className="font-mono">{t('workout_set')} {setIndex + 1}: {displayWeight(set.weight)}{t(`workout_${unit}`)} x {set.reps}</div>
-                    <div className="flex items-center gap-1">
-                        <span className="text-text-secondary">{t('history_volume')}: {displayWeight(volume)}</span>
-                        {getComparisonPill(volume, prevVolume)}
+                  <div key={set.id} className="grid grid-cols-12 gap-2 items-center text-sm py-1">
+                    <div className="col-span-6 flex items-center font-mono">
+                        <span className="font-sans font-bold w-6 text-center mr-2">{setIndex + 1}</span>
+                        {displayWeight(set.weight)}{t(`workout_${unit}`)} x {set.reps}
+                        {getComparisonIcon(est1RM, prevEst1RM)}
                     </div>
-                     <div className="flex items-center gap-1 col-span-2">
-                        <span className="text-text-secondary">{t('history_1rm')}: {displayWeight(est1RM)}</span>
-                        {getComparisonPill(est1RM, prevEst1RM)}
+                    <div className="col-span-3 text-right font-mono flex items-center justify-end">
+                        <span>{displayWeight(volume)}</span>
+                        {getComparisonIcon(volume, prevVolume)}
+                    </div>
+                     <div className="col-span-3 text-right font-mono flex items-center justify-end">
+                        <span>{displayWeight(est1RM)}</span>
+                        {getComparisonIcon(est1RM, prevEst1RM)}
                     </div>
                   </div>
                 );

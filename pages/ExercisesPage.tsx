@@ -7,10 +7,12 @@ import { Icon } from '../components/common/Icon';
 import FilterDropdown from '../components/common/FilterDropdown';
 import { BODY_PART_OPTIONS, CATEGORY_OPTIONS } from '../constants/filters';
 import { getBodyPartTKey, getCategoryTKey } from '../utils/i18nUtils';
+import { useWeight } from '../hooks/useWeight';
 
 const ExercisesPage: React.FC = () => {
-  const { exercises, startExerciseEdit } = useContext(AppContext);
+  const { exercises, startExerciseEdit, allTimeBestSets } = useContext(AppContext);
   const { t } = useI18n();
+  const { displayWeight, unit } = useWeight();
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBodyPart, setSelectedBodyPart] = useState<BodyPart | 'All'>('All');
@@ -108,19 +110,28 @@ const ExercisesPage: React.FC = () => {
       </div>
 
       <div className="space-y-3">
-        {filteredExercises.length > 0 ? filteredExercises.map(exercise => (
-          <div
-            key={exercise.id}
-            onClick={() => setSelectedExercise(exercise)}
-            className="bg-surface p-3 sm:p-4 rounded-lg shadow cursor-pointer hover:bg-slate-700 transition-colors flex justify-between items-center"
-          >
-            <div>
-              <h3 className="font-bold text-text-primary">{exercise.name}</h3>
-              <p className="text-sm text-text-secondary">{t(getBodyPartTKey(exercise.bodyPart))}</p>
+        {filteredExercises.length > 0 ? filteredExercises.map(exercise => {
+          const bestSet = allTimeBestSets[exercise.id];
+          return (
+            <div
+              key={exercise.id}
+              onClick={() => setSelectedExercise(exercise)}
+              className="bg-surface p-3 sm:p-4 rounded-lg shadow cursor-pointer hover:bg-slate-700 flex justify-between items-center"
+            >
+              <div>
+                <h3 className="font-bold text-text-primary">{exercise.name}</h3>
+                <p className="text-sm text-text-secondary">{t(getBodyPartTKey(exercise.bodyPart))}</p>
+                {bestSet && (
+                  <p className="text-xs text-warning mt-1 font-mono flex items-center gap-1">
+                      <Icon name="trophy" className="w-3 h-3" />
+                      <span>{displayWeight(bestSet.weight)} {t(`workout_${unit}`)} x {bestSet.reps} {t('workout_reps')}</span>
+                  </p>
+                )}
+              </div>
+              <span className="text-xs bg-secondary/30 text-text-secondary px-2 py-1 rounded-full">{t(getCategoryTKey(exercise.category))}</span>
             </div>
-            <span className="text-xs bg-secondary/30 text-text-secondary px-2 py-1 rounded-full">{t(getCategoryTKey(exercise.category))}</span>
-          </div>
-        )) : <p className="text-center text-text-secondary">{t('exercises_no_match')}</p>}
+          )
+        }) : <p className="text-center text-text-secondary">{t('exercises_no_match')}</p>}
       </div>
 
       {selectedExercise && (
