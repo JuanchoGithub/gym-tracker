@@ -102,7 +102,7 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
   
   const handleRepsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setReps(e.target.value);
-    onUpdateSet({ ...set, reps: parseInt(e.target.value, 10) || 0 });
+    onUpdateSet({ ...set, reps: parseInt(e.target.value, 10) || 0, isRepsInherited: false });
   };
   
   const handleComplete = () => onUpdateSet({ ...set, isComplete: !set.isComplete });
@@ -184,7 +184,7 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
               min="0"
               value={weight}
               onChange={handleWeightChange}
-              onFocus={() => setIsWeightFocused(true)}
+              onFocus={(e) => { setIsWeightFocused(true); e.target.select(); }}
               onBlur={() => setIsWeightFocused(false)}
               className={`${inputClasses} ${set.isWeightInherited && !isWeightFocused ? 'text-text-secondary' : 'text-text-primary'}`}
               disabled={set.isComplete}
@@ -199,9 +199,9 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
               min="0"
               value={reps}
               onChange={handleRepsChange}
-              onFocus={() => setIsRepsFocused(true)}
+              onFocus={(e) => { setIsRepsFocused(true); e.target.select(); }}
               onBlur={() => setIsRepsFocused(false)}
-              className={`${inputClasses} text-text-primary`}
+              className={`${inputClasses} ${set.isRepsInherited && !isRepsFocused ? 'text-text-secondary' : 'text-text-primary'}`}
               disabled={set.isComplete}
             />
           </div>

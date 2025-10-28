@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useContext } from 'react';
+import React, { useState, useMemo, useContext, useRef } from 'react';
 import { Exercise, WorkoutExercise, PerformedSet } from '../../types';
 import { getExerciseHistory } from '../../utils/workoutUtils';
 import { Icon } from '../common/Icon';
@@ -11,6 +11,7 @@ import { useI18n } from '../../hooks/useI18n';
 import { useWeight } from '../../hooks/useWeight';
 // FIX: Import 'TranslationKey' type to resolve TypeScript error.
 import { TranslationKey } from '../../contexts/I18nContext';
+import { useClickOutside } from '../../hooks/useClickOutside';
 
 interface ExerciseHeaderProps {
     workoutExercise: WorkoutExercise;
@@ -33,6 +34,12 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = ({ workoutExercise, exerci
     const [isReplaceModalOpen, setIsReplaceModalOpen] = useState(false);
     const [isConfirmReplaceOpen, setIsConfirmReplaceOpen] = useState(false);
     const [isBarModalOpen, setIsBarModalOpen] = useState(false);
+    
+    const focusMenuRef = useRef<HTMLDivElement>(null);
+    const optionsMenuRef = useRef<HTMLDivElement>(null);
+
+    useClickOutside(focusMenuRef, () => setIsFocusMenuOpen(false));
+    useClickOutside(optionsMenuRef, () => setIsOptionsMenuOpen(false));
 
     const previousHistory = useMemo(() => getExerciseHistory(allHistory, exerciseInfo.id), [allHistory, exerciseInfo.id]);
 
@@ -153,7 +160,7 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = ({ workoutExercise, exerci
         <div className="flex justify-between items-center relative">
             <h3 className="font-bold text-xl text-primary truncate pr-2">{exerciseInfo.name}</h3>
             <div className="flex items-center space-x-1">
-                <div className="relative">
+                <div className="relative" ref={focusMenuRef}>
                     <button onClick={() => setIsFocusMenuOpen(prev => !prev)} className="bg-secondary/50 text-text-primary px-3 py-1 rounded-full text-sm font-semibold min-w-[60px] text-center">
                         {renderFocusContent()}
                     </button>
@@ -168,12 +175,12 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = ({ workoutExercise, exerci
                     )}
                 </div>
 
-                <div className="relative">
+                <div className="relative" ref={optionsMenuRef}>
                     <button onClick={() => setIsOptionsMenuOpen(prev => !prev)} className="p-2 text-text-secondary hover:text-primary">
                         <Icon name="ellipsis" />
                     </button>
                     {isOptionsMenuOpen && (
-                        <div className="absolute right-0 mt-2 w-48 bg-slate-700 rounded-md shadow-lg z-30" onMouseLeave={() => setIsOptionsMenuOpen(false)}>
+                        <div className="absolute right-0 mt-2 w-48 bg-slate-700 rounded-md shadow-lg z-30">
                             <button onClick={() => { onAddNote(); setIsOptionsMenuOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">{t('exercise_header_menu_add_note')}</button>
                             <button onClick={handleAddWarmupSets} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">{t('exercise_header_menu_add_warmup')}</button>
                             <button onClick={() => { onOpenTimerModal(); setIsOptionsMenuOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">{t('exercise_header_menu_change_timer')}</button>

@@ -2,11 +2,12 @@ import React, { useState, useContext, useMemo } from 'react';
 import Modal from '../common/Modal';
 import { AppContext } from '../../contexts/AppContext';
 import { useI18n } from '../../hooks/useI18n';
-import { BodyPart, ExerciseCategory } from '../../types';
+import { BodyPart, ExerciseCategory, Exercise } from '../../types';
 import { Icon } from '../common/Icon';
 import FilterDropdown from '../common/FilterDropdown';
 import { BODY_PART_OPTIONS, CATEGORY_OPTIONS } from '../../constants/filters';
 import { getBodyPartTKey, getCategoryTKey } from '../../utils/i18nUtils';
+import ExerciseDetailModal from '../exercise/ExerciseDetailModal';
 
 interface AddExercisesModalProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ const AddExercisesModal: React.FC<AddExercisesModalProps> = ({ isOpen, onClose, 
   const [selectedBodyPart, setSelectedBodyPart] = useState<BodyPart | 'All'>('All');
   const [selectedCategory, setSelectedCategory] = useState<ExerciseCategory | 'All'>('All');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [viewingExercise, setViewingExercise] = useState<Exercise | null>(null);
 
   const bodyPartFilterOptions = useMemo(() => [
     { value: 'All' as const, label: t('body_part_all') },
@@ -50,83 +52,127 @@ const AddExercisesModal: React.FC<AddExercisesModalProps> = ({ isOpen, onClose, 
     });
   };
 
-  const handleAdd = () => {
-    onAdd(selectedIds);
-    onClose();
+  const handleClose = () => {
     setSelectedIds([]);
+    setSearchTerm('');
+    setSelectedBodyPart('All');
+    setSelectedCategory('All');
+    onClose();
   };
-  
-  const getButtonText = () => {
-    const count = selectedIds.length;
-    if (count === 0) return t('add_exercises_button_empty');
-    if (count === 1) return t('add_exercises_button_single');
-    return t('add_exercises_button_plural', { count });
+
+  const handleAdd = () => {
+    if (selectedIds.length === 0) return;
+    onAdd(selectedIds);
+    handleClose();
+  };
+
+  const handleSelectFromDetail = (exerciseId: string) => {
+    setSelectedIds(prev => [...new Set([...prev, exerciseId])]);
+    setViewingExercise(null);
+  };
+
+  const handleAddAndCloseFromDetail = (exerciseId: string) => {
+    const finalIds = [...new Set([...selectedIds, exerciseId])];
+    onAdd(finalIds);
+    setViewingExercise(null);
+    handleClose();
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={t('add_exercises_modal_title')}>
-        <div className="flex flex-col h-[70vh] max-h-[550px]">
-            <div className="flex-shrink-0 space-y-2 mb-4">
-                 <div className="relative flex-grow">
-                    <input
-                        type="text"
-                        placeholder={t('search_placeholder')}
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-surface border border-secondary/50 rounded-lg shadow-sm py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Icon name="search" className="w-5 h-5 text-text-secondary" />
-                    </div>
-                </div>
-                 <div className="flex flex-col sm:flex-row gap-2">
-                    <FilterDropdown
-                        options={bodyPartFilterOptions}
-                        selected={selectedBodyPart}
-                        onSelect={setSelectedBodyPart}
-                        label={t('filter_body_part')}
-                    />
-                    <FilterDropdown
-                        options={categoryFilterOptions}
-                        selected={selectedCategory}
-                        onSelect={setSelectedCategory}
-                        label={t('filter_category')}
-                    />
-                </div>
-            </div>
+    <>
+      <Modal 
+        isOpen={isOpen} 
+        onClose={handleClose} 
+        title={undefined}
+        contentClassName="bg-surface rounded-lg shadow-xl w-[calc(100%-1rem)] max-w-3xl h-[calc(100%-2rem)] max-h-[800px] m-auto p-4 sm:p-6"
+      >
+          <div 
+            className="flex flex-col h-full"
+            style={{ visibility: viewingExercise ? 'hidden' : 'visible' }}
+          >
+              <div className="flex justify-between items-center mb-4 flex-shrink-0">
+                  <button onClick={handleClose} className="p-1 text-text-secondary hover:text-text-primary">
+                      <Icon name="x" className="w-6 h-6" />
+                  </button>
+                  <h2 className="text-xl font-bold text-text-primary">{t('add_exercises_modal_title')}</h2>
+                  <button onClick={handleAdd} className="text-primary font-bold py-1 px-3 rounded-lg text-base disabled:text-text-secondary disabled:cursor-not-allowed" disabled={selectedIds.length === 0}>
+                      {selectedIds.length > 0 ? `${t('common_add')} (${selectedIds.length})` : t('common_add')}
+                  </button>
+              </div>
 
-            <div className="flex-grow space-y-2 overflow-y-auto pr-2">
-                {filteredExercises.map(exercise => {
-                  const isSelected = selectedIds.includes(exercise.id);
-                  return (
-                    <div
-                        key={exercise.id}
-                        onClick={() => handleToggleSelect(exercise.id)}
-                        className={`p-3 rounded-lg flex justify-between items-center cursor-pointer transition-colors ${isSelected ? 'bg-primary/30 ring-2 ring-primary' : 'bg-slate-900/50 hover:bg-slate-700'}`}
-                    >
-                        <div>
-                            <h3 className="font-semibold text-text-primary">{exercise.name}</h3>
-                            <p className="text-sm text-text-secondary">{t(getBodyPartTKey(exercise.bodyPart))}</p>
-                        </div>
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center border-2 ${isSelected ? 'bg-primary border-primary' : 'border-secondary'}`}>
-                            {isSelected && <Icon name="check" className="w-4 h-4 text-white" />}
-                        </div>
-                    </div>
-                  );
-                })}
-            </div>
-            
-            <div className="flex-shrink-0 pt-4">
-                 <button 
-                    onClick={handleAdd}
-                    disabled={selectedIds.length === 0}
-                    className="w-full bg-primary text-white font-bold py-3 rounded-lg hover:bg-sky-600 transition-colors disabled:bg-secondary disabled:cursor-not-allowed"
-                >
-                    {getButtonText()}
-                </button>
-            </div>
-        </div>
-    </Modal>
+              <div className="flex-shrink-0 space-y-2 mb-4">
+                   <div className="relative flex-grow">
+                      <input
+                          type="text"
+                          placeholder={t('search_placeholder')}
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="w-full bg-surface border border-secondary/50 rounded-lg shadow-sm py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <Icon name="search" className="w-5 h-5 text-text-secondary" />
+                      </div>
+                  </div>
+                   <div className="flex flex-col sm:flex-row gap-2">
+                      <FilterDropdown
+                          options={bodyPartFilterOptions}
+                          selected={selectedBodyPart}
+                          onSelect={setSelectedBodyPart}
+                          label={t('filter_body_part')}
+                      />
+                      <FilterDropdown
+                          options={categoryFilterOptions}
+                          selected={selectedCategory}
+                          onSelect={setSelectedCategory}
+                          label={t('filter_category')}
+                      />
+                  </div>
+              </div>
+
+              <div className="flex-grow space-y-2 overflow-y-auto pr-2">
+                  {filteredExercises.map(exercise => {
+                    const isSelected = selectedIds.includes(exercise.id);
+                    return (
+                      <div
+                          key={exercise.id}
+                          onClick={() => handleToggleSelect(exercise.id)}
+                          className={`p-3 rounded-lg flex justify-between items-center cursor-pointer transition-colors ${isSelected ? 'bg-primary/30 ring-2 ring-primary' : 'bg-slate-900/50 hover:bg-slate-700'}`}
+                      >
+                          <div className="flex items-center gap-2 flex-grow min-w-0">
+                              <button
+                                  onClick={(e) => { e.stopPropagation(); setViewingExercise(exercise); }}
+                                  className="p-1 text-text-secondary hover:text-primary transition-colors flex-shrink-0 z-10"
+                                  aria-label={`View details for ${exercise.name}`}
+                              >
+                                  <Icon name="question-mark-circle" className="w-5 h-5" />
+                              </button>
+                              <div className="truncate">
+                                  <h3 className="font-semibold text-text-primary truncate">{exercise.name}</h3>
+                                  <p className="text-sm text-text-secondary truncate">{t(getBodyPartTKey(exercise.bodyPart))}</p>
+                              </div>
+                          </div>
+                          <div className="flex-shrink-0">
+                              <div className={`w-6 h-6 rounded-full flex items-center justify-center border-2 ${isSelected ? 'bg-primary border-primary' : 'border-secondary'}`}>
+                                  {isSelected && <Icon name="check" className="w-4 h-4 text-white" />}
+                              </div>
+                          </div>
+                      </div>
+                    );
+                  })}
+              </div>
+          </div>
+      </Modal>
+
+      {viewingExercise && (
+        <ExerciseDetailModal
+            isOpen={!!viewingExercise}
+            onClose={() => setViewingExercise(null)}
+            exercise={viewingExercise}
+            onSelectForAdd={handleSelectFromDetail}
+            onAddAndClose={handleAddAndCloseFromDetail}
+        />
+      )}
+    </>
   );
 };
 

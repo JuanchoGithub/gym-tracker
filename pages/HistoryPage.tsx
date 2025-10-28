@@ -79,7 +79,7 @@ const HistoryPage: React.FC = () => {
 
   return (
     <>
-      <div className="space-y-4 sm:space-y-6">
+      <div className="space-y-4 sm:space-y-6" onClick={() => { if (menuOpenId) setMenuOpenId(null) }}>
         <h1 className="text-3xl font-bold text-center">{t('nav_history')}</h1>
         {history.map((session: WorkoutSession) => {
           const totalTime = session.endTime > 0 ? formatTime(Math.round((session.endTime - session.startTime) / 1000)) : 'N/A';
@@ -97,12 +97,12 @@ const HistoryPage: React.FC = () => {
                       {new Date(session.startTime).toLocaleString()}
                     </span>
                   </div>
-                  <div className="relative">
-                    <button onClick={(e) => { e.stopPropagation(); setMenuOpenId(mid => mid === session.id ? null : session.id); }} className="p-2 -mt-2 -mr-2 text-text-secondary hover:text-primary">
+                  <div className="relative" onClick={(e) => e.stopPropagation()}>
+                    <button onClick={() => setMenuOpenId(mid => mid === session.id ? null : session.id)} className="p-2 -mt-2 -mr-2 text-text-secondary hover:text-primary">
                       <Icon name="ellipsis"/>
                     </button>
                     {menuOpenId === session.id && (
-                      <div className="absolute right-0 mt-1 w-48 bg-slate-600 rounded-md shadow-lg z-10" onMouseLeave={() => setMenuOpenId(null)}>
+                      <div className="absolute right-0 mt-1 w-48 bg-slate-600 rounded-md shadow-lg z-10">
                         <button onClick={(e) => { e.stopPropagation(); startHistoryEdit(session); setMenuOpenId(null); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-500 flex items-center gap-2"><Icon name="edit" className="w-4 h-4"/>{t('history_menu_edit')}</button>
                         <button onClick={(e) => { e.stopPropagation(); handleRepeatWorkout(session); setMenuOpenId(null); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-500 flex items-center gap-2"><Icon name="repeat" className="w-4 h-4"/>{t('history_menu_repeat')}</button>
                         <button onClick={(e) => { e.stopPropagation(); setTemplatingSession(session); setNewTemplateName(session.routineName); setMenuOpenId(null); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-500 flex items-center gap-2"><Icon name="save" className="w-4 h-4"/>{t('history_menu_save_template')}</button>

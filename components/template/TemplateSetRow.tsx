@@ -34,12 +34,12 @@ const TemplateSetRow: React.FC<TemplateSetRowProps> = ({ set, setNumber, onUpdat
   const handleWeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newWeight = e.target.value;
     setWeight(newWeight);
-    onUpdateSet({ ...set, weight: getStoredWeight(parseFloat(newWeight) || 0) });
+    onUpdateSet({ ...set, weight: getStoredWeight(parseFloat(newWeight) || 0), isWeightInherited: false });
   };
   
   const handleRepsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setReps(e.target.value);
-    onUpdateSet({ ...set, reps: parseInt(e.target.value, 10) || 0 });
+    onUpdateSet({ ...set, reps: parseInt(e.target.value, 10) || 0, isRepsInherited: false });
   };
   
   const handleSelectSetType = (type: SetType) => {
@@ -93,7 +93,7 @@ const TemplateSetRow: React.FC<TemplateSetRowProps> = ({ set, setNumber, onUpdat
     }
   }
 
-  const inputClasses = "w-full bg-transparent border border-secondary/50 rounded-md p-2 text-center text-text-primary";
+  const inputClasses = "w-full bg-transparent border border-secondary/50 rounded-md p-2 text-center";
 
   return (
     <>
@@ -112,9 +112,9 @@ const TemplateSetRow: React.FC<TemplateSetRowProps> = ({ set, setNumber, onUpdat
             min="0"
             value={weight}
             onChange={handleWeightChange}
-            onFocus={() => setIsWeightFocused(true)}
+            onFocus={(e) => { setIsWeightFocused(true); e.target.select(); }}
             onBlur={() => setIsWeightFocused(false)}
-            className={inputClasses}
+            className={`${inputClasses} ${set.isWeightInherited && !isWeightFocused ? 'text-text-secondary' : 'text-text-primary'}`}
           />
         </div>
 
@@ -126,9 +126,9 @@ const TemplateSetRow: React.FC<TemplateSetRowProps> = ({ set, setNumber, onUpdat
             min="0"
             value={reps}
             onChange={handleRepsChange}
-            onFocus={() => setIsRepsFocused(true)}
+            onFocus={(e) => { setIsRepsFocused(true); e.target.select(); }}
             onBlur={() => setIsRepsFocused(false)}
-            className={inputClasses}
+            className={`${inputClasses} ${set.isRepsInherited && !isRepsFocused ? 'text-text-secondary' : 'text-text-primary'}`}
           />
         </div>
 

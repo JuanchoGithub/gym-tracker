@@ -90,11 +90,11 @@ const TrainPage: React.FC = () => {
           <span>{t('train_start_empty')}</span>
         </button>
 
-        <RoutineSection title={t('train_latest_workouts')} routines={latestWorkouts} onRoutineSelect={handleRoutineSelect} />
+        <RoutineSection title={t('train_latest_workouts')} routines={latestWorkouts} onRoutineSelect={setSelectedRoutine} />
         <RoutineSection
             title={t('train_my_templates')}
             routines={customTemplates}
-            onRoutineSelect={handleRoutineSelect}
+            onRoutineSelect={setSelectedRoutine}
             onRoutineEdit={startTemplateEdit}
             headerAction={
                 <button

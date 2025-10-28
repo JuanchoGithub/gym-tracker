@@ -44,6 +44,8 @@ const TemplateEditorPage: React.FC = () => {
                 reps: 10,
                 weight: 0,
                 type: 'normal',
+                isRepsInherited: false,
+                isWeightInherited: false,
             } as PerformedSet)),
             restTime: { ...defaultRestTimes },
         }));

@@ -57,8 +57,21 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseIn
     // Cascade weight change if applicable.
     if (oldSet.weight !== updatedSet.weight && updatedSet.isWeightInherited === false && !updatedSet.isComplete) {
         for (let i = oldSetIndex + 1; i < newSets.length; i++) {
-            if (!newSets[i].isComplete) {
+            if (!newSets[i].isComplete && newSets[i].isWeightInherited !== false) {
                 newSets[i] = { ...newSets[i], weight: updatedSet.weight, isWeightInherited: true };
+            } else {
+                break;
+            }
+        }
+    }
+    
+    // Cascade rep change if applicable.
+    if (oldSet.reps !== updatedSet.reps && updatedSet.isRepsInherited === false && !updatedSet.isComplete) {
+        for (let i = oldSetIndex + 1; i < newSets.length; i++) {
+            if (!newSets[i].isComplete && (newSets[i].reps === 0 || newSets[i].isRepsInherited !== false)) {
+                newSets[i] = { ...newSets[i], reps: updatedSet.reps, isRepsInherited: true };
+            } else {
+                break;
             }
         }
     }
@@ -86,6 +99,8 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseIn
       weight: lastSet.weight,
       type: 'normal',
       isComplete: false,
+      isRepsInherited: true,
+      isWeightInherited: true,
     };
     const updatedSets = [...workoutExercise.sets, newSet];
     onUpdate({ ...workoutExercise, sets: updatedSets });

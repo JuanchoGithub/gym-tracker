@@ -15,11 +15,13 @@ interface ExerciseDetailModalProps {
   exercise: Exercise;
   isOpen: boolean;
   onClose: () => void;
+  onSelectForAdd?: (exerciseId: string) => void;
+  onAddAndClose?: (exerciseId: string) => void;
 }
 
 type Tab = 'description' | 'history' | 'graphs' | 'records';
 
-const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({ exercise, isOpen, onClose }) => {
+const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({ exercise, isOpen, onClose, onSelectForAdd, onAddAndClose }) => {
   const { t } = useI18n();
   const { history: allHistory, startExerciseEdit, startExerciseDuplicate } = useContext(AppContext);
   const [activeTab, setActiveTab] = useState<Tab>('description');
@@ -52,6 +54,14 @@ const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({ exercise, isO
   const handleDuplicate = () => {
     startExerciseDuplicate(exercise);
     onClose();
+  };
+
+  const handleSelectForAdd = () => {
+    onSelectForAdd?.(exercise.id);
+  };
+
+  const handleAddAndClose = () => {
+    onAddAndClose?.(exercise.id);
   };
 
   return (
@@ -100,6 +110,28 @@ const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({ exercise, isO
         <div className="flex-grow overflow-y-auto pr-2">
             {renderTabContent()}
         </div>
+
+        {/* Conditional Footer */}
+        {(onSelectForAdd || onAddAndClose) && (
+            <div className="flex-shrink-0 pt-4 mt-4 border-t border-secondary/20 flex flex-col sm:flex-row gap-3">
+                {onSelectForAdd && (
+                    <button 
+                        onClick={handleSelectForAdd}
+                        className="w-full bg-secondary text-white font-bold py-3 rounded-lg hover:bg-slate-600 transition-colors"
+                    >
+                        {t('common_select')}
+                    </button>
+                )}
+                {onAddAndClose && (
+                    <button
+                        onClick={handleAddAndClose}
+                        className="w-full bg-primary text-white font-bold py-3 rounded-lg hover:bg-sky-600 transition-colors"
+                    >
+                        {t('common_add_and_close')}
+                    </button>
+                )}
+            </div>
+        )}
       </div>
     </Modal>
   );

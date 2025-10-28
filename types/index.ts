@@ -20,6 +20,7 @@ export interface PerformedSet {
   isComplete?: boolean; // Added for tracking during workout
   rest?: number; // Optional override for rest time in seconds
   isWeightInherited?: boolean;
+  isRepsInherited?: boolean;
   actualRest?: number; // The actual rest time taken after this set
 }
 

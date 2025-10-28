@@ -1,10 +1,11 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useRef } from 'react';
 import { Routine } from '../../types';
 import { AppContext } from '../../contexts/AppContext';
 import { Icon } from '../common/Icon';
 import Modal from '../common/Modal';
 import { useI18n } from '../../hooks/useI18n';
 import ConfirmModal from '../modals/ConfirmModal';
+import { useClickOutside } from '../../hooks/useClickOutside';
 
 interface RoutinePanelProps {
   routine: Routine;
@@ -21,6 +22,9 @@ const RoutinePanel: React.FC<RoutinePanelProps> = ({ routine, onClick, onEdit })
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [newName, setNewName] = useState(routine.name);
   const [newNote, setNewNote] = useState(routine.description);
+  
+  const menuRef = useRef<HTMLDivElement>(null);
+  useClickOutside(menuRef, () => setIsMenuOpen(false));
 
   const exerciseNames = routine.exercises
     .map(ex => getExerciseById(ex.exerciseId)?.name)
@@ -60,6 +64,41 @@ const RoutinePanel: React.FC<RoutinePanelProps> = ({ routine, onClick, onEdit })
 
   const isEditable = onEdit && routine.isTemplate && !routine.id.startsWith('rt-');
   const isDeletable = !routine.id.startsWith('rt-');
+  const isRenameable = isEditable || (!routine.isTemplate && isDeletable);
+  
+  const menuItems = [];
+  if (isEditable) {
+      menuItems.push({
+          id: 'edit',
+          label: t('routine_panel_edit_exercises'),
+          action: handleEdit,
+          className: 'text-text-primary',
+      });
+  }
+  if (isRenameable) {
+      menuItems.push({
+          id: 'rename',
+          label: t('common_rename'),
+          action: (e: React.MouseEvent) => { e.stopPropagation(); setIsRenameModalOpen(true); setNewName(routine.name); setIsMenuOpen(false); },
+          className: 'text-text-primary',
+      });
+  }
+  if (isEditable) {
+      menuItems.push({
+          id: 'note',
+          label: t('routine_panel_edit_note'),
+          action: (e: React.MouseEvent) => { e.stopPropagation(); setIsNoteModalOpen(true); setNewNote(routine.description); setIsMenuOpen(false); },
+          className: 'text-text-primary',
+      });
+  }
+  if (isDeletable) {
+      menuItems.push({
+          id: 'delete',
+          label: t('common_delete'),
+          action: handleOpenDeleteConfirm,
+          className: 'text-red-400',
+      });
+  }
 
   return (
     <>
@@ -70,17 +109,27 @@ const RoutinePanel: React.FC<RoutinePanelProps> = ({ routine, onClick, onEdit })
         <div>
           <div className="flex justify-between items-start">
               <h3 className="font-bold text-lg text-primary mb-1 pr-6">{routine.name}</h3>
-              {(isEditable || isDeletable) && (
-                   <div className="relative">
+              {menuItems.length > 0 && (
+                   <div className="relative" ref={menuRef}>
                       <button onClick={(e) => { e.stopPropagation(); setIsMenuOpen(!isMenuOpen);}} className="text-text-secondary hover:text-primary p-1 absolute top-[-8px] right-[-8px]">
                           <Icon name="ellipsis" className="w-5 h-5"/>
                       </button>
                       {isMenuOpen && (
-                          <div className="absolute right-0 mt-6 w-40 bg-slate-600 rounded-md shadow-lg z-10" onMouseLeave={() => setIsMenuOpen(false)}>
-                             {isEditable && <button onClick={handleEdit} className="w-full text-left px-3 py-2 text-sm text-text-primary hover:bg-slate-500 rounded-t-md">{t('routine_panel_edit_exercises')}</button>}
-                             {isEditable && <button onClick={(e) => { e.stopPropagation(); setIsRenameModalOpen(true); setNewName(routine.name); setIsMenuOpen(false); }} className="w-full text-left px-3 py-2 text-sm text-text-primary hover:bg-slate-500">{t('common_rename')}</button>}
-                             {isEditable && <button onClick={(e) => { e.stopPropagation(); setIsNoteModalOpen(true); setNewNote(routine.description); setIsMenuOpen(false); }} className="w-full text-left px-3 py-2 text-sm text-text-primary hover:bg-slate-500">{t('routine_panel_edit_note')}</button>}
-                             {isDeletable && <button onClick={handleOpenDeleteConfirm} className={`w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-slate-500 ${isEditable ? 'rounded-b-md' : 'rounded-md'}`}>{t('common_delete')}</button>}
+                          <div className="absolute right-0 mt-6 w-48 bg-slate-600 rounded-md shadow-lg z-10">
+                            {menuItems.map((item, index) => {
+                                const isFirst = index === 0;
+                                const isLast = index === menuItems.length - 1;
+                                let classNames = 'w-full text-left px-3 py-2 text-sm hover:bg-slate-500';
+                                if (isFirst && isLast) classNames += ' rounded-md';
+                                else if (isFirst) classNames += ' rounded-t-md';
+                                else if (isLast) classNames += ' rounded-b-md';
+
+                                return (
+                                    <button key={item.id} onClick={item.action} className={`${classNames} ${item.className}`}>
+                                        {item.label}
+                                    </button>
+                                );
+                            })}
                           </div>
                       )}
                    </div>
@@ -107,7 +156,7 @@ const RoutinePanel: React.FC<RoutinePanelProps> = ({ routine, onClick, onEdit })
         confirmButtonClass="bg-red-600 hover:bg-red-700"
       />
 
-      <Modal isOpen={isRenameModalOpen} onClose={() => setIsRenameModalOpen(false)} title={t('routine_panel_rename_title')}>
+      <Modal isOpen={isRenameModalOpen} onClose={() => setIsRenameModalOpen(false)} title={routine.isTemplate ? t('routine_panel_rename_title') : t('routine_panel_rename_workout_title')}>
           <form onSubmit={handleSaveRename}>
               <input 
                 type="text"

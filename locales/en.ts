@@ -13,6 +13,8 @@ export const en = {
   common_yes: 'Yes',
   common_no: 'No',
   common_save_changes: 'Save Changes',
+  common_select: 'Select',
+  common_add_and_close: 'Add and Close',
 
   // Navigation
   nav_train: 'Train',
@@ -190,6 +192,7 @@ export const en = {
   routine_panel_edit_exercises: 'Edit Exercises',
   routine_panel_edit_note: 'Edit Note',
   routine_panel_rename_title: 'Rename Template',
+  routine_panel_rename_workout_title: 'Rename Workout',
   routine_panel_edit_note_title: 'Edit Note',
   routine_panel_note_placeholder: 'Add a description for your template...',
   

@@ -13,6 +13,8 @@ export const es = {
   common_yes: 'Sí',
   common_no: 'No',
   common_save_changes: 'Guardar Cambios',
+  common_select: 'Seleccionar',
+  common_add_and_close: 'Agregar y Cerrar',
   
   // Navigation
   nav_train: 'Entrenar',
@@ -189,6 +191,7 @@ export const es = {
   routine_panel_edit_exercises: 'Editar Ejercicios',
   routine_panel_edit_note: 'Editar Nota',
   routine_panel_rename_title: 'Renombrar Plantilla',
+  routine_panel_rename_workout_title: 'Renombrar Entrenamiento',
   routine_panel_edit_note_title: 'Editar Nota',
   routine_panel_note_placeholder: 'Agregá una descripción para tu plantilla...',
   

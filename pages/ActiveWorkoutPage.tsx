@@ -7,7 +7,7 @@ import { useWorkoutTimer } from '../hooks/useWorkoutTimer';
 import { Icon } from '../components/common/Icon';
 import WorkoutDetailsModal from '../components/modals/WorkoutDetailsModal';
 import Modal from '../components/common/Modal';
-import ReplaceExerciseModal from '../components/modals/ReplaceExerciseModal';
+import AddExercisesModal from '../components/modals/AddExercisesModal';
 import { useWakeLock } from '../hooks/useWakeLock';
 import { scheduleTimerNotification, cancelTimerNotification } from '../services/notificationService';
 
@@ -154,10 +154,10 @@ const ActiveWorkoutPage: React.FC = () => {
     }
   }
 
-  const handleAddExercise = (exerciseId: string) => {
+  const handleAddExercises = (exerciseIds: string[]) => {
     if (!activeWorkout) return;
 
-    const newWorkoutExercise: WorkoutExercise = {
+    const newExercises: WorkoutExercise[] = exerciseIds.map(exerciseId => ({
         id: `we-${Date.now()}-${Math.random()}`,
         exerciseId,
         sets: [
@@ -170,11 +170,11 @@ const ActiveWorkoutPage: React.FC = () => {
             }
         ],
         restTime: { ...defaultRestTimes },
-    };
+    }));
 
     updateActiveWorkout({
         ...activeWorkout,
-        exercises: [...activeWorkout.exercises, newWorkoutExercise],
+        exercises: [...activeWorkout.exercises, ...newExercises],
     });
   };
 
@@ -260,12 +260,10 @@ const ActiveWorkoutPage: React.FC = () => {
         />
       )}
 
-      <ReplaceExerciseModal
+      <AddExercisesModal
         isOpen={isAddExerciseModalOpen}
         onClose={() => setIsAddExerciseModalOpen(false)}
-        onSelectExercise={handleAddExercise}
-        title={t('active_workout_add_exercise')}
-        buttonText={t('common_add')}
+        onAdd={handleAddExercises}
       />
 
       <Modal

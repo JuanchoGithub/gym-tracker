@@ -177,6 +177,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             set.id = `set-${Date.now()}-${exIndex}-${setIndex}`;
             set.isComplete = false;
             set.isWeightInherited = false;
+            set.isRepsInherited = false;
         });
     });
 

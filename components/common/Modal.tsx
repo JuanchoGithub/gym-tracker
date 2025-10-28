@@ -6,15 +6,16 @@ interface ModalProps {
   onClose: () => void;
   title?: string;
   children: ReactNode;
+  contentClassName?: string;
 }
 
-const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
+const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, contentClassName }) => {
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50" onClick={onClose}>
       <div
-        className="bg-surface rounded-lg shadow-xl w-full max-w-sm sm:max-w-md m-2 sm:m-4 p-4 sm:p-6"
+        className={contentClassName || "bg-surface rounded-lg shadow-xl w-full max-w-sm sm:max-w-md m-2 sm:m-4 p-4 sm:p-6"}
         onClick={(e) => e.stopPropagation()}
       >
         {title !== undefined && (

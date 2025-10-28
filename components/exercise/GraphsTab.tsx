@@ -6,6 +6,7 @@ import Chart from '../common/Chart';
 import { Icon } from '../common/Icon';
 import { exportToCsv, exportToJson, exportToPng } from '../../services/dataService';
 import FullScreenChartModal from '../common/FullScreenChartModal';
+import { useClickOutside } from '../../hooks/useClickOutside';
 
 interface ChartBlockProps {
   title: string;
@@ -17,7 +18,10 @@ interface ChartBlockProps {
 
 const ChartBlock: React.FC<ChartBlockProps> = ({ title, data, exerciseName, color, onFullScreen }) => {
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
   const [showExport, setShowExport] = useState(false);
+
+  useClickOutside(exportMenuRef, () => setShowExport(false));
 
   const handleExport = (format: 'csv' | 'json' | 'png') => {
     setShowExport(false);
@@ -62,7 +66,7 @@ const ChartBlock: React.FC<ChartBlockProps> = ({ title, data, exerciseName, colo
     <div className="bg-slate-900/50 p-3 rounded-lg">
         <div className="flex justify-between items-center mb-2">
             <h3 className="font-bold text-text-primary">{title}</h3>
-            <div className="relative flex items-center space-x-2">
+            <div className="relative flex items-center space-x-2" ref={exportMenuRef}>
                 <button onClick={onFullScreen} className="text-text-secondary hover:text-text-primary" aria-label={`View ${title} in fullscreen`}>
                     <Icon name="expand" className="w-5 h-5" />
                 </button>
@@ -70,7 +74,7 @@ const ChartBlock: React.FC<ChartBlockProps> = ({ title, data, exerciseName, colo
                     <Icon name="share" className="w-5 h-5" />
                 </button>
                 {showExport && (
-                    <div className="absolute right-0 mt-2 w-40 bg-surface rounded-md shadow-lg z-10" onMouseLeave={() => setShowExport(false)}>
+                    <div className="absolute right-0 mt-8 top-0 w-40 bg-surface rounded-md shadow-lg z-10">
                         <button onClick={handleShare} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-700">Share Graph</button>
                         <button onClick={() => handleExport('png')} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-700">Export PNG</button>
                         <button onClick={() => handleExport('csv')} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-700">Export CSV</button>

@@ -1,5 +1,6 @@
-import React, { useState, Dispatch, SetStateAction } from 'react';
+import React, { useState, Dispatch, SetStateAction, useRef } from 'react';
 import { Icon } from './Icon';
+import { useClickOutside } from '../../hooks/useClickOutside';
 
 interface FilterOption<T> {
   value: T;
@@ -15,6 +16,9 @@ interface FilterDropdownProps<T extends string> {
 
 const FilterDropdown = <T extends string>({ options, selected, onSelect, label }: FilterDropdownProps<T>) => {
   const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useClickOutside(dropdownRef, () => setIsOpen(false));
 
   const handleSelect = (option: T) => {
     onSelect(option);
@@ -24,7 +28,7 @@ const FilterDropdown = <T extends string>({ options, selected, onSelect, label }
   const selectedLabel = options.find(o => o.value === selected)?.label || label;
 
   return (
-    <div className="relative flex-grow">
+    <div className="relative flex-grow" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between bg-surface border border-secondary/50 text-text-primary font-medium py-2 px-4 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary"
@@ -36,7 +40,6 @@ const FilterDropdown = <T extends string>({ options, selected, onSelect, label }
       {isOpen && (
         <div 
             className="absolute right-0 mt-2 w-full sm:w-48 bg-surface rounded-md shadow-lg z-20"
-            onMouseLeave={() => setIsOpen(false)}
         >
           <div className="py-1 max-h-60 overflow-y-auto">
             {options.map(option => (

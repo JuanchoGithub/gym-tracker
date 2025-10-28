@@ -23,8 +23,34 @@ const TemplateExerciseCard: React.FC<TemplateExerciseCardProps> = ({ workoutExer
   let normalSetCounter = 0;
   
   const handleUpdateSet = (updatedSet: PerformedSet) => {
-    const updatedSets = workoutExercise.sets.map(s => (s.id === updatedSet.id ? updatedSet : s));
-    onUpdate({ ...workoutExercise, sets: updatedSets });
+    const oldSetIndex = workoutExercise.sets.findIndex(s => s.id === updatedSet.id);
+    const oldSet = workoutExercise.sets[oldSetIndex];
+    let newSets = [...workoutExercise.sets];
+    newSets[oldSetIndex] = updatedSet;
+
+    // Cascade weight change if applicable.
+    if (oldSet.weight !== updatedSet.weight && updatedSet.isWeightInherited === false) {
+        for (let i = oldSetIndex + 1; i < newSets.length; i++) {
+            if (newSets[i].isWeightInherited !== false) {
+                newSets[i] = { ...newSets[i], weight: updatedSet.weight, isWeightInherited: true };
+            } else {
+                break;
+            }
+        }
+    }
+    
+    // Cascade rep change if applicable.
+    if (oldSet.reps !== updatedSet.reps && updatedSet.isRepsInherited === false) {
+        for (let i = oldSetIndex + 1; i < newSets.length; i++) {
+            if (newSets[i].reps === 0 || newSets[i].isRepsInherited !== false) {
+                newSets[i] = { ...newSets[i], reps: updatedSet.reps, isRepsInherited: true };
+            } else {
+                break;
+            }
+        }
+    }
+
+    onUpdate({ ...workoutExercise, sets: newSets });
   };
   
   const handleDeleteSet = (setId: string) => {
@@ -39,6 +65,8 @@ const TemplateExerciseCard: React.FC<TemplateExerciseCardProps> = ({ workoutExer
       reps: lastSet.reps,
       weight: lastSet.weight,
       type: 'normal',
+      isWeightInherited: true,
+      isRepsInherited: true,
     };
     const updatedSets = [...workoutExercise.sets, newSet];
     onUpdate({ ...workoutExercise, sets: updatedSets });
