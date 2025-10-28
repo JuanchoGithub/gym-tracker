@@ -1,5 +1,6 @@
 let voices: SpeechSynthesisVoice[] = [];
 let voicesPromise: Promise<SpeechSynthesisVoice[]> | null = null;
+const utteranceRef: SpeechSynthesisUtterance[] = []; // Keep reference to utterances
 
 const populateAndResolve = (resolve: (value: SpeechSynthesisVoice[]) => void) => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
@@ -51,6 +52,14 @@ export const speak = async (text: string, voiceURI?: string | null, lang?: strin
   const allVoices = await getVoicesPromise();
   const utterance = new SpeechSynthesisUtterance(text);
   
+  utterance.onend = () => {
+    const index = utteranceRef.indexOf(utterance);
+    if (index > -1) {
+        utteranceRef.splice(index, 1);
+    }
+  };
+  utteranceRef.push(utterance);
+
   let selectedVoice: SpeechSynthesisVoice | undefined;
 
   if (voiceURI) {

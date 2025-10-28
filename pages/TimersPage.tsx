@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useContext, useCallback } from 'react';
 import { useI18n } from '../hooks/useI18n';
 import { useWakeLock } from '../hooks/useWakeLock';
-import { playWarningSound, playEndSound } from '../services/audioService';
+import { playWarningSound, playEndSound, unlockAudioContext } from '../services/audioService';
 import { Icon } from '../components/common/Icon';
 import { formatSecondsToMMSS } from '../utils/timeUtils';
 import { AppContext } from '../contexts/AppContext';
@@ -44,6 +44,7 @@ const TimersPage: React.FC = () => {
   const prevActiveTimerRef = useRef<ActiveTimerState>();
 
   const startHiitTimer = useCallback((routine?: Routine) => {
+    unlockAudioContext();
     const hasRoutine = !!routine;
     
     let workTime: number;
@@ -182,6 +183,7 @@ const TimersPage: React.FC = () => {
   }, [activeTimer, t, locale, selectedVoiceURI]);
 
   const startQuickTimer = (seconds: number) => {
+    unlockAudioContext();
     setQuickTime(seconds);
     targetTimeRef.current = Date.now() + seconds * 1000;
     setActiveTimer({
@@ -341,7 +343,7 @@ const TimersPage: React.FC = () => {
                     </div>
                 ))}
             </div>
-            {/* FIX: Explicitly pass undefined to startHiitTimer to resolve "Expected 1 arguments, but got 0" error. */}
+            {/* Fix: Explicitly pass undefined to the startHiitTimer function to resolve the "Expected 1 arguments, but got 0" error. */}
             <button onClick={() => startHiitTimer(undefined)} className="w-full bg-primary text-white font-bold py-3 rounded-lg hover:bg-sky-600 transition-colors">
                 {t('timers_hiit_start_button')}
             </button>

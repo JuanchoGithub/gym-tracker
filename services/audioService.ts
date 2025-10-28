@@ -8,6 +8,17 @@ const getAudioContext = (): AudioContext => {
   return audioContext;
 };
 
+export const unlockAudioContext = () => {
+  try {
+    const ctx = getAudioContext();
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+    }
+  } catch (e) {
+    console.error("Failed to unlock AudioContext:", e);
+  }
+};
+
 const playSound = (createSound: (ctx: AudioContext, time: number) => void) => {
   try {
     const ctx = getAudioContext();
