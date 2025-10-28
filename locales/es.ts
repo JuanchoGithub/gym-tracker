@@ -22,6 +22,7 @@ export const es = {
   nav_history: 'Historial',
   nav_exercises: 'Ejercicios',
   nav_profile: 'Perfil',
+  nav_timers: 'Tiempos',
 
   // Train Page
   train_routines_title: 'Mis Rutinas',
@@ -248,6 +249,25 @@ export const es = {
   workout_details_modal_save_button: 'Guardar Cambios',
   workout_details_modal_invalid_date_alert: 'Formato de fecha inválido.',
   workout_details_modal_end_before_start_alert: 'La hora de finalización no puede ser anterior a la de inicio.',
+
+  // Timers Page
+  timers_quick_title: 'Tiempos Rápidos',
+  timers_start_button: 'Iniciar Tiempo',
+  timers_hiit_title: 'HIIT / Tabata',
+  timers_hiit_work: 'Trabajo',
+  timers_hiit_rest: 'Descanso',
+  timers_hiit_rounds: 'Rondas',
+  timers_hiit_start_button: 'Iniciar HIIT',
+  timers_stop_button: 'Parar',
+  timers_reset_button: 'Reiniciar',
+  timers_pause_button: 'Pausar',
+  timers_resume_button: 'Reanudar',
+  timers_round: 'Ronda',
+  timers_of: 'de',
+  timers_complete: '¡Completado!',
+  timers_prepare: 'Preparate',
+  timers_minute_abbreviation: 'm',
+  timers_second_abbreviation: 's',
 
   // Body Parts
   body_part_all: 'Musculos',

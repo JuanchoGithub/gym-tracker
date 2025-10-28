@@ -13,7 +13,9 @@ export const useWakeLock = (enabled: boolean = true) => {
             console.log('Screen Wake Lock was released.');
           });
         } catch (err: any) {
-          console.error(`${err.name}, ${err.message}`);
+          // Changed from console.error to console.warn to avoid scary-looking errors
+          // on platforms where wake lock is not supported or permitted.
+          console.warn(`Could not acquire screen wake lock: ${err.name}, ${err.message}`);
         }
       }
     };

@@ -22,56 +22,62 @@ const playSound = (createSound: (ctx: AudioContext, time: number) => void) => {
 
 export const playWarningSound = () => {
   playSound((ctx, time) => {
-    const oscillator = ctx.createOscillator();
-    const gainNode = ctx.createGain();
+    // Create a "tock" sound
+    const createTock = (startTime: number, frequency: number) => {
+        const oscillator = ctx.createOscillator();
+        const gainNode = ctx.createGain();
 
-    oscillator.type = 'sine';
-    oscillator.frequency.setValueAtTime(880, time); // A5 note
-    gainNode.gain.setValueAtTime(0.3, time);
-    gainNode.gain.exponentialRampToValueAtTime(0.0001, time + 0.5);
+        oscillator.type = 'triangle'; // A triangle wave has more harmonics than a sine, giving a richer sound.
+        oscillator.frequency.setValueAtTime(frequency, startTime);
 
-    oscillator.connect(gainNode);
-    gainNode.connect(ctx.destination);
+        // A very fast attack and decay to create a percussive sound
+        gainNode.gain.setValueAtTime(0.3, startTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.15);
 
-    oscillator.start(time);
-    oscillator.stop(time + 0.5);
+        oscillator.connect(gainNode);
+        gainNode.connect(ctx.destination);
+
+        oscillator.start(startTime);
+        oscillator.stop(startTime + 0.2);
+    }
+    
+    // Play two "tocks" in succession
+    createTock(time, 1200);
+    createTock(time + 0.15, 1200);
   });
 };
 
 export const playEndSound = () => {
   playSound((ctx, time) => {
-    // Bell sound
-    const oscillator = ctx.createOscillator();
-    const gainNode = ctx.createGain();
-    
-    oscillator.type = 'sine';
-    oscillator.frequency.setValueAtTime(1000, time);
-    oscillator.frequency.exponentialRampToValueAtTime(200, time + 1.5);
+    const createBellHit = (startTime: number) => {
+      const fundamental = 392; // G4
+      // Inharmonic partials to create a metallic, bell-like timbre
+      const partials = [0.5, 1, 1.5, 2.4, 3.6, 4.5]; 
+      const amplitudes = [0.1, 0.5, 0.3, 0.25, 0.1, 0.05]; // Fundamental is loudest
+      const decayTime = 1.8;
 
-    gainNode.gain.setValueAtTime(0.5, time);
-    gainNode.gain.exponentialRampToValueAtTime(0.001, time + 1.5);
-    
-    oscillator.connect(gainNode);
-    gainNode.connect(ctx.destination);
+      partials.forEach((partial, index) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
 
-    oscillator.start(time);
-    oscillator.stop(time + 1.5);
+        // Mix of sine and triangle for a richer sound
+        osc.type = index < 2 ? 'sine' : 'triangle'; 
+        osc.frequency.setValueAtTime(fundamental * partial, startTime);
+        
+        // Sharp attack, long decay envelope for each partial
+        gain.gain.setValueAtTime(amplitudes[index], startTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, startTime + decayTime);
 
-    // Clang sound
-    const oscillator2 = ctx.createOscillator();
-    const gainNode2 = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
 
-    oscillator2.type = 'triangle';
-    oscillator2.frequency.setValueAtTime(1500, time);
-    oscillator2.frequency.exponentialRampToValueAtTime(400, time + 1);
+        osc.start(startTime);
+        osc.stop(startTime + decayTime);
+      });
+    };
 
-    gainNode2.gain.setValueAtTime(0.3, time);
-    gainNode2.gain.exponentialRampToValueAtTime(0.001, time + 1);
-    
-    oscillator2.connect(gainNode2);
-    gainNode2.connect(ctx.destination);
-
-    oscillator2.start(time);
-    oscillator2.stop(time + 1);
+    // Play two bell hits for the "dang dang" effect
+    createBellHit(time);
+    createBellHit(time + 0.4);
   });
 };

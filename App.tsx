@@ -4,6 +4,7 @@ import TrainPage from './pages/TrainPage';
 import HistoryPage from './pages/HistoryPage';
 import ExercisesPage from './pages/ExercisesPage';
 import ProfilePage from './pages/ProfilePage';
+import TimersPage from './pages/TimersPage';
 import ActiveWorkoutPage from './pages/ActiveWorkoutPage';
 import { AppContext } from './contexts/AppContext';
 import MinimizedWorkoutBar from './components/workout/MinimizedWorkoutBar';
@@ -11,7 +12,7 @@ import TemplateEditorPage from './pages/TemplateEditorPage';
 import ExerciseEditorPage from './pages/ExerciseEditorPage';
 import HistoryWorkoutEditorPage from './pages/HistoryWorkoutEditorPage';
 
-export type Page = 'TRAIN' | 'HISTORY' | 'EXERCISES' | 'PROFILE' | 'ACTIVE_WORKOUT';
+export type Page = 'TRAIN' | 'HISTORY' | 'EXERCISES' | 'TIMERS' | 'PROFILE' | 'ACTIVE_WORKOUT';
 
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>('TRAIN');
@@ -25,6 +26,8 @@ const App: React.FC = () => {
         return <HistoryPage />;
       case 'EXERCISES':
         return <ExercisesPage />;
+      case 'TIMERS':
+        return <TimersPage />;
       case 'PROFILE':
         return <ProfilePage />;
       default:

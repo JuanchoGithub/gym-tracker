@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Page } from '../../App';
 import { useI18n } from '../../hooks/useI18n';
@@ -34,11 +33,12 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({ currentPage, onNavigate }) 
     { page: 'TRAIN', label: t('nav_train'), icon: <Icon name="dumbbell" /> },
     { page: 'HISTORY', label: t('nav_history'), icon: <Icon name="history" /> },
     { page: 'EXERCISES', label: t('nav_exercises'), icon: <Icon name="clipboard-list" /> },
+    { page: 'TIMERS', label: t('nav_timers'), icon: <Icon name="stopwatch" /> },
     { page: 'PROFILE', label: t('nav_profile'), icon: <Icon name="user" /> },
   ];
 
   return (
-    <nav className="h-16 bg-surface shadow-lg border-t border-secondary/20 flex z-50">
+    <nav className="h-20 bg-surface shadow-lg border-t border-secondary/20 flex z-50 pb-4">
       {navItems.map(item => (
         <NavItem
           key={item.page}

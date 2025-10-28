@@ -2,16 +2,18 @@ import React, { useState, useEffect, useRef } from 'react';
 import { playWarningSound, playEndSound } from '../../services/audioService';
 import { Icon } from '../common/Icon';
 import { useI18n } from '../../hooks/useI18n';
+import { formatTime } from '../../utils/timeUtils';
 
 interface TimerProps {
   duration: number; // in seconds
   onFinish: () => void;
-  onTimeChange?: (newTimeLeft: number) => void;
+  onTimeChange?: (newTime: number) => void;
 }
 
-const Timer: React.FC<TimerProps> = ({ duration, onFinish, onTimeChange }) => {
+const Timer: React.FC<TimerProps> = ({ duration: initialDuration, onFinish, onTimeChange }) => {
   const { t } = useI18n();
-  const [timeLeft, setTimeLeft] = useState(duration);
+  const [totalDuration, setTotalDuration] = useState(initialDuration);
+  const [timeLeft, setTimeLeft] = useState(initialDuration);
   const [isPaused, setIsPaused] = useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   
@@ -34,11 +36,12 @@ const Timer: React.FC<TimerProps> = ({ duration, onFinish, onTimeChange }) => {
   };
 
   useEffect(() => {
-    if (duration > 0) {
-      resetTimer(duration);
+    if (initialDuration > 0) {
+      setTotalDuration(initialDuration);
+      resetTimer(initialDuration);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [duration]);
+  }, [initialDuration]);
 
   useEffect(() => {
     if (isPaused || timeLeft <= 0) {
@@ -79,13 +82,16 @@ const Timer: React.FC<TimerProps> = ({ duration, onFinish, onTimeChange }) => {
   };
 
   const modifyTime = (amount: number) => {
+    const newTotal = Math.max(0, totalDuration + amount);
+    setTotalDuration(newTotal);
+
     setTimeLeft(prev => {
       const newTime = Math.max(0, prev + amount);
       if (!isPaused) {
         targetTimeRef.current = Date.now() + newTime * 1000;
       }
       onTimeChangeRef.current?.(newTime);
-      if (newTime === 0) {
+      if (newTime === 0 && amount < 0) {
         onFinishRef.current();
       }
       return newTime;
@@ -93,8 +99,9 @@ const Timer: React.FC<TimerProps> = ({ duration, onFinish, onTimeChange }) => {
   };
 
   const handleReset = () => {
-    resetTimer(duration);
-    onTimeChangeRef.current?.(duration);
+    setTotalDuration(initialDuration);
+    resetTimer(initialDuration);
+    onTimeChangeRef.current?.(initialDuration);
   };
 
   const handleSkip = () => {
@@ -104,9 +111,10 @@ const Timer: React.FC<TimerProps> = ({ duration, onFinish, onTimeChange }) => {
     onFinishRef.current();
   };
 
+  const elapsedSeconds = Math.max(0, totalDuration - timeLeft);
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
-  const progress = duration > 0 ? ((duration - timeLeft) / duration) * 100 : 0;
+  const progress = totalDuration > 0 ? (elapsedSeconds / totalDuration) * 100 : 0;
 
   return (
     <div className="my-2 bg-slate-700 rounded-lg">
@@ -135,7 +143,10 @@ const Timer: React.FC<TimerProps> = ({ duration, onFinish, onTimeChange }) => {
                     ></div>
                     <span className="relative flex items-center">
                         <Icon name={isPaused ? 'play' : 'pause'} className="w-8 h-8 mr-3"/>
-                        <span>{isPaused ? t('timer_resume') : t('timer_pause')}</span>
+                        <div className="flex flex-col">
+                            <span className="text-2xl font-bold leading-tight">{isPaused ? t('timer_resume') : t('timer_pause')}</span>
+                            <span className="text-base font-mono font-normal leading-tight">{formatTime(elapsedSeconds)} / {formatTime(totalDuration)}</span>
+                        </div>
                     </span>
                 </button>
                 <div className="grid grid-cols-2 gap-2 w-full">
