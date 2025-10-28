@@ -83,7 +83,9 @@ const HistoryPage: React.FC = () => {
         <h1 className="text-3xl font-bold text-center">{t('nav_history')}</h1>
         {history.map((session: WorkoutSession) => {
           const totalTime = session.endTime > 0 ? formatTime(Math.round((session.endTime - session.startTime) / 1000)) : 'N/A';
-          const totalVolume = session.exercises.reduce((total, ex) => total + ex.sets.reduce((exTotal, set) => exTotal + (set.weight * set.reps), 0), 0);
+          const totalVolume = session.exercises.reduce((total, ex) => {
+            return total + ex.sets.reduce((exTotal, set) => exTotal + (set.weight * set.reps), 0);
+          }, 0);
           
           return (
             <div key={session.id} className="bg-surface rounded-lg shadow cursor-pointer hover:bg-slate-700 transition-colors">
@@ -124,10 +126,11 @@ const HistoryPage: React.FC = () => {
                   {session.exercises.map(ex => {
                     const exerciseInfo = getExerciseById(ex.exerciseId);
                     const bestSet = findBestSet(ex.sets);
+                    const normalSetsCount = ex.sets.filter(s => s.type === 'normal').length;
                     return (
                       <div key={ex.id} className="grid grid-cols-2 items-center">
                         <div>
-                          <span className="font-semibold text-text-primary">{ex.sets.length}x {exerciseInfo?.name || t('history_page_unknown_exercise')}</span>
+                          <span className="font-semibold text-text-primary">{normalSetsCount}x {exerciseInfo?.name || t('history_page_unknown_exercise')}</span>
                         </div>
                         <div className="text-right text-text-secondary">
                           {bestSet ? `${displayWeight(bestSet.weight)} ${t(`workout_${unit}`)} x ${bestSet.reps} ${t('workout_reps')}` : '-'}

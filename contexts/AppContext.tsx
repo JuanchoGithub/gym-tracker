@@ -191,7 +191,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             const exerciseHistory = getExerciseHistory(previousHistory, ex.exerciseId);
             const oldRecords = calculateRecords(exerciseHistory);
             
-            ex.sets.forEach(set => {
+            ex.sets.filter(s => s.type === 'normal').forEach(set => {
                 let isPr = false;
                 const volume = set.weight * set.reps;
 
@@ -308,7 +308,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const oldRecords = calculateRecords(exerciseHistory);
         
         ex.sets.forEach(set => {
-            if (set.isComplete) {
+            if (set.isComplete && set.type === 'normal') {
                 let isPrForSet = false;
                 const volume = set.weight * set.reps;
 

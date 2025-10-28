@@ -16,11 +16,12 @@ interface SetRowProps {
 const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSet, previousSetData }) => {
   const { displayWeight, getStoredWeight } = useWeight();
   const { t } = useI18n();
-  const [weight, setWeight] = useState(displayWeight(set.weight));
-  const [reps, setReps] = useState(set.reps.toString());
+  const [weight, setWeight] = useState(set.weight > 0 ? displayWeight(set.weight) : '');
+  const [reps, setReps] = useState(set.reps > 0 ? set.reps.toString() : '');
   const [isTypeModalOpen, setIsTypeModalOpen] = useState(false);
   const [offsetX, setOffsetX] = useState(0);
   const [isWeightFocused, setIsWeightFocused] = useState(false);
+  const [isRepsFocused, setIsRepsFocused] = useState(false);
 
   const swipableNodeRef = useRef<HTMLDivElement>(null);
   const dragStateRef = useRef({ isDragging: false, startX: 0, startTranslateX: 0 });
@@ -30,9 +31,15 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
   }, [set.isComplete, offsetX]);
 
   useEffect(() => {
-    setWeight(displayWeight(set.weight));
-    setReps(set.reps.toString());
-  }, [set, displayWeight]);
+    // If the inputs are not focused, update them from props
+    // This allows parent changes (like cascading weight) to reflect
+    if (!isWeightFocused) {
+      setWeight(set.weight > 0 ? displayWeight(set.weight) : '');
+    }
+    if (!isRepsFocused) {
+      setReps(set.reps > 0 ? set.reps.toString() : '');
+    }
+  }, [set, displayWeight, isWeightFocused, isRepsFocused]);
 
   const getClientX = (e: MouseEvent | TouchEvent) => 'touches' in e ? e.touches[0].clientX : e.clientX;
   
@@ -90,12 +97,12 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
   const handleWeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newWeight = e.target.value;
     setWeight(newWeight);
-    onUpdateSet({ ...set, weight: getStoredWeight(parseFloat(newWeight)), isWeightInherited: false });
+    onUpdateSet({ ...set, weight: getStoredWeight(parseFloat(newWeight) || 0), isWeightInherited: false });
   };
   
   const handleRepsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setReps(e.target.value);
-    onUpdateSet({ ...set, reps: parseInt(e.target.value) || 0 });
+    onUpdateSet({ ...set, reps: parseInt(e.target.value, 10) || 0 });
   };
   
   const handleComplete = () => onUpdateSet({ ...set, isComplete: !set.isComplete });
@@ -106,12 +113,23 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
   }
 
   const getSetTypeStyles = (type: SetType, isComplete: boolean) => {
-    if (isComplete) return 'bg-success/20';
+    if (isComplete) {
+        return 'bg-success/20';
+    }
     switch(type) {
         case 'warmup': return 'bg-[#1C354C]';
         case 'drop': return 'bg-[#343536]';
         case 'failure': return 'bg-[#332C3C]';
         default: return 'bg-surface';
+    }
+  }
+  
+  const getSetIdentifierStyles = (type: SetType) => {
+    switch(type) {
+        case 'warmup': return 'text-sky-400 bg-sky-400/10 hover:bg-sky-400/20';
+        case 'drop': return 'text-slate-400 bg-slate-400/10 hover:bg-slate-400/20';
+        case 'failure': return 'text-purple-400 bg-purple-400/10 hover:bg-purple-400/20';
+        default: return 'text-primary bg-primary/10 hover:bg-primary/20';
     }
   }
   
@@ -145,12 +163,12 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
         
         <div
             ref={swipableNodeRef}
-            className={`grid grid-cols-5 items-center gap-1 sm:gap-2 py-2 rounded-lg relative transition-transform duration-300 ease-out ${getSetTypeStyles(set.type, set.isComplete ?? false)} ${!set.isComplete ? 'cursor-grab active:cursor-grabbing' : ''}`}
+            className={`grid grid-cols-5 items-center gap-1 sm:gap-2 py-2 rounded-lg relative transition-transform duration-300 ease-out ${getSetTypeStyles(set.type, set.isComplete)} ${!set.isComplete ? 'cursor-grab active:cursor-grabbing' : ''}`}
             style={{ touchAction: 'pan-y' }}
             onMouseDown={handleDragStart}
             onTouchStart={handleDragStart}
         >
-          <button onClick={() => setIsTypeModalOpen(true)} className="text-center font-bold text-primary bg-primary/10 rounded-full w-8 h-8 mx-auto flex items-center justify-center hover:bg-primary/20">
+          <button onClick={() => setIsTypeModalOpen(true)} className={`text-center font-bold rounded-full w-8 h-8 mx-auto flex items-center justify-center ${getSetIdentifierStyles(set.type)}`}>
             {renderSetIdentifier()}
           </button>
           
@@ -181,6 +199,8 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
               min="0"
               value={reps}
               onChange={handleRepsChange}
+              onFocus={() => setIsRepsFocused(true)}
+              onBlur={() => setIsRepsFocused(false)}
               className={`${inputClasses} text-text-primary`}
               disabled={set.isComplete}
             />

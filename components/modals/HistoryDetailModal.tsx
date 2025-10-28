@@ -1,5 +1,5 @@
 import React, { useContext, useMemo } from 'react';
-import { WorkoutSession } from '../../types';
+import { WorkoutSession, SetType } from '../../types';
 import Modal from '../common/Modal';
 import { useI18n } from '../../hooks/useI18n';
 import { AppContext } from '../../contexts/AppContext';
@@ -31,7 +31,9 @@ const HistoryDetailModal: React.FC<HistoryDetailModalProps> = ({ session, isOpen
     const { displayWeight, unit } = useWeight();
 
     const totalTime = session.endTime > 0 ? formatTime(Math.round((session.endTime - session.startTime) / 1000)) : 'N/A';
-    const totalVolume = session.exercises.reduce((total, ex) => total + ex.sets.reduce((exTotal, set) => exTotal + (set.weight * set.reps), 0), 0);
+    const totalVolume = session.exercises.reduce((total, ex) => {
+        return total + ex.sets.reduce((exTotal, set) => exTotal + (set.weight * set.reps), 0);
+    }, 0);
 
     const exercisePerformances = useMemo(() => {
         if (!session) return {};
@@ -52,6 +54,15 @@ const HistoryDetailModal: React.FC<HistoryDetailModalProps> = ({ session, isOpen
         const diffStr = `${diff > 0 ? '+' : ''}${displayWeight(diff, true)}`;
         const type = diff > 0 ? 'increase' : 'decrease';
         return <Pill value={diffStr} type={type} />;
+    };
+    
+    const getSetTypeStyles = (type: SetType) => {
+        switch(type) {
+            case 'warmup': return 'bg-[#1C354C]';
+            case 'drop': return 'bg-[#343536]';
+            case 'failure': return 'bg-[#332C3C]';
+            default: return 'bg-transparent';
+        }
     };
 
     return (
@@ -80,6 +91,7 @@ const HistoryDetailModal: React.FC<HistoryDetailModalProps> = ({ session, isOpen
                     {session.exercises.map(ex => {
                         const exerciseInfo = getExerciseById(ex.exerciseId);
                         const previousPerformance = exercisePerformances[ex.id];
+                        let normalSetCounter = 0;
 
                         return (
                             <div key={ex.id} className="bg-slate-900/50 p-3 rounded-lg">
@@ -91,14 +103,28 @@ const HistoryDetailModal: React.FC<HistoryDetailModalProps> = ({ session, isOpen
                                     <span className="col-span-5">e1RM</span>
                                 </div>
                                 <div className="space-y-1">
-                                    {ex.sets.map((set, setIndex) => {
-                                        const prevSet = previousPerformance?.exerciseData.sets[setIndex];
+                                    {ex.sets.map((set) => {
+                                        if (set.type === 'normal') normalSetCounter++;
+                                        const prevSet = previousPerformance?.exerciseData.sets.find((s: any) => s.id === set.id);
                                         const current1RM = calculate1RM(set.weight, set.reps);
                                         const prev1RM = prevSet ? calculate1RM(prevSet.weight, prevSet.reps) : undefined;
                                         
+                                        const renderSetIdentifier = () => {
+                                            switch(set.type) {
+                                                case 'warmup': return 'W';
+                                                case 'drop': return 'D';
+                                                case 'failure': return 'F';
+                                                default: return normalSetCounter;
+                                            }
+                                        };
+                                        
                                         return (
-                                            <div key={set.id} className="text-sm grid grid-cols-12 gap-x-2 items-center">
-                                                <span className="col-span-1 text-center font-mono">{setIndex + 1}</span>
+                                            <div key={set.id} className={`text-sm grid grid-cols-12 gap-x-2 items-center p-1 rounded-md ${getSetTypeStyles(set.type)}`}>
+                                                <div className="col-span-1 flex justify-center">
+                                                    <div className={`text-center font-bold ${set.type !== 'normal' ? 'text-primary' : ''} bg-primary/10 rounded-full w-6 h-6 flex items-center justify-center`}>
+                                                        {renderSetIdentifier()}
+                                                    </div>
+                                                </div>
                                                 <div className="col-span-3 flex items-center gap-1">
                                                     <span>{displayWeight(set.weight)} {t(`workout_${unit}`)}</span>
                                                     {getComparisonPill(set.weight, prevSet?.weight)}

@@ -41,7 +41,7 @@ export const calculateRecords = (exerciseHistory: ExerciseHistory): PersonalReco
 
   exerciseHistory.forEach(({ session, exerciseData }) => {
     exerciseData.sets.forEach(set => {
-      if (set.isComplete) {
+      if (set.isComplete && set.type === 'normal') {
         // Max Weight
         if (!records.maxWeight || set.weight > records.maxWeight.value) {
           records.maxWeight = { value: set.weight, set, session };
@@ -66,11 +66,16 @@ export const findBestSet = (sets: PerformedSet[]): PerformedSet | null => {
     if (!sets || sets.length === 0) {
         return null;
     }
+    
+    const normalSets = sets.filter(s => s.type === 'normal');
+    if (normalSets.length === 0) {
+        return null;
+    }
 
-    return sets.reduce((best, current) => {
+    return normalSets.reduce((best, current) => {
         if (!best) return current;
         const best1RM = calculate1RM(best.weight, best.reps);
         const current1RM = calculate1RM(current.weight, current.reps);
         return current1RM > best1RM ? current : best;
-    }, sets[0]);
+    }, normalSets[0]);
 };

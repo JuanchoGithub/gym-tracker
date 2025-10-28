@@ -33,12 +33,14 @@ const RoutinePreviewModal: React.FC<RoutinePreviewModalProps> = ({ routine, isOp
               const exerciseInfo = getExerciseById(ex.exerciseId);
               if (!exerciseInfo) return null;
               
+              const normalSetsCount = ex.sets.filter(s => s.type === 'normal').length;
+
               return (
                 <div key={ex.id} className="bg-slate-900/50 p-2 rounded flex justify-between items-center">
                   <div>
                     <p className="font-bold text-text-primary">{exerciseInfo.name}</p>
                     <p className="text-sm text-text-secondary">
-                      {ex.sets.length} {t('workout_sets')} - {t(getBodyPartTKey(exerciseInfo.bodyPart))}
+                      {normalSetsCount} {t('workout_sets')} - {t(getBodyPartTKey(exerciseInfo.bodyPart))}
                     </p>
                   </div>
                   <button

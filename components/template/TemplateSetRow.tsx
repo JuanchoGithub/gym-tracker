@@ -16,14 +16,20 @@ interface TemplateSetRowProps {
 
 const TemplateSetRow: React.FC<TemplateSetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSet, restTime, onEditSetTimer }) => {
   const { displayWeight, getStoredWeight } = useWeight();
-  const [weight, setWeight] = useState(displayWeight(set.weight));
-  const [reps, setReps] = useState(set.reps.toString());
+  const [weight, setWeight] = useState(set.weight > 0 ? displayWeight(set.weight) : '');
+  const [reps, setReps] = useState(set.reps > 0 ? set.reps.toString() : '');
   const [isTypeModalOpen, setIsTypeModalOpen] = useState(false);
+  const [isWeightFocused, setIsWeightFocused] = useState(false);
+  const [isRepsFocused, setIsRepsFocused] = useState(false);
 
   useEffect(() => {
-    setWeight(displayWeight(set.weight));
-    setReps(set.reps.toString());
-  }, [set, displayWeight]);
+    if (!isWeightFocused) {
+        setWeight(set.weight > 0 ? displayWeight(set.weight) : '');
+    }
+    if (!isRepsFocused) {
+        setReps(set.reps > 0 ? set.reps.toString() : '');
+    }
+  }, [set, displayWeight, isWeightFocused, isRepsFocused]);
   
   const handleWeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newWeight = e.target.value;
@@ -33,7 +39,7 @@ const TemplateSetRow: React.FC<TemplateSetRowProps> = ({ set, setNumber, onUpdat
   
   const handleRepsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setReps(e.target.value);
-    onUpdateSet({ ...set, reps: parseInt(e.target.value) || 0 });
+    onUpdateSet({ ...set, reps: parseInt(e.target.value, 10) || 0 });
   };
   
   const handleSelectSetType = (type: SetType) => {
@@ -55,6 +61,15 @@ const TemplateSetRow: React.FC<TemplateSetRowProps> = ({ set, setNumber, onUpdat
         case 'drop': return 'bg-[#343536]';
         case 'failure': return 'bg-[#332C3C]';
         default: return 'bg-slate-900/50';
+    }
+  }
+  
+  const getSetIdentifierStyles = (type: SetType) => {
+    switch(type) {
+        case 'warmup': return 'text-sky-400 bg-sky-400/10 hover:bg-sky-400/20';
+        case 'drop': return 'text-slate-400 bg-slate-400/10 hover:bg-slate-400/20';
+        case 'failure': return 'text-purple-400 bg-purple-400/10 hover:bg-purple-400/20';
+        default: return 'text-primary bg-primary/10 hover:bg-primary/20';
     }
   }
   
@@ -84,7 +99,7 @@ const TemplateSetRow: React.FC<TemplateSetRowProps> = ({ set, setNumber, onUpdat
     <>
       <div className={`grid grid-cols-12 items-center gap-2 p-1 rounded-lg ${getSetTypeStyles(set.type)}`}>
         <div className="col-span-2 flex justify-center">
-            <button onClick={() => setIsTypeModalOpen(true)} className="text-center font-bold text-primary bg-primary/10 rounded-full w-8 h-8 mx-auto flex items-center justify-center hover:bg-primary/20">
+            <button onClick={() => setIsTypeModalOpen(true)} className={`text-center font-bold rounded-full w-8 h-8 mx-auto flex items-center justify-center ${getSetIdentifierStyles(set.type)}`}>
               {renderSetIdentifier()}
             </button>
         </div>
@@ -97,6 +112,8 @@ const TemplateSetRow: React.FC<TemplateSetRowProps> = ({ set, setNumber, onUpdat
             min="0"
             value={weight}
             onChange={handleWeightChange}
+            onFocus={() => setIsWeightFocused(true)}
+            onBlur={() => setIsWeightFocused(false)}
             className={inputClasses}
           />
         </div>
@@ -109,6 +126,8 @@ const TemplateSetRow: React.FC<TemplateSetRowProps> = ({ set, setNumber, onUpdat
             min="0"
             value={reps}
             onChange={handleRepsChange}
+            onFocus={() => setIsRepsFocused(true)}
+            onBlur={() => setIsRepsFocused(false)}
             className={inputClasses}
           />
         </div>
