@@ -8,6 +8,7 @@ import FilterDropdown from '../components/common/FilterDropdown';
 import { BODY_PART_OPTIONS, CATEGORY_OPTIONS } from '../constants/filters';
 import { getBodyPartTKey, getCategoryTKey } from '../utils/i18nUtils';
 import { useWeight } from '../hooks/useWeight';
+import { getBodyPartColor, getCategoryColor } from '../utils/colorUtils';
 
 const ExercisesPage: React.FC = () => {
   const { exercises, startExerciseEdit, allTimeBestSets } = useContext(AppContext);
@@ -120,15 +121,17 @@ const ExercisesPage: React.FC = () => {
             >
               <div>
                 <h3 className="font-bold text-text-primary">{exercise.name}</h3>
-                <p className="text-sm text-text-secondary">{t(getBodyPartTKey(exercise.bodyPart))}</p>
+                <div className="flex items-center gap-2 mt-1">
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${getBodyPartColor(exercise.bodyPart)}`}>{t(getBodyPartTKey(exercise.bodyPart))}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${getCategoryColor(exercise.category)}`}>{t(getCategoryTKey(exercise.category))}</span>
+                </div>
                 {bestSet && (
-                  <p className="text-xs text-warning mt-1 font-mono flex items-center gap-1">
+                  <p className="text-xs text-warning mt-2 font-mono flex items-center gap-1">
                       <Icon name="trophy" className="w-3 h-3" />
                       <span>{displayWeight(bestSet.weight)} {t(`workout_${unit}`)} x {bestSet.reps} {t('workout_reps')}</span>
                   </p>
                 )}
               </div>
-              <span className="text-xs bg-secondary/30 text-text-secondary px-2 py-1 rounded-full">{t(getCategoryTKey(exercise.category))}</span>
             </div>
           )
         }) : <p className="text-center text-text-secondary">{t('exercises_no_match')}</p>}

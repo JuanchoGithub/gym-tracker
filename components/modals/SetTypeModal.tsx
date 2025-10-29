@@ -14,13 +14,14 @@ interface SetTypeModalProps {
 
 const SetTypeModal: React.FC<SetTypeModalProps> = ({ isOpen, onClose, currentType, onSelectType }) => {
   const { t } = useI18n();
-  const [explanationType, setExplanationType] = useState<'warmup' | 'drop' | 'failure' | null>(null);
+  const [explanationType, setExplanationType] = useState<'warmup' | 'drop' | 'failure' | 'timed' | null>(null);
 
   const setTypes: { type: SetType; label: string; hasInfo: boolean }[] = [
     { type: 'normal', label: t('set_type_normal'), hasInfo: false },
     { type: 'warmup', label: t('set_type_warmup'), hasInfo: true },
     { type: 'drop', label: t('set_type_drop'), hasInfo: true },
     { type: 'failure', label: t('set_type_failure'), hasInfo: true },
+    { type: 'timed', label: t('set_type_timed'), hasInfo: true },
   ];
   
   const handleSelect = (type: SetType) => {
@@ -34,7 +35,7 @@ const SetTypeModal: React.FC<SetTypeModalProps> = ({ isOpen, onClose, currentTyp
   const openExplanation = (e: React.MouseEvent, type: SetType) => {
     e.stopPropagation();
     if (type !== 'normal') {
-      setExplanationType(type);
+      setExplanationType(type as 'warmup' | 'drop' | 'failure' | 'timed');
     }
   };
 

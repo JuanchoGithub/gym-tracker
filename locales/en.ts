@@ -16,6 +16,7 @@ export const en = {
   common_select: 'Select',
   common_add_and_close: 'Add and Close',
   common_create: 'Create',
+  common_duplicate: 'Duplicate',
 
   // Navigation
   nav_train: 'Train',
@@ -34,6 +35,7 @@ export const en = {
   train_empty_workout_name: 'Empty Workout',
   train_empty_workout_desc: 'An empty workout to build on the fly.',
   train_new_custom_template_name: 'New Custom Template',
+  train_new_hiit_template_name: 'New HIIT Template',
 
   // History Page
   history_no_data: 'No workout history found for this exercise.',
@@ -87,6 +89,7 @@ export const en = {
   workout_kg: 'kg',
   workout_lbs: 'lbs',
   workout_reps: 'reps',
+  workout_time: 'time',
   workout_finish: 'Finish',
   workout_timer_sub: '-10s',
   workout_timer_add: '+10s',
@@ -103,12 +106,15 @@ export const en = {
   set_type_warmup: 'Warmup',
   set_type_drop: 'Drop Set',
   set_type_failure: 'Failure',
+  set_type_timed: 'Timed',
   set_type_warmup_desc_title: 'What is a Warmup Set?',
   set_type_warmup_desc: 'A lighter set performed before your main working sets to prepare muscles and joints for heavier loads, reducing injury risk.',
   set_type_drop_desc_title: 'What is a Drop Set?',
   set_type_drop_desc: 'An advanced technique where you perform a set to failure, then immediately reduce the weight and continue for more reps without rest to maximize muscle fatigue.',
   set_type_failure_desc_title: 'What is a Failure Set?',
   set_type_failure_desc: 'A set where you perform as many repetitions as possible with good form until you can no longer complete another rep on your own.',
+  set_type_timed_desc_title: 'What is a Timed Set?',
+  set_type_timed_desc: 'A set where you perform an exercise for a specific duration. The weight input is replaced by a time duration.',
 
   // Exercise Details Modal
   tab_description: 'Description',
@@ -141,6 +147,7 @@ export const en = {
   finish_workout_confirm_cancel: 'Continue Workout',
   finish_workout_confirm_finish: 'Finish & Save',
   finish_workout_confirm_discard: 'Discard Workout',
+  finish_workout_disabled_tooltip: 'Cannot save workout with incomplete data in completed sets (e.g., 0 weight, reps, or time).',
 
   // Confirm New Workout Modal
   confirm_new_workout_title: 'Workout in Progress',
@@ -159,6 +166,7 @@ export const en = {
   timer_normal: 'Work Set',
   timer_warmup: 'Warm-up Set',
   timer_drop: 'Drop Set',
+  timer_timed: 'Timed Set',
   exercise_header_focus_total_volume: 'Total volume',
   exercise_header_focus_volume_increase: 'Volume increase',
   exercise_header_focus_total_reps: 'Total reps',
@@ -218,9 +226,18 @@ export const en = {
   template_editor_empty: 'This template is empty.',
   template_editor_add_exercises: 'Add Exercises',
   template_editor_name_empty_alert: 'Template name cannot be empty.',
+  template_editor_routine_type: 'Routine Type',
+  template_editor_type_strength: 'Strength',
+  template_editor_type_hiit: 'HIIT',
+  template_editor_hiit_config: 'HIIT Configuration',
+  template_editor_work_time: 'Work Time (s)',
+  template_editor_rest_time: 'Rest Time (s)',
+  template_editor_prepare_time: 'Prepare Time (s)',
+  template_editor_drag_to_reorder: 'Drag to reorder',
   template_card_add_edit_note: 'Add/Edit Note',
   template_card_edit_timers: 'Edit Default Timers',
   template_card_remove_exercise: 'Remove Exercise',
+  template_card_reorder_exercise: 'Reorder Exercise',
   
   // Exercise Editor
   exercise_editor_add_title: 'Add Exercise',

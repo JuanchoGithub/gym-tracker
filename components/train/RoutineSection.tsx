@@ -9,11 +9,12 @@ interface RoutineSectionProps {
   routines: Routine[];
   onRoutineSelect: (routine: Routine) => void;
   onRoutineEdit?: (routine: Routine) => void;
+  onRoutineDuplicate?: (routine: Routine) => void;
   startOpen?: boolean;
   headerAction?: React.ReactNode;
 }
 
-const RoutineSection: React.FC<RoutineSectionProps> = ({ title, routines, onRoutineSelect, onRoutineEdit, startOpen = true, headerAction }) => {
+const RoutineSection: React.FC<RoutineSectionProps> = ({ title, routines, onRoutineSelect, onRoutineEdit, onRoutineDuplicate, startOpen = true, headerAction }) => {
   const [isOpen, setIsOpen] = useState(startOpen);
   const { t } = useI18n();
 
@@ -43,6 +44,7 @@ const RoutineSection: React.FC<RoutineSectionProps> = ({ title, routines, onRout
                 routine={routine}
                 onClick={onRoutineSelect}
                 onEdit={onRoutineEdit}
+                onDuplicate={onRoutineDuplicate}
               />
             ))}
           </div>

@@ -5,7 +5,8 @@ import { useI18n } from '../../hooks/useI18n';
 import Modal from '../common/Modal';
 import { Icon } from '../common/Icon';
 import ExerciseDetailModal from '../exercise/ExerciseDetailModal';
-import { getBodyPartTKey } from '../../utils/i18nUtils';
+import { getBodyPartTKey, getCategoryTKey } from '../../utils/i18nUtils';
+import { getBodyPartColor, getCategoryColor } from '../../utils/colorUtils';
 
 interface RoutinePreviewModalProps {
   routine: Routine;
@@ -36,12 +37,14 @@ const RoutinePreviewModal: React.FC<RoutinePreviewModalProps> = ({ routine, isOp
               const normalSetsCount = ex.sets.filter(s => s.type === 'normal').length;
 
               return (
-                <div key={ex.id} className="bg-slate-900/50 p-2 rounded flex justify-between items-center">
+                <div key={ex.id} className="bg-slate-900/50 p-3 rounded flex justify-between items-center">
                   <div>
                     <p className="font-bold text-text-primary">{exerciseInfo.name}</p>
-                    <p className="text-sm text-text-secondary">
-                      {normalSetsCount} {t('workout_sets')} - {t(getBodyPartTKey(exerciseInfo.bodyPart))}
-                    </p>
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        <span className="text-sm text-text-secondary">{normalSetsCount} {t('workout_sets')}</span>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${getBodyPartColor(exerciseInfo.bodyPart)}`}>{t(getBodyPartTKey(exerciseInfo.bodyPart))}</span>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${getCategoryColor(exerciseInfo.category)}`}>{t(getCategoryTKey(exerciseInfo.category))}</span>
+                    </div>
                   </div>
                   <button
                     onClick={() => setViewingExercise(exerciseInfo)}

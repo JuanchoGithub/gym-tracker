@@ -16,6 +16,7 @@ export const es = {
   common_select: 'Seleccionar',
   common_add_and_close: 'Agregar y Cerrar',
   common_create: 'Crear',
+  common_duplicate: 'Duplicar',
   
   // Navigation
   nav_train: 'Entrenar',
@@ -34,6 +35,7 @@ export const es = {
   train_empty_workout_name: 'Entrenamiento Vacío',
   train_empty_workout_desc: 'Un entrenamiento vacío para armar sobre la marcha.',
   train_new_custom_template_name: 'Nueva Plantilla Personalizada',
+  train_new_hiit_template_name: 'Nueva Plantilla HIIT',
 
   // History Page
   history_no_data: 'No se encontró historial de entrenamiento para este ejercicio.',
@@ -86,6 +88,7 @@ export const es = {
   workout_kg: 'kg',
   workout_lbs: 'lbs',
   workout_reps: 'reps',
+  workout_time: 'tiempo',
   workout_finish: 'Finalizar',
   workout_timer_sub: '-10s',
   workout_timer_add: '+10s',
@@ -102,12 +105,15 @@ export const es = {
   set_type_warmup: 'Calentamiento',
   set_type_drop: 'Drop Set',
   set_type_failure: 'Al Fallo',
+  set_type_timed: 'Cronometrado',
   set_type_warmup_desc_title: '¿Qué es una Serie de Calentamiento?',
   set_type_warmup_desc: 'Una serie más ligera realizada antes de las series principales para preparar músculos y articulaciones para cargas más pesadas, reduciendo el riesgo de lesiones.',
   set_type_drop_desc_title: '¿Qué es un Drop Set?',
   set_type_drop_desc: 'Una técnica avanzada donde realizás una serie hasta el fallo, luego reducís inmediatamente el peso y continuás con más repeticiones sin descanso para maximizar la fatiga muscular.',
   set_type_failure_desc_title: '¿Qué es una Serie al Fallo?',
   set_type_failure_desc: 'Una serie en la que realizás tantas repeticiones como sea posible con buena forma hasta que ya no podás completar otra repetición por vos mismo.',
+  set_type_timed_desc_title: '¿Qué es una Serie Cronometrada?',
+  set_type_timed_desc: 'Una serie donde realizas un ejercicio por una duración específica. La entrada de peso es reemplazada por una de tiempo.',
 
   // Exercise Details Modal
   tab_description: 'Descripción',
@@ -140,6 +146,7 @@ export const es = {
   finish_workout_confirm_cancel: 'Continuar',
   finish_workout_confirm_finish: 'Finalizar y Guardar',
   finish_workout_confirm_discard: 'Descartar Entrenamiento',
+  finish_workout_disabled_tooltip: 'No se puede guardar el entrenamiento con datos incompletos en series completadas (ej: peso, reps o tiempo en 0).',
 
   // Confirm New Workout Modal
   confirm_new_workout_title: 'Entrenamiento en Progreso',
@@ -158,6 +165,7 @@ export const es = {
   timer_normal: 'Serie de Trabajo',
   timer_warmup: 'Serie de Calent.',
   timer_drop: 'Drop Set',
+  timer_timed: 'Serie Cronometrada',
   exercise_header_focus_total_volume: 'Volumen total',
   exercise_header_focus_volume_increase: 'Aumento de volumen',
   exercise_header_focus_total_reps: 'Reps totales',
@@ -217,9 +225,18 @@ export const es = {
   template_editor_empty: 'Esta plantilla está vacía.',
   template_editor_add_exercises: 'Agregar Ejercicios',
   template_editor_name_empty_alert: 'El nombre de la plantilla no puede estar vacío.',
+  template_editor_routine_type: 'Tipo de Rutina',
+  template_editor_type_strength: 'Fuerza',
+  template_editor_type_hiit: 'HIIT',
+  template_editor_hiit_config: 'Configuración HIIT',
+  template_editor_work_time: 'Tiempo de Trabajo (s)',
+  template_editor_rest_time: 'Tiempo de Descanso (s)',
+  template_editor_prepare_time: 'Tiempo de Preparación (s)',
+  template_editor_drag_to_reorder: 'Arrastrar para reordenar',
   template_card_add_edit_note: 'Agregar/Editar Nota',
   template_card_edit_timers: 'Editar Tiempos',
   template_card_remove_exercise: 'Quitar Ejercicio',
+  template_card_reorder_exercise: 'Reordenar Ejercicio',
 
   // Exercise Editor
   exercise_editor_add_title: 'Agregar Ejercicio',
@@ -313,7 +330,7 @@ export const es = {
 
   // Spanish Exercise Names
   ex_1: 'Press de Banca',
-  ex_2: 'Sentadilla',
+  ex_2: 'Sentadilla con Barra',
   ex_3: 'Peso Muerto',
   ex_4: 'Press Militar',
   ex_5: 'Remo con Barra',
@@ -410,11 +427,11 @@ export const es = {
   ex_96: 'Extensión Parcial de Tríceps',
   ex_97: 'Apretón Isométrico de Tríceps',
   ex_98: 'Peso Muerto Rumano',
-  ex_99: 'Zancada Caminando',
+  ex_99: 'Zancada Caminando con Mancuerna',
   ex_100: 'Sentadilla Búlgara',
   ex_101: 'Sentadilla Frontal',
   ex_102: 'Sentadilla Hack',
-  ex_103: 'Subida al Cajón',
+  ex_103: 'Subida al Cajón con Mancuerna',
   ex_104: 'Puente de Glúteos',
   ex_105: 'Elevación de Talones Sentado',
   ex_106: 'Elevación de Talones de Burro',
@@ -471,4 +488,7 @@ export const es = {
   ex_157: 'Plancha Lateral',
   ex_158: 'Rodillas Arriba',
   ex_159: 'Flexión con Rotación',
+  ex_160: 'Sentadilla',
+  ex_161: 'Subida al Cajón',
+  ex_162: 'Zancada',
 };

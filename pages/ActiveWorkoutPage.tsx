@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useMemo } from 'react';
 import { AppContext } from '../contexts/AppContext';
 import { useI18n } from '../hooks/useI18n';
 import ExerciseCard from '../components/workout/ExerciseCard';
@@ -10,6 +10,7 @@ import Modal from '../components/common/Modal';
 import AddExercisesModal from '../components/modals/AddExercisesModal';
 import { useWakeLock } from '../hooks/useWakeLock';
 import { scheduleTimerNotification, cancelTimerNotification } from '../services/notificationService';
+import TimedSetTimerModal from '../components/modals/TimedSetTimerModal';
 
 const ActiveWorkoutPage: React.FC = () => {
   const { activeWorkout, updateActiveWorkout, endWorkout, discardActiveWorkout, getExerciseById, minimizeWorkout, defaultRestTimes, keepScreenAwake, enableNotifications } = useContext(AppContext);
@@ -19,15 +20,43 @@ const ActiveWorkoutPage: React.FC = () => {
   const [isConfirmingFinish, setIsConfirmingFinish] = useState(false);
   const [isAddExerciseModalOpen, setIsAddExerciseModalOpen] = useState(false);
   const [activeTimerInfo, setActiveTimerInfo] = useState<{ exerciseId: string; setId: string; startTime: number } | null>(null);
+  const [activeTimedSet, setActiveTimedSet] = useState<{ exercise: WorkoutExercise; set: PerformedSet } | null>(null);
   
-  useWakeLock(keepScreenAwake);
+  useWakeLock(keepScreenAwake || !!activeTimedSet);
+
+  const hasInvalidCompletedSets = useMemo(() => {
+    if (!activeWorkout) return false;
+    for (const ex of activeWorkout.exercises) {
+      const exerciseInfo = getExerciseById(ex.exerciseId);
+      const isWeightOptional = exerciseInfo?.category === 'Bodyweight' || 
+                             exerciseInfo?.category === 'Assisted Bodyweight' || 
+                             exerciseInfo?.category === 'Reps Only' || 
+                             exerciseInfo?.category === 'Duration' || 
+                             exerciseInfo?.category === 'Cardio';
+
+      for (const set of ex.sets) {
+        if (set.isComplete) {
+          if (set.type === 'timed') {
+            if ((set.time ?? 0) <= 0 || set.reps <= 0) return true;
+          } else {
+            const weightInvalid = !isWeightOptional && set.weight <= 0;
+            const repsInvalid = set.reps <= 0;
+            if (weightInvalid || repsInvalid) return true;
+          }
+        }
+      }
+    }
+    return false;
+  }, [activeWorkout, getExerciseById]);
 
   const getTimerDuration = (set: PerformedSet, workoutExercise: WorkoutExercise): number => {
     if (set.rest !== undefined && set.rest !== null) return set.rest;
+    const restTime = workoutExercise.restTime;
     switch (set.type) {
-        case 'warmup': return workoutExercise.restTime.warmup;
-        case 'drop': return workoutExercise.restTime.drop;
-        default: return workoutExercise.restTime.normal;
+        case 'warmup': return restTime.warmup;
+        case 'drop': return restTime.drop;
+        case 'timed': return restTime.timed;
+        default: return restTime.normal;
     }
   };
 
@@ -177,6 +206,30 @@ const ActiveWorkoutPage: React.FC = () => {
         exercises: [...activeWorkout.exercises, ...newExercises],
     });
   };
+  
+  const handleStartTimedSet = (exercise: WorkoutExercise, set: PerformedSet) => {
+    setActiveTimedSet({ exercise, set });
+  };
+  
+  const handleFinishTimedSet = () => {
+    if (!activeTimedSet || !activeWorkout) return;
+
+    const { exercise, set } = activeTimedSet;
+    const updatedExercises = activeWorkout.exercises.map(ex => {
+        if (ex.id === exercise.id) {
+            return {
+                ...ex,
+                sets: ex.sets.map(s => s.id === set.id ? { ...s, isComplete: true } : s)
+            };
+        }
+        return ex;
+    });
+    
+    // This will trigger the rest timer logic
+    handleUpdateExercise(updatedExercises.find(ex => ex.id === exercise.id)!);
+    
+    setActiveTimedSet(null);
+  };
 
   if (!activeWorkout) {
     return <div>{t('active_workout_no_active')}</div>;
@@ -233,6 +286,7 @@ const ActiveWorkoutPage: React.FC = () => {
                   activeTimerInfo={activeTimerInfo}
                   onTimerFinish={handleTimerFinish}
                   onTimerChange={handleTimerChange}
+                  onStartTimedSet={handleStartTimedSet}
               />
           ) : null;
         }) : (
@@ -257,6 +311,17 @@ const ActiveWorkoutPage: React.FC = () => {
             onClose={() => setIsDetailsModalOpen(false)}
             workout={activeWorkout}
             onSave={handleSaveDetails}
+        />
+      )}
+
+      {activeTimedSet && (
+        <TimedSetTimerModal
+            isOpen={!!activeTimedSet}
+            onFinish={handleFinishTimedSet}
+            onClose={() => setActiveTimedSet(null)}
+            set={activeTimedSet.set}
+            restTime={getTimerDuration(activeTimedSet.set, activeTimedSet.exercise)}
+            exerciseName={getExerciseById(activeTimedSet.exercise.exerciseId)?.name || ''}
         />
       )}
 
@@ -288,7 +353,9 @@ const ActiveWorkoutPage: React.FC = () => {
             </button>
             <button
               onClick={confirmFinishWorkout}
-              className="bg-success hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+              className="bg-success hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:bg-slate-500 disabled:cursor-not-allowed"
+              disabled={hasInvalidCompletedSets}
+              title={hasInvalidCompletedSets ? t('finish_workout_disabled_tooltip') : undefined}
             >
               {t('finish_workout_confirm_finish')}
             </button>

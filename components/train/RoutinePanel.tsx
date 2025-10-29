@@ -11,9 +11,10 @@ interface RoutinePanelProps {
   routine: Routine;
   onClick: (routine: Routine) => void;
   onEdit?: (routine: Routine) => void;
+  onDuplicate?: (routine: Routine) => void;
 }
 
-const RoutinePanel: React.FC<RoutinePanelProps> = ({ routine, onClick, onEdit }) => {
+const RoutinePanel: React.FC<RoutinePanelProps> = ({ routine, onClick, onEdit, onDuplicate }) => {
   const { getExerciseById, deleteRoutine, upsertRoutine } = useContext(AppContext);
   const { t } = useI18n();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -25,6 +26,10 @@ const RoutinePanel: React.FC<RoutinePanelProps> = ({ routine, onClick, onEdit })
   
   const menuRef = useRef<HTMLDivElement>(null);
   useClickOutside(menuRef, () => setIsMenuOpen(false));
+
+  const routineType = routine.routineType || 'strength';
+  const typeLabel = routineType === 'hiit' ? t('template_editor_type_hiit') : t('template_editor_type_strength');
+  const typeColor = routineType === 'hiit' ? 'bg-rose-500/20 text-rose-400' : 'bg-sky-500/20 text-sky-400';
 
   const exerciseNames = routine.exercises
     .map(ex => getExerciseById(ex.exerciseId)?.name)
@@ -48,6 +53,12 @@ const RoutinePanel: React.FC<RoutinePanelProps> = ({ routine, onClick, onEdit })
     setIsMenuOpen(false);
   };
   
+  const handleDuplicate = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDuplicate?.(routine);
+    setIsMenuOpen(false);
+  };
+
   const handleSaveRename = (e: React.FormEvent) => {
     e.preventDefault();
     if (newName.trim()) {
@@ -62,43 +73,27 @@ const RoutinePanel: React.FC<RoutinePanelProps> = ({ routine, onClick, onEdit })
       setIsNoteModalOpen(false);
   };
 
-  const isEditable = onEdit && routine.isTemplate && !routine.id.startsWith('rt-');
-  const isDeletable = !routine.id.startsWith('rt-');
-  const isRenameable = isEditable || (!routine.isTemplate && isDeletable);
-  
+  const isCustomTemplate = routine.isTemplate && !routine.id.startsWith('rt-');
+  const isSampleTemplate = routine.isTemplate && routine.id.startsWith('rt-');
+  const isLatestWorkout = !routine.isTemplate;
+
   const menuItems = [];
-  if (isEditable) {
-      menuItems.push({
-          id: 'edit',
-          label: t('routine_panel_edit_exercises'),
-          action: handleEdit,
-          className: 'text-text-primary',
-      });
+
+  if (isSampleTemplate) {
+    menuItems.push({ id: 'duplicate', label: t('common_duplicate'), action: handleDuplicate, className: 'text-text-primary', icon: 'duplicate' });
   }
-  if (isRenameable) {
-      menuItems.push({
-          id: 'rename',
-          label: t('common_rename'),
-          action: (e: React.MouseEvent) => { e.stopPropagation(); setIsRenameModalOpen(true); setNewName(routine.name); setIsMenuOpen(false); },
-          className: 'text-text-primary',
-      });
+
+  if (isCustomTemplate) {
+    menuItems.push({ id: 'edit', label: t('routine_panel_edit_exercises'), action: handleEdit, className: 'text-text-primary', icon: 'edit' });
+    menuItems.push({ id: 'duplicate', label: t('common_duplicate'), action: handleDuplicate, className: 'text-text-primary', icon: 'duplicate' });
+    menuItems.push({ id: 'note', label: t('routine_panel_edit_note'), action: (e: React.MouseEvent) => { e.stopPropagation(); setIsNoteModalOpen(true); setNewNote(routine.description); setIsMenuOpen(false); }, className: 'text-text-primary', icon: 'clipboard-list' });
   }
-  if (isEditable) {
-      menuItems.push({
-          id: 'note',
-          label: t('routine_panel_edit_note'),
-          action: (e: React.MouseEvent) => { e.stopPropagation(); setIsNoteModalOpen(true); setNewNote(routine.description); setIsMenuOpen(false); },
-          className: 'text-text-primary',
-      });
+
+  if (isCustomTemplate || isLatestWorkout) {
+    menuItems.push({ id: 'rename', label: t('common_rename'), action: (e: React.MouseEvent) => { e.stopPropagation(); setIsRenameModalOpen(true); setNewName(routine.name); setIsMenuOpen(false); }, className: 'text-text-primary', icon: 'edit' });
+    menuItems.push({ id: 'delete', label: t('common_delete'), action: handleOpenDeleteConfirm, className: 'text-red-400', icon: 'trash' });
   }
-  if (isDeletable) {
-      menuItems.push({
-          id: 'delete',
-          label: t('common_delete'),
-          action: handleOpenDeleteConfirm,
-          className: 'text-red-400',
-      });
-  }
+
 
   return (
     <>
@@ -108,7 +103,7 @@ const RoutinePanel: React.FC<RoutinePanelProps> = ({ routine, onClick, onEdit })
       >
         <div>
           <div className="flex justify-between items-start">
-              <h3 className="font-bold text-lg text-primary mb-1 pr-6">{routine.name}</h3>
+              <h3 className="font-bold text-lg text-primary mb-1 pr-8">{routine.name}</h3>
               {menuItems.length > 0 && (
                    <div className="relative" ref={menuRef}>
                       <button onClick={(e) => { e.stopPropagation(); setIsMenuOpen(!isMenuOpen);}} className="text-text-secondary hover:text-primary p-1 absolute top-[-8px] right-[-8px]">
@@ -119,14 +114,15 @@ const RoutinePanel: React.FC<RoutinePanelProps> = ({ routine, onClick, onEdit })
                             {menuItems.map((item, index) => {
                                 const isFirst = index === 0;
                                 const isLast = index === menuItems.length - 1;
-                                let classNames = 'w-full text-left px-3 py-2 text-sm hover:bg-slate-500';
+                                let classNames = 'w-full text-left px-3 py-2 text-sm hover:bg-slate-500 flex items-center gap-2';
                                 if (isFirst && isLast) classNames += ' rounded-md';
                                 else if (isFirst) classNames += ' rounded-t-md';
                                 else if (isLast) classNames += ' rounded-b-md';
 
                                 return (
                                     <button key={item.id} onClick={item.action} className={`${classNames} ${item.className}`}>
-                                        {item.label}
+                                        <Icon name={item.icon as any} className="w-4 h-4" />
+                                        <span>{item.label}</span>
                                     </button>
                                 );
                             })}
@@ -134,6 +130,11 @@ const RoutinePanel: React.FC<RoutinePanelProps> = ({ routine, onClick, onEdit })
                       )}
                    </div>
               )}
+          </div>
+          <div className="mt-1 mb-2">
+            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${typeColor}`}>
+              {typeLabel}
+            </span>
           </div>
           <p className="text-sm text-text-secondary truncate" title={exerciseNames}>
             {exerciseNames || t('routine_panel_no_exercises')}

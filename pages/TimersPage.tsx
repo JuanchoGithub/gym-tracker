@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef, useMemo, useContext, useCallback } from 'react';
-import { useI18n } from '../hooks/useI18n';
-import { useWakeLock } from '../hooks/useWakeLock';
-import { playWarningSound, playEndSound, unlockAudioContext } from '../services/audioService';
+import { useI18n } from '../../hooks/useI18n';
+import { useWakeLock } from '../../hooks/useWakeLock';
+import { playWarningSound, playEndSound, unlockAudioContext } from '../../services/audioService';
 import { Icon } from '../components/common/Icon';
-import { formatSecondsToMMSS } from '../utils/timeUtils';
+import { formatSecondsToMMSS } from '../../utils/timeUtils';
 import { AppContext } from '../contexts/AppContext';
-import { Routine } from '../types';
-import { speak } from '../services/speechService';
+import { Routine, WorkoutExercise } from '../../types';
+import { speak } from '../../services/speechService';
 
 type TimerMode = 'quick' | 'hiit';
 
@@ -41,32 +41,18 @@ const TimersPage: React.FC = () => {
   const intervalRef = useRef<number | null>(null);
   const targetTimeRef = useRef<number>(0);
   const playSoundRef = useRef({ playWarningSound, playEndSound });
-  const prevActiveTimerRef = useRef<ActiveTimerState>();
+  // FIX: Explicitly initialize useRef with undefined to satisfy the linter rule expecting one argument.
+  const prevActiveTimerRef = useRef<ActiveTimerState | undefined>(undefined);
 
-  const startHiitTimer = useCallback((routine?: Routine) => {
+  const startHiitTimer = useCallback((routine: Routine) => {
     unlockAudioContext();
-    const hasRoutine = !!routine;
     
-    let workTime: number;
-    let restTime: number;
-    let rounds: number;
-    let prepareTime: number;
-    let exercises: (string | undefined)[] | null;
+    const workTime = routine.hiitConfig!.workTime;
+    const restTime = routine.hiitConfig!.restTime;
+    const rounds = routine.exercises.length;
+    const prepareTime = routine.hiitConfig!.prepareTime ?? 10;
+    const exercises = routine.exercises.map(ex => getExerciseById(ex.exerciseId)?.name);
 
-    if (hasRoutine) {
-        workTime = routine.hiitConfig!.workTime;
-        restTime = routine.hiitConfig!.restTime;
-        rounds = routine.exercises.length;
-        prepareTime = routine.hiitConfig!.prepareTime ?? 10;
-        exercises = routine.exercises.map(ex => getExerciseById(ex.exerciseId)?.name);
-    } else {
-        workTime = hiitConfig.work;
-        restTime = hiitConfig.rest;
-        rounds = hiitConfig.rounds;
-        prepareTime = 10; // Default prepare time for custom HIIT
-        exercises = null;
-    }
-    
     targetTimeRef.current = Date.now() + prepareTime * 1000;
     setActiveTimer({
       isActive: true,
@@ -83,7 +69,7 @@ const TimersPage: React.FC = () => {
       exerciseIndex: 0,
       sessionStartTime: Date.now(),
     });
-  }, [getExerciseById, hiitConfig]);
+  }, [getExerciseById]);
 
   useEffect(() => {
     if (activeHiitSession && !activeTimer.isActive) {
@@ -110,7 +96,8 @@ const TimersPage: React.FC = () => {
         if (newTimeLeft === 0) {
             playSoundRef.current.playEndSound();
             if (prev.mode === 'quick') {
-                return { ...prev, timeLeft: 0 };
+                // FIX: Pause the timer when it finishes to stop the interval.
+                return { ...prev, timeLeft: 0, isPaused: true };
             }
             if (prev.mode === 'hiit') {
                 const isLastRound = prev.currentRound! >= prev.totalRounds!;
@@ -121,7 +108,8 @@ const TimersPage: React.FC = () => {
                 }
                 if (prev.hiitState === 'work') {
                     if (isLastRound) {
-                        return { ...prev, timeLeft: 0 };
+                        // FIX: Pause the timer when it finishes to stop the interval.
+                        return { ...prev, timeLeft: 0, isPaused: true };
                     }
                     targetTimeRef.current = Date.now() + prev.restTime! * 1000;
                     return { ...prev, hiitState: 'rest', timeLeft: prev.restTime!, totalDuration: prev.restTime! };
@@ -189,6 +177,28 @@ const TimersPage: React.FC = () => {
     setActiveTimer({
       isActive: true, mode: 'quick', timeLeft: seconds, totalDuration: seconds, isPaused: false,
     });
+  };
+
+  const handleStartCustomHiit = () => {
+    const customRoutine: Routine = {
+        id: `custom-hiit-${Date.now()}`,
+        name: t('timers_hiit_title'),
+        description: 'Custom HIIT session from Timers page',
+        isTemplate: true,
+        routineType: 'hiit',
+        hiitConfig: {
+            workTime: hiitConfig.work,
+            restTime: hiitConfig.rest,
+            prepareTime: 10,
+        },
+        exercises: Array.from({ length: hiitConfig.rounds }, (_, i): WorkoutExercise => ({
+            id: `we-custom-${i}`,
+            exerciseId: '', // No real exercise associated
+            sets: [],
+            restTime: { normal: 0, warmup: 0, drop: 0, timed: 0 },
+        }))
+    };
+    startHiitTimer(customRoutine);
   };
 
   const stopTimer = () => {
@@ -336,15 +346,13 @@ const TimersPage: React.FC = () => {
                         <input
                             type="number"
                             value={hiitConfig[key]}
-                            // FIX: Added radix to parseInt for safety and best practices.
                             onChange={e => setHiitConfig({...hiitConfig, [key]: Math.max(0, parseInt(e.target.value, 10) || 0)})}
                             className="w-full bg-slate-900 border border-secondary/50 rounded-lg p-2 text-center text-lg"
                         />
                     </div>
                 ))}
             </div>
-            {/* Fix: Explicitly pass undefined to the startHiitTimer function to resolve the "Expected 1 arguments, but got 0" error. */}
-            <button onClick={() => startHiitTimer(undefined)} className="w-full bg-primary text-white font-bold py-3 rounded-lg hover:bg-sky-600 transition-colors">
+            <button onClick={handleStartCustomHiit} className="w-full bg-primary text-white font-bold py-3 rounded-lg hover:bg-sky-600 transition-colors">
                 {t('timers_hiit_start_button')}
             </button>
         </div>

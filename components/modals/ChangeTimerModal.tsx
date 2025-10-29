@@ -7,22 +7,22 @@ import { formatSecondsToMMSS, parseTimerInput } from '../../utils/timeUtils';
 interface ChangeTimerModalProps {
   isOpen: boolean;
   onClose: () => void;
-  currentRestTimes: { normal: number; warmup: number; drop: number; };
-  onSave: (newTimes: { normal: number; warmup: number; drop: number; }) => void;
+  currentRestTimes: { normal: number; warmup: number; drop: number; timed: number; };
+  onSave: (newTimes: { normal: number; warmup: number; drop: number; timed: number; }) => void;
 }
 
 const ChangeTimerModal: React.FC<ChangeTimerModalProps> = ({ isOpen, onClose, currentRestTimes, onSave }) => {
     const { t } = useI18n();
-    const [times, setTimes] = useState(currentRestTimes || { normal: 90, warmup: 0, drop: 0 });
+    const [times, setTimes] = useState(currentRestTimes || { normal: 90, warmup: 0, drop: 0, timed: 10 });
     const [editingKey, setEditingKey] = useState<keyof typeof times | null>(null);
     const [tempValue, setTempValue] = useState('');
 
     useEffect(() => {
         if (typeof currentRestTimes === 'object' && currentRestTimes !== null) {
-            setTimes(currentRestTimes);
+            setTimes(prev => ({ ...prev, ...currentRestTimes }));
         } else {
             const legacyTime = typeof currentRestTimes === 'number' ? currentRestTimes : 90;
-            setTimes({ normal: legacyTime, warmup: 60, drop: 30 });
+            setTimes({ normal: legacyTime, warmup: 60, drop: 30, timed: 10 });
         }
     }, [currentRestTimes]);
 
@@ -61,6 +61,7 @@ const ChangeTimerModal: React.FC<ChangeTimerModalProps> = ({ isOpen, onClose, cu
         { key: 'normal', labelKey: 'timer_normal' },
         { key: 'warmup', labelKey: 'timer_warmup' },
         { key: 'drop', labelKey: 'timer_drop' },
+        { key: 'timed', labelKey: 'timer_timed' },
     ];
 
     return (

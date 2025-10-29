@@ -11,7 +11,7 @@ import Modal from '../components/common/Modal';
 import HistoryDetailModal from '../components/modals/HistoryDetailModal';
 
 const HistoryPage: React.FC = () => {
-  const { history, getExerciseById, deleteHistorySession, upsertRoutine, startWorkout, startHistoryEdit } = useContext(AppContext);
+  const { history, getExerciseById, deleteHistorySession, upsertRoutine, startWorkout, startHistoryEdit, routines } = useContext(AppContext);
   const { t } = useI18n();
   const { displayWeight, unit } = useWeight();
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
@@ -31,13 +31,15 @@ const HistoryPage: React.FC = () => {
   const confirmSaveTemplate = (e: React.FormEvent) => {
     e.preventDefault();
     if (templatingSession && newTemplateName.trim()) {
+      const originalRoutine = routines.find(r => r.id === templatingSession.routineId);
       const newTemplate: Routine = {
         id: `template-${Date.now()}`,
         name: newTemplateName.trim(),
         description: `Based on workout from ${new Date(templatingSession.startTime).toLocaleDateString()}`,
         exercises: templatingSession.exercises,
         isTemplate: true,
-        originId: templatingSession.routineId
+        originId: templatingSession.routineId,
+        routineType: originalRoutine?.routineType || 'strength',
       };
       upsertRoutine(newTemplate);
       setTemplatingSession(null);
@@ -46,6 +48,7 @@ const HistoryPage: React.FC = () => {
   };
 
   const handleRepeatWorkout = (session: WorkoutSession) => {
+    const originalRoutine = routines.find(r => r.id === session.routineId);
     const routineFromHistory: Routine = {
       id: session.routineId,
       name: session.routineName,
@@ -53,7 +56,8 @@ const HistoryPage: React.FC = () => {
       exercises: session.exercises,
       isTemplate: false, // Not a template itself
       lastUsed: Date.now(),
-      originId: session.routineId
+      originId: session.routineId,
+      routineType: originalRoutine?.routineType || 'strength',
     };
     startWorkout(routineFromHistory);
   };

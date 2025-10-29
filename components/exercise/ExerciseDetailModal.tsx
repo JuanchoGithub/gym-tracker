@@ -5,6 +5,7 @@ import { Icon } from '../common/Icon';
 import { useI18n } from '../../hooks/useI18n';
 import { AppContext } from '../../contexts/AppContext';
 import { getExerciseHistory, calculateRecords } from '../../utils/workoutUtils';
+import { getBodyPartTKey, getCategoryTKey } from '../../utils/i18nUtils';
 
 import DescriptionTab from './DescriptionTab';
 import HistoryTab from './HistoryTab';
@@ -69,20 +70,26 @@ const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({ exercise, isO
     <Modal isOpen={isOpen} onClose={onClose}>
       <div className="flex flex-col h-[70vh] max-h-[550px]">
         {/* Custom Header */}
-        <div className="flex items-center justify-between mb-4 flex-shrink-0 gap-1 sm:gap-2">
-            <div className="flex-shrink-0">
-                <button onClick={onClose} className="text-text-secondary hover:text-text-primary p-1">
+        <div className="flex items-center justify-between mb-4 flex-shrink-0 gap-2">
+            <div className="flex-1 text-left">
+                <button onClick={onClose} className="text-text-secondary hover:text-text-primary p-1 -ml-1">
                     <Icon name="x" className="w-6 h-6" />
                 </button>
             </div>
-            <h2 className="font-bold text-text-primary text-center flex-grow min-w-0 text-base sm:text-xl">
-                {exercise.name}
-            </h2>
-            <div className="flex-shrink-0 flex items-center space-x-1">
-                <button onClick={handleDuplicate} className="text-text-secondary hover:text-text-primary flex items-center space-x-1 p-1" title="Duplicate">
+            <div className="flex-shrink min-w-0 text-center">
+                <h2 className="font-bold text-text-primary text-base sm:text-xl truncate" title={exercise.name}>
+                    {exercise.name}
+                </h2>
+                <div className="flex items-center justify-center gap-2 mt-1">
+                    <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">{t(getBodyPartTKey(exercise.bodyPart))}</span>
+                    <span className="text-xs bg-secondary/30 text-text-secondary px-2 py-0.5 rounded-full">{t(getCategoryTKey(exercise.category))}</span>
+                </div>
+            </div>
+            <div className="flex-1 flex items-center justify-end space-x-1">
+                <button onClick={handleDuplicate} className="text-text-secondary hover:text-text-primary p-1" title="Duplicate">
                     <Icon name="duplicate" className="w-5 h-5" />
                 </button>
-                <button onClick={handleEdit} className="text-text-secondary hover:text-text-primary flex items-center space-x-1 p-1" title={t('exercise_edit')}>
+                <button onClick={handleEdit} className="text-text-secondary hover:text-text-primary p-1" title={t('exercise_edit')}>
                     <Icon name="edit" className="w-5 h-5" />
                 </button>
             </div>

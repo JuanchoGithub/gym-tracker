@@ -30,10 +30,11 @@ interface AppContextType {
   discardActiveWorkout: () => void;
   weightUnit: WeightUnit;
   setWeightUnit: (unit: WeightUnit) => void;
-  defaultRestTimes: { normal: number; warmup: number; drop: number; };
-  setDefaultRestTimes: (times: { normal: number; warmup: number; drop: number; }) => void;
+  defaultRestTimes: { normal: number; warmup: number; drop: number; timed: number; };
+  setDefaultRestTimes: (times: { normal: number; warmup: number; drop: number; timed: number; }) => void;
   editingTemplate: Routine | null;
   startTemplateEdit: (template: Routine) => void;
+  startTemplateDuplicate: (template: Routine) => void;
   endTemplateEdit: (savedTemplate?: Routine) => void;
   editingExercise: Exercise | null;
   startExerciseEdit: (exercise: Exercise, onSaveCallback?: (savedExercise: Exercise) => void) => void;
@@ -65,7 +66,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [activeWorkout, setActiveWorkout] = useLocalStorage<WorkoutSession | null>('activeWorkout', null);
   const [isWorkoutMinimized, setIsWorkoutMinimized] = useLocalStorage<boolean>('isWorkoutMinimized', false);
   const [weightUnit, setWeightUnit] = useLocalStorage<WeightUnit>('weightUnit', 'kg');
-  const [defaultRestTimes, setDefaultRestTimes] = useLocalStorage<{ normal: number; warmup: number; drop: number; }>('defaultRestTimes', { normal: 90, warmup: 60, drop: 30 });
+  const [defaultRestTimes, setDefaultRestTimes] = useLocalStorage<{ normal: number; warmup: number; drop: number; timed: number; }>('defaultRestTimes', { normal: 90, warmup: 60, drop: 30, timed: 10 });
   const [editingTemplate, setEditingTemplate] = useState<Routine | null>(null);
   const [editingExercise, setEditingExercise] = useState<Exercise | null>(null);
   const [editingHistorySession, setEditingHistorySession] = useState<WorkoutSession | null>(null);
@@ -160,11 +161,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (activeWorkout) {
       let needsUpdate = false;
       const migratedExercises = activeWorkout.exercises.map(ex => {
-        if (typeof ex.restTime === 'number') {
+        if (typeof ex.restTime === 'number' || !('timed' in ex.restTime)) {
           needsUpdate = true;
+          // FIX: Cast ex.restTime to `any` to handle legacy data structures during migration,
+          // resolving a type conflict where the compiler inferred `never`.
+          const oldNormal = typeof ex.restTime === 'number' ? ex.restTime : (ex.restTime as any).normal;
           return {
             ...ex,
-            restTime: { normal: ex.restTime, warmup: 60, drop: 30 }
+            restTime: {
+              normal: oldNormal,
+              warmup: (ex.restTime as any).warmup || 60,
+              drop: (ex.restTime as any).drop || 30,
+              timed: (ex.restTime as any).timed || 10,
+            }
           };
         }
         return ex;
@@ -226,11 +235,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // Reset sets for the new session, giving them new IDs
     newWorkoutExercises.forEach((ex, exIndex) => {
         ex.id = `we-${Date.now()}-${exIndex}`; 
+        if (!ex.restTime.timed) {
+          ex.restTime.timed = defaultRestTimes.timed;
+        }
         ex.sets.forEach((set: PerformedSet, setIndex: number) => {
             set.id = `set-${Date.now()}-${exIndex}-${setIndex}`;
             set.isComplete = false;
-            set.isWeightInherited = false;
-            set.isRepsInherited = false;
         });
     });
 
@@ -244,7 +254,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
     setActiveWorkout(newWorkout);
     setIsWorkoutMinimized(false);
-  }, [setActiveWorkout, setIsWorkoutMinimized]);
+  }, [setActiveWorkout, setIsWorkoutMinimized, defaultRestTimes.timed]);
 
   const updateActiveWorkout = useCallback((workout: WorkoutSession) => {
     setActiveWorkout(workout);
@@ -296,6 +306,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         // Create the "Latest Workout" routine. It should include *all* sets from the session,
         // both completed and incomplete, to allow the user to repeat the full workout.
         const exercisesForLatestRoutine = activeWorkout.exercises.filter(ex => ex.sets.length > 0);
+        const sourceRoutine = routines.find(r => r.id === activeWorkout.routineId);
 
         const newLatestRoutine: Routine = {
           id: `latest-${workoutEndTime}-${Math.random()}`,
@@ -305,9 +316,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           isTemplate: false,
           lastUsed: workoutEndTime,
           originId: activeWorkout.routineId,
+          routineType: sourceRoutine?.routineType || 'strength',
         };
-
-        const sourceRoutine = routines.find(r => r.id === activeWorkout.routineId);
 
         setUserRoutines(prevUserRoutines => {
             const routinesWithoutSource = sourceRoutine && !sourceRoutine.isTemplate 
@@ -349,6 +359,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const startTemplateEdit = useCallback((template: Routine) => {
     setEditingTemplate(template);
   }, []);
+
+  const startTemplateDuplicate = useCallback((routineToDuplicate: Routine) => {
+    const newTemplate: Routine = {
+        ...JSON.parse(JSON.stringify(routineToDuplicate)), // Deep copy
+        id: `custom-${Date.now()}`,
+        originId: routineToDuplicate.originId || routineToDuplicate.id,
+        name: `${routineToDuplicate.name} (Copy)`,
+        isTemplate: true,
+        lastUsed: undefined,
+        routineType: routineToDuplicate.routineType,
+        hiitConfig: routineToDuplicate.hiitConfig ? { ...routineToDuplicate.hiitConfig } : undefined,
+    };
+    startTemplateEdit(newTemplate);
+  }, [startTemplateEdit]);
 
   const endTemplateEdit = useCallback((savedTemplate?: Routine) => {
     if (savedTemplate) {
@@ -477,6 +501,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setDefaultRestTimes,
     editingTemplate,
     startTemplateEdit,
+    startTemplateDuplicate,
     endTemplateEdit,
     editingExercise,
     startExerciseEdit,
@@ -502,7 +527,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     upsertExercise, activeWorkout, startWorkout, updateActiveWorkout, endWorkout,
     isWorkoutMinimized, minimizeWorkout, maximizeWorkout, discardActiveWorkout,
     weightUnit, setWeightUnit, defaultRestTimes, setDefaultRestTimes,
-    editingTemplate, startTemplateEdit, endTemplateEdit, editingExercise,
+    editingTemplate, startTemplateEdit, startTemplateDuplicate, endTemplateEdit, editingExercise,
     startExerciseEdit, endExerciseEdit, startExerciseDuplicate,
     editingHistorySession, startHistoryEdit, endHistoryEdit,
     useLocalizedExerciseNames, setUseLocalizedExerciseNames,

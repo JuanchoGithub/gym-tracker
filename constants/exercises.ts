@@ -101,17 +101,17 @@ export const PREDEFINED_EXERCISES: Exercise[] = [
   { id: 'ex-96', name: 'Partial Tricep Extension', bodyPart: 'Triceps', category: 'Cable' },
   { id: 'ex-97', name: 'Isometric Tricep Squeeze', bodyPart: 'Triceps', category: 'Bodyweight' },
 
-  // Legs (21)
+  // Legs (24)
   { id: 'ex-16', name: 'Leg Curl', bodyPart: 'Legs', category: 'Machine' },
   { id: 'ex-17', name: 'Leg Extension', bodyPart: 'Legs', category: 'Machine' },
   { id: 'ex-9', name: 'Leg Press', bodyPart: 'Legs', category: 'Machine' },
-  { id: 'ex-2', name: 'Squat', bodyPart: 'Legs', category: 'Barbell' },
+  { id: 'ex-2', name: 'Barbell Squat', bodyPart: 'Legs', category: 'Barbell' },
   { id: 'ex-98', name: 'Romanian Deadlift', bodyPart: 'Legs', category: 'Barbell' },
-  { id: 'ex-99', name: 'Walking Lunge', bodyPart: 'Legs', category: 'Dumbbell' },
+  { id: 'ex-99', name: 'Dumbbell Walking Lunge', bodyPart: 'Legs', category: 'Dumbbell' },
   { id: 'ex-100', name: 'Bulgarian Split Squat', bodyPart: 'Legs', category: 'Dumbbell' },
   { id: 'ex-101', name: 'Front Squat', bodyPart: 'Legs', category: 'Barbell' },
   { id: 'ex-102', name: 'Hack Squat', bodyPart: 'Legs', category: 'Machine' },
-  { id: 'ex-103', name: 'Step-Up', bodyPart: 'Legs', category: 'Dumbbell' },
+  { id: 'ex-103', name: 'Dumbbell Step-Up', bodyPart: 'Legs', category: 'Dumbbell' },
   { id: 'ex-108', name: 'Sumo Squat', bodyPart: 'Legs', category: 'Dumbbell' },
   { id: 'ex-109', name: 'Goblet Squat', bodyPart: 'Legs', category: 'Dumbbell' },
   { id: 'ex-110', name: 'Pistol Squat', bodyPart: 'Legs', category: 'Bodyweight' },
@@ -123,6 +123,9 @@ export const PREDEFINED_EXERCISES: Exercise[] = [
   { id: 'ex-150', name: 'Broad Jump', bodyPart: 'Legs', category: 'Plyometrics' },
   { id: 'ex-151', name: 'Tuck Jump', bodyPart: 'Legs', category: 'Plyometrics' },
   { id: 'ex-152', name: 'Depth Jump', bodyPart: 'Legs', category: 'Plyometrics' },
+  { id: 'ex-160', name: 'Squat', bodyPart: 'Legs', category: 'Bodyweight' },
+  { id: 'ex-161', name: 'Step-Up', bodyPart: 'Legs', category: 'Bodyweight' },
+  { id: 'ex-162', name: 'Lunge', bodyPart: 'Legs', category: 'Bodyweight' },
 
   // Glutes (5)
   { id: 'ex-104', name: 'Glute Bridge', bodyPart: 'Glutes', category: 'Bodyweight' },

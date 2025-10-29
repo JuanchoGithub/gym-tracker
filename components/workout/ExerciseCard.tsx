@@ -18,9 +18,10 @@ interface ExerciseCardProps {
   activeTimerInfo?: { exerciseId: string; setId: string; startTime: number } | null;
   onTimerFinish?: (finishedExerciseId: string, finishedSetId: string) => void;
   onTimerChange?: (newDuration: number, exerciseName: string) => void;
+  onStartTimedSet?: (exercise: WorkoutExercise, set: PerformedSet) => void;
 }
 
-const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseInfo, onUpdate, activeTimerInfo, onTimerFinish, onTimerChange }) => {
+const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseInfo, onUpdate, activeTimerInfo, onTimerFinish, onTimerChange, onStartTimedSet }) => {
   const { t } = useI18n();
   const { unit } = useWeight();
   const { history: allHistory } = useContext(AppContext);
@@ -33,6 +34,10 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseIn
     const history = getExerciseHistory(allHistory, exerciseInfo.id);
     return history.length > 0 ? history[0] : null;
   }, [allHistory, exerciseInfo.id]);
+  
+  const isWeightOptional = useMemo(() => {
+    return ['Bodyweight', 'Assisted Bodyweight', 'Reps Only', 'Cardio', 'Duration'].includes(exerciseInfo.category);
+  }, [exerciseInfo.category]);
 
   const getTimerDuration = (set?: PerformedSet): number => {
     if (!set) return workoutExercise.restTime.normal; // Fallback for safety
@@ -41,6 +46,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseIn
     switch (set.type) {
         case 'warmup': return workoutExercise.restTime.warmup;
         case 'drop': return workoutExercise.restTime.drop;
+        case 'timed': return workoutExercise.restTime.timed || 10;
         case 'normal':
         case 'failure':
         default: return workoutExercise.restTime.normal;
@@ -70,6 +76,17 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseIn
         for (let i = oldSetIndex + 1; i < newSets.length; i++) {
             if (!newSets[i].isComplete && (newSets[i].reps === 0 || newSets[i].isRepsInherited !== false)) {
                 newSets[i] = { ...newSets[i], reps: updatedSet.reps, isRepsInherited: true };
+            } else {
+                break;
+            }
+        }
+    }
+
+    // Cascade time change if applicable.
+    if (updatedSet.type === 'timed' && oldSet.time !== updatedSet.time && updatedSet.isTimeInherited === false && !updatedSet.isComplete) {
+        for (let i = oldSetIndex + 1; i < newSets.length; i++) {
+            if (newSets[i].type === 'timed' && !newSets[i].isComplete && newSets[i].isTimeInherited !== false) {
+                newSets[i] = { ...newSets[i], time: updatedSet.time, isTimeInherited: true };
             } else {
                 break;
             }
@@ -111,7 +128,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseIn
     setIsNoteEditing(false);
   };
   
-  const handleSaveDefaultsTimer = (newTimers: { normal: number; warmup: number; drop: number; }) => {
+  const handleSaveDefaultsTimer = (newTimers: { normal: number; warmup: number; drop: number; timed: number; }) => {
     onUpdate({ ...workoutExercise, restTime: newTimers });
   };
 
@@ -174,7 +191,9 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseIn
                             setNumber={normalSetCounter}
                             onUpdateSet={handleUpdateSet}
                             onDeleteSet={() => handleDeleteSet(set.id)}
+                            onStartTimedSet={(s) => onStartTimedSet?.(workoutExercise, s)}
                             previousSetData={previousSetData}
+                            isWeightOptional={isWeightOptional}
                         />
                         {isActiveTimer && onTimerFinish && onTimerChange && (
                           <div className="w-full rounded-lg">

@@ -46,7 +46,7 @@ export const legsInstructionsEn = {
     ]
   },
   ex_99_ins: {
-    title: "Walking Lunge",
+    title: "Dumbbell Walking Lunge",
     steps: [
         "Step forward with one leg and lower your hips until both knees are bent at a 90-degree angle.",
         "Your front knee should be directly above your ankle, and your back knee should hover just off the ground.",
@@ -82,7 +82,7 @@ export const legsInstructionsEn = {
     ]
   },
   ex_103_ins: {
-    title: "Step-Up",
+    title: "Dumbbell Step-Up",
     steps: [
         "Stand in front of a sturdy box or bench, holding dumbbells.",
         "Step up onto the box with one foot, driving through your heel.",
@@ -232,6 +232,33 @@ export const legsInstructionsEn = {
         "Step off the box, do not jump off. Land on both feet.",
         "Immediately upon landing, jump vertically as high as possible.",
         "The goal is to minimize ground contact time and maximize jump height."
+    ]
+  },
+  ex_160_ins: {
+    title: "Squat",
+    steps: [
+      "Stand with feet shoulder-width apart, chest up, and core engaged.",
+      "Lower your hips back and down as if sitting in a chair.",
+      "Keep your back straight and go as low as you comfortably can, aiming for thighs parallel to the floor.",
+      "Push through your heels to return to the starting position."
+    ]
+  },
+  ex_161_ins: {
+    title: "Step-Up",
+    steps: [
+      "Stand in front of a sturdy box or bench.",
+      "Step up onto the box with one foot, driving through your heel to lift your body.",
+      "Bring your other foot up to meet it on top of the box.",
+      "Step back down with the same foot you started with. Alternate lead legs with each set or rep."
+    ]
+  },
+  ex_162_ins: {
+    title: "Lunge",
+    steps: [
+      "Stand tall with your feet together.",
+      "Take a step forward with one leg and lower your hips until both knees are bent at a 90-degree angle.",
+      "Ensure your front knee is directly above your ankle and your back knee hovers just above the ground.",
+      "Push off your front foot to return to the starting position. Alternate legs."
     ]
   }
 };

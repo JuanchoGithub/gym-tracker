@@ -3,7 +3,7 @@ import React from 'react';
 const ICONS: Record<string, React.ReactNode> = {
   dumbbell: <path strokeLinecap="round" strokeLinejoin="round" d="M10 5l-1.8 1.8M10 5l1.8 1.8M10 5v14m-4-3h8m-8 0v-2h8v2m-8 0H5.5m9 0H18.5m-13-10h13M4 10l-1.8-1.8M4 10l1.8-1.8M20 10l-1.8-1.8M20 10l1.8-1.8" />,
   history: <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />,
-  'clipboard-list': <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2m-2-2h2m-4 4h4m-4 4h4m-4 4h4" />,
+  'clipboard-list': <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2m-2-2h2m-4 4h4m-4 4h4" />,
   user: <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />,
   x: <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />,
   ellipsis: <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h.01M12 12h.01M19 12h.01" />,

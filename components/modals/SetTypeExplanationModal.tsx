@@ -8,7 +8,7 @@ import { SetType } from '../../types';
 interface SetTypeExplanationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  setType: 'warmup' | 'drop' | 'failure';
+  setType: 'warmup' | 'drop' | 'failure' | 'timed';
 }
 
 const SetTypeExplanationModal: React.FC<SetTypeExplanationModalProps> = ({ isOpen, onClose, setType }) => {
@@ -27,6 +27,10 @@ const SetTypeExplanationModal: React.FC<SetTypeExplanationModalProps> = ({ isOpe
       failure: {
           titleKey: 'set_type_failure_desc_title',
           descKey: 'set_type_failure_desc'
+      },
+      timed: {
+          titleKey: 'set_type_timed_desc_title',
+          descKey: 'set_type_timed_desc'
       }
   } as const;
 

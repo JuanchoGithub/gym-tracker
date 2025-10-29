@@ -1,4 +1,3 @@
-
 export const legsInstructionsEs = {
   ex_2_ins: {
     title: "Sentadilla con Barra",
@@ -46,7 +45,7 @@ export const legsInstructionsEs = {
     ]
   },
   ex_99_ins: {
-    title: "Zancada Caminando",
+    title: "Zancada Caminando con Mancuerna",
     steps: [
         "Da un paso adelante con una pierna y bajá las caderas hasta que ambas rodillas estén flexionadas en un ángulo de 90 grados.",
         "Tu rodilla delantera debe estar directamente sobre tu tobillo, y tu rodilla trasera debe flotar justo por encima del suelo.",
@@ -82,7 +81,7 @@ export const legsInstructionsEs = {
     ]
   },
   ex_103_ins: {
-    title: "Subida al Cajón (Step-Up)",
+    title: "Subida al Cajón con Mancuerna",
     steps: [
         "Parate frente a un cajón o banco resistente, sosteniendo mancuernas.",
         "Subí al cajón con un pie, impulsándote a través del talón.",
@@ -232,6 +231,33 @@ export const legsInstructionsEs = {
         "Bajá del cajón, no saltes. Aterrizá con ambos pies.",
         "Inmediatamente después de aterrizar, saltá verticalmente lo más alto posible.",
         "El objetivo es minimizar el tiempo de contacto con el suelo y maximizar la altura del salto."
+    ]
+  },
+  ex_160_ins: {
+    title: "Sentadilla",
+    steps: [
+      "Parate con los pies separados al ancho de los hombros, pecho erguido y abdomen contraído.",
+      "Bajá las caderas hacia atrás y hacia abajo como si te sentaras en una silla.",
+      "Mantené la espalda recta y bajá tanto como puedas cómodamente, apuntando a que los muslos queden paralelos al suelo.",
+      "Empujá a través de los talones para volver a la posición inicial."
+    ]
+  },
+  ex_161_ins: {
+    title: "Subida al Cajón",
+    steps: [
+      "Parate frente a un cajón o banco resistente.",
+      "Subí al cajón con un pie, impulsándote a través del talón para levantar tu cuerpo.",
+      "Llevá el otro pie para encontrarse con el primero en la parte superior del cajón.",
+      "Bajá con el mismo pie con el que comenzaste. Alterná la pierna de inicio en cada serie o repetición."
+    ]
+  },
+  ex_162_ins: {
+    title: "Zancada",
+    steps: [
+      "Parate derecho con los pies juntos.",
+      "Da un paso adelante con una pierna y bajá las caderas hasta que ambas rodillas estén flexionadas en un ángulo de 90 grados.",
+      "Asegurate de que tu rodilla delantera esté directamente sobre tu tobillo y que tu rodilla trasera flote justo por encima del suelo.",
+      "Impulsate con el pie delantero para volver a la posición inicial. Alterná las piernas."
     ]
   }
 };

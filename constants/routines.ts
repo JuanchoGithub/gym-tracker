@@ -16,6 +16,8 @@ const createWorkoutExercise = (exerciseId: string, sets: PerformedSet[], restTim
         normal: restTime,
         warmup: 60,
         drop: 30,
+        // FIX: Added missing 'timed' property to the restTime object.
+        timed: 10,
     }
 });
 
@@ -23,7 +25,7 @@ const createHiitExercise = (exerciseId: string): WorkoutExercise => ({
     id: `we-${exerciseId}-${Math.random()}`,
     exerciseId,
     sets: [{ id: `set-${Math.random()}`, reps: 1, weight: 0, type: 'normal', isComplete: false }], // Dummy set for type compatibility
-    restTime: { normal: 0, warmup: 0, drop: 0 },
+    restTime: { normal: 0, warmup: 0, drop: 0, timed: 0 },
 });
 
 
@@ -156,12 +158,12 @@ const sevenMinWorkout: Routine = {
         createHiitExercise('ex-111'), // Wall Sit
         createHiitExercise('ex-23'),  // Push-Up
         createHiitExercise('ex-20'),  // Crunches
-        createHiitExercise('ex-103'), // Step-Up
-        createHiitExercise('ex-2'),   // Squat
+        createHiitExercise('ex-161'), // Step-Up (Bodyweight)
+        createHiitExercise('ex-160'), // Squat (Bodyweight)
         createHiitExercise('ex-89'),  // Bench Dip
         createHiitExercise('ex-15'),  // Plank
         createHiitExercise('ex-158'), // High Knees
-        createHiitExercise('ex-99'),  // Lunge
+        createHiitExercise('ex-162'), // Lunge (Bodyweight)
         createHiitExercise('ex-159'), // Push-up and Rotation
         createHiitExercise('ex-157'), // Side Plank
     ],
@@ -177,7 +179,7 @@ const sevenMinWorkout: Routine = {
 
 const beginnerHiitExercises = [
     createHiitExercise('ex-129'), // Jumping Jacks
-    createHiitExercise('ex-2'),   // Squat
+    createHiitExercise('ex-160'), // Squat (Bodyweight)
     createHiitExercise('ex-131'), // Mountain Climber
     createHiitExercise('ex-23'),  // Push-up
     createHiitExercise('ex-104'), // Glute Bridge

@@ -8,7 +8,7 @@ import { Icon } from '../components/common/Icon';
 import RoutineSection from '../components/train/RoutineSection';
 
 const TrainPage: React.FC = () => {
-  const { routines, startWorkout, activeWorkout, discardActiveWorkout, maximizeWorkout, startTemplateEdit, startHiitSession } = useContext(AppContext);
+  const { routines, startWorkout, activeWorkout, discardActiveWorkout, maximizeWorkout, startTemplateEdit, startHiitSession, startTemplateDuplicate } = useContext(AppContext);
   const { t } = useI18n();
   const [selectedRoutine, setSelectedRoutine] = useState<Routine | null>(null);
   const [isConfirmingNewWorkout, setIsConfirmingNewWorkout] = useState(false);
@@ -20,7 +20,7 @@ const TrainPage: React.FC = () => {
       .sort((a, b) => (b.lastUsed || 0) - (a.lastUsed || 0));
 
     const templates = routines.filter(r => r.isTemplate);
-    const custom = templates.filter(r => !r.id.startsWith('rt-') && r.routineType !== 'hiit');
+    const custom = templates.filter(r => !r.id.startsWith('rt-'));
     const samples = templates.filter(r => r.id.startsWith('rt-') && r.routineType !== 'hiit');
     const hiit = templates.filter(r => r.routineType === 'hiit');
     
@@ -60,6 +60,7 @@ const TrainPage: React.FC = () => {
           description: '',
           exercises: [],
           isTemplate: true,
+          routineType: 'strength',
       };
       startTemplateEdit(newTemplate);
   };
@@ -103,6 +104,7 @@ const TrainPage: React.FC = () => {
             routines={customTemplates}
             onRoutineSelect={setSelectedRoutine}
             onRoutineEdit={startTemplateEdit}
+            onRoutineDuplicate={startTemplateDuplicate}
             headerAction={
                 <button
                     onClick={handleCreateNewTemplate}
@@ -113,8 +115,13 @@ const TrainPage: React.FC = () => {
                 </button>
             }
         />
-        <RoutineSection title={t('train_sample_hiit')} routines={sampleHiit} onRoutineSelect={setSelectedRoutine} />
-        <RoutineSection title={t('train_sample_workouts')} routines={sampleWorkouts} onRoutineSelect={setSelectedRoutine} />
+        <RoutineSection 
+            title={t('train_sample_hiit')} 
+            routines={sampleHiit} 
+            onRoutineSelect={setSelectedRoutine} 
+            onRoutineDuplicate={startTemplateDuplicate} 
+        />
+        <RoutineSection title={t('train_sample_workouts')} routines={sampleWorkouts} onRoutineSelect={setSelectedRoutine} onRoutineDuplicate={startTemplateDuplicate} />
       </div>
 
       {selectedRoutine && (

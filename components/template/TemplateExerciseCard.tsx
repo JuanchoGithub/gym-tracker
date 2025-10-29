@@ -49,6 +49,17 @@ const TemplateExerciseCard: React.FC<TemplateExerciseCardProps> = ({ workoutExer
             }
         }
     }
+    
+    // Cascade time change if applicable (for timed sets).
+    if (updatedSet.type === 'timed' && oldSet.time !== updatedSet.time && updatedSet.isTimeInherited === false) {
+        for (let i = oldSetIndex + 1; i < newSets.length; i++) {
+            if (newSets[i].type === 'timed' && newSets[i].isTimeInherited !== false) {
+                newSets[i] = { ...newSets[i], time: updatedSet.time, isTimeInherited: true };
+            } else {
+                break;
+            }
+        }
+    }
 
     onUpdate({ ...workoutExercise, sets: newSets });
   };
@@ -59,17 +70,16 @@ const TemplateExerciseCard: React.FC<TemplateExerciseCardProps> = ({ workoutExer
   };
 
   const handleAddSet = () => {
-    const lastSet = workoutExercise.sets[workoutExercise.sets.length - 1] || { reps: 8, weight: 0 };
+    const lastSet = workoutExercise.sets[workoutExercise.sets.length - 1] || { reps: 10, weight: 0, time: 60, type: 'normal' };
     const newSet: PerformedSet = {
-      id: `set-${Date.now()}-${Math.random()}`,
-      reps: lastSet.reps,
-      weight: lastSet.weight,
-      type: 'normal',
-      isWeightInherited: true,
-      isRepsInherited: true,
+        ...lastSet,
+        id: `set-${Date.now()}-${Math.random()}`,
+        isRepsInherited: true,
+        isWeightInherited: true,
+        isTimeInherited: true,
+        rest: undefined, // Don't inherit custom rest timers
     };
-    const updatedSets = [...workoutExercise.sets, newSet];
-    onUpdate({ ...workoutExercise, sets: updatedSets });
+    onUpdate({ ...workoutExercise, sets: [...workoutExercise.sets, newSet] });
   };
 
   const handleSaveNote = () => {
@@ -77,10 +87,10 @@ const TemplateExerciseCard: React.FC<TemplateExerciseCardProps> = ({ workoutExer
     setIsNoteEditing(false);
   };
   
-  const handleSaveDefaultsTimer = (newTimers: { normal: number; warmup: number; drop: number; }) => {
+  const handleSaveDefaultsTimer = (newTimers: { normal: number; warmup: number; drop: number; timed: number; }) => {
     // When defaults change, remove overrides that match the *new* default for that set type
     const updatedSets = workoutExercise.sets.map(set => {
-        const newDefault = newTimers[set.type] ?? newTimers.normal;
+        const newDefault = newTimers[set.type as keyof typeof newTimers] ?? newTimers.normal;
         if (set.rest === newDefault) {
             const { rest, ...setWithoutRest } = set;
             return setWithoutRest;
@@ -110,6 +120,7 @@ const TemplateExerciseCard: React.FC<TemplateExerciseCardProps> = ({ workoutExer
     switch (set.type) {
       case 'warmup': return workoutExercise.restTime.warmup;
       case 'drop': return workoutExercise.restTime.drop;
+      case 'timed': return workoutExercise.restTime.timed;
       default: return workoutExercise.restTime.normal;
     }
   }
@@ -132,7 +143,7 @@ const TemplateExerciseCard: React.FC<TemplateExerciseCardProps> = ({ workoutExer
           )}
         </div>
       </div>
-      <div className="p-4 space-y-2">
+      <div className="p-4 space-y-4">
         {isNoteEditing && (
           <div className="mb-2">
             <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder={t('template_editor_description_placeholder')} className="w-full bg-slate-900 border border-secondary/50 rounded-lg p-2 text-sm" rows={2} />
@@ -143,7 +154,7 @@ const TemplateExerciseCard: React.FC<TemplateExerciseCardProps> = ({ workoutExer
           </div>
         )}
         {!isNoteEditing && workoutExercise.note && <p className="text-sm text-text-secondary italic my-2 p-2 bg-slate-900/50 rounded-md">"{workoutExercise.note}"</p>}
-
+        
         <div className="grid grid-cols-12 items-center gap-2 text-xs text-text-secondary">
           <div className="col-span-2 text-center font-semibold">{t('workout_set')}</div>
           <div className="col-span-4 text-center">{t('weight_unit')}</div>
@@ -167,11 +178,15 @@ const TemplateExerciseCard: React.FC<TemplateExerciseCardProps> = ({ workoutExer
             );
           })}
         </div>
-
-        <button onClick={handleAddSet} className="mt-3 w-full flex items-center justify-center space-x-2 bg-secondary/50 text-text-primary font-medium py-2 rounded-lg hover:bg-secondary transition-colors">
-          <Icon name="plus" className="w-5 h-5" />
-          <span>{t('active_workout_add_exercise')}</span>
+        
+        <button 
+            onClick={handleAddSet}
+            className="mt-3 w-full flex items-center justify-center space-x-2 bg-secondary/50 text-text-primary font-medium py-2 rounded-lg hover:bg-secondary transition-colors"
+        >
+            <Icon name="plus" className="w-5 h-5" />
+            <span>Add Set</span>
         </button>
+
       </div>
     </div>
     <ChangeTimerModal 

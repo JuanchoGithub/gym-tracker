@@ -10,17 +10,19 @@ export interface Exercise {
   notes?: string;
 }
 
-export type SetType = 'normal' | 'warmup' | 'drop' | 'failure';
+export type SetType = 'normal' | 'warmup' | 'drop' | 'failure' | 'timed';
 
 export interface PerformedSet {
   id: string;
   reps: number;
   weight: number;
+  time?: number; // duration in seconds for timed sets
   type: SetType;
   isComplete?: boolean; // Added for tracking during workout
   rest?: number; // Optional override for rest time in seconds
   isWeightInherited?: boolean;
   isRepsInherited?: boolean;
+  isTimeInherited?: boolean;
   actualRest?: number; // The actual rest time taken after this set
 }
 
@@ -32,6 +34,7 @@ export interface WorkoutExercise {
     normal: number;
     warmup: number;
     drop: number;
+    timed: number;
   };
   note?: string;
   barWeight?: number;

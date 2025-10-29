@@ -8,6 +8,7 @@ import FilterDropdown from '../common/FilterDropdown';
 import { BODY_PART_OPTIONS, CATEGORY_OPTIONS } from '../../constants/filters';
 import { getBodyPartTKey, getCategoryTKey } from '../../utils/i18nUtils';
 import ExerciseDetailModal from '../exercise/ExerciseDetailModal';
+import { getBodyPartColor, getCategoryColor } from '../../utils/colorUtils';
 
 interface AddExercisesModalProps {
   isOpen: boolean;
@@ -188,8 +189,11 @@ const AddExercisesModal: React.FC<AddExercisesModalProps> = ({ isOpen, onClose, 
                                   <Icon name="question-mark-circle" className="w-5 h-5" />
                               </button>
                               <div className="truncate">
-                                  <h3 className="font-semibold text-text-primary truncate">{exercise.name}</h3>
-                                  <p className="text-sm text-text-secondary truncate">{t(getBodyPartTKey(exercise.bodyPart))}</p>
+                                <h3 className="font-semibold text-text-primary truncate">{exercise.name}</h3>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <span className={`text-xs px-2 py-0.5 rounded-full ${getBodyPartColor(exercise.bodyPart)}`}>{t(getBodyPartTKey(exercise.bodyPart))}</span>
+                                    <span className={`text-xs px-2 py-0.5 rounded-full ${getCategoryColor(exercise.category)}`}>{t(getCategoryTKey(exercise.category))}</span>
+                                </div>
                               </div>
                           </div>
                           <div className="flex-shrink-0">
