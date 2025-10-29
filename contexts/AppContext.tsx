@@ -56,6 +56,9 @@ interface AppContextType {
   endHiitSession: () => void;
   selectedVoiceURI: string | null;
   setSelectedVoiceURI: (uri: string | null) => void;
+  isAddingExercisesToWorkout: boolean;
+  startAddExercisesToWorkout: () => void;
+  endAddExercisesToWorkout: (newExerciseIds?: string[]) => void;
 }
 
 export const AppContext = createContext<AppContextType>({} as AppContextType);
@@ -78,6 +81,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [exerciseEditCallback, setExerciseEditCallback] = useState<((exercise: Exercise) => void) | null>(null);
   const [activeHiitSession, setActiveHiitSession] = useLocalStorage<ActiveHiitSession | null>('activeHiitSession', null);
   const [selectedVoiceURI, setSelectedVoiceURI] = useLocalStorage<string | null>('selectedVoiceURI', null);
+  const [isAddingExercisesToWorkout, setIsAddingExercisesToWorkout] = useState(false);
 
   useEffect(() => {
     // One-time migration from old 'routines' storage to new 'userRoutines'
@@ -502,6 +506,35 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setEditingHistorySession(null);
   }, [updateHistorySession]);
 
+  const startAddExercisesToWorkout = useCallback(() => {
+    setIsAddingExercisesToWorkout(true);
+  }, []);
+
+  const endAddExercisesToWorkout = useCallback((newExerciseIds?: string[]) => {
+    if (newExerciseIds && newExerciseIds.length > 0 && activeWorkout) {
+      const newExercises: WorkoutExercise[] = newExerciseIds.map(exerciseId => ({
+          id: `we-${Date.now()}-${Math.random()}`,
+          exerciseId,
+          sets: [
+              {
+                  id: `set-${Date.now()}-${Math.random()}`,
+                  reps: 0,
+                  weight: 0,
+                  type: 'normal',
+                  isComplete: false,
+              }
+          ],
+          restTime: { ...defaultRestTimes },
+      }));
+
+      updateActiveWorkout({
+          ...activeWorkout,
+          exercises: [...activeWorkout.exercises, ...newExercises],
+      });
+    }
+    setIsAddingExercisesToWorkout(false);
+  }, [activeWorkout, defaultRestTimes, updateActiveWorkout]);
+
   const value = useMemo(() => ({
     routines: routines,
     upsertRoutine,
@@ -547,6 +580,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     endHiitSession,
     selectedVoiceURI,
     setSelectedVoiceURI,
+    isAddingExercisesToWorkout,
+    startAddExercisesToWorkout,
+    endAddExercisesToWorkout,
   }), [
     routines, upsertRoutine, deleteRoutine, history, deleteHistorySession, updateHistorySession, exercises, getExerciseById,
     upsertExercise, activeWorkout, startWorkout, updateActiveWorkout, endWorkout,
@@ -558,7 +594,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     useLocalizedExerciseNames, setUseLocalizedExerciseNames,
     keepScreenAwake, setKeepScreenAwake, enableNotifications, setEnableNotifications,
     allTimeBestSets, activeHiitSession, startHiitSession, endHiitSession,
-    selectedVoiceURI, setSelectedVoiceURI
+    selectedVoiceURI, setSelectedVoiceURI, isAddingExercisesToWorkout, startAddExercisesToWorkout, endAddExercisesToWorkout
   ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

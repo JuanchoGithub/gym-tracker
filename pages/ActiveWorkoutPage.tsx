@@ -7,18 +7,16 @@ import { useWorkoutTimer } from '../hooks/useWorkoutTimer';
 import { Icon } from '../components/common/Icon';
 import WorkoutDetailsModal from '../components/modals/WorkoutDetailsModal';
 import Modal from '../components/common/Modal';
-import AddExercisesModal from '../components/modals/AddExercisesModal';
 import { useWakeLock } from '../hooks/useWakeLock';
 import { scheduleTimerNotification, cancelTimerNotification } from '../services/notificationService';
 import TimedSetTimerModal from '../components/modals/TimedSetTimerModal';
 
 const ActiveWorkoutPage: React.FC = () => {
-  const { activeWorkout, updateActiveWorkout, endWorkout, discardActiveWorkout, getExerciseById, minimizeWorkout, defaultRestTimes, keepScreenAwake, enableNotifications } = useContext(AppContext);
+  const { activeWorkout, updateActiveWorkout, endWorkout, discardActiveWorkout, getExerciseById, minimizeWorkout, keepScreenAwake, enableNotifications, startAddExercisesToWorkout } = useContext(AppContext);
   const { t } = useI18n();
   const elapsedTime = useWorkoutTimer(activeWorkout?.startTime);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isConfirmingFinish, setIsConfirmingFinish] = useState(false);
-  const [isAddExerciseModalOpen, setIsAddExerciseModalOpen] = useState(false);
   const [activeTimerInfo, setActiveTimerInfo] = useState<{ exerciseId: string; setId: string; startTime: number } | null>(null);
   const [activeTimedSet, setActiveTimedSet] = useState<{ exercise: WorkoutExercise; set: PerformedSet } | null>(null);
   
@@ -182,30 +180,6 @@ const ActiveWorkoutPage: React.FC = () => {
         setIsDetailsModalOpen(false);
     }
   }
-
-  const handleAddExercises = (exerciseIds: string[]) => {
-    if (!activeWorkout) return;
-
-    const newExercises: WorkoutExercise[] = exerciseIds.map(exerciseId => ({
-        id: `we-${Date.now()}-${Math.random()}`,
-        exerciseId,
-        sets: [
-            {
-                id: `set-${Date.now()}-${Math.random()}`,
-                reps: 0,
-                weight: 0,
-                type: 'normal',
-                isComplete: false,
-            }
-        ],
-        restTime: { ...defaultRestTimes },
-    }));
-
-    updateActiveWorkout({
-        ...activeWorkout,
-        exercises: [...activeWorkout.exercises, ...newExercises],
-    });
-  };
   
   const handleStartTimedSet = (exercise: WorkoutExercise, set: PerformedSet) => {
     setActiveTimedSet({ exercise, set });
@@ -298,7 +272,7 @@ const ActiveWorkoutPage: React.FC = () => {
       </div>
       
       <button
-        onClick={() => setIsAddExerciseModalOpen(true)}
+        onClick={startAddExercisesToWorkout}
         className="w-full flex items-center justify-center space-x-2 bg-secondary/50 text-text-primary font-medium py-3 rounded-lg hover:bg-secondary transition-colors"
       >
         <Icon name="plus" className="w-5 h-5" />
@@ -324,12 +298,6 @@ const ActiveWorkoutPage: React.FC = () => {
             exerciseName={getExerciseById(activeTimedSet.exercise.exerciseId)?.name || ''}
         />
       )}
-
-      <AddExercisesModal
-        isOpen={isAddExerciseModalOpen}
-        onClose={() => setIsAddExerciseModalOpen(false)}
-        onAdd={handleAddExercises}
-      />
 
       <Modal
         isOpen={isConfirmingFinish}

@@ -28,7 +28,7 @@ const RoutinePreviewModal: React.FC<RoutinePreviewModalProps> = ({ routine, isOp
         <div className="flex flex-col h-full max-h-[60vh]">
           <p className="text-text-secondary mb-4 flex-shrink-0">{routine.description}</p>
 
-          <div className="flex-grow space-y-3 overflow-y-auto pr-2">
+          <div className="flex-grow space-y-3 overflow-y-auto pr-2" style={{ overscrollBehaviorY: 'contain' }}>
             <h4 className="font-semibold text-lg">{t('routine_preview_exercises')}</h4>
             {routine.exercises.map((ex) => {
               const exerciseInfo = getExerciseById(ex.exerciseId);
