@@ -41,9 +41,9 @@ export const es = {
   history_no_data: 'No se encontró historial de entrenamiento para este ejercicio.',
   history_page_no_workouts: 'No se encontró historial de entrenamientos. ¡Completá un entrenamiento para verlo acá!',
   history_page_unknown_exercise: 'Ejercicio Desconocido',
-  history_total_time: 'Tiempo Total',
-  history_total_volume: 'Volumen Total',
-  history_prs: 'Récords Personales',
+  history_total_time: 'Tiempo',
+  history_total_volume: 'Volumen',
+  history_prs: 'RPs',
   history_best_set: 'Mejor Serie',
   history_menu_edit: 'Editar Entrenamiento',
   history_menu_save_template: 'Guardar como Plantilla',
@@ -138,7 +138,7 @@ export const es = {
   // Routine Preview Modal
   routine_preview_exercises: 'Ejercicios',
   routine_preview_view_exercise_details: 'Ver detalles del ejercicio',
-  routine_start_workout: 'Empezar Entrenamiento',
+  routine_preview_start_workout: 'Empezar Entrenamiento',
 
   // Finish Workout Confirmation
   finish_workout_confirm_title: '¿Finalizar Entrenamiento?',
