@@ -66,13 +66,18 @@ const AddExercisePage: React.FC = () => {
     }
   };
   
-  const handleAdd = () => {
+  const handleAdd = (idsToAdd: string[]) => {
+    if (idsToAdd.length === 0) return;
     if (isAddingExercisesToTemplate) {
-      endAddExercisesToTemplate(selectedIds);
+      endAddExercisesToTemplate(idsToAdd);
     } else {
-      endAddExercisesToWorkout(selectedIds);
+      endAddExercisesToWorkout(idsToAdd);
     }
   };
+
+  const handleAddFromButton = () => {
+    handleAdd(selectedIds);
+  }
 
   const handleSelectFromDetail = (exerciseId: string) => {
     setSelectedIds(prev => [...new Set([...prev, exerciseId])]);
@@ -81,7 +86,7 @@ const AddExercisePage: React.FC = () => {
 
   const handleAddAndCloseFromDetail = (exerciseId: string) => {
     const finalIds = [...new Set([...selectedIds, exerciseId])];
-    handleAdd();
+    handleAdd(finalIds);
     setViewingExercise(null);
   };
   
@@ -116,7 +121,7 @@ const AddExercisePage: React.FC = () => {
             </button>
             <h1 className="text-xl font-bold text-center">{t('add_exercises_modal_title')}</h1>
             <button
-              onClick={handleAdd}
+              onClick={handleAddFromButton}
               disabled={selectedIds.length === 0}
               className="font-bold py-2 px-4 rounded-lg shadow-lg text-sm bg-primary text-white hover:bg-sky-500 disabled:bg-secondary disabled:cursor-not-allowed"
             >
@@ -125,7 +130,7 @@ const AddExercisePage: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex-shrink-0 space-y-2 my-4">
+        <div className="flex-shrink-0 space-y-2 my-2">
           <div className="relative flex-grow">
             <input
               type="text"
@@ -150,7 +155,14 @@ const AddExercisePage: React.FC = () => {
             return (
               <div
                 key={exercise.id}
-                ref={el => el ? exerciseRefs.current.set(exercise.id, el) : exerciseRefs.current.delete(exercise.id)}
+                // FIX: Corrected the ref callback to ensure it returns `void` and handles component unmounting by deleting the ref from the map. This resolves a TypeScript type error where the `Map.set` return value was incompatible with the expected ref callback return type.
+                ref={el => {
+                  if (el) {
+                    exerciseRefs.current.set(exercise.id, el);
+                  } else {
+                    exerciseRefs.current.delete(exercise.id);
+                  }
+                }}
                 onClick={() => handleToggleSelect(exercise.id)}
                 className={`p-3 rounded-lg flex justify-between items-center cursor-pointer transition-colors ${isSelected ? 'bg-primary/30 ring-2 ring-primary' : 'bg-surface hover:bg-slate-700'}`}
               >
@@ -180,12 +192,12 @@ const AddExercisePage: React.FC = () => {
           })}
         </div>
 
-        <div className="flex-shrink-0 pt-4 mt-auto border-t border-secondary/20 flex flex-col sm:flex-row gap-3">
+        <div className="flex-shrink-0 pt-4 mt-auto border-t border-secondary/20 flex gap-3">
             <button onClick={handleCreateNewAndSelect} className="w-full bg-secondary text-white font-bold py-3 rounded-lg hover:bg-slate-600 transition-colors">
                 {t('common_create')} {t('common_new')}
             </button>
             <button
-                onClick={handleAdd}
+                onClick={handleAddFromButton}
                 disabled={selectedIds.length === 0}
                 className="w-full bg-primary text-white font-bold py-3 rounded-lg hover:bg-sky-600 transition-colors disabled:bg-secondary disabled:cursor-not-allowed"
             >
