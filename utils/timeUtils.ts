@@ -60,7 +60,6 @@ const getScroller = (): HTMLElement | null => document.querySelector('main');
 
 export const lockBodyScroll = () => {
   if (lockCount === 0) {
-    document.body.style.overflow = 'hidden';
     const scroller = getScroller();
     if (scroller) {
         scroller.style.overflowY = 'hidden';
@@ -72,10 +71,9 @@ export const lockBodyScroll = () => {
 export const unlockBodyScroll = () => {
   lockCount--;
   if (lockCount <= 0) {
-    document.body.style.overflow = '';
     const scroller = getScroller();
     if (scroller) {
-        scroller.style.overflowY = '';
+        scroller.style.overflowY = 'auto';
     }
     lockCount = 0;
   }
