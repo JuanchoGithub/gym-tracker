@@ -115,7 +115,7 @@ const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({ exercise, isO
         </div>
 
         {/* Scrollable Tab Content */}
-        <div className="flex-grow overflow-y-auto pr-2" style={{ overscrollBehaviorY: 'contain' }}>
+        <div className="flex-grow overflow-y-auto pr-2">
             {renderTabContent()}
         </div>
 

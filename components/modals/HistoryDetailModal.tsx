@@ -87,7 +87,7 @@ const HistoryDetailModal: React.FC<HistoryDetailModalProps> = ({ session, isOpen
                 </div>
                 
                 {/* Scrollable Content */}
-                <div className="flex-grow overflow-y-auto pr-2 space-y-4" style={{ overscrollBehaviorY: 'contain' }}>
+                <div className="flex-grow overflow-y-auto pr-2 space-y-4">
                     {session.exercises.map(ex => {
                         const exerciseInfo = getExerciseById(ex.exerciseId);
                         const previousPerformance = exercisePerformances[ex.id];

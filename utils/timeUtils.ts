@@ -59,22 +59,24 @@ let lockCount = 0;
 const getScroller = (): HTMLElement | null => document.querySelector('main');
 
 export const lockBodyScroll = () => {
-  const scroller = getScroller();
-  if (!scroller) return;
-
   if (lockCount === 0) {
-    scroller.style.overflowY = 'hidden';
+    document.body.style.overflow = 'hidden';
+    const scroller = getScroller();
+    if (scroller) {
+        scroller.style.overflowY = 'hidden';
+    }
   }
   lockCount++;
 };
 
 export const unlockBodyScroll = () => {
-  const scroller = getScroller();
-  if (!scroller) return;
-  
   lockCount--;
   if (lockCount <= 0) {
-    scroller.style.overflowY = '';
+    document.body.style.overflow = '';
+    const scroller = getScroller();
+    if (scroller) {
+        scroller.style.overflowY = '';
+    }
     lockCount = 0;
   }
 };
