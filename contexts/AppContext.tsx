@@ -34,6 +34,7 @@ interface AppContextType {
   defaultRestTimes: { normal: number; warmup: number; drop: number; timed: number; };
   setDefaultRestTimes: (times: { normal: number; warmup: number; drop: number; timed: number; }) => void;
   editingTemplate: Routine | null;
+  updateEditingTemplate: (template: Routine) => void;
   startTemplateEdit: (template: Routine) => void;
   startTemplateDuplicate: (template: Routine) => void;
   endTemplateEdit: (savedTemplate?: Routine) => void;
@@ -59,6 +60,9 @@ interface AppContextType {
   isAddingExercisesToWorkout: boolean;
   startAddExercisesToWorkout: () => void;
   endAddExercisesToWorkout: (newExerciseIds?: string[]) => void;
+  isAddingExercisesToTemplate: boolean;
+  startAddExercisesToTemplate: () => void;
+  endAddExercisesToTemplate: (newExerciseIds?: string[]) => void;
 }
 
 export const AppContext = createContext<AppContextType>({} as AppContextType);
@@ -82,6 +86,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [activeHiitSession, setActiveHiitSession] = useLocalStorage<ActiveHiitSession | null>('activeHiitSession', null);
   const [selectedVoiceURI, setSelectedVoiceURI] = useLocalStorage<string | null>('selectedVoiceURI', null);
   const [isAddingExercisesToWorkout, setIsAddingExercisesToWorkout] = useState(false);
+  const [isAddingExercisesToTemplate, setIsAddingExercisesToTemplate] = useState(false);
 
   useEffect(() => {
     // One-time migration from old 'routines' storage to new 'userRoutines'
@@ -385,6 +390,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setActiveHiitSession(null);
   }, [setActiveHiitSession]);
 
+  const updateEditingTemplate = useCallback((template: Routine) => {
+    setEditingTemplate(template);
+  }, []);
+
   const startTemplateEdit = useCallback((template: Routine) => {
     setEditingTemplate(template);
   }, []);
@@ -535,6 +544,45 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setIsAddingExercisesToWorkout(false);
   }, [activeWorkout, defaultRestTimes, updateActiveWorkout]);
 
+  const startAddExercisesToTemplate = useCallback(() => {
+    setIsAddingExercisesToTemplate(true);
+  }, []);
+
+  const endAddExercisesToTemplate = useCallback((newExerciseIds?: string[]) => {
+    if (newExerciseIds && newExerciseIds.length > 0 && editingTemplate) {
+      let newExercises: WorkoutExercise[];
+      if (editingTemplate.routineType === 'hiit') {
+          newExercises = newExerciseIds.map(exerciseId => ({
+              id: `we-${Date.now()}-${Math.random()}`,
+              exerciseId,
+              sets: [{ id: `set-${Date.now()}-${Math.random()}`, reps: 1, weight: 0, type: 'normal', isComplete: false } as PerformedSet],
+              restTime: { normal: 0, warmup: 0, drop: 0, timed: 0 },
+          }));
+      } else {
+          newExercises = newExerciseIds.map(exId => ({
+              id: `we-${Date.now()}-${Math.random()}`,
+              exerciseId: exId,
+              sets: Array.from({ length: 1 }, () => ({
+                  id: `set-${Date.now()}-${Math.random()}`,
+                  reps: 10,
+                  weight: 0,
+                  type: 'normal',
+                  isRepsInherited: false,
+                  isWeightInherited: false,
+                  isTimeInherited: false,
+              } as PerformedSet)),
+              restTime: { ...defaultRestTimes },
+          }));
+      }
+
+      updateEditingTemplate({
+          ...editingTemplate,
+          exercises: [...editingTemplate.exercises, ...newExercises],
+      });
+    }
+    setIsAddingExercisesToTemplate(false);
+  }, [editingTemplate, defaultRestTimes, updateEditingTemplate]);
+
   const value = useMemo(() => ({
     routines: routines,
     upsertRoutine,
@@ -558,6 +606,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     defaultRestTimes,
     setDefaultRestTimes,
     editingTemplate,
+    updateEditingTemplate,
     startTemplateEdit,
     startTemplateDuplicate,
     endTemplateEdit,
@@ -583,18 +632,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     isAddingExercisesToWorkout,
     startAddExercisesToWorkout,
     endAddExercisesToWorkout,
+    isAddingExercisesToTemplate,
+    startAddExercisesToTemplate,
+    endAddExercisesToTemplate,
   }), [
     routines, upsertRoutine, deleteRoutine, history, deleteHistorySession, updateHistorySession, exercises, getExerciseById,
     upsertExercise, activeWorkout, startWorkout, updateActiveWorkout, endWorkout,
     isWorkoutMinimized, minimizeWorkout, maximizeWorkout, discardActiveWorkout,
     weightUnit, setWeightUnit, defaultRestTimes, setDefaultRestTimes,
-    editingTemplate, startTemplateEdit, startTemplateDuplicate, endTemplateEdit, editingExercise,
+    editingTemplate, updateEditingTemplate, startTemplateEdit, startTemplateDuplicate, endTemplateEdit, editingExercise,
     startExerciseEdit, endExerciseEdit, startExerciseDuplicate,
     editingHistorySession, startHistoryEdit, endHistoryEdit,
     useLocalizedExerciseNames, setUseLocalizedExerciseNames,
     keepScreenAwake, setKeepScreenAwake, enableNotifications, setEnableNotifications,
     allTimeBestSets, activeHiitSession, startHiitSession, endHiitSession,
-    selectedVoiceURI, setSelectedVoiceURI, isAddingExercisesToWorkout, startAddExercisesToWorkout, endAddExercisesToWorkout
+    selectedVoiceURI, setSelectedVoiceURI, isAddingExercisesToWorkout, startAddExercisesToWorkout, endAddExercisesToWorkout,
+    isAddingExercisesToTemplate, startAddExercisesToTemplate, endAddExercisesToTemplate
   ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

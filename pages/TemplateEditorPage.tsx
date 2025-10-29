@@ -1,24 +1,22 @@
 import React, { useContext, useState, useRef } from 'react';
 import { AppContext } from '../contexts/AppContext';
-import { Routine, WorkoutExercise, PerformedSet } from '../types';
+import { Routine, WorkoutExercise } from '../types';
 import { Icon } from '../components/common/Icon';
-import AddExercisesModal from '../components/modals/AddExercisesModal';
 import TemplateExerciseCard from '../components/template/TemplateExerciseCard';
 import ConfirmModal from '../components/modals/ConfirmModal';
 import { useI18n } from '../hooks/useI18n';
 
 const TemplateEditorPage: React.FC = () => {
-    const { editingTemplate, endTemplateEdit, getExerciseById, defaultRestTimes } = useContext(AppContext);
+    const { editingTemplate, updateEditingTemplate, endTemplateEdit, getExerciseById, startAddExercisesToTemplate } = useContext(AppContext);
     const { t } = useI18n();
-    const [template, setTemplate] = useState<Routine>(() => JSON.parse(JSON.stringify(editingTemplate)));
-    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [originalTemplate] = useState<Routine | null>(() => JSON.parse(JSON.stringify(editingTemplate)));
     const [isConfirmingBack, setIsConfirmingBack] = useState(false);
     const dragItem = useRef<number | null>(null);
     const dragOverItem = useRef<number | null>(null);
     const [draggedOverIndex, setDraggedOverIndex] = useState<number | null>(null);
 
     const handleBack = () => {
-        if (JSON.stringify(template) !== JSON.stringify(editingTemplate)) {
+        if (JSON.stringify(editingTemplate) !== JSON.stringify(originalTemplate)) {
             setIsConfirmingBack(true);
         } else {
             endTemplateEdit();
@@ -31,67 +29,41 @@ const TemplateEditorPage: React.FC = () => {
     };
 
     const handleSave = () => {
-        if (!template.name.trim()) {
+        if (!editingTemplate?.name.trim()) {
             alert(t('template_editor_name_empty_alert'));
             return;
         }
-        endTemplateEdit(template);
-    };
-
-    const handleAddExercises = (exerciseIds: string[]) => {
-        let newExercises: WorkoutExercise[];
-        if (template.routineType === 'hiit') {
-            newExercises = exerciseIds.map(exerciseId => ({
-                id: `we-${Date.now()}-${Math.random()}`,
-                exerciseId,
-                sets: [{ id: `set-${Date.now()}-${Math.random()}`, reps: 1, weight: 0, type: 'normal', isComplete: false } as PerformedSet],
-                restTime: { normal: 0, warmup: 0, drop: 0, timed: 0 },
-            }));
-        } else {
-            newExercises = exerciseIds.map(exId => ({
-                id: `we-${Date.now()}-${Math.random()}`,
-                exerciseId: exId,
-                sets: Array.from({ length: 1 }, () => ({
-                    id: `set-${Date.now()}-${Math.random()}`,
-                    reps: 10,
-                    weight: 0,
-                    type: 'normal',
-                    isRepsInherited: false,
-                    isWeightInherited: false,
-                    isTimeInherited: false,
-                } as PerformedSet)),
-                restTime: { ...defaultRestTimes },
-            }));
-        }
-
-        setTemplate(prev => ({ ...prev, exercises: [...prev.exercises, ...newExercises] }));
+        endTemplateEdit(editingTemplate);
     };
 
     const handleUpdateExercise = (updatedExercise: WorkoutExercise) => {
-        setTemplate(prev => ({
-            ...prev,
-            exercises: prev.exercises.map(ex => ex.id === updatedExercise.id ? updatedExercise : ex)
-        }));
+        if (!editingTemplate) return;
+        updateEditingTemplate({
+            ...editingTemplate,
+            exercises: editingTemplate.exercises.map(ex => ex.id === updatedExercise.id ? updatedExercise : ex)
+        });
     };
     
     const handleRemoveExercise = (exerciseId: string) => {
-        setTemplate(prev => ({
-            ...prev,
-            exercises: prev.exercises.filter(ex => ex.id !== exerciseId)
-        }));
+        if (!editingTemplate) return;
+        updateEditingTemplate({
+            ...editingTemplate,
+            exercises: editingTemplate.exercises.filter(ex => ex.id !== exerciseId)
+        });
     };
 
     const handleHiitConfigChange = (field: keyof NonNullable<Routine['hiitConfig']>, value: string) => {
+        if (!editingTemplate) return;
         const numValue = parseInt(value, 10) || 0;
-        setTemplate(prev => ({
-            ...prev,
+        updateEditingTemplate({
+            ...editingTemplate,
             hiitConfig: {
-                ...prev.hiitConfig,
-                workTime: prev.hiitConfig?.workTime || 30,
-                restTime: prev.hiitConfig?.restTime || 15,
+                ...editingTemplate.hiitConfig,
+                workTime: editingTemplate.hiitConfig?.workTime || 30,
+                restTime: editingTemplate.hiitConfig?.restTime || 15,
                 [field]: numValue
             }
-        }));
+        });
     };
     
     const handleDragStart = (e: React.DragEvent<HTMLDivElement>, position: number) => {
@@ -104,13 +76,13 @@ const TemplateEditorPage: React.FC = () => {
     };
 
     const handleDrop = () => {
-        if (dragItem.current === null || dragOverItem.current === null || dragItem.current === dragOverItem.current) {
+        if (!editingTemplate || dragItem.current === null || dragOverItem.current === null || dragItem.current === dragOverItem.current) {
             setDraggedOverIndex(null);
             dragItem.current = null;
             return;
         }
         
-        const newExercises = [...template.exercises];
+        const newExercises = [...editingTemplate.exercises];
         const dragItemContent = newExercises.splice(dragItem.current, 1)[0];
         newExercises.splice(dragOverItem.current, 0, dragItemContent);
         
@@ -118,11 +90,11 @@ const TemplateEditorPage: React.FC = () => {
         dragOverItem.current = null;
         setDraggedOverIndex(null);
         
-        setTemplate(prev => ({...prev, exercises: newExercises}));
+        updateEditingTemplate({...editingTemplate, exercises: newExercises});
     };
 
 
-    if (!template) return null;
+    if (!editingTemplate) return null;
 
     return (
         <div className="space-y-4">
@@ -132,7 +104,7 @@ const TemplateEditorPage: React.FC = () => {
                         <Icon name="arrow-down" className="rotate-90"/>
                     </button>
                     <h1 className="text-xl font-bold text-center">
-                        {editingTemplate?.id.startsWith('custom-') ? t('template_editor_edit_title') : t('template_editor_create_title')}
+                        {originalTemplate?.id === editingTemplate.id ? t('template_editor_edit_title') : t('template_editor_create_title')}
                     </h1>
                     <button onClick={handleSave} className="bg-success text-white font-bold py-2 px-4 rounded-lg shadow-lg hover:bg-green-400 text-sm">
                         {t('common_save')}
@@ -145,8 +117,8 @@ const TemplateEditorPage: React.FC = () => {
                     <label className="text-sm font-medium text-text-secondary">{t('template_editor_name_label')}</label>
                     <input 
                         type="text"
-                        value={template.name}
-                        onChange={(e) => setTemplate(t => ({ ...t, name: e.target.value }))}
+                        value={editingTemplate.name}
+                        onChange={(e) => updateEditingTemplate({ ...editingTemplate, name: e.target.value })}
                         className="w-full bg-surface border border-secondary/50 rounded-lg p-2 mt-1"
                         placeholder={t('template_editor_name_placeholder')}
                     />
@@ -154,8 +126,8 @@ const TemplateEditorPage: React.FC = () => {
                  <div>
                     <label className="text-sm font-medium text-text-secondary">{t('template_editor_description_label')}</label>
                     <textarea
-                        value={template.description}
-                        onChange={(e) => setTemplate(t => ({ ...t, description: e.target.value }))}
+                        value={editingTemplate.description}
+                        onChange={(e) => updateEditingTemplate({ ...editingTemplate, description: e.target.value })}
                         className="w-full bg-surface border border-secondary/50 rounded-lg p-2 mt-1"
                         rows={3}
                         placeholder={t('template_editor_description_placeholder')}
@@ -165,30 +137,30 @@ const TemplateEditorPage: React.FC = () => {
                     <label className="text-sm font-medium text-text-secondary">{t('template_editor_routine_type')}</label>
                     <div className="flex rounded-lg bg-surface p-1 mt-1">
                         <button 
-                        onClick={() => setTemplate(t => ({ ...t, routineType: 'strength' }))}
-                        className={`flex-1 px-4 py-2 rounded-md text-sm font-semibold transition-colors ${template.routineType !== 'hiit' ? 'bg-primary text-white' : 'text-text-secondary'}`}
+                        onClick={() => updateEditingTemplate({ ...editingTemplate, routineType: 'strength' })}
+                        className={`flex-1 px-4 py-2 rounded-md text-sm font-semibold transition-colors ${editingTemplate.routineType !== 'hiit' ? 'bg-primary text-white' : 'text-text-secondary'}`}
                         >{t('template_editor_type_strength')}</button>
                         <button
-                        onClick={() => setTemplate(t => ({ ...t, routineType: 'hiit', hiitConfig: t.hiitConfig || { workTime: 30, restTime: 15, prepareTime: 10 } }))}
-                        className={`flex-1 px-4 py-2 rounded-md text-sm font-semibold transition-colors ${template.routineType === 'hiit' ? 'bg-primary text-white' : 'text-text-secondary'}`}
+                        onClick={() => updateEditingTemplate({ ...editingTemplate, routineType: 'hiit', hiitConfig: editingTemplate.hiitConfig || { workTime: 30, restTime: 15, prepareTime: 10 } })}
+                        className={`flex-1 px-4 py-2 rounded-md text-sm font-semibold transition-colors ${editingTemplate.routineType === 'hiit' ? 'bg-primary text-white' : 'text-text-secondary'}`}
                         >{t('template_editor_type_hiit')}</button>
                     </div>
                 </div>
-                {template.routineType === 'hiit' && (
+                {editingTemplate.routineType === 'hiit' && (
                     <div className="bg-surface p-4 rounded-lg">
                         <h3 className="font-semibold mb-2">{t('template_editor_hiit_config')}</h3>
                         <div className="grid grid-cols-3 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-text-secondary">{t('template_editor_work_time')}</label>
-                                <input type="number" value={template.hiitConfig?.workTime || 0} onChange={e => handleHiitConfigChange('workTime', e.target.value)} className="w-full bg-slate-900 border border-secondary/50 rounded-lg p-2 mt-1 text-center"/>
+                                <input type="number" value={editingTemplate.hiitConfig?.workTime || 0} onChange={e => handleHiitConfigChange('workTime', e.target.value)} className="w-full bg-slate-900 border border-secondary/50 rounded-lg p-2 mt-1 text-center"/>
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-text-secondary">{t('template_editor_rest_time')}</label>
-                                <input type="number" value={template.hiitConfig?.restTime || 0} onChange={e => handleHiitConfigChange('restTime', e.target.value)} className="w-full bg-slate-900 border border-secondary/50 rounded-lg p-2 mt-1 text-center"/>
+                                <input type="number" value={editingTemplate.hiitConfig?.restTime || 0} onChange={e => handleHiitConfigChange('restTime', e.target.value)} className="w-full bg-slate-900 border border-secondary/50 rounded-lg p-2 mt-1 text-center"/>
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-text-secondary">{t('template_editor_prepare_time')}</label>
-                                <input type="number" value={template.hiitConfig?.prepareTime || 0} onChange={e => handleHiitConfigChange('prepareTime', e.target.value)} className="w-full bg-slate-900 border border-secondary/50 rounded-lg p-2 mt-1 text-center"/>
+                                <input type="number" value={editingTemplate.hiitConfig?.prepareTime || 0} onChange={e => handleHiitConfigChange('prepareTime', e.target.value)} className="w-full bg-slate-900 border border-secondary/50 rounded-lg p-2 mt-1 text-center"/>
                             </div>
                         </div>
                     </div>
@@ -196,9 +168,9 @@ const TemplateEditorPage: React.FC = () => {
             </div>
             
             <h2 className="text-lg font-semibold border-b border-secondary/20 pb-2">{t('template_editor_exercises_title')}</h2>
-            {template.routineType === 'hiit' ? (
+            {editingTemplate.routineType === 'hiit' ? (
                 <div className="space-y-2" onDragOver={e => e.preventDefault()}>
-                    {template.exercises.map((we, index) => {
+                    {editingTemplate.exercises.map((we, index) => {
                         const exerciseInfo = getExerciseById(we.exerciseId);
                         if (!exerciseInfo) return null;
                         return (
@@ -210,7 +182,6 @@ const TemplateEditorPage: React.FC = () => {
                                 onDragEnter={(e) => handleDragEnter(e, index)}
                                 onDragEnd={handleDrop}
                                 onDragOver={(e) => e.preventDefault()}
-                                // FIX: The 'title' prop is not valid on the Icon component. Moved it here to the parent draggable div to resolve the TypeScript error and apply the tooltip to the whole item.
                                 title={t('template_editor_drag_to_reorder')}
                             >
                                 <Icon name="ellipsis" className="w-6 h-6 rotate-90 cursor-grab text-text-secondary" />
@@ -225,7 +196,7 @@ const TemplateEditorPage: React.FC = () => {
                 </div>
             ) : (
                 <div className="space-y-4">
-                    {template.exercises.map(we => {
+                    {editingTemplate.exercises.map(we => {
                         const exerciseInfo = getExerciseById(we.exerciseId);
                         if (!exerciseInfo) return null;
                         return (
@@ -242,25 +213,19 @@ const TemplateEditorPage: React.FC = () => {
             )}
 
 
-            {(template.exercises.length === 0) && (
+            {(editingTemplate.exercises.length === 0) && (
                 <div className="text-center py-8 bg-surface rounded-lg">
                     <p className="text-text-secondary">{t('template_editor_empty')}</p>
                 </div>
             )}
             
             <button
-                onClick={() => setIsAddModalOpen(true)}
+                onClick={startAddExercisesToTemplate}
                 className="w-full flex items-center justify-center space-x-2 bg-secondary/50 text-text-primary font-medium py-3 rounded-lg hover:bg-secondary transition-colors"
             >
                 <Icon name="plus" className="w-5 h-5" />
                 <span>{t('template_editor_add_exercises')}</span>
             </button>
-
-            <AddExercisesModal 
-                isOpen={isAddModalOpen}
-                onClose={() => setIsAddModalOpen(false)}
-                onAdd={handleAddExercises}
-            />
             
             <ConfirmModal
                 isOpen={isConfirmingBack}

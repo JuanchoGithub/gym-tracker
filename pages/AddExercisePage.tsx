@@ -10,7 +10,13 @@ import ExerciseDetailModal from '../components/exercise/ExerciseDetailModal';
 import { getBodyPartColor, getCategoryColor } from '../utils/colorUtils';
 
 const AddExercisePage: React.FC = () => {
-  const { exercises, startExerciseEdit, endAddExercisesToWorkout } = useContext(AppContext);
+  const { 
+    exercises, 
+    startExerciseEdit, 
+    endAddExercisesToWorkout, 
+    isAddingExercisesToTemplate, 
+    endAddExercisesToTemplate 
+  } = useContext(AppContext);
   const { t } = useI18n();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBodyPart, setSelectedBodyPart] = useState<BodyPart | 'All'>('All');
@@ -52,8 +58,21 @@ const AddExercisePage: React.FC = () => {
     setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   };
   
-  const handleBack = () => endAddExercisesToWorkout();
-  const handleAdd = () => endAddExercisesToWorkout(selectedIds);
+  const handleBack = () => {
+    if (isAddingExercisesToTemplate) {
+      endAddExercisesToTemplate();
+    } else {
+      endAddExercisesToWorkout();
+    }
+  };
+  
+  const handleAdd = () => {
+    if (isAddingExercisesToTemplate) {
+      endAddExercisesToTemplate(selectedIds);
+    } else {
+      endAddExercisesToWorkout(selectedIds);
+    }
+  };
 
   const handleSelectFromDetail = (exerciseId: string) => {
     setSelectedIds(prev => [...new Set([...prev, exerciseId])]);
@@ -62,7 +81,7 @@ const AddExercisePage: React.FC = () => {
 
   const handleAddAndCloseFromDetail = (exerciseId: string) => {
     const finalIds = [...new Set([...selectedIds, exerciseId])];
-    endAddExercisesToWorkout(finalIds);
+    handleAdd();
     setViewingExercise(null);
   };
   
@@ -119,7 +138,7 @@ const AddExercisePage: React.FC = () => {
               <Icon name="search" className="w-5 h-5 text-text-secondary" />
             </div>
           </div>
-          <div className="flex flex-col sm:flex-row gap-2">
+          <div className="flex gap-2">
             <FilterDropdown options={bodyPartFilterOptions} selected={selectedBodyPart} onSelect={setSelectedBodyPart} label={t('filter_body_part')} />
             <FilterDropdown options={categoryFilterOptions} selected={selectedCategory} onSelect={setSelectedCategory} label={t('filter_category')} />
           </div>

@@ -17,7 +17,7 @@ export type Page = 'TRAIN' | 'HISTORY' | 'EXERCISES' | 'TIMERS' | 'PROFILE' | 'A
 
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>('TRAIN');
-  const { activeWorkout, isWorkoutMinimized, editingTemplate, editingExercise, editingHistorySession, activeHiitSession, isAddingExercisesToWorkout } = useContext(AppContext);
+  const { activeWorkout, isWorkoutMinimized, editingTemplate, editingExercise, editingHistorySession, activeHiitSession, isAddingExercisesToWorkout, isAddingExercisesToTemplate } = useContext(AppContext);
 
   const renderPage = () => {
     if (activeHiitSession) {
@@ -44,7 +44,7 @@ const App: React.FC = () => {
   }
 
   const renderContent = () => {
-    if (isAddingExercisesToWorkout) {
+    if (isAddingExercisesToWorkout || isAddingExercisesToTemplate) {
       return <AddExercisePage />;
     }
     if (editingHistorySession) {

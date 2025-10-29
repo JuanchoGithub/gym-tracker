@@ -147,7 +147,7 @@ const AddExercisesModal: React.FC<AddExercisesModalProps> = ({ isOpen, onClose, 
                           <Icon name="search" className="w-5 h-5 text-text-secondary" />
                       </div>
                   </div>
-                   <div className="flex flex-col sm:flex-row gap-2">
+                   <div className="flex gap-2">
                       <FilterDropdown
                           options={bodyPartFilterOptions}
                           selected={selectedBodyPart}
