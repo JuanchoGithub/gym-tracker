@@ -232,15 +232,38 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // Deep copy to avoid mutating the original routine/template
     const newWorkoutExercises: WorkoutExercise[] = JSON.parse(JSON.stringify(routine.exercises));
     
-    // Reset sets for the new session, giving them new IDs
+    // Reset sets for the new session, giving them new IDs and pre-populating with last performance
     newWorkoutExercises.forEach((ex, exIndex) => {
         ex.id = `we-${Date.now()}-${exIndex}`; 
         if (!ex.restTime.timed) {
           ex.restTime.timed = defaultRestTimes.timed;
         }
+
+        const exerciseHistory = getExerciseHistory(history, ex.exerciseId);
+        const lastPerformance = exerciseHistory.length > 0 ? exerciseHistory[0].exerciseData : null;
+        
         ex.sets.forEach((set: PerformedSet, setIndex: number) => {
             set.id = `set-${Date.now()}-${exIndex}-${setIndex}`;
             set.isComplete = false;
+
+            // Pre-populate with the last performance for this exercise
+            const lastSet = lastPerformance?.sets[setIndex];
+            if (lastSet) {
+                const isLastSetTimed = lastSet.type === 'timed';
+                const isCurrentSetTimed = set.type === 'timed';
+
+                if (isLastSetTimed && isCurrentSetTimed) {
+                    set.reps = lastSet.reps;
+                    set.time = lastSet.time;
+                    set.isRepsInherited = false;
+                    set.isTimeInherited = false;
+                } else if (!isLastSetTimed && !isCurrentSetTimed) {
+                    set.weight = lastSet.weight;
+                    set.reps = lastSet.reps;
+                    set.isWeightInherited = false;
+                    set.isRepsInherited = false;
+                }
+            }
         });
     });
 
@@ -254,7 +277,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
     setActiveWorkout(newWorkout);
     setIsWorkoutMinimized(false);
-  }, [setActiveWorkout, setIsWorkoutMinimized, defaultRestTimes.timed]);
+  }, [setActiveWorkout, setIsWorkoutMinimized, defaultRestTimes.timed, history]);
 
   const updateActiveWorkout = useCallback((workout: WorkoutSession) => {
     setActiveWorkout(workout);
