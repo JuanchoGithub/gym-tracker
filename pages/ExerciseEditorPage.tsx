@@ -90,7 +90,7 @@ const ExerciseEditorPage: React.FC = () => {
                     </button>
                 </div>
 
-                <div className="p-4 sm:p-6 space-y-6 flex-grow overflow-y-auto">
+                <div className="p-4 sm:p-6 space-y-6 flex-grow overflow-y-auto" style={{ overscrollBehaviorY: 'contain' }}>
                     <div className="space-y-4">
                         <div>
                             <label htmlFor="exercise-name" className="text-sm font-medium text-text-secondary">{t('exercise_editor_name_label')}</label>

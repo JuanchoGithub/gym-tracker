@@ -163,7 +163,10 @@ const AddExercisesModal: React.FC<AddExercisesModalProps> = ({ isOpen, onClose, 
                   </div>
               </div>
 
-              <div className="flex-grow space-y-2 overflow-y-auto pr-2">
+              <div
+                className="flex-grow space-y-2 overflow-y-auto pr-2"
+                style={{ overscrollBehaviorY: 'contain' }}
+              >
                   {filteredExercises.map(exercise => {
                     const isSelected = selectedIds.includes(exercise.id);
                     return (

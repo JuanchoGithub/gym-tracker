@@ -7,6 +7,7 @@ import { useI18n } from '../hooks/useI18n';
 import { TranslationKey } from './I18nContext';
 import { calculateRecords, getExerciseHistory, calculate1RM } from '../utils/workoutUtils';
 import { speak } from '../services/speechService';
+import { unlockAudioContext } from '../services/audioService';
 
 export type WeightUnit = 'kg' | 'lbs';
 
@@ -229,6 +230,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [exercises]);
   
   const startWorkout = useCallback((routine: Routine) => {
+    unlockAudioContext();
     // Deep copy to avoid mutating the original routine/template
     const newWorkoutExercises: WorkoutExercise[] = JSON.parse(JSON.stringify(routine.exercises));
     
