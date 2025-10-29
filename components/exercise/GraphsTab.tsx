@@ -71,7 +71,7 @@ const ChartBlock: React.FC<ChartBlockProps> = ({ title, data, exerciseName, colo
                     <Icon name="expand" className="w-5 h-5" />
                 </button>
                 <button onClick={() => setShowExport(!showExport)} className="text-text-secondary hover:text-text-primary">
-                    <Icon name="share" className="w-5 h-5" />
+                    <Icon name="export" className="w-5 h-5" />
                 </button>
                 {showExport && (
                     <div className="absolute right-0 mt-8 top-0 w-40 bg-surface rounded-md shadow-lg z-10">

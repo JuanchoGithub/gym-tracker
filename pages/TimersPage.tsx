@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef, useMemo, useContext, useCallback } from 'react';
-import { useI18n } from '../../hooks/useI18n';
-import { useWakeLock } from '../../hooks/useWakeLock';
-import { playWarningSound, playEndSound, unlockAudioContext } from '../../services/audioService';
+import { useI18n } from '../hooks/useI18n';
+import { useWakeLock } from '../hooks/useWakeLock';
+import { playWarningSound, playEndSound, unlockAudioContext } from '../services/audioService';
 import { Icon } from '../components/common/Icon';
-import { formatSecondsToMMSS } from '../../utils/timeUtils';
+import { formatSecondsToMMSS } from '../utils/timeUtils';
 import { AppContext } from '../contexts/AppContext';
-import { Routine, WorkoutExercise } from '../../types';
-import { speak } from '../../services/speechService';
+import { Routine, WorkoutExercise } from '../types';
+import { speak } from '../services/speechService';
 
 type TimerMode = 'quick' | 'hiit';
 
