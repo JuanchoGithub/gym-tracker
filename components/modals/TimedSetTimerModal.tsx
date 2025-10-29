@@ -5,6 +5,7 @@ import { Icon } from '../common/Icon';
 import { useI18n } from '../../hooks/useI18n';
 import { formatSecondsToMMSS } from '../../utils/timeUtils';
 import { useWakeLock } from '../../hooks/useWakeLock';
+import { lockBodyScroll, unlockBodyScroll } from '../../utils/timeUtils';
 
 interface TimedSetTimerModalProps {
   isOpen: boolean;
@@ -30,6 +31,13 @@ const TimedSetTimerModal: React.FC<TimedSetTimerModalProps> = ({ isOpen, onFinis
   const targetTimeRef = useRef<number>(0);
   const onFinishRef = useRef(onFinish);
   useWakeLock(isOpen && !isPaused);
+
+  useEffect(() => {
+    if (isOpen) {
+      lockBodyScroll();
+      return () => unlockBodyScroll();
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     onFinishRef.current = onFinish;

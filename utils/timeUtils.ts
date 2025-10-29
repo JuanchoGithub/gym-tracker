@@ -54,3 +54,27 @@ export const parseTimerInput = (input: string): number => {
     // e.g., "199" -> 199s
     return parseInt(digits, 10);
 };
+
+let lockCount = 0;
+const getScroller = (): HTMLElement | null => document.querySelector('main');
+
+export const lockBodyScroll = () => {
+  const scroller = getScroller();
+  if (!scroller) return;
+
+  if (lockCount === 0) {
+    scroller.style.overflowY = 'hidden';
+  }
+  lockCount++;
+};
+
+export const unlockBodyScroll = () => {
+  const scroller = getScroller();
+  if (!scroller) return;
+  
+  lockCount--;
+  if (lockCount <= 0) {
+    scroller.style.overflowY = '';
+    lockCount = 0;
+  }
+};

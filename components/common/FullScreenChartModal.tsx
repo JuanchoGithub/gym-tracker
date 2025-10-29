@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ChartDataPoint } from '../../types';
 import { Icon } from './Icon';
 import Chart from './Chart';
+import { lockBodyScroll, unlockBodyScroll } from '../../utils/timeUtils';
 
 interface FullScreenChartModalProps {
   isOpen: boolean;
@@ -12,27 +13,27 @@ interface FullScreenChartModalProps {
 }
 
 const FullScreenChartModal: React.FC<FullScreenChartModalProps> = ({ isOpen, onClose, title, data, color }) => {
-  if (!isOpen) return null;
-
   const [isPortrait, setIsPortrait] = useState(window.innerHeight > window.innerWidth);
 
   useEffect(() => {
+    if (!isOpen) return;
+
+    lockBodyScroll();
     const handleResize = () => {
       setIsPortrait(window.innerHeight > window.innerWidth);
     };
     
     window.addEventListener('resize', handleResize);
     window.addEventListener('orientationchange', handleResize);
-    
-    // Hide scrollbars on body
-    document.body.style.overflow = 'hidden';
 
     return () => {
+      unlockBodyScroll();
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('orientationchange', handleResize);
-      document.body.style.overflow = '';
     };
-  }, []);
+  }, [isOpen]);
+
+  if (!isOpen) return null;
 
   const chartContainerStyle: React.CSSProperties = isPortrait ? {
       transform: 'rotate(90deg)',

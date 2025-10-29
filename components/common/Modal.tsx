@@ -1,5 +1,6 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useEffect } from 'react';
 import { Icon } from './Icon';
+import { lockBodyScroll, unlockBodyScroll } from '../../utils/timeUtils';
 
 interface ModalProps {
   isOpen: boolean;
@@ -10,6 +11,15 @@ interface ModalProps {
 }
 
 const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, contentClassName }) => {
+  useEffect(() => {
+    if (isOpen) {
+      lockBodyScroll();
+      return () => {
+        unlockBodyScroll();
+      };
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
