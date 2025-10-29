@@ -60,7 +60,7 @@ const Chart: React.FC<ChartProps> = ({ data, color = '#0284c7' }) => {
   }
 
   return (
-    <svg width="100%" viewBox={`0 0 ${VIEWBOX_WIDTH} ${VIEWBOX_HEIGHT}`}>
+    <svg width="100%" height="100%" viewBox={`0 0 ${VIEWBOX_WIDTH} ${VIEWBOX_HEIGHT}`}>
       {/* Y Axis Grid Lines & Labels */}
       {yAxisLabels.map(label => (
         <g key={label.value}>

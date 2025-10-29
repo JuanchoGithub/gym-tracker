@@ -53,7 +53,7 @@ const FullScreenChartModal: React.FC<FullScreenChartModalProps> = ({ isOpen, onC
       </button>
       <div style={chartContainerStyle} className="flex flex-col items-center justify-center">
         <h3 className="text-center text-lg font-bold mb-2 text-text-primary">{title}</h3>
-        <div className="flex-grow w-full h-full">
+        <div className="flex-grow w-full">
           <Chart data={data} color={color} />
         </div>
       </div>
