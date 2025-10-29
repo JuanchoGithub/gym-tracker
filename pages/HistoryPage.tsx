@@ -9,6 +9,7 @@ import { Icon } from '../components/common/Icon';
 import ConfirmModal from '../components/modals/ConfirmModal';
 import Modal from '../components/common/Modal';
 import HistoryDetailModal from '../components/modals/HistoryDetailModal';
+import HistoryChartsTab from '../components/history/HistoryChartsTab';
 
 const HistoryPage: React.FC = () => {
   const { history, getExerciseById, deleteHistorySession, upsertRoutine, startWorkout, startHistoryEdit, routines } = useContext(AppContext);
@@ -16,6 +17,7 @@ const HistoryPage: React.FC = () => {
   const { displayWeight, unit } = useWeight();
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [viewingSession, setViewingSession] = useState<WorkoutSession | null>(null);
+  const [activeTab, setActiveTab] = useState<'list' | 'charts'>('list');
   
   const [deletingSession, setDeletingSession] = useState<WorkoutSession | null>(null);
   const [templatingSession, setTemplatingSession] = useState<WorkoutSession | null>(null);
@@ -85,7 +87,23 @@ const HistoryPage: React.FC = () => {
     <>
       <div className="space-y-4 sm:space-y-6" onClick={() => { if (menuOpenId) setMenuOpenId(null) }}>
         <h1 className="text-3xl font-bold text-center">{t('nav_history')}</h1>
-        {history.map((session: WorkoutSession) => {
+
+        <div className="flex justify-center border-b border-secondary/20">
+            <button
+                onClick={() => setActiveTab('list')}
+                className={`px-4 py-2 font-medium ${activeTab === 'list' ? 'border-b-2 border-primary text-primary' : 'text-text-secondary'}`}
+            >
+                {t('nav_history')}
+            </button>
+            <button
+                onClick={() => setActiveTab('charts')}
+                className={`px-4 py-2 font-medium ${activeTab === 'charts' ? 'border-b-2 border-primary text-primary' : 'text-text-secondary'}`}
+            >
+                {t('tab_graphs')}
+            </button>
+        </div>
+
+        {activeTab === 'list' && history.map((session: WorkoutSession) => {
           const totalTime = session.endTime > 0 ? formatTime(Math.round((session.endTime - session.startTime) / 1000)) : 'N/A';
           const totalVolume = session.exercises.reduce((total, ex) => {
             return total + ex.sets.reduce((exTotal, set) => exTotal + (set.weight * set.reps), 0);
@@ -147,6 +165,8 @@ const HistoryPage: React.FC = () => {
             </div>
           )}
         )}
+
+        {activeTab === 'charts' && <HistoryChartsTab history={history} />}
       </div>
 
       {viewingSession && (
