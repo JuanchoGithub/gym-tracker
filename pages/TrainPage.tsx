@@ -17,7 +17,8 @@ const TrainPage: React.FC = () => {
   const { latestWorkouts, customTemplates, sampleWorkouts, sampleHiit } = useMemo(() => {
     const latest = routines
       .filter(r => !r.isTemplate)
-      .sort((a, b) => (b.lastUsed || 0) - (a.lastUsed || 0));
+      .sort((a, b) => (b.lastUsed || 0) - (a.lastUsed || 0))
+      .slice(0, 7);
 
     const templates = routines.filter(r => r.isTemplate);
     const custom = templates.filter(r => !r.id.startsWith('rt-'));
