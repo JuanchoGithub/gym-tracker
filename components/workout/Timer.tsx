@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { playWarningSound, playEndSound } from '../../services/audioService';
+import { playWarningSound, playEndSound, playTickSound } from '../../services/audioService';
 import { Icon } from '../common/Icon';
 import { useI18n } from '../../hooks/useI18n';
 import { formatTime, formatSecondsToMMSS } from '../../utils/timeUtils';
@@ -107,7 +107,10 @@ const Timer: React.FC<TimerProps> = ({ duration: initialDuration, effortTime, fa
       setTimeLeft(prevTimeLeft => {
         if (prevTimeLeft > 10 && newTimeLeft <= 10) {
           playWarningSound();
+        } else if (newTimeLeft <= 3 && newTimeLeft > 0 && prevTimeLeft > newTimeLeft) {
+          playTickSound();
         }
+
         if (newTimeLeft <= 0 && prevTimeLeft > 0) {
           playEndSound();
           onFinishRef.current();

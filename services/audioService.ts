@@ -1,4 +1,5 @@
 
+
 let audioContext: AudioContext | null = null;
 
 const getAudioContext = (): AudioContext => {
@@ -57,6 +58,29 @@ export const playWarningSound = () => {
     createTock(time + 0.15, 1200);
   });
 };
+
+export const playTickSound = () => {
+  playSound((ctx, time) => {
+    const createTock = (startTime: number, frequency: number) => {
+        const oscillator = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+
+        oscillator.type = 'triangle';
+        oscillator.frequency.setValueAtTime(frequency, startTime);
+
+        gainNode.gain.setValueAtTime(0.3, startTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.15);
+
+        oscillator.connect(gainNode);
+        gainNode.connect(ctx.destination);
+
+        oscillator.start(startTime);
+        oscillator.stop(startTime + 0.2);
+    }
+    createTock(time, 1000);
+  });
+};
+
 
 export const playEndSound = () => {
   playSound((ctx, time) => {

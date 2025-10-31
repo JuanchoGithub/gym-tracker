@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef, useMemo, useContext, useCallback } from 'react';
-import { useI18n } from '../hooks/useI18n';
-import { useWakeLock } from '../hooks/useWakeLock';
-import { playWarningSound, playEndSound, unlockAudioContext } from '../services/audioService';
-import { Icon } from '../components/common/Icon';
-import { formatSecondsToMMSS } from '../utils/timeUtils';
-import { AppContext } from '../contexts/AppContext';
-import { Routine, WorkoutExercise } from '../types';
-import { speak } from '../services/speechService';
+import { useI18n } from '../../hooks/useI18n';
+import { useWakeLock } from '../../hooks/useWakeLock';
+import { playWarningSound, playEndSound, unlockAudioContext, playTickSound } from '../../services/audioService';
+import { Icon } from '../common/Icon';
+import { formatSecondsToMMSS } from '../../utils/timeUtils';
+import { AppContext } from '../../contexts/AppContext';
+import { Routine, WorkoutExercise } from '../../types';
+import { speak } from '../../services/speechService';
 
 type TimerMode = 'quick' | 'hiit';
 
@@ -40,7 +40,7 @@ const TimersPage: React.FC = () => {
   useWakeLock(activeTimer.isActive && !activeTimer.isPaused);
   const intervalRef = useRef<number | null>(null);
   const targetTimeRef = useRef<number>(0);
-  const playSoundRef = useRef({ playWarningSound, playEndSound });
+  const playSoundRef = useRef({ playWarningSound, playEndSound, playTickSound });
   // FIX: Explicitly initialize useRef with undefined to satisfy the linter rule expecting one argument.
   const prevActiveTimerRef = useRef<ActiveTimerState | undefined>(undefined);
 
@@ -90,7 +90,7 @@ const TimersPage: React.FC = () => {
         if (newTimeLeft === prev.timeLeft && newTimeLeft > 0) return prev; // No change
 
         if (newTimeLeft <= 3 && newTimeLeft > 0 && prev.timeLeft > newTimeLeft) {
-            playSoundRef.current.playWarningSound();
+            playSoundRef.current.playTickSound();
         }
 
         if (newTimeLeft === 0) {
