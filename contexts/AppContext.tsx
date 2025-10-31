@@ -262,31 +262,39 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             set.historicalReps = set.reps;
             set.historicalTime = set.time;
 
-            // Pre-populate with the last performance for this exercise, if available
-            const lastSet = lastPerformance?.sets[setIndex];
-            if (lastSet) {
-                const isLastSetTimed = lastSet.type === 'timed';
-                const isCurrentSetTimed = set.type === 'timed';
-
-                if (isLastSetTimed && isCurrentSetTimed) {
-                    set.reps = lastSet.reps;
-                    set.time = lastSet.time;
-                    // Overwrite historical values with actual last performance
-                    set.historicalReps = lastSet.reps;
-                    set.historicalTime = lastSet.time;
-                    set.isRepsInherited = true;
-                    set.isTimeInherited = true;
-                } else if (!isLastSetTimed && !isCurrentSetTimed) {
-                    set.weight = lastSet.weight;
-                    set.reps = lastSet.reps;
-                    // Overwrite historical values with actual last performance
-                    set.historicalWeight = lastSet.weight;
-                    set.historicalReps = lastSet.reps;
+            if (routine.isTemplate) {
+                // Pre-populate with the last performance for this exercise, if available
+                const lastSet = lastPerformance?.sets[setIndex];
+                if (lastSet) {
+                    const isLastSetTimed = lastSet.type === 'timed';
+                    const isCurrentSetTimed = set.type === 'timed';
+    
+                    if (isLastSetTimed && isCurrentSetTimed) {
+                        set.reps = lastSet.reps;
+                        set.time = lastSet.time;
+                        // Overwrite historical values with actual last performance
+                        set.historicalReps = lastSet.reps;
+                        set.historicalTime = lastSet.time;
+                        set.isRepsInherited = true;
+                        set.isTimeInherited = true;
+                    } else if (!isLastSetTimed && !isCurrentSetTimed) {
+                        set.weight = lastSet.weight;
+                        set.reps = lastSet.reps;
+                        // Overwrite historical values with actual last performance
+                        set.historicalWeight = lastSet.weight;
+                        set.historicalReps = lastSet.reps;
+                        set.isWeightInherited = true;
+                        set.isRepsInherited = true;
+                    }
+                } else {
+                    // No last performance, so the template values are what we inherit from (or nothing if empty workout)
                     set.isWeightInherited = true;
                     set.isRepsInherited = true;
+                    set.isTimeInherited = true;
                 }
             } else {
-                // No last performance, so the template values are what we inherit from (or nothing if empty workout)
+                 // For "Latest Workouts", the routine itself IS the last performance data.
+                // Just mark everything as inherited.
                 set.isWeightInherited = true;
                 set.isRepsInherited = true;
                 set.isTimeInherited = true;
