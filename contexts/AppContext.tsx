@@ -257,7 +257,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             set.id = `set-${Date.now()}-${exIndex}-${setIndex}`;
             set.isComplete = false;
 
-            // Pre-populate with the last performance for this exercise
+            // Store the template values as historical fallback
+            set.historicalWeight = set.weight;
+            set.historicalReps = set.reps;
+            set.historicalTime = set.time;
+
+            // Pre-populate with the last performance for this exercise, if available
             const lastSet = lastPerformance?.sets[setIndex];
             if (lastSet) {
                 const isLastSetTimed = lastSet.type === 'timed';
@@ -266,14 +271,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 if (isLastSetTimed && isCurrentSetTimed) {
                     set.reps = lastSet.reps;
                     set.time = lastSet.time;
-                    set.isRepsInherited = false;
-                    set.isTimeInherited = false;
+                    // Overwrite historical values with actual last performance
+                    set.historicalReps = lastSet.reps;
+                    set.historicalTime = lastSet.time;
+                    set.isRepsInherited = true;
+                    set.isTimeInherited = true;
                 } else if (!isLastSetTimed && !isCurrentSetTimed) {
                     set.weight = lastSet.weight;
                     set.reps = lastSet.reps;
-                    set.isWeightInherited = false;
-                    set.isRepsInherited = false;
+                    // Overwrite historical values with actual last performance
+                    set.historicalWeight = lastSet.weight;
+                    set.historicalReps = lastSet.reps;
+                    set.isWeightInherited = true;
+                    set.isRepsInherited = true;
                 }
+            } else {
+                // No last performance, so the template values are what we inherit from (or nothing if empty workout)
+                set.isWeightInherited = true;
+                set.isRepsInherited = true;
+                set.isTimeInherited = true;
             }
         });
     });

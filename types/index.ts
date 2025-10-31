@@ -24,6 +24,9 @@ export interface PerformedSet {
   isRepsInherited?: boolean;
   isTimeInherited?: boolean;
   actualRest?: number; // The actual rest time taken after this set
+  historicalWeight?: number;
+  historicalReps?: number;
+  historicalTime?: number;
 }
 
 export interface WorkoutExercise {

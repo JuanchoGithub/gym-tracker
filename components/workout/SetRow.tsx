@@ -42,14 +42,29 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
   }, [set, displayWeight, isWeightFocused, isRepsFocused, isTimeFocused]);
 
   const handleWeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newWeight = e.target.value;
-    setWeight(newWeight);
-    onUpdateSet({ ...set, weight: getStoredWeight(parseFloat(newWeight) || 0), isWeightInherited: false });
+    const newWeightStr = e.target.value;
+    setWeight(newWeightStr);
+    
+    const parsedWeight = parseFloat(newWeightStr);
+    // Use -1 as a sentinel value when the input is cleared, to signal a reset.
+    const weightValue = isNaN(parsedWeight) ? -1 : parsedWeight;
+    
+    onUpdateSet({ 
+        ...set, 
+        weight: getStoredWeight(weightValue), 
+        isWeightInherited: false 
+    });
   };
   
   const handleRepsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setReps(e.target.value);
-    onUpdateSet({ ...set, reps: parseInt(e.target.value, 10) || 0, isRepsInherited: false });
+    const newRepsStr = e.target.value;
+    setReps(newRepsStr);
+
+    const parsedReps = parseInt(newRepsStr, 10);
+    // Use -1 as a sentinel value when the input is cleared, to signal a reset.
+    const repsValue = isNaN(parsedReps) ? -1 : parsedReps;
+
+    onUpdateSet({ ...set, reps: repsValue, isRepsInherited: false });
   };
 
   const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {

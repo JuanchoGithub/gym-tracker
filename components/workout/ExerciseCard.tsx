@@ -55,45 +55,67 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseIn
   
   const handleUpdateSet = (updatedSet: PerformedSet) => {
     const oldSetIndex = workoutExercise.sets.findIndex(s => s.id === updatedSet.id);
+    if (oldSetIndex === -1) return;
     const oldSet = workoutExercise.sets[oldSetIndex];
 
     let newSets = [...workoutExercise.sets];
-    newSets[oldSetIndex] = updatedSet;
+    
+    let setAfterValueReset = { ...updatedSet };
+    let needsWeightCascade = false;
+    let needsRepsCascade = false;
 
-    // Cascade weight change if applicable.
-    if (oldSet.weight !== updatedSet.weight && updatedSet.isWeightInherited === false && !updatedSet.isComplete) {
+    // Handle weight reset signal (when input is cleared)
+    if (updatedSet.weight < 0) {
+        const sourceSet = oldSetIndex > 0 ? newSets[oldSetIndex - 1] : null;
+        const fallbackWeight = oldSet.historicalWeight ?? 0;
+        const newWeight = sourceSet && sourceSet.type !== 'timed' ? sourceSet.weight : fallbackWeight;
+        setAfterValueReset = { ...setAfterValueReset, weight: newWeight, isWeightInherited: true };
+        needsWeightCascade = true;
+    } else {
+        needsWeightCascade = updatedSet.type !== 'timed' && oldSet.weight !== updatedSet.weight && updatedSet.isWeightInherited === false && !updatedSet.isComplete;
+    }
+
+    // Handle reps reset signal (when input is cleared)
+    if (updatedSet.reps < 0) {
+        const sourceSet = oldSetIndex > 0 ? newSets[oldSetIndex - 1] : null;
+        const fallbackReps = oldSet.historicalReps ?? 0;
+        const newReps = sourceSet ? sourceSet.reps : fallbackReps;
+        setAfterValueReset = { ...setAfterValueReset, reps: newReps, isRepsInherited: true };
+        needsRepsCascade = true;
+    } else {
+        needsRepsCascade = oldSet.reps !== updatedSet.reps && updatedSet.isRepsInherited === false && !updatedSet.isComplete;
+    }
+    
+    // Apply the updated (and possibly reset) set to the array
+    newSets[oldSetIndex] = setAfterValueReset;
+
+    // Now, cascade changes
+    const finalUpdatedSet = newSets[oldSetIndex];
+    if (needsWeightCascade) {
         for (let i = oldSetIndex + 1; i < newSets.length; i++) {
-            if (!newSets[i].isComplete && newSets[i].isWeightInherited !== false) {
-                newSets[i] = { ...newSets[i], weight: updatedSet.weight, isWeightInherited: true };
-            } else {
-                break;
-            }
+            const currentSet = newSets[i];
+            if (currentSet.isComplete || currentSet.isWeightInherited === false || currentSet.type === 'timed') break;
+            newSets[i] = { ...currentSet, weight: finalUpdatedSet.weight, isWeightInherited: true };
         }
     }
     
-    // Cascade rep change if applicable.
-    if (oldSet.reps !== updatedSet.reps && updatedSet.isRepsInherited === false && !updatedSet.isComplete) {
+    if (needsRepsCascade) {
         for (let i = oldSetIndex + 1; i < newSets.length; i++) {
-            if (!newSets[i].isComplete && (newSets[i].reps === 0 || newSets[i].isRepsInherited !== false)) {
-                newSets[i] = { ...newSets[i], reps: updatedSet.reps, isRepsInherited: true };
-            } else {
-                break;
-            }
-        }
-    }
-
-    // Cascade time change if applicable.
-    if (updatedSet.type === 'timed' && oldSet.time !== updatedSet.time && updatedSet.isTimeInherited === false && !updatedSet.isComplete) {
-        for (let i = oldSetIndex + 1; i < newSets.length; i++) {
-            if (newSets[i].type === 'timed' && !newSets[i].isComplete && newSets[i].isTimeInherited !== false) {
-                newSets[i] = { ...newSets[i], time: updatedSet.time, isTimeInherited: true };
-            } else {
-                break;
-            }
+            const currentSet = newSets[i];
+            if (currentSet.isComplete || currentSet.isRepsInherited === false) break;
+            newSets[i] = { ...currentSet, reps: finalUpdatedSet.reps, isRepsInherited: true };
         }
     }
     
-    // Update local completed count for UI purposes (e.g., green border)
+    const manualTimeChange = updatedSet.type === 'timed' && oldSet.time !== updatedSet.time && updatedSet.isTimeInherited === false && !updatedSet.isComplete;
+    if (manualTimeChange) {
+        for (let i = oldSetIndex + 1; i < newSets.length; i++) {
+            const currentSet = newSets[i];
+            if (currentSet.isComplete || currentSet.isTimeInherited === false || currentSet.type !== 'timed') break;
+            newSets[i] = { ...currentSet, time: updatedSet.time, isTimeInherited: true };
+        }
+    }
+    
     if (!oldSet.isComplete && updatedSet.isComplete) {
       setCompletedSets(prev => prev + 1);
     } else if (oldSet.isComplete && !updatedSet.isComplete) {
@@ -104,8 +126,46 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseIn
   };
   
   const handleDeleteSet = (setId: string) => {
-    const updatedSets = workoutExercise.sets.filter(s => s.id !== setId);
-    onUpdate({ ...workoutExercise, sets: updatedSets });
+    const deletedIndex = workoutExercise.sets.findIndex(s => s.id === setId);
+    if (deletedIndex === -1) return;
+
+    let newSets = workoutExercise.sets.filter(s => s.id !== setId);
+
+    // Start fixing inheritance from the point of deletion onwards
+    for (let i = deletedIndex; i < newSets.length; i++) {
+        const currentSet = newSets[i];
+        if (currentSet.isComplete) continue; // Don't change completed sets
+
+        // The source for inheritance is the set right before the current one in the updated list.
+        const sourceSet = i > 0 ? newSets[i - 1] : null;
+        
+        const newInheritedSet: PerformedSet = {
+            ...currentSet,
+            isWeightInherited: true,
+            isRepsInherited: true,
+            isTimeInherited: true,
+        };
+
+        if (sourceSet) {
+            newInheritedSet.reps = sourceSet.reps;
+            if (currentSet.type === 'timed') {
+                // A timed set inherits time from a previous timed set, otherwise it reverts to its own historical value.
+                newInheritedSet.time = sourceSet.type === 'timed' ? sourceSet.time : currentSet.historicalTime;
+            } else {
+                // A weight set inherits weight from a previous weight set, otherwise it reverts to its own historical value.
+                newInheritedSet.weight = sourceSet.type !== 'timed' ? sourceSet.weight : currentSet.historicalWeight;
+            }
+        } else { // This is now the first incomplete set, so it must revert to its own historical values.
+            newInheritedSet.reps = currentSet.historicalReps ?? currentSet.reps;
+            if (currentSet.type === 'timed') {
+                newInheritedSet.time = currentSet.historicalTime ?? currentSet.time;
+            } else {
+                newInheritedSet.weight = currentSet.historicalWeight ?? currentSet.weight;
+            }
+        }
+        newSets[i] = newInheritedSet;
+    }
+    onUpdate({ ...workoutExercise, sets: newSets });
   };
 
   const handleAddSet = () => {
