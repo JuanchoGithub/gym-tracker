@@ -49,7 +49,12 @@ const HistoryChartsTab: React.FC<HistoryChartsTabProps> = ({ history }) => {
             });
         });
 
-        const sortedExercises = Array.from(exerciseCounts.entries()).sort((a, b) => b[1] - a[1]);
+        // FIX: Explicitly type the arguments of the sort function's comparator.
+        // This resolves a potential type inference issue where the compiler might
+        // incorrectly infer `a` and `b` as `[unknown, unknown]`.
+        const sortedExercises = Array.from(exerciseCounts.entries()).sort(
+            (a: [string, number], b: [string, number]) => b[1] - a[1],
+        );
         const top3Ids = sortedExercises.slice(0, 3).map(entry => entry[0]);
 
         const topExercisesChartData = top3Ids.map(exerciseId => {

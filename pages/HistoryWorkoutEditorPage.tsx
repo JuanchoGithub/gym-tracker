@@ -1,13 +1,13 @@
 import React, { useContext, useState, useMemo } from 'react';
 import { AppContext } from '../contexts/AppContext';
-import { useI18n } from '../../hooks/useI18n';
+import { useI18n } from '../hooks/useI18n';
 import ExerciseCard from '../components/workout/ExerciseCard';
-import { WorkoutExercise, WorkoutSession, PerformedSet } from '../../types';
+import { WorkoutExercise, WorkoutSession, PerformedSet } from '../types';
 import { Icon } from '../components/common/Icon';
 import WorkoutDetailsModal from '../components/modals/WorkoutDetailsModal';
 import ReplaceExerciseModal from '../components/modals/ReplaceExerciseModal';
 import ConfirmModal from '../components/modals/ConfirmModal';
-import { formatTime } from '../../utils/timeUtils';
+import { formatTime } from '../utils/timeUtils';
 
 const HistoryWorkoutEditorPage: React.FC = () => {
   const { 
