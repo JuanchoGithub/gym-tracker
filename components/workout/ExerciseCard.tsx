@@ -39,18 +39,41 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseIn
     return ['Bodyweight', 'Assisted Bodyweight', 'Reps Only', 'Cardio', 'Duration'].includes(exerciseInfo.category);
   }, [exerciseInfo.category]);
 
-  const getTimerDuration = (set?: PerformedSet): number => {
-    if (!set) return workoutExercise.restTime.normal; // Fallback for safety
+  const getTimerDuration = (set: PerformedSet, setIndex: number): number => {
     if (set.rest !== undefined && set.rest !== null) return set.rest;
 
+    const restTime = workoutExercise.restTime;
+    let duration: number;
+
     switch (set.type) {
-        case 'warmup': return workoutExercise.restTime.warmup;
-        case 'drop': return workoutExercise.restTime.drop;
-        case 'timed': return workoutExercise.restTime.timed || 10;
+        case 'warmup': 
+            duration = restTime.warmup;
+            break;
+        case 'drop': 
+            duration = restTime.drop;
+            break;
+        case 'timed': 
+            duration = restTime.timed || 10;
+            break;
         case 'normal':
         case 'failure':
-        default: return workoutExercise.restTime.normal;
+        default: 
+            duration = restTime.normal;
     }
+
+    // Is it the last set of the exercise?
+    const isLastSetOfExercise = setIndex === workoutExercise.sets.length - 1;
+
+    // Is it the last warmup set before a normal set?
+    const isLastWarmup = set.type === 'warmup' && 
+                        setIndex < workoutExercise.sets.length - 1 &&
+                        workoutExercise.sets[setIndex + 1].type !== 'warmup';
+
+    if (isLastSetOfExercise || isLastWarmup) {
+        duration *= 2;
+    }
+    
+    return duration;
   };
   
   const handleUpdateSet = (updatedSet: PerformedSet) => {
@@ -258,7 +281,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseIn
                         {isActiveTimer && onTimerFinish && onTimerChange && (
                           <div className="w-full rounded-lg">
                             <Timer 
-                                duration={getTimerDuration(set)} 
+                                duration={getTimerDuration(set, setIndex)} 
                                 onFinish={() => onTimerFinish(workoutExercise.id, set.id)} 
                                 onTimeChange={(newTime) => onTimerChange(newTime, exerciseInfo.name)}
                             />

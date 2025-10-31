@@ -47,15 +47,35 @@ const ActiveWorkoutPage: React.FC = () => {
     return false;
   }, [activeWorkout, getExerciseById]);
 
-  const getTimerDuration = (set: PerformedSet, workoutExercise: WorkoutExercise): number => {
+  const getTimerDuration = (set: PerformedSet, workoutExercise: WorkoutExercise, setIndex: number): number => {
     if (set.rest !== undefined && set.rest !== null) return set.rest;
     const restTime = workoutExercise.restTime;
+    let duration: number;
+
     switch (set.type) {
-        case 'warmup': return restTime.warmup;
-        case 'drop': return restTime.drop;
-        case 'timed': return restTime.timed;
-        default: return restTime.normal;
+        case 'warmup': 
+            duration = restTime.warmup;
+            break;
+        case 'drop': 
+            duration = restTime.drop;
+            break;
+        case 'timed': 
+            duration = restTime.timed;
+            break;
+        default: 
+            duration = restTime.normal;
     }
+
+    const isLastSetOfExercise = setIndex === workoutExercise.sets.length - 1;
+    const isLastWarmup = set.type === 'warmup' && 
+                        setIndex < workoutExercise.sets.length - 1 &&
+                        workoutExercise.sets[setIndex + 1].type !== 'warmup';
+
+    if (isLastSetOfExercise || isLastWarmup) {
+        duration *= 2;
+    }
+    
+    return duration;
   };
 
   const handleUpdateExercise = (updatedExercise: WorkoutExercise) => {
@@ -108,7 +128,8 @@ const ActiveWorkoutPage: React.FC = () => {
         });
         if (enableNotifications) {
             const exerciseInfo = getExerciseById(updatedExercise.exerciseId);
-            const timerDuration = getTimerDuration(justCompletedSet, updatedExercise);
+            const justCompletedSetIndex = updatedExercise.sets.findIndex(s => s.id === justCompletedSet!.id);
+            const timerDuration = getTimerDuration(justCompletedSet, updatedExercise, justCompletedSetIndex);
             if (timerDuration > 0 && exerciseInfo) {
                 scheduleTimerNotification(timerDuration, t('notification_timer_finished_title'), {
                     body: t('notification_timer_finished_body', { exercise: exerciseInfo.name }),
@@ -294,7 +315,7 @@ const ActiveWorkoutPage: React.FC = () => {
             onFinish={handleFinishTimedSet}
             onClose={() => setActiveTimedSet(null)}
             set={activeTimedSet.set}
-            restTime={getTimerDuration(activeTimedSet.set, activeTimedSet.exercise)}
+            restTime={activeTimedSet.exercise.restTime.timed}
             exerciseName={getExerciseById(activeTimedSet.exercise.exerciseId)?.name || ''}
         />
       )}

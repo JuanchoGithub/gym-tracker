@@ -20,6 +20,7 @@ const Timer: React.FC<TimerProps> = ({ duration: initialDuration, onFinish, onTi
   const targetTimeRef = useRef<number>(0);
   const onFinishRef = useRef(onFinish);
   const onTimeChangeRef = useRef(onTimeChange);
+  const isInitialMount = useRef(true);
 
   useEffect(() => {
     onFinishRef.current = onFinish;
@@ -36,10 +37,51 @@ const Timer: React.FC<TimerProps> = ({ duration: initialDuration, onFinish, onTi
   };
 
   useEffect(() => {
-    if (initialDuration > 0) {
-      setTotalDuration(initialDuration);
-      resetTimer(initialDuration);
+    if (isInitialMount.current) {
+        isInitialMount.current = false;
+        // Initial setup logic:
+        setTotalDuration(initialDuration);
+        resetTimer(initialDuration);
+        return;
     }
+    
+    // This now runs only on subsequent renders when initialDuration changes.
+    const oldDuration = totalDuration;
+    if (initialDuration === oldDuration) return; // No change in prop
+
+    // If timer is not running, just reset to new duration
+    if (isPaused || timeLeft <= 0) {
+        setTotalDuration(initialDuration);
+        resetTimer(initialDuration);
+        return;
+    }
+
+    const currentElapsed = oldDuration - timeLeft;
+
+    // Slashing
+    if (initialDuration < oldDuration) {
+        if (currentElapsed >= initialDuration) {
+            const newTimeLeft = 5;
+            targetTimeRef.current = Date.now() + newTimeLeft * 1000;
+            setTimeLeft(newTimeLeft);
+            const newTotalDuration = currentElapsed + newTimeLeft;
+            setTotalDuration(newTotalDuration);
+            onTimeChangeRef.current?.(newTotalDuration);
+        } else {
+            const newTimeLeft = initialDuration - currentElapsed;
+            targetTimeRef.current = Date.now() + newTimeLeft * 1000;
+            setTimeLeft(newTimeLeft);
+            setTotalDuration(initialDuration);
+            onTimeChangeRef.current?.(initialDuration);
+        }
+    } else if (initialDuration > oldDuration) { // Increasing
+        const newTimeLeft = initialDuration - currentElapsed;
+        targetTimeRef.current = Date.now() + newTimeLeft * 1000;
+        setTimeLeft(newTimeLeft);
+        setTotalDuration(initialDuration);
+        onTimeChangeRef.current?.(initialDuration);
+    }
+    
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialDuration]);
 
