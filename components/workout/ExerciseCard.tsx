@@ -19,9 +19,25 @@ interface ExerciseCardProps {
   onTimerFinish?: (finishedExerciseId: string, finishedSetId: string) => void;
   onTimerChange?: (newDuration: number, exerciseName: string) => void;
   onStartTimedSet?: (exercise: WorkoutExercise, set: PerformedSet) => void;
+  
+  // Reorder props
+  isReorganizeMode?: boolean;
+  onDragStart?: (e: React.DragEvent<HTMLDivElement>) => void;
+  onDragEnter?: (e: React.DragEvent<HTMLDivElement>) => void;
+  onDragEnd?: (e: React.DragEvent<HTMLDivElement>) => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  isMoveUpDisabled: boolean;
+  isMoveDownDisabled: boolean;
+  onReorganize: () => void;
+  isBeingDraggedOver?: boolean;
 }
 
-const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseInfo, onUpdate, activeTimerInfo, onTimerFinish, onTimerChange, onStartTimedSet }) => {
+const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
+  const { 
+    workoutExercise, exerciseInfo, onUpdate, activeTimerInfo, onTimerFinish, onTimerChange, onStartTimedSet,
+    isReorganizeMode, onDragStart, onDragEnter, onDragEnd, onMoveUp, onMoveDown, isMoveUpDisabled, isMoveDownDisabled, onReorganize, isBeingDraggedOver
+  } = props;
   const { t } = useI18n();
   const { unit } = useWeight();
   const { history: allHistory } = useContext(AppContext);
@@ -29,6 +45,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseIn
   const [isNoteEditing, setIsNoteEditing] = useState(false);
   const [note, setNote] = useState(workoutExercise.note || '');
   const [isDefaultsTimerModalOpen, setIsDefaultsTimerModalOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const lastPerformance = useMemo(() => {
     const history = getExerciseHistory(allHistory, exerciseInfo.id);
@@ -221,8 +238,28 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseIn
   
   let normalSetCounter = 0;
 
+  if (isReorganizeMode) {
+    return (
+      <div 
+        className="bg-surface sm:rounded-lg shadow-md p-3 relative flex items-center gap-4 cursor-grab"
+        draggable
+        onDragStart={onDragStart}
+        onDragEnter={onDragEnter}
+        onDragEnd={onDragEnd}
+        onDragOver={(e) => e.preventDefault()}
+        >
+          {isBeingDraggedOver && <div className="absolute -top-1 left-0 w-full h-1 bg-primary rounded-full"></div>}
+          <Icon name="sort" className="w-6 h-6 text-text-secondary flex-shrink-0" />
+          <span className="font-bold text-lg text-primary truncate flex-grow">{exerciseInfo.name}</span>
+      </div>
+    );
+  }
+
   return (
-    <div className={`bg-surface sm:rounded-lg shadow-md transition-all ${allSetsCompleted ? 'border-2 border-success' : 'border-2 border-transparent'}`}>
+    <div 
+      className={`bg-surface sm:rounded-lg shadow-md transition-all ${allSetsCompleted ? 'border-2 border-success' : 'border-2 border-transparent'}`}
+      onDragOver={(e) => isReorganizeMode && e.preventDefault()}
+    >
         <div className="sticky top-[56px] bg-surface z-10 p-3 border-b border-secondary/20 sm:rounded-t-lg">
              <ExerciseHeader 
                 workoutExercise={workoutExercise}
@@ -230,91 +267,99 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseIn
                 onUpdate={onUpdate}
                 onAddNote={() => { setIsNoteEditing(true); setNote(workoutExercise.note || ''); }}
                 onOpenTimerModal={() => setIsDefaultsTimerModalOpen(true)}
+                onToggleCollapse={() => setIsCollapsed(prev => !prev)}
+                onMoveUp={onMoveUp}
+                onMoveDown={onMoveDown}
+                isMoveUpDisabled={isMoveUpDisabled}
+                isMoveDownDisabled={isMoveDownDisabled}
+                onReorganize={onReorganize}
             />
         </div>
-        <div className="p-2 sm:p-3 space-y-2">
-            {isNoteEditing && (
-                <div className="mb-2">
-                    <textarea 
-                        value={note}
-                        onChange={(e) => setNote(e.target.value)}
-                        placeholder="Add a note for this exercise..."
-                        className="w-full bg-slate-900 border border-secondary/50 rounded-lg p-2 text-sm"
-                        rows={2}
-                    />
-                    <div className="flex justify-end space-x-2 mt-1">
-                        <button onClick={() => setIsNoteEditing(false)} className="text-text-secondary text-sm px-3 py-1 hover:bg-secondary/50 rounded-md">Cancel</button>
-                        <button onClick={handleSaveNote} className="bg-primary text-white px-3 py-1 rounded-md text-sm">Save</button>
-                    </div>
-                </div>
-            )}
-            {!isNoteEditing && workoutExercise.note && (
-                <p className="text-sm text-text-secondary italic my-2 p-2 bg-slate-900/50 rounded-md">"{workoutExercise.note}"</p>
-            )}
+        {!isCollapsed && (
+          <div className="p-2 sm:p-3 space-y-2">
+              {isNoteEditing && (
+                  <div className="mb-2">
+                      <textarea 
+                          value={note}
+                          onChange={(e) => setNote(e.target.value)}
+                          placeholder="Add a note for this exercise..."
+                          className="w-full bg-slate-900 border border-secondary/50 rounded-lg p-2 text-sm"
+                          rows={2}
+                      />
+                      <div className="flex justify-end space-x-2 mt-1">
+                          <button onClick={() => setIsNoteEditing(false)} className="text-text-secondary text-sm px-3 py-1 hover:bg-secondary/50 rounded-md">Cancel</button>
+                          <button onClick={handleSaveNote} className="bg-primary text-white px-3 py-1 rounded-md text-sm">Save</button>
+                      </div>
+                  </div>
+              )}
+              {!isNoteEditing && workoutExercise.note && (
+                  <p className="text-sm text-text-secondary italic my-2 p-2 bg-slate-900/50 rounded-md">"{workoutExercise.note}"</p>
+              )}
 
-            <div className="grid grid-cols-5 items-center gap-1 sm:gap-2 text-xs text-text-secondary">
-                <div className="text-center font-semibold">{t('workout_set')}</div>
-                <div className="text-center">Previous</div>
-                <div className="text-center">Weight ({t(`workout_${unit}`)})</div>
-                <div className="text-center">Reps</div>
-                <div className="text-center">Actions</div>
-            </div>
-            
-            <div className="space-y-2">
-                {workoutExercise.sets.map((set, setIndex) => {
-                  if (set.type === 'normal') {
-                    normalSetCounter++;
-                  }
-                  const isActiveTimer = activeTimerInfo?.exerciseId === workoutExercise.id && activeTimerInfo?.setId === set.id;
-                  const showFinishedTimer = set.isComplete && !isActiveTimer;
-                  const previousSetData = lastPerformance?.exerciseData.sets[setIndex];
-                  
-                  return (
-                    <React.Fragment key={set.id}>
-                        <SetRow
-                            set={set}
-                            setNumber={normalSetCounter}
-                            onUpdateSet={handleUpdateSet}
-                            onDeleteSet={() => handleDeleteSet(set.id)}
-                            onStartTimedSet={(s) => onStartTimedSet?.(workoutExercise, s)}
-                            previousSetData={previousSetData}
-                            isWeightOptional={isWeightOptional}
-                        />
-                        {isActiveTimer && onTimerFinish && onTimerChange && (
-                          <div className="w-full rounded-lg">
-                            <Timer 
-                                duration={getTimerDuration(set, setIndex)} 
-                                effortTime={workoutExercise.restTime.effort}
-                                failureTime={workoutExercise.restTime.failure}
-                                onFinish={() => onTimerFinish(workoutExercise.id, set.id)} 
-                                onTimeChange={(newTime) => onTimerChange(newTime, exerciseInfo.name)}
-                            />
-                          </div>
-                        )}
-                        {showFinishedTimer && set.actualRest !== undefined && (
-                          <div className="w-full">
-                            <div className="my-2 flex items-center justify-center text-sm text-success">
-                                <div className="flex-grow h-px bg-success/30"></div>
-                                <span className="mx-4 font-mono">
-                                  {formatSecondsToMMSS(set.actualRest)}
-                                </span>
-                                <div className="flex-grow h-px bg-success/30"></div>
+              <div className="grid grid-cols-5 items-center gap-1 sm:gap-2 text-xs text-text-secondary">
+                  <div className="text-center font-semibold">{t('workout_set')}</div>
+                  <div className="text-center">Previous</div>
+                  <div className="text-center">Weight ({t(`workout_${unit}`)})</div>
+                  <div className="text-center">Reps</div>
+                  <div className="text-center">Actions</div>
+              </div>
+              
+              <div className="space-y-2">
+                  {workoutExercise.sets.map((set, setIndex) => {
+                    if (set.type === 'normal') {
+                      normalSetCounter++;
+                    }
+                    const isActiveTimer = activeTimerInfo?.exerciseId === workoutExercise.id && activeTimerInfo?.setId === set.id;
+                    const showFinishedTimer = set.isComplete && !isActiveTimer;
+                    const previousSetData = lastPerformance?.exerciseData.sets[setIndex];
+                    
+                    return (
+                      <React.Fragment key={set.id}>
+                          <SetRow
+                              set={set}
+                              setNumber={normalSetCounter}
+                              onUpdateSet={handleUpdateSet}
+                              onDeleteSet={() => handleDeleteSet(set.id)}
+                              onStartTimedSet={(s) => onStartTimedSet?.(workoutExercise, s)}
+                              previousSetData={previousSetData}
+                              isWeightOptional={isWeightOptional}
+                          />
+                          {isActiveTimer && onTimerFinish && onTimerChange && (
+                            <div className="w-full rounded-lg">
+                              <Timer 
+                                  duration={getTimerDuration(set, setIndex)} 
+                                  effortTime={workoutExercise.restTime.effort}
+                                  failureTime={workoutExercise.restTime.failure}
+                                  onFinish={() => onTimerFinish(workoutExercise.id, set.id)} 
+                                  onTimeChange={(newTime) => onTimerChange(newTime, exerciseInfo.name)}
+                              />
                             </div>
-                          </div>
-                        )}
-                    </React.Fragment>
-                  );
-                })}
-            </div>
-            
-            <button 
-                onClick={handleAddSet}
-                className="mt-3 w-full flex items-center justify-center space-x-2 bg-secondary/50 text-text-primary font-medium py-2 rounded-lg hover:bg-secondary transition-colors"
-            >
-                <Icon name="plus" className="w-5 h-5" />
-                <span>Add Set</span>
-            </button>
-        </div>
+                          )}
+                          {showFinishedTimer && set.actualRest !== undefined && (
+                            <div className="w-full">
+                              <div className="my-2 flex items-center justify-center text-sm text-success">
+                                  <div className="flex-grow h-px bg-success/30"></div>
+                                  <span className="mx-4 font-mono">
+                                    {formatSecondsToMMSS(set.actualRest)}
+                                  </span>
+                                  <div className="flex-grow h-px bg-success/30"></div>
+                              </div>
+                            </div>
+                          )}
+                      </React.Fragment>
+                    );
+                  })}
+              </div>
+              
+              <button 
+                  onClick={handleAddSet}
+                  className="mt-3 w-full flex items-center justify-center space-x-2 bg-secondary/50 text-text-primary font-medium py-2 rounded-lg hover:bg-secondary transition-colors"
+              >
+                  <Icon name="plus" className="w-5 h-5" />
+                  <span>Add Set</span>
+              </button>
+          </div>
+        )}
         <ChangeTimerModal 
             isOpen={isDefaultsTimerModalOpen}
             onClose={() => setIsDefaultsTimerModalOpen(false)}

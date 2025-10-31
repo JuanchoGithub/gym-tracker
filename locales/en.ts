@@ -99,6 +99,7 @@ export const en = {
   active_workout_empty_desc: 'Add an exercise to get started!',
   active_workout_edit_details_aria: 'Edit workout details',
   active_workout_minimize_aria: 'Minimize workout',
+  workout_reorganize_save_order: 'Save Order',
   
   // Set Type Modal
   set_type_modal_title: 'Set Type',
@@ -189,6 +190,9 @@ export const en = {
   exercise_header_menu_add_warmup: 'Add Warmup Sets',
   exercise_header_menu_change_timer: 'Change Timer',
   exercise_header_menu_replace: 'Replace Exercise',
+  exercise_header_menu_move_up: 'Move Up',
+  exercise_header_menu_move_down: 'Move Down',
+  exercise_header_menu_reorganize: 'Reorganize Order',
 
   // Timer Modal
   timer_modal_title: 'Add rest timers',
@@ -252,6 +256,8 @@ export const en = {
   template_card_edit_timers: 'Edit Default Timers',
   template_card_remove_exercise: 'Remove Exercise',
   template_card_reorder_exercise: 'Reorder Exercise',
+  template_card_move_up: 'Move Up',
+  template_card_move_down: 'Move Down',
   
   // Exercise Editor
   exercise_editor_add_title: 'Add Exercise',

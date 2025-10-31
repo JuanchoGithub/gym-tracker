@@ -1,4 +1,4 @@
-import React, { useContext, useState, useMemo } from 'react';
+import React, { useContext, useState, useMemo, useRef } from 'react';
 import { AppContext } from '../contexts/AppContext';
 import { useI18n } from '../hooks/useI18n';
 import ExerciseCard from '../components/workout/ExerciseCard';
@@ -20,7 +20,13 @@ const ActiveWorkoutPage: React.FC = () => {
   const [activeTimerInfo, setActiveTimerInfo] = useState<{ exerciseId: string; setId: string; startTime: number } | null>(null);
   const [activeTimedSet, setActiveTimedSet] = useState<{ exercise: WorkoutExercise; set: PerformedSet } | null>(null);
   
-  useWakeLock(keepScreenAwake || !!activeTimedSet);
+  const [isReorganizeMode, setIsReorganizeMode] = useState(false);
+  const [tempExercises, setTempExercises] = useState<WorkoutExercise[]>([]);
+  const dragItem = useRef<number | null>(null);
+  const dragOverItem = useRef<number | null>(null);
+  const [draggedOverIndex, setDraggedOverIndex] = useState<number | null>(null);
+
+  useWakeLock(keepScreenAwake || !!activeTimedSet || isReorganizeMode);
 
   const hasInvalidCompletedSets = useMemo(() => {
     if (!activeWorkout) return false;
@@ -46,6 +52,49 @@ const ActiveWorkoutPage: React.FC = () => {
     }
     return false;
   }, [activeWorkout, getExerciseById]);
+
+  // --- Reorganization Logic ---
+  const handleEnterReorganizeMode = () => {
+    if (!activeWorkout) return;
+    setTempExercises([...activeWorkout.exercises]);
+    setIsReorganizeMode(true);
+  };
+
+  const handleExitReorganizeMode = (save: boolean) => {
+    if (save && activeWorkout) {
+      updateActiveWorkout({ ...activeWorkout, exercises: tempExercises });
+    }
+    setIsReorganizeMode(false);
+    setTempExercises([]);
+  };
+
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, position: number) => {
+    dragItem.current = position;
+  };
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>, position: number) => {
+    dragOverItem.current = position;
+    setDraggedOverIndex(position);
+  };
+
+  const handleDrop = () => {
+    if (dragItem.current === null || dragOverItem.current === null) return;
+    const newExercises = [...tempExercises];
+    const dragItemContent = newExercises.splice(dragItem.current, 1)[0];
+    newExercises.splice(dragOverItem.current, 0, dragItemContent);
+    dragItem.current = null;
+    dragOverItem.current = null;
+    setDraggedOverIndex(null);
+    setTempExercises(newExercises);
+  };
+
+  const handleMoveExercise = (fromIndex: number, toIndex: number) => {
+    if (!activeWorkout || toIndex < 0 || toIndex >= activeWorkout.exercises.length) return;
+    const newExercises = [...activeWorkout.exercises];
+    const [movedItem] = newExercises.splice(fromIndex, 1);
+    newExercises.splice(toIndex, 0, movedItem);
+    updateActiveWorkout({ ...activeWorkout, exercises: newExercises });
+  };
+  // --- End Reorganization Logic ---
 
   const getTimerDuration = (set: PerformedSet, workoutExercise: WorkoutExercise, setIndex: number): number => {
     if (set.rest !== undefined && set.rest !== null) return set.rest;
@@ -229,25 +278,41 @@ const ActiveWorkoutPage: React.FC = () => {
   if (!activeWorkout) {
     return <div>{t('active_workout_no_active')}</div>;
   }
+
+  const exercisesToShow = isReorganizeMode ? tempExercises : activeWorkout.exercises;
   
   return (
     <div className="space-y-4">
       <div className="sticky top-0 bg-background/80 backdrop-blur-sm z-20 -mx-2 sm:-mx-4 px-2 sm:px-4 py-2 border-b border-secondary/20">
           <div className="container mx-auto flex items-center justify-between">
-              <button 
-                onClick={minimizeWorkout} 
-                className="p-2 text-text-secondary hover:text-primary"
-                aria-label={t('active_workout_minimize_aria')}
-              >
-                  <Icon name="arrow-down" />
-              </button>
-              <div className="font-mono text-lg text-warning">{elapsedTime}</div>
-              <button 
-                onClick={handleFinishWorkout} 
-                className="bg-success text-white font-bold py-2 px-4 rounded-lg shadow-lg hover:bg-green-400 text-sm"
-              >
-                  {t('workout_finish')}
-              </button>
+              {!isReorganizeMode ? (
+                <>
+                  <button 
+                    onClick={minimizeWorkout} 
+                    className="p-2 text-text-secondary hover:text-primary"
+                    aria-label={t('active_workout_minimize_aria')}
+                  >
+                      <Icon name="arrow-down" />
+                  </button>
+                  <div className="font-mono text-lg text-warning">{elapsedTime}</div>
+                  <button 
+                    onClick={handleFinishWorkout} 
+                    className="bg-success text-white font-bold py-2 px-4 rounded-lg shadow-lg hover:bg-green-400 text-sm"
+                  >
+                      {t('workout_finish')}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button onClick={() => handleExitReorganizeMode(false)} className="bg-secondary text-white font-bold py-2 px-4 rounded-lg shadow-lg text-sm">
+                      {t('common_cancel')}
+                  </button>
+                  <h3 className="text-lg font-bold">{t('exercise_header_menu_reorganize')}</h3>
+                  <button onClick={() => handleExitReorganizeMode(true)} className="bg-success text-white font-bold py-2 px-4 rounded-lg shadow-lg text-sm">
+                      {t('workout_reorganize_save_order')}
+                  </button>
+                </>
+              )}
           </div>
       </div>
       
@@ -270,7 +335,7 @@ const ActiveWorkoutPage: React.FC = () => {
       </div>
 
       <div className="-mx-2 space-y-4 sm:-mx-4">
-        {activeWorkout.exercises.length > 0 ? activeWorkout.exercises.map(exercise => {
+        {exercisesToShow.length > 0 ? exercisesToShow.map((exercise, index) => {
           const exerciseInfo = getExerciseById(exercise.exerciseId);
           return exerciseInfo ? (
               <ExerciseCard
@@ -282,6 +347,16 @@ const ActiveWorkoutPage: React.FC = () => {
                   onTimerFinish={handleTimerFinish}
                   onTimerChange={handleTimerChange}
                   onStartTimedSet={handleStartTimedSet}
+                  isReorganizeMode={isReorganizeMode}
+                  onDragStart={(e) => handleDragStart(e, index)}
+                  onDragEnter={(e) => handleDragEnter(e, index)}
+                  onDragEnd={handleDrop}
+                  onMoveUp={() => handleMoveExercise(index, index - 1)}
+                  onMoveDown={() => handleMoveExercise(index, index + 1)}
+                  isMoveUpDisabled={index === 0}
+                  isMoveDownDisabled={index === exercisesToShow.length - 1}
+                  onReorganize={handleEnterReorganizeMode}
+                  isBeingDraggedOver={draggedOverIndex === index && dragItem.current !== index}
               />
           ) : null;
         }) : (

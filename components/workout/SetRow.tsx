@@ -5,6 +5,7 @@ import SetTypeModal from '../modals/SetTypeModal';
 import { useWeight } from '../../hooks/useWeight';
 import { useI18n } from '../../hooks/useI18n';
 import { formatSecondsToMMSS, parseTimerInput } from '../../utils/timeUtils';
+import { unlockAudioContext } from '../../services/audioService';
 
 interface SetRowProps {
   set: PerformedSet;
@@ -72,7 +73,10 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
     onUpdateSet({ ...set, time: parseTimerInput(e.target.value), isTimeInherited: false });
   };
   
-  const handleComplete = () => onUpdateSet({ ...set, isComplete: !set.isComplete });
+  const handleComplete = () => {
+    unlockAudioContext();
+    onUpdateSet({ ...set, isComplete: !set.isComplete });
+  };
 
   const handleSelectSetType = (type: SetType) => {
     onUpdateSet({ ...set, type });
@@ -165,7 +169,7 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
                         </button>
                     ) : (
                         <>
-                            <button onClick={() => onStartTimedSet?.(set)} className="p-1.5 rounded-full bg-secondary text-white">
+                            <button onClick={() => { unlockAudioContext(); onStartTimedSet?.(set); }} className="p-1.5 rounded-full bg-secondary text-white">
                                 <Icon name="play" className="w-4 h-4" />
                             </button>
                              <button onClick={onDeleteSet} className="p-1.5 rounded-full text-text-secondary hover:text-red-500">

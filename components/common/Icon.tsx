@@ -21,8 +21,16 @@ const ICONS: Record<string, React.ReactNode> = {
   minus: <path strokeLinecap="round" strokeLinejoin="round" d="M20 12H4" />,
   plus: <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />,
   trophy: <path d="M14,13v4H10V13 M17,21H7V18a1,1,0,0,1,1-1h8a1,1,0,0,1,1,1ZM18,7V3H6V7a6,6,0,0,0,6,6h0A6,6,0,0,0,18,7ZM5,3H19" strokeLinecap="round" strokeLinejoin="round"/>,
-  'arrow-up': <path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />,
-  'arrow-down': <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />,
+  'arrow-up': (
+    <g fill="currentColor" stroke="none" transform="scale(0.0458) translate(0, 6)">
+      <path d="M460 321L426 355 262 192 98 355 64 321 262 125 460 321Z" />
+    </g>
+  ),
+  'arrow-down': (
+    <g fill="currentColor" stroke="none" transform="scale(0.0458) translate(0, 6)">
+      <path d="M64 191L98 157 262 320 426 157 460 191 262 387 64 191Z" />
+    </g>
+  ),
   'arrow-right': <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />,
   share: <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6.002L15.316 6.342m-6.632 6.002a3 3 0 100-2.684" />,
   edit: <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L15.232 5.232z" />,
@@ -55,6 +63,17 @@ const ICONS: Record<string, React.ReactNode> = {
   export: (
     <g fill="currentColor" stroke="none">
         <path d="M8.71,7.71,11,5.41V15a1,1,0,0,0,2,0V5.41l2.29,2.3a1,1,0,0,0,1.42,0,1,1,0,0,0,0-1.42l-4-4a1,1,0,0,0-.33-.21,1,1,0,0,0-.76,0,1,1,0,0,0-.33.21l-4,4A1,1,0,1,0,8.71,7.71ZM21,14a1,1,0,0,0-1,1v4a1,1,0,0,1-1,1H5a1,1,0,0,1-1-1V15a1,1,0,0,0-2,0v4a3,3,0,0,0,3,3H19a3,3,0,0,0,3-3V15A1,1,0,0,0,21,14Z" />
+    </g>
+  ),
+  reorganize: (
+    <g fill="currentColor" stroke="none">
+      <g opacity="0.5">
+        <path d="M3 4C3 3.44772 3.44772 3 4 3H12C12.5523 3 13 3.44772 13 4C13 4.55228 12.5523 5 12 5H4C3.44772 5 3 4.55228 3 4Z" />
+        <path d="M3 12C3 11.4477 3.44772 11 4 11H12C12.5523 11 13 11.4477 13 12C13 12.5523 12.5523 13 12 13H4C3.44772 13 3 12.5523 3 12Z" />
+        <path d="M3 16C3 15.4477 3.44772 15 4 15H12C12.5523 15 13 15.4477 13 16C13 16.5523 12.5523 17 12 17H4C3.44772 17 3 16.5523 3 16Z" />
+        <path d="M3 20C3 19.4477 3.44772 19 4 19H12C12.5523 19 13 19.4477 13 20C13 20.5523 12.5523 21 12 21H4C3.44772 21 3 20.5523 3 20Z" />
+      </g>
+      <path fillRule="evenodd" clipRule="evenodd" d="M15.1707 9C15.5825 10.1652 16.6938 11 18 11C19.6569 11 21 9.65685 21 8C21 6.34315 19.6569 5 18 5C16.6938 5 15.5825 5.83481 15.1707 7H4C3.44772 7 3 7.44772 3 8C3 8.55228 3.44772 9 4 9H15.1707ZM19 8C19 8.55228 18.5523 9 18 9C17.4477 9 17 8.55228 17 8C17 7.44772 17.4477 7 18 7C18.5523 7 19 7.44772 19 8Z" />
     </g>
   ),
 };

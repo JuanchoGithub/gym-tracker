@@ -98,6 +98,7 @@ export const es = {
   active_workout_empty_desc: '¡Agregá un ejercicio para empezar!',
   active_workout_edit_details_aria: 'Editar detalles del entrenamiento',
   active_workout_minimize_aria: 'Minimizar entrenamiento',
+  workout_reorganize_save_order: 'Guardar Orden',
   
   // Set Type Modal
   set_type_modal_title: 'Tipo de Serie',
@@ -188,6 +189,9 @@ export const es = {
   exercise_header_menu_add_warmup: 'Agregar Series de Calent.',
   exercise_header_menu_change_timer: 'Cambiar Temporizador',
   exercise_header_menu_replace: 'Reemplazar Ejercicio',
+  exercise_header_menu_move_up: 'Mover Arriba',
+  exercise_header_menu_move_down: 'Mover Abajo',
+  exercise_header_menu_reorganize: 'Reorganizar Orden',
 
   // Timer Modal
   timer_modal_title: 'Agregar tiempos de descanso',
@@ -251,6 +255,8 @@ export const es = {
   template_card_edit_timers: 'Editar Tiempos',
   template_card_remove_exercise: 'Quitar Ejercicio',
   template_card_reorder_exercise: 'Reordenar Ejercicio',
+  template_card_move_up: 'Mover Arriba',
+  template_card_move_down: 'Mover Abajo',
 
   // Exercise Editor
   exercise_editor_add_title: 'Agregar Ejercicio',

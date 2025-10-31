@@ -19,11 +19,21 @@ interface ExerciseHeaderProps {
     onUpdate: (updatedExercise: WorkoutExercise) => void;
     onAddNote: () => void;
     onOpenTimerModal: () => void;
+    onToggleCollapse: () => void;
+    onMoveUp: () => void;
+    onMoveDown: () => void;
+    isMoveUpDisabled: boolean;
+    isMoveDownDisabled: boolean;
+    onReorganize: () => void;
 }
 
 type FocusType = 'q_mark' | 'total_volume' | 'volume_increase' | 'total_reps' | 'weight_by_rep';
 
-const ExerciseHeader: React.FC<ExerciseHeaderProps> = ({ workoutExercise, exerciseInfo, onUpdate, onAddNote, onOpenTimerModal }) => {
+const ExerciseHeader: React.FC<ExerciseHeaderProps> = (props) => {
+    const { 
+        workoutExercise, exerciseInfo, onUpdate, onAddNote, onOpenTimerModal, onToggleCollapse, 
+        onMoveUp, onMoveDown, isMoveUpDisabled, isMoveDownDisabled, onReorganize 
+    } = props;
     const { history: allHistory } = useContext(AppContext);
     const { t } = useI18n();
     const { unit, setUnit, displayWeight } = useWeight();
@@ -158,7 +168,9 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = ({ workoutExercise, exerci
     return (
       <>
         <div className="flex justify-between items-center relative">
-            <h3 className="font-bold text-xl text-primary truncate pr-2">{exerciseInfo.name}</h3>
+            <button onClick={onToggleCollapse} className="flex-grow text-left truncate pr-2">
+                <h3 className="font-bold text-xl text-primary truncate">{exerciseInfo.name}</h3>
+            </button>
             <div className="flex items-center space-x-1">
                 <div className="relative" ref={focusMenuRef}>
                     <button onClick={() => setIsFocusMenuOpen(prev => !prev)} className="bg-secondary/50 text-text-primary px-3 py-1 rounded-full text-sm font-semibold min-w-[60px] text-center">
@@ -181,6 +193,19 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = ({ workoutExercise, exerci
                     </button>
                     {isOptionsMenuOpen && (
                         <div className="absolute right-0 mt-2 w-48 bg-slate-700 rounded-md shadow-lg z-30">
+                            <button onClick={() => { onMoveUp(); setIsOptionsMenuOpen(false); }} disabled={isMoveUpDisabled} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                                <Icon name="arrow-up" className="w-4 h-4"/>
+                                <span>{t('exercise_header_menu_move_up')}</span>
+                            </button>
+                            <button onClick={() => { onMoveDown(); setIsOptionsMenuOpen(false); }} disabled={isMoveDownDisabled} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                                <Icon name="arrow-down" className="w-4 h-4"/>
+                                <span>{t('exercise_header_menu_move_down')}</span>
+                            </button>
+                            <button onClick={() => { onReorganize(); setIsOptionsMenuOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600 flex items-center gap-2">
+                                <Icon name="reorganize" className="w-4 h-4"/>
+                                <span>{t('exercise_header_menu_reorganize')}</span>
+                            </button>
+                            <div className="h-px bg-secondary/50 my-1"></div>
                             <button onClick={() => { onAddNote(); setIsOptionsMenuOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">{t('exercise_header_menu_add_note')}</button>
                             <button onClick={handleAddWarmupSets} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">{t('exercise_header_menu_add_warmup')}</button>
                             <button onClick={() => { onOpenTimerModal(); setIsOptionsMenuOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">{t('exercise_header_menu_change_timer')}</button>

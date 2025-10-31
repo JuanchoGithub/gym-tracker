@@ -1,13 +1,13 @@
 import React, { useContext, useState, useMemo } from 'react';
 import { AppContext } from '../contexts/AppContext';
-import { useI18n } from '../hooks/useI18n';
+import { useI18n } from '../../hooks/useI18n';
 import ExerciseCard from '../components/workout/ExerciseCard';
-import { WorkoutExercise, WorkoutSession, PerformedSet } from '../types';
+import { WorkoutExercise, WorkoutSession, PerformedSet } from '../../types';
 import { Icon } from '../components/common/Icon';
 import WorkoutDetailsModal from '../components/modals/WorkoutDetailsModal';
 import ReplaceExerciseModal from '../components/modals/ReplaceExerciseModal';
 import ConfirmModal from '../components/modals/ConfirmModal';
-import { formatTime } from '../utils/timeUtils';
+import { formatTime } from '../../utils/timeUtils';
 
 const HistoryWorkoutEditorPage: React.FC = () => {
   const { 
@@ -22,6 +22,14 @@ const HistoryWorkoutEditorPage: React.FC = () => {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isAddExerciseModalOpen, setIsAddExerciseModalOpen] = useState(false);
   const [isConfirmingBack, setIsConfirmingBack] = useState(false);
+
+  const handleMoveExercise = (fromIndex: number, toIndex: number) => {
+    if (!workout || toIndex < 0 || toIndex >= workout.exercises.length) return;
+    const newExercises = [...workout.exercises];
+    const [movedItem] = newExercises.splice(fromIndex, 1);
+    newExercises.splice(toIndex, 0, movedItem);
+    setWorkout(prev => prev ? { ...prev, exercises: newExercises } : null);
+  };
 
   const duration = useMemo(() => {
     if (!workout || !workout.startTime) return '00:00:00';
@@ -129,9 +137,10 @@ const HistoryWorkoutEditorPage: React.FC = () => {
       </div>
 
       <div className="-mx-2 space-y-4 sm:-mx-4">
-        {workout.exercises.length > 0 ? workout.exercises.map(exercise => {
+        {workout.exercises.length > 0 ? workout.exercises.map((exercise, index) => {
           const exerciseInfo = getExerciseById(exercise.exerciseId);
           return exerciseInfo ? (
+              // FIX: Added missing properties to the ExerciseCard component to satisfy its required props.
               <ExerciseCard
                   key={exercise.id}
                   workoutExercise={exercise}
@@ -140,6 +149,11 @@ const HistoryWorkoutEditorPage: React.FC = () => {
                   activeTimerInfo={null}
                   onTimerFinish={() => {}}
                   onTimerChange={() => {}}
+                  onMoveUp={() => handleMoveExercise(index, index - 1)}
+                  onMoveDown={() => handleMoveExercise(index, index + 1)}
+                  isMoveUpDisabled={index === 0}
+                  isMoveDownDisabled={workout.exercises.length - 1 === index}
+                  onReorganize={() => { /* Not implemented on this page */ }}
               />
           ) : null;
         }) : (

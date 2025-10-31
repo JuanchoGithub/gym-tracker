@@ -75,6 +75,16 @@ const TemplateEditorPage: React.FC = () => {
         setDraggedOverIndex(position);
     };
 
+    const handleMoveExercise = (fromIndex: number, toIndex: number) => {
+        if (!editingTemplate || toIndex < 0 || toIndex >= editingTemplate.exercises.length) {
+            return;
+        }
+        const newExercises = [...editingTemplate.exercises];
+        const [movedItem] = newExercises.splice(fromIndex, 1);
+        newExercises.splice(toIndex, 0, movedItem);
+        updateEditingTemplate({ ...editingTemplate, exercises: newExercises });
+    };
+
     const handleDrop = () => {
         if (!editingTemplate || dragItem.current === null || dragOverItem.current === null || dragItem.current === dragOverItem.current) {
             setDraggedOverIndex(null);
@@ -82,15 +92,11 @@ const TemplateEditorPage: React.FC = () => {
             return;
         }
         
-        const newExercises = [...editingTemplate.exercises];
-        const dragItemContent = newExercises.splice(dragItem.current, 1)[0];
-        newExercises.splice(dragOverItem.current, 0, dragItemContent);
+        handleMoveExercise(dragItem.current, dragOverItem.current);
         
         dragItem.current = null;
         dragOverItem.current = null;
         setDraggedOverIndex(null);
-        
-        updateEditingTemplate({...editingTemplate, exercises: newExercises});
     };
 
 
@@ -168,15 +174,17 @@ const TemplateEditorPage: React.FC = () => {
             </div>
             
             <h2 className="text-lg font-semibold border-b border-secondary/20 pb-2">{t('template_editor_exercises_title')}</h2>
-            {editingTemplate.routineType === 'hiit' ? (
-                <div className="space-y-2" onDragOver={e => e.preventDefault()}>
-                    {editingTemplate.exercises.map((we, index) => {
-                        const exerciseInfo = getExerciseById(we.exerciseId);
-                        if (!exerciseInfo) return null;
+
+            <div className="space-y-4" onDragOver={e => e.preventDefault()}>
+                {editingTemplate.exercises.map((we, index) => {
+                    const exerciseInfo = getExerciseById(we.exerciseId);
+                    if (!exerciseInfo) return null;
+                    
+                    if (editingTemplate.routineType === 'hiit') {
                         return (
                             <div
                                 key={we.id}
-                                className={`bg-surface p-3 rounded-lg flex items-center gap-3 relative transition-opacity ${dragItem.current === index ? 'opacity-50' : 'opacity-100'}`}
+                                className={`bg-surface p-3 rounded-lg flex items-center gap-3 relative transition-opacity cursor-grab ${dragItem.current === index ? 'opacity-50' : 'opacity-100'}`}
                                 draggable
                                 onDragStart={(e) => handleDragStart(e, index)}
                                 onDragEnter={(e) => handleDragEnter(e, index)}
@@ -184,7 +192,7 @@ const TemplateEditorPage: React.FC = () => {
                                 onDragOver={(e) => e.preventDefault()}
                                 title={t('template_editor_drag_to_reorder')}
                             >
-                                <Icon name="ellipsis" className="w-6 h-6 rotate-90 cursor-grab text-text-secondary" />
+                                <Icon name="sort" className="w-6 h-6 text-text-secondary" />
                                 <span className="font-semibold flex-grow">{exerciseInfo.name}</span>
                                 <button onClick={() => handleRemoveExercise(we.id)} className="p-2 text-red-400 hover:text-red-500">
                                     <Icon name="trash" />
@@ -192,13 +200,7 @@ const TemplateEditorPage: React.FC = () => {
                                 {draggedOverIndex === index && dragItem.current !== index && <div className="absolute -top-1 left-0 w-full h-1 bg-primary rounded-full"></div>}
                             </div>
                         );
-                    })}
-                </div>
-            ) : (
-                <div className="space-y-4">
-                    {editingTemplate.exercises.map(we => {
-                        const exerciseInfo = getExerciseById(we.exerciseId);
-                        if (!exerciseInfo) return null;
+                    } else {
                         return (
                             <TemplateExerciseCard 
                                 key={we.id}
@@ -206,11 +208,19 @@ const TemplateEditorPage: React.FC = () => {
                                 exerciseInfo={exerciseInfo}
                                 onUpdate={handleUpdateExercise}
                                 onRemove={handleRemoveExercise}
+                                onMoveUp={() => handleMoveExercise(index, index - 1)}
+                                onMoveDown={() => handleMoveExercise(index, index + 1)}
+                                isMoveUpDisabled={index === 0}
+                                isMoveDownDisabled={index === editingTemplate.exercises.length - 1}
+                                onDragStart={(e) => handleDragStart(e, index)}
+                                onDragEnter={(e) => handleDragEnter(e, index)}
+                                onDragEnd={handleDrop}
+                                isBeingDraggedOver={draggedOverIndex === index && dragItem.current !== index}
                             />
                         );
-                    })}
-                </div>
-            )}
+                    }
+                })}
+            </div>
 
 
             {(editingTemplate.exercises.length === 0) && (
