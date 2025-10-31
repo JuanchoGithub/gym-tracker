@@ -63,7 +63,8 @@ const RoutinePreviewModal: React.FC<RoutinePreviewModalProps> = ({ routine, isOp
               onClick={() => onStart(routine)}
               className="w-full bg-primary text-white font-bold py-3 rounded-lg hover:bg-sky-600 transition-colors"
             >
-              {t('routine_start_workout')}
+              {/* FIX: Corrected translation key from 'routine_start_workout' to 'routine_preview_start_workout'. */}
+              {t('routine_preview_start_workout')}
             </button>
           </div>
         </div>

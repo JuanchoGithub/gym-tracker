@@ -11,7 +11,7 @@ interface TemplateSetRowProps {
   setNumber: number;
   onUpdateSet: (updatedSet: PerformedSet) => void;
   onDeleteSet: () => void;
-  restTime: { normal: number; warmup: number; drop: number; timed: number };
+  restTime: { normal: number; warmup: number; drop: number; timed: number; effort: number; failure: number; };
   onEditSetTimer: () => void;
 }
 
@@ -55,7 +55,7 @@ const TemplateSetRow: React.FC<TemplateSetRowProps> = ({ set, setNumber, onUpdat
   };
   
   const handleSelectSetType = (type: SetType) => {
-    const newDefaultRest = type === 'warmup' ? restTime.warmup : type === 'drop' ? restTime.drop : type === 'timed' ? restTime.timed : restTime.normal;
+    const newDefaultRest = type === 'warmup' ? restTime.warmup : type === 'drop' ? restTime.drop : type === 'timed' ? restTime.timed : type === 'failure' ? restTime.failure : restTime.normal;
     
     // If the set had an override, but the new default is the same, remove the override
     if (set.rest !== undefined && set.rest === newDefaultRest) {
@@ -105,6 +105,7 @@ const TemplateSetRow: React.FC<TemplateSetRowProps> = ({ set, setNumber, onUpdat
         case 'warmup': return restTime.warmup;
         case 'drop': return restTime.drop;
         case 'timed': return restTime.timed;
+        case 'failure': return restTime.failure;
         default: return restTime.normal;
     }
   }

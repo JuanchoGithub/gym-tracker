@@ -195,7 +195,8 @@ const TimersPage: React.FC = () => {
             id: `we-custom-${i}`,
             exerciseId: '', // No real exercise associated
             sets: [],
-            restTime: { normal: 0, warmup: 0, drop: 0, timed: 0 },
+            // FIX: Added missing `effort` and `failure` properties to the `restTime` object when creating a custom HIIT routine. This ensures the `WorkoutExercise` object conforms to its type definition and resolves a TypeScript error.
+            restTime: { normal: 0, warmup: 0, drop: 0, timed: 0, effort: 0, failure: 0 },
         }))
     };
     startHiitTimer(customRoutine);

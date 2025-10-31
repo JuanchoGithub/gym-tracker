@@ -16,8 +16,9 @@ const createWorkoutExercise = (exerciseId: string, sets: PerformedSet[], restTim
         normal: restTime,
         warmup: 60,
         drop: 30,
-        // FIX: Added missing 'timed' property to the restTime object.
         timed: 10,
+        effort: 180,
+        failure: 300,
     }
 });
 
@@ -25,7 +26,7 @@ const createHiitExercise = (exerciseId: string): WorkoutExercise => ({
     id: `we-${exerciseId}-${Math.random()}`,
     exerciseId,
     sets: [{ id: `set-${Math.random()}`, reps: 1, weight: 0, type: 'normal', isComplete: false }], // Dummy set for type compatibility
-    restTime: { normal: 0, warmup: 0, drop: 0, timed: 0 },
+    restTime: { normal: 0, warmup: 0, drop: 0, timed: 0, effort: 0, failure: 0 },
 });
 
 

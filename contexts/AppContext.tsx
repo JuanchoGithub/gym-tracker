@@ -31,8 +31,8 @@ interface AppContextType {
   discardActiveWorkout: () => void;
   weightUnit: WeightUnit;
   setWeightUnit: (unit: WeightUnit) => void;
-  defaultRestTimes: { normal: number; warmup: number; drop: number; timed: number; };
-  setDefaultRestTimes: (times: { normal: number; warmup: number; drop: number; timed: number; }) => void;
+  defaultRestTimes: { normal: number; warmup: number; drop: number; timed: number; effort: number; failure: number; };
+  setDefaultRestTimes: (times: { normal: number; warmup: number; drop: number; timed: number; effort: number; failure: number; }) => void;
   editingTemplate: Routine | null;
   updateEditingTemplate: (template: Routine) => void;
   startTemplateEdit: (template: Routine) => void;
@@ -74,7 +74,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [activeWorkout, setActiveWorkout] = useLocalStorage<WorkoutSession | null>('activeWorkout', null);
   const [isWorkoutMinimized, setIsWorkoutMinimized] = useLocalStorage<boolean>('isWorkoutMinimized', false);
   const [weightUnit, setWeightUnit] = useLocalStorage<WeightUnit>('weightUnit', 'kg');
-  const [defaultRestTimes, setDefaultRestTimes] = useLocalStorage<{ normal: number; warmup: number; drop: number; timed: number; }>('defaultRestTimes', { normal: 90, warmup: 60, drop: 30, timed: 10 });
+  const [defaultRestTimes, setDefaultRestTimes] = useLocalStorage<{ normal: number; warmup: number; drop: number; timed: number; effort: number; failure: number; }>('defaultRestTimes', { normal: 90, warmup: 60, drop: 30, timed: 10, effort: 180, failure: 300 });
   const [editingTemplate, setEditingTemplate] = useState<Routine | null>(null);
   const [editingExercise, setEditingExercise] = useState<Exercise | null>(null);
   const [editingHistorySession, setEditingHistorySession] = useState<WorkoutSession | null>(null);
@@ -171,10 +171,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (activeWorkout) {
       let needsUpdate = false;
       const migratedExercises = activeWorkout.exercises.map(ex => {
-        if (typeof ex.restTime === 'number' || !('timed' in ex.restTime)) {
+        if (typeof ex.restTime === 'number' || !('timed' in ex.restTime) || !('effort' in ex.restTime)) {
           needsUpdate = true;
-          // FIX: Cast ex.restTime to `any` to handle legacy data structures during migration,
-          // resolving a type conflict where the compiler inferred `never`.
           const oldNormal = typeof ex.restTime === 'number' ? ex.restTime : (ex.restTime as any).normal;
           return {
             ...ex,
@@ -183,6 +181,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               warmup: (ex.restTime as any).warmup || 60,
               drop: (ex.restTime as any).drop || 30,
               timed: (ex.restTime as any).timed || 10,
+              effort: (ex.restTime as any).effort || 180,
+              failure: (ex.restTime as any).failure || 300,
             }
           };
         }
@@ -246,9 +246,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // Reset sets for the new session, giving them new IDs and pre-populating with last performance
     newWorkoutExercises.forEach((ex, exIndex) => {
         ex.id = `we-${Date.now()}-${exIndex}`; 
-        if (!ex.restTime.timed) {
-          ex.restTime.timed = defaultRestTimes.timed;
-        }
+        
+        // Ensure all rest time properties exist, falling back to defaults
+        ex.restTime = { ...defaultRestTimes, ...ex.restTime };
 
         const exerciseHistory = getExerciseHistory(history, ex.exerciseId);
         const lastPerformance = exerciseHistory.length > 0 ? exerciseHistory[0].exerciseData : null;
@@ -312,7 +312,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
     setActiveWorkout(newWorkout);
     setIsWorkoutMinimized(false);
-  }, [setActiveWorkout, setIsWorkoutMinimized, defaultRestTimes.timed, history]);
+  }, [setActiveWorkout, setIsWorkoutMinimized, defaultRestTimes, history]);
 
   const updateActiveWorkout = useCallback((workout: WorkoutSession) => {
     setActiveWorkout(workout);
@@ -580,7 +580,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               id: `we-${Date.now()}-${Math.random()}`,
               exerciseId,
               sets: [{ id: `set-${Date.now()}-${Math.random()}`, reps: 1, weight: 0, type: 'normal', isComplete: false } as PerformedSet],
-              restTime: { normal: 0, warmup: 0, drop: 0, timed: 0 },
+              restTime: { normal: 0, warmup: 0, drop: 0, timed: 0, effort: 0, failure: 0 },
           }));
       } else {
           newExercises = newExerciseIds.map(exId => ({

@@ -7,6 +7,7 @@ import ToggleSwitch from '../components/common/ToggleSwitch';
 import { requestNotificationPermission } from '../services/notificationService';
 import { getAvailableVoices, speak } from '../services/speechService';
 import { Icon } from '../components/common/Icon';
+import Modal from '../components/common/Modal';
 
 const ProfilePage: React.FC = () => {
   const { locale, setLocale } = useContext(I18nContext);
@@ -29,6 +30,7 @@ const ProfilePage: React.FC = () => {
   const [editingTimerKey, setEditingTimerKey] = useState<keyof typeof defaultRestTimes | null>(null);
   const [tempTimerValue, setTempTimerValue] = useState('');
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [infoModalContent, setInfoModalContent] = useState<{title: string, message: string} | null>(null);
   
   const [permissionStatus, setPermissionStatus] = useState(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -98,7 +100,6 @@ const ProfilePage: React.FC = () => {
   const handleTimerInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value.replace(/\D/g, '');
     if (val.length <= 5) {
-        // FIX: Corrected a typo from `setTempValue` to `setTempTimerValue`.
         setTempTimerValue(val);
     }
   };
@@ -119,10 +120,12 @@ const ProfilePage: React.FC = () => {
     speak(sampleText, selectedVoiceURI, locale);
   };
 
-  const timerSettings: { key: keyof typeof defaultRestTimes; labelKey: TranslationKey }[] = [
-    { key: 'normal', labelKey: 'timer_normal' },
-    { key: 'warmup', labelKey: 'timer_warmup' },
-    { key: 'drop', labelKey: 'timer_drop' },
+  const timerSettings: { key: keyof typeof defaultRestTimes; labelKey: TranslationKey, infoKey?: {title: TranslationKey, message: TranslationKey} }[] = [
+    { key: 'normal', labelKey: 'timer_normal', infoKey: {title: 'timer_normal_desc_title', message: 'timer_normal_desc'} },
+    { key: 'warmup', labelKey: 'timer_warmup', infoKey: {title: 'timer_warmup_desc_title', message: 'timer_warmup_desc'} },
+    { key: 'drop', labelKey: 'timer_drop', infoKey: {title: 'timer_drop_desc_title', message: 'timer_drop_desc'} },
+    { key: 'effort', labelKey: 'timer_effort', infoKey: {title: 'timer_effort_desc_title', message: 'timer_effort_desc'} },
+    { key: 'failure', labelKey: 'timer_failure', infoKey: {title: 'timer_failure_desc_title', message: 'timer_failure_desc'} },
   ];
 
   return (
@@ -186,9 +189,16 @@ const ProfilePage: React.FC = () => {
             <h3 className="text-text-primary mb-2">{t('profile_default_timers')}</h3>
             <p className="text-sm text-text-secondary mb-4">{t('profile_default_timers_desc')}</p>
             <div className="space-y-3">
-              {timerSettings.map(({ key, labelKey }) => (
+              {timerSettings.map(({ key, labelKey, infoKey }) => (
                 <div key={key} className="flex justify-between items-center text-lg">
-                    <span className="text-text-primary">{t(labelKey)}</span>
+                    <div className="flex items-center gap-2">
+                        <span className="text-text-primary">{t(labelKey)}</span>
+                        {infoKey && (
+                            <button onClick={() => setInfoModalContent({title: t(infoKey.title), message: t(infoKey.message)})}>
+                                <Icon name="question-mark-circle" className="w-5 h-5 text-text-secondary" />
+                            </button>
+                        )}
+                    </div>
                     {editingTimerKey === key ? (
                         <input
                             type="text"
@@ -273,6 +283,12 @@ const ProfilePage: React.FC = () => {
         </div>
 
       </div>
+
+      {infoModalContent && (
+        <Modal isOpen={!!infoModalContent} onClose={() => setInfoModalContent(null)} title={infoModalContent.title}>
+            <p className="text-text-secondary">{infoModalContent.message}</p>
+        </Modal>
+      )}
     </div>
   );
 };

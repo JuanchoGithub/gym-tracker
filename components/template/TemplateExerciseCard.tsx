@@ -87,7 +87,8 @@ const TemplateExerciseCard: React.FC<TemplateExerciseCardProps> = ({ workoutExer
     setIsNoteEditing(false);
   };
   
-  const handleSaveDefaultsTimer = (newTimers: { normal: number; warmup: number; drop: number; timed: number; }) => {
+  // FIX: Corrected the type of `newTimers` to include `effort` and `failure` properties, aligning it with the expected type for `restTime` in `WorkoutExercise` and resolving a TypeScript error.
+  const handleSaveDefaultsTimer = (newTimers: { normal: number; warmup: number; drop: number; timed: number; effort: number; failure: number; }) => {
     // When defaults change, remove overrides that match the *new* default for that set type
     const updatedSets = workoutExercise.sets.map(set => {
         const newDefault = newTimers[set.type as keyof typeof newTimers] ?? newTimers.normal;

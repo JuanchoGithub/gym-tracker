@@ -38,6 +38,8 @@ export interface WorkoutExercise {
     warmup: number;
     drop: number;
     timed: number;
+    effort: number;
+    failure: number;
   };
   note?: string;
   barWeight?: number;

@@ -2,20 +2,24 @@ import React, { useState, useEffect, useRef } from 'react';
 import { playWarningSound, playEndSound } from '../../services/audioService';
 import { Icon } from '../common/Icon';
 import { useI18n } from '../../hooks/useI18n';
-import { formatTime } from '../../utils/timeUtils';
+import { formatTime, formatSecondsToMMSS } from '../../utils/timeUtils';
+import Modal from '../common/Modal';
 
 interface TimerProps {
   duration: number; // in seconds
+  effortTime: number;
+  failureTime: number;
   onFinish: () => void;
   onTimeChange?: (newTime: number) => void;
 }
 
-const Timer: React.FC<TimerProps> = ({ duration: initialDuration, onFinish, onTimeChange }) => {
+const Timer: React.FC<TimerProps> = ({ duration: initialDuration, effortTime, failureTime, onFinish, onTimeChange }) => {
   const { t } = useI18n();
   const [totalDuration, setTotalDuration] = useState(initialDuration);
   const [timeLeft, setTimeLeft] = useState(initialDuration);
   const [isPaused, setIsPaused] = useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [infoModalContent, setInfoModalContent] = useState<{title: string, message: string} | null>(null);
   
   const targetTimeRef = useRef<number>(0);
   const onFinishRef = useRef(onFinish);
@@ -35,6 +39,12 @@ const Timer: React.FC<TimerProps> = ({ duration: initialDuration, onFinish, onTi
     setTimeLeft(newDuration);
     targetTimeRef.current = Date.now() + newDuration * 1000;
   };
+
+  const setTimer = (newDuration: number) => {
+    setTotalDuration(newDuration);
+    resetTimer(newDuration);
+    onTimeChangeRef.current?.(newDuration);
+  }
 
   useEffect(() => {
     if (isInitialMount.current) {
@@ -141,9 +151,7 @@ const Timer: React.FC<TimerProps> = ({ duration: initialDuration, onFinish, onTi
   };
 
   const handleReset = () => {
-    setTotalDuration(initialDuration);
-    resetTimer(initialDuration);
-    onTimeChangeRef.current?.(initialDuration);
+    setTimer(initialDuration);
   };
 
   const handleSkip = () => {
@@ -157,6 +165,9 @@ const Timer: React.FC<TimerProps> = ({ duration: initialDuration, onFinish, onTi
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
   const progress = totalDuration > 0 ? (elapsedSeconds / totalDuration) * 100 : 0;
+
+  const presetButtonClass = "flex-1 bg-secondary text-text-primary font-semibold py-3 rounded-lg flex flex-col items-center justify-center text-sm";
+  const infoButtonClass = "absolute top-1 right-1 text-text-secondary/50 hover:text-text-secondary";
 
   return (
     <div className="my-2 bg-slate-700 rounded-lg">
@@ -175,32 +186,61 @@ const Timer: React.FC<TimerProps> = ({ duration: initialDuration, onFinish, onTi
             </div>
         ) : (
             <div className="p-4 flex flex-col items-center justify-center space-y-4">
-                <button
-                    onClick={togglePause}
-                    className="relative w-full bg-surface text-text-primary font-bold py-4 rounded-lg text-2xl flex items-center justify-center shadow-lg overflow-hidden"
-                >
-                    <div
-                        className="absolute top-0 left-0 h-full bg-primary"
-                        style={{ width: `${progress}%`, transition: 'width 200ms linear' }}
-                    ></div>
-                    <span className="relative flex items-center">
-                        <Icon name={isPaused ? 'play' : 'pause'} className="w-8 h-8 mr-3"/>
-                        <div className="flex flex-col">
-                            <span className="text-2xl font-bold leading-tight">{isPaused ? t('timer_resume') : t('timer_pause')}</span>
-                            <span className="text-base font-mono font-normal leading-tight">{formatTime(elapsedSeconds)} / {formatTime(totalDuration)}</span>
-                        </div>
-                    </span>
-                </button>
-                <div className="grid grid-cols-2 gap-2 w-full">
-                    <button onClick={() => modifyTime(-10)} className="bg-secondary text-text-primary font-semibold py-3 rounded-lg">{t('workout_timer_sub')}</button>
-                    <button onClick={() => modifyTime(10)} className="bg-secondary text-text-primary font-semibold py-3 rounded-lg">{t('workout_timer_add')}</button>
-                    <button onClick={handleReset} className="bg-secondary text-text-primary font-semibold py-3 rounded-lg">{t('timer_reset')}</button>
-                    <button onClick={handleSkip} className="bg-secondary text-text-primary font-semibold py-3 rounded-lg">{t('timer_skip')}</button>
+                <div className="flex items-stretch justify-center gap-2 w-full">
+                    <button onClick={() => modifyTime(-10)} className="bg-secondary text-text-primary font-semibold py-4 px-4 rounded-lg flex items-center justify-center text-xl">
+                        {t('workout_timer_sub')}
+                    </button>
+                    <button
+                        onClick={togglePause}
+                        className="relative bg-surface text-text-primary font-bold py-4 px-4 rounded-lg text-2xl flex items-center justify-center shadow-lg overflow-hidden flex-grow"
+                    >
+                        <div
+                            className="absolute top-0 left-0 h-full bg-primary"
+                            style={{ width: `${progress}%`, transition: 'width 200ms linear' }}
+                        ></div>
+                        <span className="relative flex items-center">
+                            <Icon name={isPaused ? 'play' : 'pause'} className="w-10 h-10 mr-3"/>
+                            <div className="flex flex-col text-left">
+                                <span className="text-xl font-bold leading-tight">{isPaused ? t('timer_resume') : t('timer_pause')}</span>
+                                <span className="text-sm font-mono font-normal leading-tight">{formatTime(elapsedSeconds)} / {formatTime(totalDuration)}</span>
+                            </div>
+                        </span>
+                    </button>
+                    <button onClick={() => modifyTime(10)} className="bg-secondary text-text-primary font-semibold py-4 px-4 rounded-lg flex items-center justify-center text-xl">
+                        {t('workout_timer_add')}
+                    </button>
                 </div>
-                <button onClick={() => setIsKeyboardVisible(false)} className="w-full bg-primary/50 text-white font-bold py-2 rounded-lg mt-2">
-                    {t('timer_hide')}
-                </button>
+
+                 <div className="flex gap-2 w-full">
+                    <button onClick={handleReset} className={presetButtonClass}>
+                        <span>{t('timer_reset')}</span>
+                        <span className="font-mono">{formatSecondsToMMSS(initialDuration)}</span>
+                    </button>
+                    <button onClick={() => setTimer(effortTime)} className={`${presetButtonClass} relative`}>
+                        <span>{t('timer_effort')}</span>
+                        <span className="font-mono">{formatSecondsToMMSS(effortTime)}</span>
+                        <div className={infoButtonClass} onClick={(e) => { e.stopPropagation(); setInfoModalContent({title: t('timer_effort_desc_title'), message: t('timer_effort_desc')})}}>
+                            <Icon name="question-mark-circle" className="w-4 h-4" />
+                        </div>
+                    </button>
+                    <button onClick={() => setTimer(failureTime)} className={`${presetButtonClass} relative`}>
+                        <span>{t('timer_failure')}</span>
+                        <span className="font-mono">{formatSecondsToMMSS(failureTime)}</span>
+                        <div className={infoButtonClass} onClick={(e) => { e.stopPropagation(); setInfoModalContent({title: t('timer_failure_desc_title'), message: t('timer_failure_desc')})}}>
+                            <Icon name="question-mark-circle" className="w-4 h-4" />
+                        </div>
+                    </button>
+                </div>
+                 <div className="grid grid-cols-2 gap-2 w-full">
+                    <button onClick={handleSkip} className="bg-secondary text-text-primary font-semibold py-3 rounded-lg">{t('timer_skip')}</button>
+                    <button onClick={() => setIsKeyboardVisible(false)} className="bg-secondary text-text-primary font-semibold py-3 rounded-lg">{t('timer_hide')}</button>
+                </div>
             </div>
+        )}
+        {infoModalContent && (
+            <Modal isOpen={!!infoModalContent} onClose={() => setInfoModalContent(null)} title={infoModalContent.title}>
+                <p className="text-text-secondary">{infoModalContent.message}</p>
+            </Modal>
         )}
     </div>
   );

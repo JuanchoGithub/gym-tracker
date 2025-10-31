@@ -55,8 +55,10 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseIn
         case 'timed': 
             duration = restTime.timed || 10;
             break;
-        case 'normal':
         case 'failure':
+            duration = restTime.failure;
+            break;
+        case 'normal':
         default: 
             duration = restTime.normal;
     }
@@ -211,7 +213,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseIn
     setIsNoteEditing(false);
   };
   
-  const handleSaveDefaultsTimer = (newTimers: { normal: number; warmup: number; drop: number; timed: number; }) => {
+  const handleSaveDefaultsTimer = (newTimers: { normal: number; warmup: number; drop: number; timed: number; effort: number; failure: number; }) => {
     onUpdate({ ...workoutExercise, restTime: newTimers });
   };
 
@@ -282,6 +284,8 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ workoutExercise, exerciseIn
                           <div className="w-full rounded-lg">
                             <Timer 
                                 duration={getTimerDuration(set, setIndex)} 
+                                effortTime={workoutExercise.restTime.effort}
+                                failureTime={workoutExercise.restTime.failure}
                                 onFinish={() => onTimerFinish(workoutExercise.id, set.id)} 
                                 onTimeChange={(newTime) => onTimerChange(newTime, exerciseInfo.name)}
                             />
