@@ -1,9 +1,10 @@
-import React, { createContext, useState, ReactNode, useCallback } from 'react';
+import React, { createContext, ReactNode, useCallback } from 'react';
 import { en } from '../locales/en';
 import { es } from '../locales/es';
 // FIX: Corrected import paths to point to the index files.
 import { instructionsEn } from '../locales/instructions/en';
 import { instructionsEs } from '../locales/instructions/es';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 
 // Fix: Combine translations and instructions into single objects for each language.
 const translations = {
@@ -24,10 +25,10 @@ interface I18nContextType {
 export const I18nContext = createContext<I18nContextType>({} as I18nContextType);
 
 export const I18nProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [locale, setLocale] = useState<Locale>(() => {
+  const [locale, setLocale] = useLocalStorage<Locale>('locale', (() => {
     const browserLang = navigator.language.split('-')[0];
     return browserLang === 'es' ? 'es' : 'en';
-  });
+  })());
 
   const t = useCallback(
     (key: TranslationKey, replacements?: Record<string, string | number>): string => {
