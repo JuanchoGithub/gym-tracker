@@ -242,17 +242,33 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     unlockAudioContext();
     // Deep copy to avoid mutating the original routine/template
     const newWorkoutExercises: WorkoutExercise[] = JSON.parse(JSON.stringify(routine.exercises));
-    
-    // Reset sets for the new session, giving them new IDs and pre-populating with last performance
+
     newWorkoutExercises.forEach((ex, exIndex) => {
-        ex.id = `we-${Date.now()}-${exIndex}`; 
-        
+        ex.id = `we-${Date.now()}-${exIndex}`;
+
         // Ensure all rest time properties exist, falling back to defaults
         ex.restTime = { ...defaultRestTimes, ...ex.restTime };
 
         const exerciseHistory = getExerciseHistory(history, ex.exerciseId);
         const lastPerformance = exerciseHistory.length > 0 ? exerciseHistory[0].exerciseData : null;
-        
+
+        // Group last performance sets by type for smarter inheritance
+        const lastSetsByType = lastPerformance ? lastPerformance.sets.reduce((acc, set) => {
+            if (!acc[set.type]) {
+                acc[set.type] = [];
+            }
+            acc[set.type].push(set);
+            return acc;
+        }, {} as Record<string, PerformedSet[]>) : {};
+
+        const currentSetTypeCounters: Record<string, number> = {
+            normal: 0,
+            warmup: 0,
+            drop: 0,
+            failure: 0,
+            timed: 0,
+        };
+
         ex.sets.forEach((set: PerformedSet, setIndex: number) => {
             set.id = `set-${Date.now()}-${exIndex}-${setIndex}`;
             set.isComplete = false;
@@ -263,37 +279,50 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             set.historicalTime = set.time;
 
             if (routine.isTemplate) {
-                // Pre-populate with the last performance for this exercise, if available
-                const lastSet = lastPerformance?.sets[setIndex];
-                if (lastSet) {
-                    const isLastSetTimed = lastSet.type === 'timed';
-                    const isCurrentSetTimed = set.type === 'timed';
-    
-                    if (isLastSetTimed && isCurrentSetTimed) {
-                        set.reps = lastSet.reps;
-                        set.time = lastSet.time;
-                        // Overwrite historical values with actual last performance
-                        set.historicalReps = lastSet.reps;
-                        set.historicalTime = lastSet.time;
-                        set.isRepsInherited = true;
-                        set.isTimeInherited = true;
-                    } else if (!isLastSetTimed && !isCurrentSetTimed) {
-                        set.weight = lastSet.weight;
-                        set.reps = lastSet.reps;
-                        // Overwrite historical values with actual last performance
-                        set.historicalWeight = lastSet.weight;
-                        set.historicalReps = lastSet.reps;
+                if (lastPerformance) {
+                    const setType = set.type;
+                    const lastSetsOfSameType = lastSetsByType[setType] || [];
+                    const typeSpecificIndex = currentSetTypeCounters[setType];
+
+                    let lastSetToInheritFrom: PerformedSet | null = null;
+                    if (lastSetsOfSameType.length > 0) {
+                        // Use the set at the same type-specific index, or fall back to the last available set of that type.
+                        lastSetToInheritFrom = lastSetsOfSameType[typeSpecificIndex] || lastSetsOfSameType[lastSetsOfSameType.length - 1];
+                    }
+
+                    if (lastSetToInheritFrom) {
+                        // Since we grouped by type, we know the types match.
+                        if (set.type === 'timed') {
+                            set.reps = lastSetToInheritFrom.reps;
+                            set.time = lastSetToInheritFrom.time;
+                            set.historicalReps = lastSetToInheritFrom.reps;
+                            set.historicalTime = lastSetToInheritFrom.time;
+                            set.isRepsInherited = true;
+                            set.isTimeInherited = true;
+                        } else {
+                            set.weight = lastSetToInheritFrom.weight;
+                            set.reps = lastSetToInheritFrom.reps;
+                            set.historicalWeight = lastSetToInheritFrom.weight;
+                            set.historicalReps = lastSetToInheritFrom.reps;
+                            set.isWeightInherited = true;
+                            set.isRepsInherited = true;
+                        }
+                    } else {
+                        // No last performance for this specific set type.
                         set.isWeightInherited = true;
                         set.isRepsInherited = true;
+                        set.isTimeInherited = true;
                     }
+
+                    currentSetTypeCounters[setType]++;
                 } else {
-                    // No last performance, so the template values are what we inherit from (or nothing if empty workout)
+                    // No last performance for this exercise at all.
                     set.isWeightInherited = true;
                     set.isRepsInherited = true;
                     set.isTimeInherited = true;
                 }
             } else {
-                 // For "Latest Workouts", the routine itself IS the last performance data.
+                // For "Latest Workouts", the routine itself IS the last performance data.
                 // Just mark everything as inherited.
                 set.isWeightInherited = true;
                 set.isRepsInherited = true;

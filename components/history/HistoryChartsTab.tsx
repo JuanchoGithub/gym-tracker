@@ -51,9 +51,11 @@ const HistoryChartsTab: React.FC<HistoryChartsTabProps> = ({ history }) => {
 
         // FIX: Refactored to use objects instead of tuples to avoid potential type inference issues with sorting.
         // FIX: Explicitly type `[exerciseId, count]` to prevent them from being inferred as `unknown`.
-        const exercisesWithCounts = Array.from(exerciseCounts.entries()).map(
-            ([exerciseId, count]: [string, number]) => ({ exerciseId, count })
-        );
+        // FIX: The previous fix was incorrect. Refactoring to iterate over keys and get values to avoid tuple destructuring issues with map iterators in some TypeScript environments.
+        const exercisesWithCounts = Array.from(exerciseCounts.keys()).map(exerciseId => ({
+            exerciseId,
+            count: exerciseCounts.get(exerciseId) || 0
+        }));
         const sortedExercises = exercisesWithCounts.sort((a, b) => b.count - a.count);
         const top3Ids = sortedExercises.slice(0, 3).map(entry => entry.exerciseId);
 
