@@ -76,6 +76,12 @@ const DailySupplementList: React.FC<DailySupplementListProps> = ({ date, readOnl
     
     const itemsForDay = supplementPlan.plan.filter(item => {
         return !item.trainingDayOnly || isTrainingDay;
+    }).map(item => {
+        // Special logic for creatine on rest days: change its time for display and grouping
+        if (item.id.includes('gen-creatine') && !isTrainingDay) {
+            return { ...item, time: t('supplements_time_with_breakfast') };
+        }
+        return item;
     });
 
     const grouped = itemsForDay.reduce((acc, item) => {
@@ -90,7 +96,7 @@ const DailySupplementList: React.FC<DailySupplementListProps> = ({ date, readOnl
     const ordered = Object.keys(grouped).sort((a, b) => (timeOrder[a] || 99) - (timeOrder[b] || 99));
 
     return { groupedPlan: grouped, orderedGroups: ordered, isTrainingDay, scheduledCount: itemsForDay.length };
-  }, [supplementPlan, getTimeKey, date]);
+  }, [supplementPlan, getTimeKey, date, t]);
 
 
   return (
