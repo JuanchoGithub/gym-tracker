@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useContext, useCallback } from 'react';
-import { useI18n } from '../../hooks/useI18n';
+import { useI18n } from '../hooks/useI18n';
 import { useWakeLock } from '../hooks/useWakeLock';
 import { playWarningSound, playEndSound, unlockAudioContext, playTickSound } from '../services/audioService';
 import { Icon } from '../components/common/Icon';
