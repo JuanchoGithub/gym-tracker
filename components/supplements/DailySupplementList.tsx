@@ -158,11 +158,11 @@ const DailySupplementList: React.FC<DailySupplementListProps> = ({ date, readOnl
                                             </button>
                                         )}
                                     </div>
-                                    <p className={`text-sm mb-2 font-semibold transition-colors ${isTaken ? 'line-through text-text-secondary/70' : 'text-text-secondary'}`}>{item.time}</p>
+                                    <div className="flex items-center gap-2 my-2 flex-wrap">
+                                        <span className={`font-mono text-base px-3 py-1 rounded-full transition-colors ${isTaken ? 'bg-slate-700 text-text-secondary line-through' : 'bg-secondary/50'}`}>{item.dosage}</span>
+                                        <p className={`text-sm font-semibold transition-colors ${isTaken ? 'line-through text-text-secondary/70' : 'text-text-secondary'}`}>{item.time}</p>
+                                    </div>
                                     <p className={`text-sm transition-colors whitespace-pre-wrap ${isTaken ? 'line-through text-text-secondary/70' : 'text-text-primary'}`}>{item.notes}</p>
-                                </div>
-                                <div className="flex-shrink-0">
-                                    <span className={`font-mono text-base px-3 py-1 rounded-full transition-colors ${isTaken ? 'bg-slate-700 text-text-secondary line-through' : 'bg-secondary/50'}`}>{item.dosage}</span>
                                 </div>
                             </button>
                         );

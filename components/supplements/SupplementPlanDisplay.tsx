@@ -56,14 +56,14 @@ const SupplementItemCard: React.FC<{ item: SupplementPlanItem; onRemove: () => v
             </button>
           )}
         </div>
-        <div className="flex items-center flex-shrink-0 ml-2">
-          <span className="font-mono text-base bg-secondary/50 px-3 py-1 rounded-full">{item.dosage}</span>
-          <button onClick={onRemove} className="ml-2 p-1 text-red-400/70 hover:text-red-400" aria-label={`Remove ${item.supplement}`}>
-            <Icon name="trash" className="w-4 h-4" />
-          </button>
-        </div>
+        <button onClick={onRemove} className="ml-2 p-1 text-red-400/70 hover:text-red-400 flex-shrink-0" aria-label={`Remove ${item.supplement}`}>
+          <Icon name="trash" className="w-4 h-4" />
+        </button>
       </div>
-      <p className="text-sm text-text-secondary mb-2 font-semibold">{item.time}</p>
+      <div className="flex items-center gap-2 mb-2 flex-wrap">
+          <span className="font-mono text-base bg-secondary/50 px-3 py-1 rounded-full">{item.dosage}</span>
+          <p className="text-sm text-text-secondary font-semibold">{item.time}</p>
+      </div>
       <p className="text-sm text-text-primary whitespace-pre-wrap">{item.notes}</p>
     </div>
   );

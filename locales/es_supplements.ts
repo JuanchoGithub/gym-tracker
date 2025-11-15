@@ -163,7 +163,7 @@ export const es_supplements = {
   supplements_time_post_workout: 'Post-entrenamiento',
   supplements_time_daily_any: 'Diario (a cualquier hora, usualmente post-entreno)',
   supplements_time_with_meal: 'Diario con una comida',
-  supplements_time_morning_with_meal: 'Mañana con una comida que contenga grasas',
+  supplements_time_morning_with_meal: 'Durante la mañana con una comida que contenga grasas',
   supplements_time_with_breakfast: 'Con el Desayuno',
   supplements_time_before_bed: 'Antes de Dormir',
   supplements_time_pre_workout: 'Pre-entrenamiento',
