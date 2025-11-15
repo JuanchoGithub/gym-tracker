@@ -276,6 +276,8 @@ export const es = {
   exercise_editor_notes_placeholder: 'Agregá instrucciones o notas personales...',
   exercise_editor_no_instructions: 'No hay instrucciones disponibles para este ejercicio.',
   exercise_editor_name_empty_alert: 'El nombre del ejercicio no puede estar vacío.',
+  exercise_editor_is_timed_label: 'Por Defecto Cronometrado',
+  exercise_editor_is_timed_desc: 'Al agregarlo a un entrenamiento, este ejercicio será un set cronometrado por defecto en lugar de reps y peso.',
 
   // Add/Replace Exercise Modal
   add_exercises_modal_title: 'Agregar Ejercicios',
@@ -351,6 +353,7 @@ export const es = {
   category_plyometrics: 'Pliométricos',
   category_reps_only: 'Solo Reps',
   category_cardio: 'Cardio',
+  // FIX: Added translation for 'Duration' category.
   category_duration: 'Duración',
 
   // Notifications

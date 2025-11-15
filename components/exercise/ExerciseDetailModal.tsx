@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useContext } from 'react';
 import { Exercise } from '../../types';
 import Modal from '../common/Modal';
@@ -80,9 +81,15 @@ const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({ exercise, isO
                 <h2 className="font-bold text-text-primary text-base sm:text-xl truncate" title={exercise.name}>
                     {exercise.name}
                 </h2>
-                <div className="flex items-center justify-center gap-2 mt-1">
+                <div className="flex items-center justify-center gap-2 mt-1 flex-wrap">
                     <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">{t(getBodyPartTKey(exercise.bodyPart))}</span>
                     <span className="text-xs bg-secondary/30 text-text-secondary px-2 py-0.5 rounded-full">{t(getCategoryTKey(exercise.category))}</span>
+                    {exercise.isTimed && (
+                        <span className="text-xs bg-yellow-400/20 text-yellow-300 px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <Icon name="stopwatch" className="w-3 h-3" />
+                            <span>{t('set_type_timed')}</span>
+                        </span>
+                    )}
                 </div>
             </div>
             <div className="flex-1 flex items-center justify-end space-x-1">

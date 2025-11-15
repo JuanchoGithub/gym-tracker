@@ -1,4 +1,5 @@
 import { Routine, PerformedSet, WorkoutExercise } from '../types';
+import { PREDEFINED_EXERCISES } from './exercises';
 
 const createSets = (count: number, reps: number, isWarmup: boolean = false): PerformedSet[] => Array.from({ length: count }, (_, i) => ({
   id: `set-${Date.now()}-${Math.random()}-${i}`,
@@ -8,7 +9,19 @@ const createSets = (count: number, reps: number, isWarmup: boolean = false): Per
   isComplete: false
 }));
 
-const createWorkoutExercise = (exerciseId: string, sets: PerformedSet[], restTime: number): WorkoutExercise => ({
+const createWorkoutExercise = (exerciseId: string, sets: PerformedSet[], restTime: number): WorkoutExercise => {
+    const exercise = PREDEFINED_EXERCISES.find(ex => ex.id === exerciseId);
+    if (exercise && exercise.isTimed) {
+        sets.forEach(set => {
+            set.type = 'timed';
+            set.time = 60; // default to 60 seconds
+            if(set.reps === 0 || set.reps > 1) {
+                set.reps = 1; // for timed sets, reps is usually 1 (meaning one round of that time)
+            }
+        });
+    }
+
+    return {
     id: `re-${Math.random()}`,
     exerciseId,
     sets,
@@ -20,7 +33,7 @@ const createWorkoutExercise = (exerciseId: string, sets: PerformedSet[], restTim
         effort: 180,
         failure: 300,
     }
-});
+}};
 
 const createHiitExercise = (exerciseId: string): WorkoutExercise => ({
     id: `we-${exerciseId}-${Math.random()}`,

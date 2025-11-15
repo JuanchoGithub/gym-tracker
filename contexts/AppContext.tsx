@@ -596,20 +596,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const endAddExercisesToWorkout = useCallback((newExerciseIds?: string[]) => {
     if (newExerciseIds && newExerciseIds.length > 0 && activeWorkout) {
-      const newExercises: WorkoutExercise[] = newExerciseIds.map(exerciseId => ({
+      const newExercises: WorkoutExercise[] = newExerciseIds.map(exerciseId => {
+        const exercise = getExerciseById(exerciseId);
+        const isTimed = exercise && exercise.isTimed;
+        return {
           id: `we-${Date.now()}-${Math.random()}`,
           exerciseId,
           sets: [
               {
                   id: `set-${Date.now()}-${Math.random()}`,
-                  reps: 0,
+                  reps: isTimed ? 1 : 0,
                   weight: 0,
-                  type: 'normal',
+                  time: isTimed ? 60 : undefined,
+                  type: isTimed ? 'timed' : 'normal',
                   isComplete: false,
               }
           ],
           restTime: { ...defaultRestTimes },
-      }));
+        };
+      });
 
       updateActiveWorkout({
           ...activeWorkout,
@@ -617,7 +622,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       });
     }
     setIsAddingExercisesToWorkout(false);
-  }, [activeWorkout, defaultRestTimes, updateActiveWorkout]);
+  }, [activeWorkout, defaultRestTimes, updateActiveWorkout, getExerciseById]);
 
   const startAddExercisesToTemplate = useCallback(() => {
     setIsAddingExercisesToTemplate(true);
@@ -634,20 +639,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               restTime: { normal: 0, warmup: 0, drop: 0, timed: 0, effort: 0, failure: 0 },
           }));
       } else {
-          newExercises = newExerciseIds.map(exId => ({
-              id: `we-${Date.now()}-${Math.random()}`,
-              exerciseId: exId,
-              sets: Array.from({ length: 1 }, () => ({
-                  id: `set-${Date.now()}-${Math.random()}`,
-                  reps: 10,
-                  weight: 0,
-                  type: 'normal',
-                  isRepsInherited: false,
-                  isWeightInherited: false,
-                  isTimeInherited: false,
-              } as PerformedSet)),
-              restTime: { ...defaultRestTimes },
-          }));
+          newExercises = newExerciseIds.map(exId => {
+              const exercise = getExerciseById(exId);
+              const isTimed = exercise && exercise.isTimed;
+              return {
+                  id: `we-${Date.now()}-${Math.random()}`,
+                  exerciseId: exId,
+                  sets: Array.from({ length: 1 }, () => ({
+                      id: `set-${Date.now()}-${Math.random()}`,
+                      reps: isTimed ? 1 : 10,
+                      weight: 0,
+                      time: isTimed ? 60 : undefined,
+                      type: isTimed ? 'timed' : 'normal',
+                      isRepsInherited: false,
+                      isWeightInherited: false,
+                      isTimeInherited: false,
+                  } as PerformedSet)),
+                  restTime: { ...defaultRestTimes },
+              };
+          });
       }
 
       updateEditingTemplate({
@@ -656,7 +666,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       });
     }
     setIsAddingExercisesToTemplate(false);
-  }, [editingTemplate, defaultRestTimes, updateEditingTemplate]);
+  }, [editingTemplate, defaultRestTimes, updateEditingTemplate, getExerciseById]);
 
   const value = useMemo(() => ({
     routines: routines,

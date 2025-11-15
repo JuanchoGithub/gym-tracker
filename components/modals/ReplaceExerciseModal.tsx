@@ -1,3 +1,4 @@
+
 import React, { useState, useContext, useMemo } from 'react';
 import Modal from '../common/Modal';
 import { AppContext } from '../../contexts/AppContext';
@@ -8,6 +9,7 @@ import FilterDropdown from '../common/FilterDropdown';
 import { BODY_PART_OPTIONS, CATEGORY_OPTIONS } from '../../constants/filters';
 import { getBodyPartTKey, getCategoryTKey } from '../../utils/i18nUtils';
 import ExerciseDetailModal from '../exercise/ExerciseDetailModal';
+import { getBodyPartColor, getCategoryColor } from '../../utils/colorUtils';
 
 interface ReplaceExerciseModalProps {
   isOpen: boolean;
@@ -97,7 +99,16 @@ const ReplaceExerciseModal: React.FC<ReplaceExerciseModalProps> = ({ isOpen, onC
                           </button>
                           <div className="truncate">
                               <h3 className="font-semibold text-text-primary truncate">{exercise.name}</h3>
-                              <p className="text-sm text-text-secondary truncate">{t(getBodyPartTKey(exercise.bodyPart))}</p>
+                              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                  <span className={`text-xs px-2 py-0.5 rounded-full ${getBodyPartColor(exercise.bodyPart)}`}>{t(getBodyPartTKey(exercise.bodyPart))}</span>
+                                  <span className={`text-xs px-2 py-0.5 rounded-full ${getCategoryColor(exercise.category)}`}>{t(getCategoryTKey(exercise.category))}</span>
+                                  {exercise.isTimed && (
+                                    <span className="text-xs bg-yellow-400/20 text-yellow-300 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                        <Icon name="stopwatch" className="w-3 h-3" />
+                                        <span>{t('set_type_timed')}</span>
+                                    </span>
+                                  )}
+                              </div>
                           </div>
                       </div>
                       <button 

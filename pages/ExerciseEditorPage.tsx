@@ -8,6 +8,7 @@ import { useI18n } from '../hooks/useI18n';
 import { BODY_PART_OPTIONS, CATEGORY_OPTIONS } from '../constants/filters';
 import { getBodyPartTKey, getCategoryTKey } from '../utils/i18nUtils';
 import Modal from '../components/common/Modal';
+import ToggleSwitch from '../components/common/ToggleSwitch';
 
 const ExerciseEditorPage: React.FC = () => {
     const { exercises, editingExercise, endExerciseEdit } = useContext(AppContext);
@@ -66,7 +67,7 @@ const ExerciseEditorPage: React.FC = () => {
         endExerciseEdit(exercise);
     };
     
-    const handleFieldChange = (field: keyof Exercise, value: string) => {
+    const handleFieldChange = (field: keyof Exercise, value: string | boolean) => {
         setExercise(prev => ({...prev, [field]: value }));
     }
 
@@ -122,6 +123,18 @@ const ExerciseEditorPage: React.FC = () => {
                                     selected={exercise.category}
                                     onSelect={(val) => handleFieldChange('category', val)}
                                     disabled={!isNew}
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <label className="text-sm font-medium text-text-secondary">{t('exercise_editor_is_timed_label')}</label>
+                                    <p className="text-xs text-text-secondary/70">{t('exercise_editor_is_timed_desc')}</p>
+                                </div>
+                                <ToggleSwitch
+                                    checked={!!exercise.isTimed}
+                                    onChange={(checked) => handleFieldChange('isTimed', checked)}
                                 />
                             </div>
                         </div>

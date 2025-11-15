@@ -277,6 +277,8 @@ export const en = {
   exercise_editor_notes_placeholder: 'Add instructions or personal notes...',
   exercise_editor_no_instructions: 'No instructions available for this exercise.',
   exercise_editor_name_empty_alert: 'Exercise name cannot be empty.',
+  exercise_editor_is_timed_label: 'Default to Timed Set',
+  exercise_editor_is_timed_desc: 'When added to a workout, this exercise will default to a timed set instead of reps and weight.',
   
   // Add/Replace Exercise Modal
   add_exercises_modal_title: 'Add Exercises',
@@ -352,6 +354,7 @@ export const en = {
   category_plyometrics: 'Plyometrics',
   category_reps_only: 'Reps Only',
   category_cardio: 'Cardio',
+  // FIX: Added translation for 'Duration' category.
   category_duration: 'Duration',
   
   // Notifications

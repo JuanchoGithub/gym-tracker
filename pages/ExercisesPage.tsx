@@ -1,3 +1,4 @@
+
 import React, { useState, useContext, useMemo } from 'react';
 import { AppContext } from '../contexts/AppContext';
 import { useI18n } from '../hooks/useI18n';
@@ -121,9 +122,15 @@ const ExercisesPage: React.FC = () => {
             >
               <div>
                 <h3 className="font-bold text-text-primary">{exercise.name}</h3>
-                <div className="flex items-center gap-2 mt-1">
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
                     <span className={`text-xs px-2 py-0.5 rounded-full ${getBodyPartColor(exercise.bodyPart)}`}>{t(getBodyPartTKey(exercise.bodyPart))}</span>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${getCategoryColor(exercise.category)}`}>{t(getCategoryTKey(exercise.category))}</span>
+                    {exercise.isTimed && (
+                        <span className="text-xs bg-yellow-400/20 text-yellow-300 px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <Icon name="stopwatch" className="w-3 h-3" />
+                            <span>{t('set_type_timed')}</span>
+                        </span>
+                    )}
                 </div>
                 {bestSet && (
                   <p className="text-xs text-warning mt-2 font-mono flex items-center gap-1">

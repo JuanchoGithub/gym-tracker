@@ -20,7 +20,7 @@ export const PREDEFINED_EXERCISES: Exercise[] = [
   { id: 'ex-33', name: 'High-to-Low Cable Fly', bodyPart: 'Chest', category: 'Cable' },
   { id: 'ex-34', name: 'Plate Press', bodyPart: 'Chest', category: 'Reps Only' },
   { id: 'ex-35', name: 'Suspension Push-Up', bodyPart: 'Chest', category: 'Assisted Bodyweight' },
-  { id: 'ex-36', name: 'Isometric Chest Squeeze', bodyPart: 'Chest', category: 'Bodyweight' },
+  { id: 'ex-36', name: 'Isometric Chest Squeeze', bodyPart: 'Chest', category: 'Bodyweight', isTimed: true },
   { id: 'ex-37', name: 'Speed Bench Press', bodyPart: 'Chest', category: 'Barbell' },
   
   // Back (23)
@@ -44,7 +44,7 @@ export const PREDEFINED_EXERCISES: Exercise[] = [
   { id: 'ex-51', name: 'Shrugs', bodyPart: 'Back', category: 'Dumbbell' },
   { id: 'ex-52', name: 'Reverse Grip Pulldown', bodyPart: 'Back', category: 'Cable' },
   { id: 'ex-53', name: 'Band Pull-Apart', bodyPart: 'Back', category: 'Reps Only' },
-  { id: 'ex-54', name: 'Farmer\'s Carry', bodyPart: 'Back', category: 'Dumbbell' },
+  { id: 'ex-54', name: 'Farmer\'s Carry', bodyPart: 'Back', category: 'Dumbbell', isTimed: true },
   { id: 'ex-55', name: 'Good Morning', bodyPart: 'Back', category: 'Barbell' },
   { id: 'ex-148', name: 'Kettlebell High Pull', bodyPart: 'Back', category: 'Kettlebell' },
 
@@ -115,7 +115,7 @@ export const PREDEFINED_EXERCISES: Exercise[] = [
   { id: 'ex-108', name: 'Sumo Squat', bodyPart: 'Legs', category: 'Dumbbell' },
   { id: 'ex-109', name: 'Goblet Squat', bodyPart: 'Legs', category: 'Dumbbell' },
   { id: 'ex-110', name: 'Pistol Squat', bodyPart: 'Legs', category: 'Bodyweight' },
-  { id: 'ex-111', name: 'Wall Sit', bodyPart: 'Legs', category: 'Duration' },
+  { id: 'ex-111', name: 'Wall Sit', bodyPart: 'Legs', category: 'Bodyweight', isTimed: true },
   { id: 'ex-112', name: 'Sissy Squat', bodyPart: 'Legs', category: 'Bodyweight' },
   { id: 'ex-113', name: 'Jefferson Squat', bodyPart: 'Legs', category: 'Barbell' },
   { id: 'ex-114', name: 'Band Leg Curl', bodyPart: 'Legs', category: 'Reps Only' },
@@ -142,7 +142,7 @@ export const PREDEFINED_EXERCISES: Exercise[] = [
 
   // Core (16)
   { id: 'ex-20', name: 'Crunches', bodyPart: 'Core', category: 'Bodyweight' },
-  { id: 'ex-15', name: 'Plank', bodyPart: 'Core', category: 'Duration' },
+  { id: 'ex-15', name: 'Plank', bodyPart: 'Core', category: 'Bodyweight', isTimed: true },
   { id: 'ex-117', name: 'Russian Twist', bodyPart: 'Core', category: 'Dumbbell' },
   { id: 'ex-118', name: 'Leg Raise', bodyPart: 'Core', category: 'Bodyweight' },
   { id: 'ex-119', name: 'Woodchopper', bodyPart: 'Core', category: 'Cable' },
@@ -151,29 +151,29 @@ export const PREDEFINED_EXERCISES: Exercise[] = [
   { id: 'ex-122', name: 'Dead Bug', bodyPart: 'Core', category: 'Bodyweight' },
   { id: 'ex-123', name: 'Cable Crunch', bodyPart: 'Core', category: 'Cable' },
   { id: 'ex-124', name: 'Ab Wheel Rollout', bodyPart: 'Core', category: 'Reps Only' },
-  { id: 'ex-125', name: 'Flutter Kick', bodyPart: 'Core', category: 'Bodyweight' },
+  { id: 'ex-125', name: 'Flutter Kick', bodyPart: 'Core', category: 'Bodyweight', isTimed: true },
   { id: 'ex-126', name: 'V-Up', bodyPart: 'Core', category: 'Bodyweight' },
   { id: 'ex-127', name: 'Side Bend', bodyPart: 'Core', category: 'Dumbbell' },
-  { id: 'ex-128', name: 'Vacuum', bodyPart: 'Core', category: 'Bodyweight' },
+  { id: 'ex-128', name: 'Vacuum', bodyPart: 'Core', category: 'Bodyweight', isTimed: true },
   { id: 'ex-156', name: 'Hanging Leg Raise', bodyPart: 'Core', category: 'Assisted Bodyweight' },
-  { id: 'ex-157', name: 'Side Plank', bodyPart: 'Core', category: 'Duration' },
+  { id: 'ex-157', name: 'Side Plank', bodyPart: 'Core', category: 'Bodyweight', isTimed: true },
   { id: 'ex-159', name: 'Push-up and Rotation', bodyPart: 'Core', category: 'Bodyweight' },
 
   // Cardio (6)
-  { id: 'ex-19', name: 'Running', bodyPart: 'Cardio', category: 'Cardio' },
-  { id: 'ex-115', name: 'Cycling (Stationary)', bodyPart: 'Cardio', category: 'Cardio' },
-  { id: 'ex-129', name: 'Jumping Jacks', bodyPart: 'Cardio', category: 'Cardio' },
-  { id: 'ex-131', name: 'Mountain Climber', bodyPart: 'Cardio', category: 'Cardio' },
-  { id: 'ex-135', name: 'Jump Rope', bodyPart: 'Cardio', category: 'Cardio' },
-  { id: 'ex-136', name: 'Stair Climber', bodyPart: 'Cardio', category: 'Cardio' },
-  { id: 'ex-158', name: 'High Knees', bodyPart: 'Cardio', category: 'Cardio' },
+  { id: 'ex-19', name: 'Running', bodyPart: 'Cardio', category: 'Cardio', isTimed: true },
+  { id: 'ex-115', name: 'Cycling (Stationary)', bodyPart: 'Cardio', category: 'Cardio', isTimed: true },
+  { id: 'ex-129', name: 'Jumping Jacks', bodyPart: 'Cardio', category: 'Cardio', isTimed: true },
+  { id: 'ex-131', name: 'Mountain Climber', bodyPart: 'Cardio', category: 'Cardio', isTimed: true },
+  { id: 'ex-135', name: 'Jump Rope', bodyPart: 'Cardio', category: 'Cardio', isTimed: true },
+  { id: 'ex-136', name: 'Stair Climber', bodyPart: 'Cardio', category: 'Cardio', isTimed: true },
+  { id: 'ex-158', name: 'High Knees', bodyPart: 'Cardio', category: 'Cardio', isTimed: true },
   
   // Full Body (9)
-  { id: 'ex-130', name: 'Burpee', bodyPart: 'Full Body', category: 'Cardio' },
-  { id: 'ex-132', name: 'Rowing (Machine)', bodyPart: 'Full Body', category: 'Cardio' },
-  { id: 'ex-133', name: 'Battle Rope', bodyPart: 'Full Body', category: 'Cardio' },
+  { id: 'ex-130', name: 'Burpee', bodyPart: 'Full Body', category: 'Cardio', isTimed: true },
+  { id: 'ex-132', name: 'Rowing (Machine)', bodyPart: 'Full Body', category: 'Cardio', isTimed: true },
+  { id: 'ex-133', name: 'Battle Rope', bodyPart: 'Full Body', category: 'Cardio', isTimed: true },
   { id: 'ex-134', name: 'Kettlebell Swing', bodyPart: 'Full Body', category: 'Kettlebell' },
-  { id: 'ex-137', name: 'Swimming', bodyPart: 'Full Body', category: 'Cardio' },
+  { id: 'ex-137', name: 'Swimming', bodyPart: 'Full Body', category: 'Cardio', isTimed: true },
   { id: 'ex-145', name: 'Turkish Get-Up', bodyPart: 'Full Body', category: 'Kettlebell' },
   { id: 'ex-146', name: 'Kettlebell Clean & Press', bodyPart: 'Full Body', category: 'Kettlebell' },
   { id: 'ex-147', name: 'Kettlebell Snatch', bodyPart: 'Full Body', category: 'Kettlebell' },
@@ -184,8 +184,8 @@ export const PREDEFINED_EXERCISES: Exercise[] = [
   { id: 'ex-140', name: 'Reverse Wrist Curl', bodyPart: 'Forearms', category: 'Dumbbell'},
 
   // Mobility (4)
-  { id: 'ex-138', name: 'Sun Salutation', bodyPart: 'Mobility', category: 'Duration' },
-  { id: 'ex-153', name: 'Foam Rolling', bodyPart: 'Mobility', category: 'Duration' },
-  { id: 'ex-154', name: 'Hip Flexor Stretch', bodyPart: 'Mobility', category: 'Duration' },
-  { id: 'ex-155', name: 'Cat-Cow Stretch', bodyPart: 'Mobility', category: 'Duration' },
+  { id: 'ex-138', name: 'Sun Salutation', bodyPart: 'Mobility', category: 'Bodyweight', isTimed: true },
+  { id: 'ex-153', name: 'Foam Rolling', bodyPart: 'Mobility', category: 'Bodyweight', isTimed: true },
+  { id: 'ex-154', name: 'Hip Flexor Stretch', bodyPart: 'Mobility', category: 'Bodyweight', isTimed: true },
+  { id: 'ex-155', name: 'Cat-Cow Stretch', bodyPart: 'Mobility', category: 'Bodyweight', isTimed: true },
 ];

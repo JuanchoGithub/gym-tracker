@@ -1,5 +1,6 @@
 export type BodyPart = 'Chest' | 'Back' | 'Legs' | 'Glutes' | 'Shoulders' | 'Biceps' | 'Triceps' | 'Core' | 'Full Body' | 'Calves' | 'Forearms' | 'Mobility' | 'Cardio';
 
+// FIX: Added 'Duration' to the ExerciseCategory type to match its usage in the application.
 export type ExerciseCategory = 'Barbell' | 'Dumbbell' | 'Machine' | 'Cable' | 'Bodyweight' | 'Assisted Bodyweight' | 'Kettlebell' | 'Plyometrics' | 'Reps Only' | 'Cardio' | 'Duration';
 
 export interface Exercise {
@@ -8,6 +9,7 @@ export interface Exercise {
   bodyPart: BodyPart;
   category: ExerciseCategory;
   notes?: string;
+  isTimed?: boolean;
 }
 
 export type SetType = 'normal' | 'warmup' | 'drop' | 'failure' | 'timed';
