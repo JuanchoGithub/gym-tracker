@@ -110,7 +110,7 @@ const SupplementPlanOverview: React.FC<SupplementPlanOverviewProps> = ({ plan, o
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
         <button onClick={onEditAnswers} className="bg-secondary hover:bg-slate-500 text-white font-bold py-2 px-3 rounded-lg transition-colors flex items-center justify-center space-x-2 text-sm">
             <Icon name="edit" className="w-4 h-4" />
             <span>{t('supplements_edit_plan')}</span>

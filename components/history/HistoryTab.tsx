@@ -1,9 +1,7 @@
 
-
 import React from 'react';
 import { useI18n } from '../../hooks/useI18n';
 import { ExerciseHistory, calculate1RM } from '../../utils/workoutUtils';
-// FIX: Replaced `useWeight` with the correct `useMeasureUnit` hook.
 import { useMeasureUnit } from '../../hooks/useWeight';
 import { Icon } from '../common/Icon';
 
@@ -13,7 +11,6 @@ interface HistoryTabProps {
 
 const HistoryTab: React.FC<HistoryTabProps> = ({ history }) => {
   const { t } = useI18n();
-  // FIX: Replaced `useWeight` with `useMeasureUnit` and destructured `weightUnit`.
   const { displayWeight, weightUnit } = useMeasureUnit();
 
   if (history.length === 0) {

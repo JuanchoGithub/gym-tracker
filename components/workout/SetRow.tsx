@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { PerformedSet, SetType } from '../../types';
 import { Icon } from '../common/Icon';
 import SetTypeModal from '../modals/SetTypeModal';
-import { useWeight } from '../../hooks/useWeight';
+import { useMeasureUnit } from '../../hooks/useWeight';
 import { useI18n } from '../../hooks/useI18n';
 import { formatSecondsToMMSS, parseTimerInput } from '../../utils/timeUtils';
 import { unlockAudioContext } from '../../services/audioService';
@@ -18,7 +18,7 @@ interface SetRowProps {
 }
 
 const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSet, onStartTimedSet, previousSetData, isWeightOptional }) => {
-  const { displayWeight, getStoredWeight } = useWeight();
+  const { displayWeight, getStoredWeight } = useMeasureUnit();
   const { t } = useI18n();
   const [weight, setWeight] = useState(set.weight > 0 ? displayWeight(set.weight) : '');
   const [reps, setReps] = useState(set.reps > 0 ? set.reps.toString() : '');

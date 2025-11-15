@@ -83,6 +83,8 @@ const ICONS: Record<string, React.ReactNode> = {
       <path fillRule="evenodd" clipRule="evenodd" d="M15.1707 9C15.5825 10.1652 16.6938 11 18 11C19.6569 11 21 9.65685 21 8C21 6.34315 19.6569 5 18 5C16.6938 5 15.5825 5.83481 15.1707 7H4C3.44772 7 3 7.44772 3 8C3 8.55228 3.44772 9 4 9H15.1707ZM19 8C19 8.55228 18.5523 9 18 9C17.4477 9 17 8.55228 17 8C17 7.44772 17.4477 7 18 7C18.5523 7 19 7.44772 19 8Z" />
     </g>
   ),
+  'chart-line': <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-3.75-.625m3.75.625l.625 3.75" />,
+  sparkles: <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />,
 };
 
 interface IconProps extends React.SVGProps<SVGSVGElement> {

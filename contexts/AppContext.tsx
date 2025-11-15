@@ -1,6 +1,6 @@
 import React, { createContext, useState, ReactNode, useMemo, useEffect, useCallback } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import { Routine, WorkoutSession, Exercise, WorkoutExercise, PerformedSet, ActiveHiitSession, SupplementPlan, SupplementPlanItem } from '../types';
+import { Routine, WorkoutSession, Exercise, WorkoutExercise, PerformedSet, ActiveHiitSession, SupplementPlan, SupplementPlanItem, SupplementSuggestion, RejectedSuggestion, Profile } from '../types';
 import { PREDEFINED_ROUTINES } from '../constants/routines';
 import { PREDEFINED_EXERCISES } from '../constants/exercises';
 import { useI18n } from '../hooks/useI18n';
@@ -8,8 +8,11 @@ import { TranslationKey } from './I18nContext';
 import { calculateRecords, getExerciseHistory, calculate1RM } from '../utils/workoutUtils';
 import { speak } from '../services/speechService';
 import { unlockAudioContext } from '../services/audioService';
+import { reviewSupplementPlan } from '../services/supplementService';
+import { sendSupplementUpdateNotification } from '../services/notificationService';
 
 export type WeightUnit = 'kg' | 'lbs';
+export type MeasureUnit = 'metric' | 'imperial';
 
 interface AppContextType {
   routines: Routine[];
@@ -29,8 +32,8 @@ interface AppContextType {
   minimizeWorkout: () => void;
   maximizeWorkout: () => void;
   discardActiveWorkout: () => void;
-  weightUnit: WeightUnit;
-  setWeightUnit: (unit: WeightUnit) => void;
+  measureUnit: MeasureUnit;
+  setMeasureUnit: (unit: MeasureUnit) => void;
   defaultRestTimes: { normal: number; warmup: number; drop: number; timed: number; effort: number; failure: number; };
   setDefaultRestTimes: (times: { normal: number; warmup: number; drop: number; timed: number; effort: number; failure: number; }) => void;
   editingTemplate: Routine | null;
@@ -72,9 +75,22 @@ interface AppContextType {
   setUserSupplements: (supplements: SupplementPlanItem[]) => void;
   takenSupplements: Record<string, string[]>;
   setTakenSupplements: React.Dispatch<React.SetStateAction<Record<string, string[]>>>;
+  newSuggestions: SupplementSuggestion[];
+  applyPlanSuggestion: (suggestionId: string) => void;
+  applyAllPlanSuggestions: () => void;
+  dismissSuggestion: (suggestionId: string) => void;
+  dismissAllSuggestions: () => void;
+  clearNewSuggestions: () => void;
+  profile: Profile;
+  updateProfileInfo: (updates: Partial<Omit<Profile, 'weightHistory'>>) => void;
+  currentWeight?: number; // in kg
+  logWeight: (weightInKg: number) => void;
 }
 
 export const AppContext = createContext<AppContextType>({} as AppContextType);
+
+const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [userRoutines, setUserRoutines] = useLocalStorage<Routine[]>('userRoutines', []);
@@ -82,7 +98,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [rawExercises, setRawExercises] = useLocalStorage<Exercise[]>('exercises', PREDEFINED_EXERCISES);
   const [activeWorkout, setActiveWorkout] = useLocalStorage<WorkoutSession | null>('activeWorkout', null);
   const [isWorkoutMinimized, setIsWorkoutMinimized] = useLocalStorage<boolean>('isWorkoutMinimized', false);
-  const [weightUnit, setWeightUnit] = useLocalStorage<WeightUnit>('weightUnit', 'kg');
+  const [measureUnit, setMeasureUnit] = useLocalStorage<MeasureUnit>('measureUnit', 'metric');
   const [defaultRestTimes, setDefaultRestTimes] = useLocalStorage<{ normal: number; warmup: number; drop: number; timed: number; effort: number; failure: number; }>('defaultRestTimes', { normal: 90, warmup: 60, drop: 30, timed: 10, effort: 180, failure: 300 });
   const [editingTemplate, setEditingTemplate] = useState<Routine | null>(null);
   const [editingExercise, setEditingExercise] = useState<Exercise | null>(null);
@@ -100,6 +116,229 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [supplementPlan, setSupplementPlan] = useLocalStorage<SupplementPlan | null>('supplementPlan', null);
   const [userSupplements, setUserSupplements] = useLocalStorage<SupplementPlanItem[]>('userSupplements', []);
   const [takenSupplements, setTakenSupplements] = useLocalStorage<Record<string, string[]>>('takenSupplements', {});
+  const [profile, setProfile] = useLocalStorage<Profile>('profile', { weightHistory: [] });
+
+  
+  // New state for automated supplement review
+  const [lastAnalysisTimestamp, setLastAnalysisTimestamp] = useLocalStorage<number>('lastAnalysisTimestamp', 0);
+  const [rejectedSuggestions, setRejectedSuggestions] = useLocalStorage<RejectedSuggestion[]>('rejectedSuggestions', []);
+  const [newSuggestions, setNewSuggestions] = useState<SupplementSuggestion[]>([]);
+
+  useEffect(() => {
+    // One-time migration from old 'weightUnit' to 'measureUnit'
+    const oldWeightUnitRaw = window.localStorage.getItem('weightUnit');
+    if (oldWeightUnitRaw) {
+        try {
+            const oldUnit = JSON.parse(oldWeightUnitRaw);
+            if (oldUnit === 'lbs') {
+                setMeasureUnit('imperial');
+            } else {
+                setMeasureUnit('metric');
+            }
+        } catch (e) {
+            console.error('Failed to parse old weight unit, defaulting to metric.', e);
+            setMeasureUnit('metric');
+        } finally {
+            window.localStorage.removeItem('weightUnit');
+        }
+    }
+  }, [setMeasureUnit]);
+
+  const currentWeight = useMemo(() => {
+    if (profile.weightHistory.length === 0) return undefined;
+    const sortedHistory = [...profile.weightHistory].sort((a, b) => b.date - a.date);
+    return sortedHistory[0].weight;
+  }, [profile.weightHistory]);
+
+  const updateProfileInfo = useCallback((updates: Partial<Omit<Profile, 'weightHistory'>>) => {
+      setProfile(prev => ({ ...prev, ...updates }));
+  }, [setProfile]);
+
+  const logWeight = useCallback((weightInKg: number) => {
+      if (isNaN(weightInKg) || weightInKg <= 0) return;
+
+      setProfile(prev => {
+          const now = Date.now();
+          const today = new Date(now).toDateString();
+          
+          const todayEntryIndex = prev.weightHistory.findIndex(entry => new Date(entry.date).toDateString() === today);
+          
+          const newHistory = [...prev.weightHistory];
+
+          if (todayEntryIndex > -1) {
+              newHistory[todayEntryIndex] = { date: now, weight: weightInKg };
+          } else {
+              newHistory.push({ date: now, weight: weightInKg });
+          }
+          
+          newHistory.sort((a, b) => b.date - a.date);
+
+          return { ...prev, weightHistory: newHistory };
+      });
+  }, [setProfile]);
+
+  // Daily supplement plan analysis
+  useEffect(() => {
+    const runDailyAnalysis = () => {
+        if (!supplementPlan) return;
+
+        // Clean up old rejections
+        const now = Date.now();
+        const validRejections = rejectedSuggestions.filter(r => (now - r.rejectedAt) < THIRTY_DAYS_MS);
+        if (validRejections.length !== rejectedSuggestions.length) {
+            setRejectedSuggestions(validRejections);
+        }
+        const rejectedIdentifiers = new Set(validRejections.map(r => r.identifier));
+
+        const allSuggestions = reviewSupplementPlan(supplementPlan, history, t);
+        
+        const currentPlanIdentifiers = new Set(supplementPlan.plan.map(p => p.id));
+        
+        const finalSuggestions = allSuggestions.filter(suggestion => {
+            // Filter out rejected suggestions
+            if (rejectedIdentifiers.has(suggestion.identifier)) {
+                return false;
+            }
+
+            // Filter out suggestions that are already effectively applied
+            // FIX: Stored `suggestion.action` in a local variable `action` before the switch statement. This is a common pattern to help TypeScript's control flow analysis correctly narrow the discriminated union type within the `filter` callback, resolving errors where properties like 'item' or 'itemId' were not recognized on the narrowed type.
+            const action = suggestion.action;
+            switch(action.type) {
+                case 'ADD':
+                    return !supplementPlan.plan.some(item => item.supplement === action.item.supplement);
+                case 'REMOVE':
+                    return currentPlanIdentifiers.has(action.itemId);
+                case 'UPDATE':
+                    const itemToUpdate = supplementPlan.plan.find(item => item.id === action.itemId);
+                    if (!itemToUpdate) return false; // Item doesn't exist to be updated
+                    // Check if any of the proposed updates are actually different
+                    return Object.keys(action.updates).some(key => {
+                        const K = key as keyof typeof action.updates;
+                        return itemToUpdate[K] !== action.updates[K];
+                    });
+                default:
+                    return true;
+            }
+        });
+
+        if (finalSuggestions.length > 0) {
+            setNewSuggestions(finalSuggestions);
+            if (enableNotifications) {
+              sendSupplementUpdateNotification(t('notification_supplement_title'), {
+                body: t('notification_supplement_body'),
+                icon: '/icon-192x192.png',
+                tag: 'supplement-update',
+              });
+            }
+        }
+        setLastAnalysisTimestamp(now);
+    };
+
+    const now = Date.now();
+    if (now - lastAnalysisTimestamp > TWENTY_FOUR_HOURS_MS) {
+        runDailyAnalysis();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supplementPlan]); // Rerun when supplement plan is loaded/changed.
+
+  const clearNewSuggestions = useCallback(() => {
+    setNewSuggestions([]);
+  }, []);
+
+  const dismissSuggestion = useCallback((suggestionId: string) => {
+    setNewSuggestions(prev => {
+      const suggestionToDismiss = prev.find(s => s.id === suggestionId);
+      if (suggestionToDismiss) {
+        setRejectedSuggestions(rej => [...rej, { identifier: suggestionToDismiss.identifier, rejectedAt: Date.now() }]);
+      }
+      return prev.filter(s => s.id !== suggestionId);
+    });
+  }, [setRejectedSuggestions]);
+
+  const dismissAllSuggestions = useCallback(() => {
+    setRejectedSuggestions(rej => [
+      ...rej, 
+      ...newSuggestions.map(s => ({ identifier: s.identifier, rejectedAt: Date.now() }))
+    ]);
+    clearNewSuggestions();
+  }, [newSuggestions, clearNewSuggestions, setRejectedSuggestions]);
+
+  const applyPlanSuggestion = useCallback((suggestionId: string) => {
+      const suggestion = newSuggestions.find(s => s.id === suggestionId);
+      if (!suggestion || !supplementPlan) return;
+
+      let newPlanItems = [...supplementPlan.plan];
+      let newCustomSupplements = [...userSupplements];
+      const { action } = suggestion;
+
+      switch(action.type) {
+          case 'ADD':
+              newPlanItems.push(action.item);
+              if (action.item.isCustom) {
+                  newCustomSupplements.push(action.item);
+              }
+              break;
+          case 'REMOVE':
+              newPlanItems = newPlanItems.filter(p => p.id !== action.itemId);
+              newCustomSupplements = newCustomSupplements.filter(s => s.id !== action.itemId);
+              break;
+          case 'UPDATE':
+              newPlanItems = newPlanItems.map(p => {
+                  if (p.id === action.itemId) {
+                      return { ...p, ...action.updates };
+                  }
+                  return p;
+              });
+              if (newPlanItems.find(p => p.id === action.itemId)?.isCustom) {
+                  newCustomSupplements = newCustomSupplements.map(s => {
+                      if (s.id === action.itemId) {
+                          return { ...s, ...action.updates };
+                      }
+                      return s;
+                  });
+              }
+              break;
+      }
+      
+      setSupplementPlan({ ...supplementPlan, plan: newPlanItems });
+      setUserSupplements(newCustomSupplements);
+      setNewSuggestions(prev => prev.filter(s => s.id !== suggestionId));
+  }, [newSuggestions, supplementPlan, userSupplements, setSupplementPlan, setUserSupplements]);
+
+  const applyAllPlanSuggestions = useCallback(() => {
+      if (!supplementPlan) return;
+
+      let tempPlanItems = [...supplementPlan.plan];
+      let tempCustomSupplements = [...userSupplements];
+      
+      newSuggestions.forEach(suggestion => {
+          const { action } = suggestion;
+          switch(action.type) {
+              case 'ADD':
+                  tempPlanItems.push(action.item);
+                  if (action.item.isCustom) {
+                      tempCustomSupplements.push(action.item);
+                  }
+                  break;
+              case 'REMOVE':
+                  tempPlanItems = tempPlanItems.filter(p => p.id !== action.itemId);
+                  tempCustomSupplements = tempCustomSupplements.filter(s => s.id !== action.itemId);
+                  break;
+              case 'UPDATE':
+                  tempPlanItems = tempPlanItems.map(p => p.id === action.itemId ? { ...p, ...action.updates } : p);
+                  if (tempPlanItems.find(p => p.id === action.itemId)?.isCustom) {
+                      tempCustomSupplements = tempCustomSupplements.map(s => s.id === action.itemId ? { ...s, ...action.updates } : s);
+                  }
+                  break;
+          }
+      });
+
+      setSupplementPlan({ ...supplementPlan, plan: tempPlanItems });
+      setUserSupplements(tempCustomSupplements);
+      clearNewSuggestions();
+
+  }, [newSuggestions, supplementPlan, userSupplements, setSupplementPlan, setUserSupplements, clearNewSuggestions]);
+
 
   useEffect(() => {
     // One-time migration from old 'routines' storage to new 'userRoutines'
@@ -686,8 +925,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     minimizeWorkout,
     maximizeWorkout,
     discardActiveWorkout,
-    weightUnit,
-    setWeightUnit,
+    measureUnit,
+    setMeasureUnit,
     defaultRestTimes,
     setDefaultRestTimes,
     editingTemplate,
@@ -729,11 +968,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setUserSupplements,
     takenSupplements,
     setTakenSupplements,
+    newSuggestions,
+    applyPlanSuggestion,
+    applyAllPlanSuggestions,
+    dismissSuggestion,
+    dismissAllSuggestions,
+    clearNewSuggestions,
+    profile,
+    updateProfileInfo,
+    currentWeight,
+    logWeight,
   }), [
     routines, upsertRoutine, deleteRoutine, history, deleteHistorySession, updateHistorySession, exercises, getExerciseById,
     upsertExercise, activeWorkout, startWorkout, updateActiveWorkout, endWorkout,
     isWorkoutMinimized, minimizeWorkout, maximizeWorkout, discardActiveWorkout,
-    weightUnit, setWeightUnit, defaultRestTimes, setDefaultRestTimes,
+    measureUnit, setMeasureUnit, defaultRestTimes, setDefaultRestTimes,
     editingTemplate, updateEditingTemplate, startTemplateEdit, startTemplateDuplicate, endTemplateEdit, editingExercise,
     startExerciseEdit, endExerciseEdit, startExerciseDuplicate,
     editingHistorySession, startHistoryEdit, endHistoryEdit,
@@ -745,6 +994,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     isAddingExercisesToTemplate, startAddExercisesToTemplate, endAddExercisesToTemplate,
     supplementPlan, setSupplementPlan, userSupplements, setUserSupplements,
     takenSupplements, setTakenSupplements,
+    newSuggestions, applyPlanSuggestion, applyAllPlanSuggestions, dismissSuggestion, dismissAllSuggestions, clearNewSuggestions,
+    profile, updateProfileInfo, currentWeight, logWeight,
   ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

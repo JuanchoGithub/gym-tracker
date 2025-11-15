@@ -73,9 +73,22 @@ export const es = {
 
   // Profile Page
   profile_title: 'Perfil y Configuración',
+  profile_personal_info: 'Información Personal',
+  profile_gender: 'Género',
+  profile_gender_male: 'Masculino',
+  profile_gender_female: 'Femenino',
+  profile_height: 'Altura',
+  profile_height_unit_cm: 'cm',
+  profile_height_unit_ft: 'pies',
+  profile_height_unit_in: 'pulg',
+  profile_weight: 'Peso',
+  profile_view_weight_history: 'Ver historial de peso',
+  profile_weight_history_chart_title: 'Peso a lo Largo del Tiempo',
   profile_settings: 'Configuración',
   profile_language: 'Idioma',
-  profile_weight_unit: 'Unidad de Peso',
+  profile_measure_unit: 'Unidad de Medida',
+  profile_unit_metric: 'Métrico',
+  profile_unit_imperial: 'Imperial',
   profile_default_timers: 'Tiempos de Descanso',
   profile_default_timers_desc: 'Establecé el tiempo de descanso predeterminado al agregar nuevos ejercicios.',
   profile_localized_names: 'Nombres de Ejercicios Localizados',
@@ -171,7 +184,6 @@ export const es = {
 
   // Exercise Header Menu
   bar_type: 'Tipo de Barra',
-  weight_unit: 'Unidad de Peso',
   timer_normal: 'Serie de Trabajo',
   timer_warmup: 'Serie de Calent.',
   timer_drop: 'Drop Set',

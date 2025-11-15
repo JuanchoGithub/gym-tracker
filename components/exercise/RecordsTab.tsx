@@ -3,7 +3,7 @@ import React from 'react';
 import { useI18n } from '../../hooks/useI18n';
 import { PersonalRecords } from '../../utils/workoutUtils';
 import { Icon } from '../common/Icon';
-import { useWeight } from '../../hooks/useWeight';
+import { useMeasureUnit } from '../../hooks/useWeight';
 
 interface RecordsTabProps {
   records: PersonalRecords;
@@ -11,7 +11,7 @@ interface RecordsTabProps {
 
 const RecordItem: React.FC<{ title: string; record: PersonalRecords[keyof PersonalRecords] }> = ({ title, record }) => {
   const { t } = useI18n();
-  const { displayWeight, unit } = useWeight();
+  const { displayWeight, weightUnit } = useMeasureUnit();
 
   return (
     <div className="bg-slate-900/50 p-4 rounded-lg flex items-center justify-between">
@@ -25,7 +25,7 @@ const RecordItem: React.FC<{ title: string; record: PersonalRecords[keyof Person
         <div className="text-right text-xs text-text-secondary">
           <p>{t('records_achieved_on', { date: new Date(record.session.startTime).toLocaleDateString() })}</p>
           {/* FIX: Used a template literal to construct a valid translation key for the weight unit. */}
-          <p>{displayWeight(record.set.weight)}{t(`workout_${unit}`)} x {record.set.reps} reps</p>
+          <p>{displayWeight(record.set.weight)}{t(`workout_${weightUnit}`)} x {record.set.reps} reps</p>
         </div>
       )}
     </div>

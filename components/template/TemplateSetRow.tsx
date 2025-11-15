@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { PerformedSet, SetType } from '../../types';
 import { Icon } from '../common/Icon';
 import SetTypeModal from '../modals/SetTypeModal';
-import { useWeight } from '../../hooks/useWeight';
+// FIX: Replaced `useWeight` with the correct `useMeasureUnit` hook.
+import { useMeasureUnit } from '../../hooks/useWeight';
 import { formatSecondsToMMSS, parseTimerInput } from '../../utils/timeUtils';
 import { useI18n } from '../../hooks/useI18n';
 
@@ -16,7 +18,8 @@ interface TemplateSetRowProps {
 }
 
 const TemplateSetRow: React.FC<TemplateSetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSet, restTime, onEditSetTimer }) => {
-  const { displayWeight, getStoredWeight } = useWeight();
+  // FIX: Replaced `useWeight` with `useMeasureUnit`.
+  const { displayWeight, getStoredWeight } = useMeasureUnit();
   const { t } = useI18n();
   const [weight, setWeight] = useState(set.weight > 0 ? displayWeight(set.weight) : '');
   const [reps, setReps] = useState(set.reps > 0 ? set.reps.toString() : '');

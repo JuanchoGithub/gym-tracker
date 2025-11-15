@@ -1,9 +1,11 @@
+
 import React, { useContext, useMemo } from 'react';
 import { WorkoutSession, SetType } from '../../types';
 import Modal from '../common/Modal';
 import { useI18n } from '../../hooks/useI18n';
 import { AppContext } from '../../contexts/AppContext';
-import { useWeight } from '../../hooks/useWeight';
+// FIX: Replaced `useWeight` with the correct `useMeasureUnit` hook.
+import { useMeasureUnit } from '../../hooks/useWeight';
 import { formatTime } from '../../utils/timeUtils';
 import { getExerciseHistory, calculate1RM } from '../../utils/workoutUtils';
 import { Icon } from '../common/Icon';
@@ -28,7 +30,8 @@ const StatItem: React.FC<{ icon: React.ReactNode; label: string; value: string |
 const HistoryDetailModal: React.FC<HistoryDetailModalProps> = ({ session, isOpen, onClose }) => {
     const { history: allHistory, getExerciseById } = useContext(AppContext);
     const { t } = useI18n();
-    const { displayWeight, unit } = useWeight();
+    // FIX: Replaced `useWeight` with `useMeasureUnit` and destructured `weightUnit`.
+    const { displayWeight, weightUnit } = useMeasureUnit();
 
     const totalTime = session.endTime > 0 ? formatTime(Math.round((session.endTime - session.startTime) / 1000)) : 'N/A';
     const totalVolume = session.exercises.reduce((total, ex) => {
@@ -82,7 +85,7 @@ const HistoryDetailModal: React.FC<HistoryDetailModalProps> = ({ session, isOpen
                 {/* Stats */}
                 <div className="grid grid-cols-3 gap-2 mb-4 flex-shrink-0">
                     <StatItem icon={<Icon name="history" className="w-5 h-5"/>} label={t('history_total_time')} value={totalTime} />
-                    <StatItem icon={<Icon name="weight" className="w-5 h-5"/>} label={t('history_total_volume')} value={`${displayWeight(totalVolume, true)} ${t(`workout_${unit}`)}`} />
+                    <StatItem icon={<Icon name="weight" className="w-5 h-5"/>} label={t('history_total_volume')} value={`${displayWeight(totalVolume, true)} ${t(`workout_${weightUnit}`)}`} />
                     <StatItem icon={<Icon name="trophy" className="w-5 h-5"/>} label={t('history_prs')} value={session.prCount || 0} />
                 </div>
                 
@@ -126,7 +129,7 @@ const HistoryDetailModal: React.FC<HistoryDetailModalProps> = ({ session, isOpen
                                                     </div>
                                                 </div>
                                                 <div className="col-span-3 flex items-center gap-1">
-                                                    <span>{displayWeight(set.weight)} {t(`workout_${unit}`)}</span>
+                                                    <span>{displayWeight(set.weight)} {t(`workout_${weightUnit}`)}</span>
                                                     {getComparisonPill(set.weight, prevSet?.weight)}
                                                 </div>
                                                 <div className="col-span-3 flex items-center gap-1">
@@ -134,7 +137,7 @@ const HistoryDetailModal: React.FC<HistoryDetailModalProps> = ({ session, isOpen
                                                      {getComparisonPill(set.reps, prevSet?.reps)}
                                                 </div>
                                                 <div className="col-span-5 flex items-center gap-1">
-                                                    <span>{displayWeight(current1RM)} {t(`workout_${unit}`)}</span>
+                                                    <span>{displayWeight(current1RM)} {t(`workout_${weightUnit}`)}</span>
                                                     {getComparisonPill(current1RM, prev1RM)}
                                                 </div>
                                             </div>

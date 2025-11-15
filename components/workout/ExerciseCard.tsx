@@ -5,7 +5,7 @@ import Timer from './Timer';
 import { Icon } from '../common/Icon';
 import { useI18n } from '../../hooks/useI18n';
 import ExerciseHeader from './ExerciseHeader';
-import { useWeight } from '../../hooks/useWeight';
+import { useMeasureUnit } from '../../hooks/useWeight';
 import ChangeTimerModal from '../modals/ChangeTimerModal';
 import { formatSecondsToMMSS } from '../../utils/timeUtils';
 import { AppContext } from '../../contexts/AppContext';
@@ -39,7 +39,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
     isReorganizeMode, onDragStart, onDragEnter, onDragEnd, onMoveUp, onMoveDown, isMoveUpDisabled, isMoveDownDisabled, onReorganize, isBeingDraggedOver
   } = props;
   const { t } = useI18n();
-  const { unit } = useWeight();
+  const { weightUnit } = useMeasureUnit();
   const { history: allHistory } = useContext(AppContext);
   const [completedSets, setCompletedSets] = useState(workoutExercise.sets.filter(s => s.isComplete).length);
   const [isNoteEditing, setIsNoteEditing] = useState(false);
@@ -299,7 +299,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
               <div className="grid grid-cols-5 items-center gap-1 sm:gap-2 text-xs text-text-secondary">
                   <div className="text-center font-semibold">{t('workout_set')}</div>
                   <div className="text-center">Previous</div>
-                  <div className="text-center">Weight ({t(`workout_${unit}`)})</div>
+                  <div className="text-center">Weight ({t(`workout_${weightUnit}`)})</div>
                   <div className="text-center">Reps</div>
                   <div className="text-center">Actions</div>
               </div>

@@ -74,9 +74,22 @@ export const en = {
 
   // Profile Page
   profile_title: 'Profile & Settings',
+  profile_personal_info: 'Personal Info',
+  profile_gender: 'Gender',
+  profile_gender_male: 'Male',
+  profile_gender_female: 'Female',
+  profile_height: 'Height',
+  profile_height_unit_cm: 'cm',
+  profile_height_unit_ft: 'ft',
+  profile_height_unit_in: 'in',
+  profile_weight: 'Weight',
+  profile_view_weight_history: 'View weight history',
+  profile_weight_history_chart_title: 'Weight Over Time',
   profile_settings: 'Settings',
   profile_language: 'Language',
-  profile_weight_unit: 'Weight Unit',
+  profile_measure_unit: 'Measure Unit',
+  profile_unit_metric: 'Metric',
+  profile_unit_imperial: 'Imperial',
   profile_default_timers: 'Default Rest Timers',
   profile_default_timers_desc: 'Set the default rest time when adding new exercises.',
   profile_localized_names: 'Localized Exercise Names',
@@ -172,7 +185,6 @@ export const en = {
 
   // Exercise Header Menu
   bar_type: 'Bar Type',
-  weight_unit: 'Weight Unit',
   timer_normal: 'Work Set',
   timer_warmup: 'Warm-up Set',
   timer_drop: 'Drop Set',

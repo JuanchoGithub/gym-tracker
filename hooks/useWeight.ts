@@ -1,22 +1,38 @@
-import { useContext } from 'react';
-import { AppContext, WeightUnit } from '../contexts/AppContext';
-import { formatWeightDisplay, getStoredWeight as getStoredWeightUtil } from '../utils/weightUtils';
 
-export const useWeight = () => {
-    const { weightUnit, setWeightUnit } = useContext(AppContext);
+import { useContext, useCallback } from 'react';
+import { AppContext } from '../contexts/AppContext';
+import { formatWeightDisplay, getStoredWeight as getStoredWeightUtil, convertCmToFtIn } from '../utils/weightUtils';
 
-    const displayWeight = (kg: number, isDelta: boolean = false): string => {
+export type WeightUnit = 'kg' | 'lbs';
+
+export const useMeasureUnit = () => {
+    const { measureUnit, setMeasureUnit } = useContext(AppContext);
+
+    const weightUnit = measureUnit === 'imperial' ? 'lbs' : 'kg';
+
+    const displayWeight = useCallback((kg: number, isDelta: boolean = false): string => {
         return formatWeightDisplay(kg, weightUnit, isDelta);
-    };
+    }, [weightUnit]);
 
-    const getStoredWeight = (displayValue: number): number => {
+    const getStoredWeight = useCallback((displayValue: number): number => {
         return getStoredWeightUtil(displayValue, weightUnit);
-    }
+    }, [weightUnit]);
+
+    const displayHeight = useCallback((cm: number): string => {
+        if (!cm || isNaN(cm)) return '';
+        if (measureUnit === 'imperial') {
+            const { feet, inches } = convertCmToFtIn(cm);
+            return `${feet}' ${inches}"`;
+        }
+        return `${Math.round(cm)} cm`;
+    }, [measureUnit]);
     
     return {
-        unit: weightUnit,
-        setUnit: setWeightUnit,
+        measureUnit,
+        setMeasureUnit,
+        weightUnit,
         displayWeight,
-        getStoredWeight
+        getStoredWeight,
+        displayHeight,
     };
 };

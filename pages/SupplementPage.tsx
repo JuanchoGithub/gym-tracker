@@ -1,16 +1,25 @@
-import React, { useState, useContext, FormEvent } from 'react';
+
+import React, { useState, useContext, FormEvent, useEffect } from 'react';
 import { AppContext } from '../contexts/AppContext';
 import { useI18n } from '../hooks/useI18n';
 import { SupplementInfo } from '../types';
 import { generateSupplementPlan } from '../services/supplementService';
 import { Icon } from '../components/common/Icon';
 import SupplementSchedule from '../components/supplements/SupplementSchedule';
+import SupplementReviewModal from '../components/supplements/SupplementReviewModal';
+import { useMeasureUnit } from '../hooks/useWeight';
+import { convertCmToFtIn, convertFtInToCm } from '../utils/weightUtils';
 
 const daysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
 const SupplementPage: React.FC = () => {
-  const { supplementPlan, setSupplementPlan, userSupplements } = useContext(AppContext);
+  const { 
+    supplementPlan, setSupplementPlan, userSupplements,
+    newSuggestions, applyPlanSuggestion, applyAllPlanSuggestions, dismissSuggestion, dismissAllSuggestions, clearNewSuggestions,
+    profile, currentWeight
+  } = useContext(AppContext);
   const { t } = useI18n();
+  const { measureUnit, weightUnit } = useMeasureUnit();
 
   const [wizardActive, setWizardActive] = useState(false);
   const [planJustGenerated, setPlanJustGenerated] = useState(false);
@@ -32,9 +41,32 @@ const SupplementPage: React.FC = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  
+  // State for imperial height inputs in wizard
+  const [feet, setFeet] = useState('');
+  const [inches, setInches] = useState('');
+
+  useEffect(() => {
+    if (wizardActive && measureUnit === 'imperial' && formData.height) {
+        const { feet: ft, inches: inc } = convertCmToFtIn(formData.height);
+        setFeet(ft > 0 ? String(ft) : '');
+        setInches(inc > 0 ? String(inc) : '');
+    } else if (wizardActive && measureUnit === 'metric') {
+        setFeet('');
+        setInches('');
+    }
+  }, [formData.height, wizardActive, measureUnit]);
 
   const handleInputChange = (field: keyof SupplementInfo, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleHeightChangeImperial = (ft: string, inc: string) => {
+    const feetNum = parseInt(ft) || 0;
+    const inchesNum = parseInt(inc) || 0;
+    const totalCm = convertFtInToCm(feetNum, inchesNum);
+    handleInputChange('height', totalCm > 0 ? totalCm : undefined);
   };
 
   const handleDayToggle = (day: string) => {
@@ -49,6 +81,22 @@ const SupplementPage: React.FC = () => {
 
   const handleNext = () => setCurrentStep(prev => prev + 1);
   const handleBack = () => setCurrentStep(prev => prev - 1);
+
+  const handleStartWizard = () => {
+    const prefilledData: Partial<SupplementInfo> = { ...formData };
+    if (profile.gender) {
+        prefilledData.gender = profile.gender;
+    }
+    if (profile.height) {
+        prefilledData.height = profile.height;
+    }
+    if (currentWeight) {
+        prefilledData.weight = Math.round(currentWeight);
+    }
+    setFormData(prefilledData);
+    setWizardActive(true);
+    setCurrentStep(1);
+  };
 
   const handleGeneratePlan = async (e: FormEvent) => {
     e.preventDefault();
@@ -79,6 +127,7 @@ const SupplementPage: React.FC = () => {
       setSupplementPlan(newPlan);
       setWizardActive(false);
       setPlanJustGenerated(true);
+      clearNewSuggestions();
     } catch (err) {
       console.error(err);
       setError(t('supplements_error_generating'));
@@ -88,12 +137,28 @@ const SupplementPage: React.FC = () => {
   };
   
   const handleEditAnswers = () => {
-      if (supplementPlan) {
+      if (supplementPlan?.info?.dob) {
         setFormData(supplementPlan.info);
+      } else {
+        const prefilledData: Partial<SupplementInfo> = { ...formData };
+        if (profile.gender) prefilledData.gender = profile.gender;
+        if (profile.height) prefilledData.height = profile.height;
+        if (currentWeight) prefilledData.weight = Math.round(currentWeight);
+        setFormData(prefilledData);
       }
       setSupplementPlan(null);
       setWizardActive(true);
       setCurrentStep(1);
+  };
+
+  const handleDismissAll = () => {
+    dismissAllSuggestions();
+    setIsReviewModalOpen(false);
+  };
+
+  const handleApplyAll = () => {
+    applyAllPlanSuggestions();
+    setIsReviewModalOpen(false);
   };
 
   const renderStep = () => {
@@ -108,17 +173,36 @@ const SupplementPage: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4">
                     <div>
                         <label className="block text-sm font-medium text-text-secondary">{t('supplements_weight_label')}</label>
-                        <input type="number" required value={formData.weight || ''} onChange={e => handleInputChange('weight', parseFloat(e.target.value))} className="w-full bg-surface border border-secondary/50 rounded-lg p-2 mt-1" />
+                        <div className="relative mt-1">
+                          <input type="number" required value={formData.weight || ''} onChange={e => handleInputChange('weight', parseFloat(e.target.value))} className="w-full bg-surface border border-secondary/50 rounded-lg p-2 pr-12" />
+                          <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-text-secondary">{t(`workout_${weightUnit}`)}</span>
+                        </div>
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-text-secondary">{t('supplements_height_label')}</label>
-                        <input type="number" required value={formData.height || ''} onChange={e => handleInputChange('height', parseFloat(e.target.value))} className="w-full bg-surface border border-secondary/50 rounded-lg p-2 mt-1" />
+                        {measureUnit === 'metric' ? (
+                            <div className="relative mt-1">
+                                <input type="number" required value={formData.height || ''} onChange={e => handleInputChange('height', parseFloat(e.target.value))} className="w-full bg-surface border border-secondary/50 rounded-lg p-2 pr-12" />
+                                <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-text-secondary">{t('profile_height_unit_cm')}</span>
+                            </div>
+                        ) : (
+                            <div className="flex gap-2 mt-1">
+                                <div className="relative">
+                                    <input type="number" required value={feet} onChange={e => { setFeet(e.target.value); handleHeightChangeImperial(e.target.value, inches); }} className="w-full bg-surface border border-secondary/50 rounded-lg p-2 pr-10" />
+                                    <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-text-secondary">{t('profile_height_unit_ft')}</span>
+                                </div>
+                                <div className="relative">
+                                    <input type="number" required value={inches} onChange={e => { setInches(e.target.value); handleHeightChangeImperial(feet, e.target.value); }} className="w-full bg-surface border border-secondary/50 rounded-lg p-2 pr-10" />
+                                    <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-text-secondary">{t('profile_height_unit_in')}</span>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
                 <div>
                     <label className="block text-sm font-medium text-text-secondary">{t('supplements_gender_label')}</label>
                     <div className="flex rounded-lg bg-surface p-1 mt-1">
-                        {(['male', 'female', 'other'] as const).map(g => (
+                        {(['male', 'female'] as const).map(g => (
                             <button key={g} type="button" onClick={() => handleInputChange('gender', g)} className={`flex-1 px-4 py-2 rounded-md text-sm font-semibold transition-colors ${formData.gender === g ? 'bg-primary text-white' : 'text-text-secondary'}`}>{t(`supplements_gender_${g}`)}</button>
                         ))}
                     </div>
@@ -227,64 +311,99 @@ const SupplementPage: React.FC = () => {
     }
   };
 
-  if (isLoading) {
+  const renderContent = () => {
     return (
-        <div className="text-center space-y-4 flex flex-col items-center justify-center h-full">
-            <Icon name="capsule" className="w-16 h-16 text-primary animate-pulse" />
-            <h2 className="text-2xl font-bold">{t('supplements_generating_plan')}</h2>
-            <p className="text-text-secondary max-w-sm">{t('supplements_generating_plan_desc')}</p>
-        </div>
-    );
-  }
+      <div className="space-y-4">
+        {newSuggestions.length > 0 && (
+          <div className="bg-indigo-600/20 border border-indigo-500 text-indigo-200 px-4 py-3 rounded-lg flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <Icon name="sparkles" className="w-6 h-6 text-indigo-400" />
+              <p className="font-semibold">{t('supplements_review_notification_banner', { count: newSuggestions.length })}</p>
+            </div>
+            <button onClick={() => setIsReviewModalOpen(true)} className="bg-indigo-500 hover:bg-indigo-400 text-white font-bold py-2 px-4 rounded-lg text-sm flex-shrink-0">
+              {t('common_view')}
+            </button>
+          </div>
+        )}
 
-  if (supplementPlan && planJustGenerated) {
-    return (
-      <div className="text-center space-y-6 flex flex-col items-center justify-center h-full">
-        <Icon name="check" className="w-20 h-20 text-success bg-success/20 rounded-full p-4"/>
-        <h1 className="text-3xl font-bold">{t('supplements_plan_ready')}</h1>
-        <p className="text-text-secondary max-w-md">{t('supplements_plan_ready_desc')}</p>
-        <button onClick={() => setPlanJustGenerated(false)} className="bg-primary text-white font-bold py-3 px-8 rounded-lg text-lg">
-          {t('common_ok')}
-        </button>
+        {(() => {
+          if (isLoading) {
+            return (
+                <div className="text-center space-y-4 flex flex-col items-center justify-center h-full pt-10">
+                    <Icon name="capsule" className="w-16 h-16 text-primary animate-pulse" />
+                    <h2 className="text-2xl font-bold">{t('supplements_generating_plan')}</h2>
+                    <p className="text-text-secondary max-w-sm">{t('supplements_generating_plan_desc')}</p>
+                </div>
+            );
+          }
+        
+          if (supplementPlan && planJustGenerated) {
+            return (
+              <div className="text-center space-y-6 flex flex-col items-center justify-center h-full pt-10">
+                <Icon name="check" className="w-20 h-20 text-success bg-success/20 rounded-full p-4"/>
+                <h1 className="text-3xl font-bold">{t('supplements_plan_ready')}</h1>
+                <p className="text-text-secondary max-w-md">{t('supplements_plan_ready_desc')}</p>
+                <button onClick={() => setPlanJustGenerated(false)} className="bg-primary text-white font-bold py-3 px-8 rounded-lg text-lg">
+                  {t('common_ok')}
+                </button>
+              </div>
+            );
+          }
+        
+          if (supplementPlan) {
+            return <SupplementSchedule onEditAnswers={handleEditAnswers} />;
+          }
+        
+          if (wizardActive) {
+            return (
+                <form onSubmit={handleGeneratePlan} className="space-y-6">
+                    <h1 className="text-2xl font-bold text-center">{t('supplements_wizard_title')}</h1>
+                    {error && <p className="text-red-400 text-center bg-red-500/10 p-3 rounded-lg">{error}</p>}
+                    <div className="p-4 bg-surface rounded-lg">
+                        {renderStep()}
+                    </div>
+                    <div className="flex justify-between items-center">
+                        {currentStep > 1 ? (
+                        <button type="button" onClick={handleBack} className="bg-secondary text-white font-bold py-3 px-6 rounded-lg">{t('common_back')}</button>
+                        ) : <div></div>}
+                        {currentStep < 4 ? (
+                        <button type="button" onClick={handleNext} className="bg-primary text-white font-bold py-3 px-6 rounded-lg">{t('common_next')}</button>
+                        ) : (
+                        <button type="submit" className="bg-success text-white font-bold py-3 px-6 rounded-lg">{t('supplements_generate_plan_button')}</button>
+                        )}
+                    </div>
+                </form>
+            );
+          }
+
+          return (
+            <div className="text-center space-y-6 flex flex-col items-center justify-center h-full pt-10">
+              <Icon name="capsule" className="w-20 h-20 text-primary" />
+              <h1 className="text-3xl font-bold">{t('supplements_title')}</h1>
+              <p className="text-text-secondary max-w-md">{t('supplements_create_plan_desc')}</p>
+              <button onClick={handleStartWizard} className="bg-primary text-white font-bold py-3 px-6 rounded-lg text-lg">
+                {t('supplements_create_plan_cta')}
+              </button>
+            </div>
+          );
+        })()}
       </div>
     );
-  }
-
-  if (supplementPlan) {
-    return <SupplementSchedule onEditAnswers={handleEditAnswers} />;
-  }
-
-  if (wizardActive) {
-    return (
-        <form onSubmit={handleGeneratePlan} className="space-y-6">
-            <h1 className="text-2xl font-bold text-center">{t('supplements_wizard_title')}</h1>
-            {error && <p className="text-red-400 text-center bg-red-500/10 p-3 rounded-lg">{error}</p>}
-            <div className="p-4 bg-surface rounded-lg">
-                {renderStep()}
-            </div>
-            <div className="flex justify-between items-center">
-                {currentStep > 1 ? (
-                <button type="button" onClick={handleBack} className="bg-secondary text-white font-bold py-3 px-6 rounded-lg">{t('common_back')}</button>
-                ) : <div></div>}
-                {currentStep < 4 ? (
-                <button type="button" onClick={handleNext} className="bg-primary text-white font-bold py-3 px-6 rounded-lg">{t('common_next')}</button>
-                ) : (
-                <button type="submit" className="bg-success text-white font-bold py-3 px-6 rounded-lg">{t('supplements_generate_plan_button')}</button>
-                )}
-            </div>
-        </form>
-    );
-  }
+  };
 
   return (
-    <div className="text-center space-y-6 flex flex-col items-center justify-center h-full">
-      <Icon name="capsule" className="w-20 h-20 text-primary" />
-      <h1 className="text-3xl font-bold">{t('supplements_title')}</h1>
-      <p className="text-text-secondary max-w-md">{t('supplements_create_plan_desc')}</p>
-      <button onClick={() => setWizardActive(true)} className="bg-primary text-white font-bold py-3 px-6 rounded-lg text-lg">
-        {t('supplements_create_plan_cta')}
-      </button>
-    </div>
+    <>
+      {renderContent()}
+      <SupplementReviewModal
+          isOpen={isReviewModalOpen}
+          onClose={() => setIsReviewModalOpen(false)}
+          suggestions={newSuggestions}
+          onApply={applyPlanSuggestion}
+          onApplyAll={handleApplyAll}
+          onDismiss={dismissSuggestion}
+          onDismissAll={handleDismissAll}
+      />
+    </>
   );
 };
 

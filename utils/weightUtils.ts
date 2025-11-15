@@ -43,3 +43,22 @@ export const getStoredWeight = (displayValue: number, unit: WeightUnit): number 
     }
     return displayValue;
 };
+
+export const CM_TO_INCHES = 0.393701;
+
+export const convertCmToFtIn = (cm: number): { feet: number; inches: number } => {
+  if (isNaN(cm) || cm <= 0) return { feet: 0, inches: 0 };
+  const totalInches = cm * CM_TO_INCHES;
+  const feet = Math.floor(totalInches / 12);
+  const inchesValue = Math.round(totalInches % 12);
+  if (inchesValue === 12) {
+    return { feet: feet + 1, inches: 0 };
+  }
+  return { feet, inches: inchesValue };
+};
+
+export const convertFtInToCm = (feet: number, inches: number): number => {
+  if (isNaN(feet) && isNaN(inches)) return 0;
+  const totalInches = (feet || 0) * 12 + (inches || 0);
+  return totalInches / CM_TO_INCHES;
+};

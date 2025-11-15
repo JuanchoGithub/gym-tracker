@@ -1,4 +1,5 @@
-import { SupplementInfo, SupplementPlan, SupplementPlanItem } from '../types';
+import { SupplementInfo, SupplementPlan, SupplementPlanItem, WorkoutSession, SupplementSuggestion } from '../types';
+import { getExplanationIdForSupplement } from './explanationService';
 
 // Sort helper
 const timeOrder: { [key: string]: number } = {
@@ -239,4 +240,100 @@ export const generateSupplementPlan = (info: SupplementInfo, t: (key: string, re
         general_tips,
         createdAt: Date.now()
     };
+};
+
+export const reviewSupplementPlan = (
+  plan: SupplementPlan, 
+  history: WorkoutSession[], 
+  t: (key: string, replacements?: Record<string, string | number>) => string
+): SupplementSuggestion[] => {
+    const suggestions: SupplementSuggestion[] = [];
+    const fourWeeksAgo = new Date();
+    fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
+
+    const recentHistory = history.filter(s => s.startTime > fourWeeksAgo.getTime());
+
+    if (recentHistory.length < 3) {
+        return []; // Not enough data to make suggestions
+    }
+
+    // Calculate total volume in the last 4 weeks
+    const totalVolume = recentHistory.reduce((total, session) => {
+        return total + session.exercises.reduce((sessionTotal, ex) => {
+            return sessionTotal + ex.sets.reduce((exTotal, set) => exTotal + (set.weight * set.reps), 0);
+        }, 0);
+    }, 0);
+
+    const avgWeeklyVolume = totalVolume / 4;
+
+    const hasCreatine = plan.plan.some(item => getExplanationIdForSupplement(item.supplement) === 'creatine');
+    const isStrengthTraining = plan.info.routineType === 'strength' || plan.info.routineType === 'mixed';
+    const creatineName = t('supplements_name_creatine');
+
+    // Suggestion 1: Add Creatine if volume is high and not taking it
+    if (isStrengthTraining && !hasCreatine && avgWeeklyVolume > 15000) {
+        const dose = Math.round(Math.min(5, Math.max(3, 0.03 * plan.info.weight)));
+        suggestions.push({
+            id: 'add-creatine-volume',
+            title: t('suggestion_add_creatine_title'),
+            reason: t('suggestion_add_creatine_reason_volume'),
+            identifier: `ADD:${creatineName}`,
+            action: {
+                type: 'ADD',
+                item: {
+                    id: `gen-creatine-${Date.now()}`,
+                    supplement: creatineName,
+                    dosage: `${dose}g`,
+                    time: t('supplements_time_daily_any'),
+                    notes: t('supplements_note_creatine'),
+                }
+            }
+        });
+    }
+
+    // Suggestion 2: Increase protein if objective is gain and volume is high
+    const proteinItems = plan.plan.filter(item => getExplanationIdForSupplement(item.supplement) === 'protein');
+    if (plan.info.objective === 'gain' && avgWeeklyVolume > 20000 && proteinItems.length > 0) {
+        const firstProteinItem = proteinItems[0];
+        const currentDosage = parseInt(firstProteinItem.dosage.replace(/[^0-9]/g, ''), 10);
+        if (currentDosage > 0 && currentDosage < 40) { // If serving size is small, suggest increasing
+            const newDosage = Math.round(currentDosage * 1.25 / 5) * 5; // Increase by 25%, round to nearest 5g
+            const increaseAmount = newDosage - currentDosage;
+            if (increaseAmount > 0) {
+              suggestions.push({
+                  id: 'increase-protein-gain',
+                  title: t('suggestion_increase_protein_title'),
+                  reason: t('suggestion_increase_protein_reason_gain'),
+                  identifier: `UPDATE:${firstProteinItem.supplement}:dosage:increase:${increaseAmount}g`,
+                  action: {
+                      type: 'UPDATE',
+                      itemId: firstProteinItem.id,
+                      updates: {
+                          dosage: `~${newDosage}g`,
+                      }
+                  }
+              });
+            }
+        }
+    }
+
+    // Suggestion 3: Caution about late-night caffeine
+    const lateNightWorkouts = recentHistory.filter(s => new Date(s.startTime).getHours() >= 20).length;
+    const caffeineItem = plan.plan.find(item => getExplanationIdForSupplement(item.supplement) === 'caffeine');
+    const caffeineName = t('supplements_name_caffeine');
+
+    if (caffeineItem && lateNightWorkouts > recentHistory.length / 3) {
+        suggestions.push({
+            id: 'remove-caffeine-late',
+            title: t('suggestion_remove_caffeine_title'),
+            reason: t('suggestion_remove_caffeine_reason_late'),
+            identifier: `REMOVE:${caffeineName}`,
+            action: {
+                type: 'REMOVE',
+                itemId: caffeineItem.id,
+            }
+        });
+    }
+
+    return suggestions;
 };

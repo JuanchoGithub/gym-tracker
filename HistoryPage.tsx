@@ -1,9 +1,7 @@
-
 import React, { useContext, useState } from 'react';
 import { AppContext } from '../contexts/AppContext';
 import { useI18n } from '../hooks/useI18n';
 import { Routine, WorkoutSession } from '../types';
-// FIX: Replaced `useWeight` with the correct `useMeasureUnit` hook.
 import { useMeasureUnit } from '../hooks/useWeight';
 import { formatTime } from '../utils/timeUtils';
 import { findBestSet } from '../utils/workoutUtils';
@@ -16,7 +14,6 @@ import HistoryChartsTab from '../components/history/HistoryChartsTab';
 const HistoryPage: React.FC = () => {
   const { history, getExerciseById, deleteHistorySession, upsertRoutine, startWorkout, startHistoryEdit, routines } = useContext(AppContext);
   const { t } = useI18n();
-  // FIX: Replaced `useWeight` with `useMeasureUnit` and destructured `weightUnit`.
   const { displayWeight, weightUnit } = useMeasureUnit();
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [viewingSession, setViewingSession] = useState<WorkoutSession | null>(null);

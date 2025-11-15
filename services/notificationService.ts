@@ -27,6 +27,16 @@ export const cancelTimerNotification = (tag: string): void => {
   });
 };
 
+export const sendSupplementUpdateNotification = (title: string, options: NotificationOptions): void => {
+  if (Notification.permission !== 'granted' || !navigator.serviceWorker.controller) {
+    return;
+  }
+  // This is not a scheduled notification, so we send it directly to the SW to show.
+  navigator.serviceWorker.ready.then(registration => {
+    registration.showNotification(title, options);
+  });
+};
+
 export const showTimerNotification = (title: string, options: NotificationOptions): void => {
   if (Notification.permission !== 'granted') {
     return;

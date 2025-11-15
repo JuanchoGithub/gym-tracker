@@ -8,7 +8,7 @@ import ReplaceExerciseModal from '../modals/ReplaceExerciseModal';
 import SelectBarModal from '../modals/SelectBarModal';
 import Modal from '../common/Modal';
 import { useI18n } from '../../hooks/useI18n';
-import { useWeight } from '../../hooks/useWeight';
+import { useMeasureUnit } from '../../hooks/useWeight';
 // FIX: Import 'TranslationKey' type to resolve TypeScript error.
 import { TranslationKey } from '../../contexts/I18nContext';
 import { useClickOutside } from '../../hooks/useClickOutside';
@@ -36,7 +36,7 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = (props) => {
     } = props;
     const { history: allHistory } = useContext(AppContext);
     const { t } = useI18n();
-    const { unit, setUnit, displayWeight } = useWeight();
+    const { weightUnit, displayWeight } = useMeasureUnit();
 
     const [isFocusMenuOpen, setIsFocusMenuOpen] = useState(false);
     const [isOptionsMenuOpen, setIsOptionsMenuOpen] = useState(false);
@@ -148,12 +148,12 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = (props) => {
 
     const renderFocusContent = () => {
         switch (focusType) {
-            case 'total_volume': return `${displayWeight(totalVolume, true)} ${t(`workout_${unit}`)}`;
+            case 'total_volume': return `${displayWeight(totalVolume, true)} ${t(`workout_${weightUnit}`)}`;
             case 'volume_increase': 
                 if (volumeIncrease === null) return 'N/A';
-                return `${volumeIncrease > 0 ? '+' : ''}${displayWeight(volumeIncrease, true)} ${t(`workout_${unit}`)}`;
+                return `${volumeIncrease > 0 ? '+' : ''}${displayWeight(volumeIncrease, true)} ${t(`workout_${weightUnit}`)}`;
             case 'total_reps': return `${totalReps} ${t('workout_reps')}`;
-            case 'weight_by_rep': return `${displayWeight(avgWeightPerRep)} ${t(`workout_${unit}`)}/rep`;
+            case 'weight_by_rep': return `${displayWeight(avgWeightPerRep)} ${t(`workout_${weightUnit}`)}/rep`;
             default: return <Icon name="question-mark-circle" className="w-5 h-5"/>;
         }
     };
@@ -211,16 +211,6 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = (props) => {
                             <button onClick={() => { onOpenTimerModal(); setIsOptionsMenuOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">{t('exercise_header_menu_change_timer')}</button>
                             <button onClick={() => { setIsConfirmReplaceOpen(true); setIsOptionsMenuOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">{t('exercise_header_menu_replace')}</button>
                             <button onClick={() => { setIsBarModalOpen(true); setIsOptionsMenuOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">{t('bar_type')}</button>
-                            <button 
-                                onClick={() => {
-                                    setUnit(unit === 'kg' ? 'lbs' : 'kg'); 
-                                    setIsOptionsMenuOpen(false); 
-                                }} 
-                                className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600 flex justify-between items-center"
-                            >
-                                {t('weight_unit')} 
-                                <span>{t(`workout_${unit === 'kg' ? 'lbs' : 'kg'}`).toUpperCase()}</span>
-                            </button>
                         </div>
                     )}
                 </div>

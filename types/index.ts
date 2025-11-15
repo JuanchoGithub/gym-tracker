@@ -84,11 +84,22 @@ export interface ChartDataPoint {
     value: number;
 }
 
+export interface WeightEntry {
+  date: number; // timestamp
+  weight: number; // in kg
+}
+
+export interface Profile {
+  gender?: 'male' | 'female';
+  height?: number; // in cm
+  weightHistory: WeightEntry[];
+}
+
 export interface SupplementInfo {
   dob: string;
   weight: number;
   height: number;
-  gender: 'male' | 'female' | 'other';
+  gender: 'male' | 'female';
   activityLevel: 'beginner' | 'intermediate' | 'advanced';
   trainingDays: string[];
   trainingTime: 'morning' | 'afternoon' | 'night';
@@ -119,4 +130,29 @@ export interface SupplementPlan {
     warnings: string[];
     general_tips: string[];
     createdAt: number;
+}
+
+export type SupplementSuggestionAction = {
+  type: 'ADD';
+  item: SupplementPlanItem;
+} | {
+  type: 'UPDATE';
+  itemId: string;
+  updates: Partial<Omit<SupplementPlanItem, 'id'>>;
+} | {
+  type: 'REMOVE';
+  itemId: string;
+};
+
+export interface SupplementSuggestion {
+  id: string;
+  title: string;
+  reason: string;
+  action: SupplementSuggestionAction;
+  identifier: string;
+}
+
+export interface RejectedSuggestion {
+  identifier: string;
+  rejectedAt: number;
 }
