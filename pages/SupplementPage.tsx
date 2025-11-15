@@ -79,6 +79,14 @@ const SupplementPage: React.FC = () => {
     });
   };
 
+  const handleProteinUnknownToggle = () => {
+    if (formData.proteinConsumption === 'unknown') {
+        handleInputChange('proteinConsumption', undefined);
+    } else {
+        handleInputChange('proteinConsumption', 'unknown');
+    }
+  };
+
   const handleNext = () => setCurrentStep(prev => prev + 1);
   const handleBack = () => setCurrentStep(prev => prev - 1);
 
@@ -271,8 +279,21 @@ const SupplementPage: React.FC = () => {
                 <div>
                     <label className="block text-sm font-medium text-text-secondary">{t('supplements_protein_label')}</label>
                     <div className="flex items-center gap-2 mt-1">
-                        <input type="number" value={typeof formData.proteinConsumption === 'number' ? formData.proteinConsumption : ''} onChange={e => handleInputChange('proteinConsumption', parseFloat(e.target.value))} placeholder={t('supplements_protein_placeholder')} className="w-full bg-surface border border-secondary/50 rounded-lg p-2" />
-                        <button type="button" onClick={() => handleInputChange('proteinConsumption', 'unknown')} className={`px-5 py-2 rounded-md text-sm font-semibold transition-colors whitespace-nowrap flex-shrink-0 ${formData.proteinConsumption === 'unknown' ? 'bg-primary text-white' : 'bg-surface'}`}>{t('supplements_protein_unknown')}</button>
+                        <input 
+                            type="number" 
+                            value={typeof formData.proteinConsumption === 'number' ? formData.proteinConsumption : ''} 
+                            onChange={e => handleInputChange('proteinConsumption', parseFloat(e.target.value) || undefined)} 
+                            placeholder={t('supplements_protein_placeholder')} 
+                            className="w-full bg-surface border border-secondary/50 rounded-lg p-2 disabled:bg-slate-800 disabled:text-text-secondary/70 disabled:cursor-not-allowed"
+                            disabled={formData.proteinConsumption === 'unknown'}
+                        />
+                        <button 
+                            type="button" 
+                            onClick={handleProteinUnknownToggle} 
+                            className={`px-5 py-2 rounded-md text-sm font-semibold transition-colors whitespace-nowrap flex-shrink-0 ${formData.proteinConsumption === 'unknown' ? 'bg-primary text-white' : 'bg-surface'}`}
+                        >
+                            {t('supplements_protein_unknown')}
+                        </button>
                     </div>
                 </div>
                  <div>
