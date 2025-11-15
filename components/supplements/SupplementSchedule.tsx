@@ -7,6 +7,9 @@ import AddSupplementModal from './AddSupplementModal';
 import ConfirmModal from '../modals/ConfirmModal';
 import { SupplementPlanItem } from '../../types';
 import SupplementLog from './SupplementLog';
+import SupplementExplanationModal from './SupplementExplanationModal';
+import { generateSupplementExplanations, Explanation } from '../../services/explanationService';
+import { Icon } from '../common/Icon';
 
 const timeKeywords = {
     en: {
@@ -44,6 +47,9 @@ const SupplementSchedule: React.FC<SupplementScheduleProps> = ({ onEditAnswers }
   const [currentView, setCurrentView] = useState<'today' | 'tomorrow' | 'week' | 'log'>('today');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
+  const [isExplanationOpen, setIsExplanationOpen] = useState(false);
+  const [explanationIdToShow, setExplanationIdToShow] = useState<string | undefined>(undefined);
+  const [explanations, setExplanations] = useState<Explanation[]>([]);
   
   const itemToDelete = useMemo(() => {
     if (!deletingItemId || !supplementPlan) return null;
@@ -66,6 +72,14 @@ const SupplementSchedule: React.FC<SupplementScheduleProps> = ({ onEditAnswers }
     }
     return 'daily';
   }, [locale]);
+
+  const handleOpenExplanation = (id?: string) => {
+    if (!supplementPlan) return;
+    const generatedExplanations = generateSupplementExplanations(supplementPlan, t);
+    setExplanations(generatedExplanations);
+    setExplanationIdToShow(id);
+    setIsExplanationOpen(true);
+  };
 
   const handleAddItem = (newItemData: Omit<SupplementPlanItem, 'id' | 'isCustom'>) => {
     const newItem: SupplementPlanItem = {
@@ -116,15 +130,16 @@ const SupplementSchedule: React.FC<SupplementScheduleProps> = ({ onEditAnswers }
     if (!supplementPlan) return null;
     switch(currentView) {
       case 'today':
-        return <DailySupplementList date={today} />;
+        return <DailySupplementList date={today} onOpenExplanation={handleOpenExplanation} />;
       case 'tomorrow':
-        return <DailySupplementList date={tomorrow} readOnly={true} />;
+        return <DailySupplementList date={tomorrow} readOnly={true} onOpenExplanation={handleOpenExplanation} />;
       case 'week':
         return <SupplementPlanOverview 
           plan={supplementPlan} 
           onRemoveItemRequest={handleRequestRemoveItem} 
           onAddItemClick={() => setIsAddModalOpen(true)}
           onEditAnswers={onEditAnswers}
+          onOpenExplanation={handleOpenExplanation}
         />;
       case 'log':
         return <SupplementLog />;
@@ -141,8 +156,11 @@ const SupplementSchedule: React.FC<SupplementScheduleProps> = ({ onEditAnswers }
   return (
     <div className="space-y-4">
         <div className="flex justify-between items-start">
-            <div>
+            <div className="flex items-center gap-2">
                 <h1 className="text-3xl font-bold">{t('supplements_title')}</h1>
+                <button onClick={() => handleOpenExplanation()} className="text-text-secondary hover:text-primary" aria-label={t('supplements_about_plan')}>
+                    <Icon name="question-mark-circle" className="w-6 h-6" />
+                </button>
             </div>
         </div>
         
@@ -178,6 +196,12 @@ const SupplementSchedule: React.FC<SupplementScheduleProps> = ({ onEditAnswers }
               confirmButtonClass="bg-red-600 hover:bg-red-700"
             />
         )}
+        <SupplementExplanationModal 
+            isOpen={isExplanationOpen}
+            onClose={() => setIsExplanationOpen(false)}
+            explanations={explanations}
+            explanationIdToShow={explanationIdToShow}
+        />
     </div>
   );
 };

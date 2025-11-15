@@ -36,7 +36,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, content
             </button>
           </div>
         )}
-        <div>{children}</div>
+        {children}
       </div>
     </div>
   );

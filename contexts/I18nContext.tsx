@@ -9,11 +9,13 @@ import { en_exercises } from '../locales/en_exercises';
 import { es_exercises } from '../locales/es_exercises';
 import { en_supplements } from '../locales/en_supplements';
 import { es_supplements } from '../locales/es_supplements';
+import { en_supplement_explanations } from '../locales/en_supplement_explanations';
+import { es_supplement_explanations } from '../locales/es_supplement_explanations';
 
 // Fix: Combine translations and instructions into single objects for each language.
 const translations = {
-  en: { ...en, ...instructionsEn, ...en_exercises, ...en_supplements },
-  es: { ...es, ...instructionsEs, ...es_exercises, ...es_supplements },
+  en: { ...en, ...instructionsEn, ...en_exercises, ...en_supplements, ...en_supplement_explanations },
+  es: { ...es, ...instructionsEs, ...es_exercises, ...es_supplements, ...es_supplement_explanations },
 };
 
 type Locale = 'en' | 'es';

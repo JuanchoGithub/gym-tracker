@@ -93,6 +93,7 @@ export const en_supplements = {
   supplements_log_adherence: 'Adherence',
   supplements_log_no_data_for_date: 'No supplements were scheduled for this day.',
   supplements_no_plan: 'No items in your plan for today.',
+  supplements_about_plan: 'About your plan',
 
   // Months
   month_january: 'January',

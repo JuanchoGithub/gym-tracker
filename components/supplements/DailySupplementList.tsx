@@ -3,6 +3,7 @@ import { AppContext } from '../../contexts/AppContext';
 import { useI18n } from '../../hooks/useI18n';
 import { Icon } from '../common/Icon';
 import { SupplementPlanItem } from '../../types';
+import { getExplanationIdForSupplement } from '../../services/explanationService';
 
 const timeKeywords = {
     en: {
@@ -36,9 +37,10 @@ interface DailySupplementListProps {
   date: Date;
   readOnly?: boolean;
   title?: React.ReactNode;
+  onOpenExplanation?: (id: string) => void;
 }
 
-const DailySupplementList: React.FC<DailySupplementListProps> = ({ date, readOnly = false, title }) => {
+const DailySupplementList: React.FC<DailySupplementListProps> = ({ date, readOnly = false, title, onOpenExplanation }) => {
   const { supplementPlan, takenSupplements, setTakenSupplements } = useContext(AppContext);
   const { t, locale } = useI18n();
 
@@ -78,7 +80,7 @@ const DailySupplementList: React.FC<DailySupplementListProps> = ({ date, readOnl
         return !item.trainingDayOnly || isTrainingDay;
     }).map(item => {
         // Special logic for creatine on rest days: change its time for display and grouping
-        if (item.id.includes('gen-creatine') && !isTrainingDay) {
+        if (getExplanationIdForSupplement(item.supplement) === 'creatine' && !isTrainingDay) {
             return { ...item, time: t('supplements_time_with_breakfast') };
         }
         return item;
@@ -141,7 +143,21 @@ const DailySupplementList: React.FC<DailySupplementListProps> = ({ date, readOnl
                                     </div>
                                 </div>
                                 <div className="flex-grow">
-                                    <h4 className={`font-bold text-lg transition-colors ${isTaken ? 'line-through text-text-secondary' : 'text-primary'}`}>{item.supplement}</h4>
+                                    <div className="flex items-center gap-2">
+                                        <h4 className={`font-bold text-lg transition-colors ${isTaken ? 'line-through text-text-secondary' : 'text-primary'}`}>{item.supplement}</h4>
+                                        {onOpenExplanation && getExplanationIdForSupplement(item.supplement) && (
+                                            <button 
+                                                onClick={(e) => { 
+                                                    e.stopPropagation(); 
+                                                    const id = getExplanationIdForSupplement(item.supplement);
+                                                    if (id) onOpenExplanation(id);
+                                                }}
+                                                className="text-text-secondary/60 hover:text-primary"
+                                            >
+                                                <Icon name="question-mark-circle" className="w-5 h-5" />
+                                            </button>
+                                        )}
+                                    </div>
                                     <p className={`text-sm mb-2 font-semibold transition-colors ${isTaken ? 'line-through text-text-secondary/70' : 'text-text-secondary'}`}>{item.time}</p>
                                     <p className={`text-sm transition-colors whitespace-pre-wrap ${isTaken ? 'line-through text-text-secondary/70' : 'text-text-primary'}`}>{item.notes}</p>
                                 </div>

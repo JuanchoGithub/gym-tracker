@@ -15,6 +15,7 @@ export const en = {
   common_save_changes: 'Save Changes',
   common_select: 'Select',
   common_add_and_close: 'Add and Close',
+  common_close: 'Close',
   common_create: 'Create',
   common_duplicate: 'Duplicate',
   common_next: 'Next',

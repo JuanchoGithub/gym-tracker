@@ -2,12 +2,14 @@ import React, { useMemo, useCallback } from 'react';
 import { SupplementPlan, SupplementPlanItem } from '../../types';
 import { useI18n } from '../../hooks/useI18n';
 import { Icon } from '../common/Icon';
+import { getExplanationIdForSupplement } from '../../services/explanationService';
 
 interface SupplementPlanOverviewProps {
   plan: SupplementPlan;
   onRemoveItemRequest: (itemId: string) => void;
   onAddItemClick: () => void;
   onEditAnswers: () => void;
+  onOpenExplanation: (id: string) => void;
 }
 
 const timeKeywords = {
@@ -36,11 +38,24 @@ const timeOrder: { [key: string]: number } = {
     daily: 6
 };
 
-const SupplementItemCard: React.FC<{ item: SupplementPlanItem; onRemove: () => void; }> = ({ item, onRemove }) => {
+const SupplementItemCard: React.FC<{ item: SupplementPlanItem; onRemove: () => void; onOpenExplanation: (id: string) => void; }> = ({ item, onRemove, onOpenExplanation }) => {
   return (
     <div key={item.id} className="bg-surface p-4 rounded-lg shadow-md">
       <div className="flex items-start justify-between mb-2">
-        <h4 className="font-bold text-lg text-primary">{item.supplement}</h4>
+        <div className="flex items-center gap-2">
+          <h4 className="font-bold text-lg text-primary">{item.supplement}</h4>
+          {getExplanationIdForSupplement(item.supplement) && (
+            <button 
+                onClick={() => {
+                    const id = getExplanationIdForSupplement(item.supplement);
+                    if (id) onOpenExplanation(id);
+                }}
+                className="text-text-secondary/60 hover:text-primary"
+            >
+                <Icon name="question-mark-circle" className="w-5 h-5" />
+            </button>
+          )}
+        </div>
         <div className="flex items-center flex-shrink-0 ml-2">
           <span className="font-mono text-base bg-secondary/50 px-3 py-1 rounded-full">{item.dosage}</span>
           <button onClick={onRemove} className="ml-2 p-1 text-red-400/70 hover:text-red-400" aria-label={`Remove ${item.supplement}`}>
@@ -54,7 +69,7 @@ const SupplementItemCard: React.FC<{ item: SupplementPlanItem; onRemove: () => v
   );
 };
 
-const SupplementPlanOverview: React.FC<SupplementPlanOverviewProps> = ({ plan, onRemoveItemRequest, onAddItemClick, onEditAnswers }) => {
+const SupplementPlanOverview: React.FC<SupplementPlanOverviewProps> = ({ plan, onRemoveItemRequest, onAddItemClick, onEditAnswers, onOpenExplanation }) => {
   const { t, locale } = useI18n();
 
   const getTimeKey = useCallback((time: string): string => {
@@ -130,7 +145,7 @@ const SupplementPlanOverview: React.FC<SupplementPlanOverviewProps> = ({ plan, o
                 <div className="space-y-3">
                   {hasWorkoutOnlyItems && <h4 className="font-bold text-text-secondary">{t('supplements_all_days')}</h4>}
                   {group.allDays.map(item => (
-                    <SupplementItemCard item={item} onRemove={() => onRemoveItemRequest(item.id)} key={item.id} />
+                    <SupplementItemCard item={item} onRemove={() => onRemoveItemRequest(item.id)} key={item.id} onOpenExplanation={onOpenExplanation} />
                   ))}
                 </div>
               )}
@@ -138,7 +153,7 @@ const SupplementPlanOverview: React.FC<SupplementPlanOverviewProps> = ({ plan, o
                 <div className="space-y-3">
                   <h4 className="font-bold text-primary">{t('supplements_workout_day')}</h4>
                   {group.workoutOnly.map(item => (
-                    <SupplementItemCard item={item} onRemove={() => onRemoveItemRequest(item.id)} key={item.id} />
+                    <SupplementItemCard item={item} onRemove={() => onRemoveItemRequest(item.id)} key={item.id} onOpenExplanation={onOpenExplanation} />
                   ))}
                 </div>
               )}
