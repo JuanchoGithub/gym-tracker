@@ -1,9 +1,10 @@
 
+
 import React, { useContext, useState, useEffect } from 'react';
 import { I18nContext, TranslationKey } from '../contexts/I18nContext';
 import { useI18n } from '../hooks/useI18n';
 import { AppContext } from '../contexts/AppContext';
-import { formatSecondsToMMSS, parseTimerInput } from '../../utils/timeUtils';
+import { formatSecondsToMMSS, parseTimerInput } from '../utils/timeUtils';
 import ToggleSwitch from '../components/common/ToggleSwitch';
 import { requestNotificationPermission } from '../services/notificationService';
 import { getAvailableVoices, speak } from '../services/speechService';
@@ -11,7 +12,7 @@ import { Icon } from '../components/common/Icon';
 import Modal from '../components/common/Modal';
 import WeightChartModal from '../components/profile/WeightChartModal';
 import { useMeasureUnit } from '../hooks/useWeight';
-import { convertCmToFtIn, convertFtInToCm } from '../../utils/weightUtils';
+import { convertCmToFtIn, convertFtInToCm } from '../utils/weightUtils';
 
 const ProfilePage: React.FC = () => {
   const { locale, setLocale } = useContext(I18nContext);
