@@ -44,7 +44,8 @@ const HistoryChartsTab: React.FC<HistoryChartsTabProps> = ({ history }) => {
         const exerciseCounts = new Map<string, number>();
         history.forEach(session => {
             const sessionExercises = new Set(session.exercises.map(ex => ex.exerciseId));
-            sessionExercises.forEach(exerciseId => {
+            // FIX: Explicitly type `exerciseId` as a string to resolve type inference issue.
+            sessionExercises.forEach((exerciseId: string) => {
                 exerciseCounts.set(exerciseId, (exerciseCounts.get(exerciseId) || 0) + 1);
             });
         });

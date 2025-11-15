@@ -17,13 +17,16 @@ export const en = {
   common_add_and_close: 'Add and Close',
   common_create: 'Create',
   common_duplicate: 'Duplicate',
+  common_next: 'Next',
+  common_back: 'Back',
+  common_ok: 'View Plan',
 
   // Navigation
   nav_train: 'Train',
   nav_history: 'History',
   nav_exercises: 'Exercises',
   nav_profile: 'Profile',
-  nav_timers: 'Timers',
+  nav_supplements: 'Supplements',
 
   // Train Page
   train_routines_title: 'My Routines',
@@ -36,6 +39,11 @@ export const en = {
   train_empty_workout_desc: 'An empty workout to build on the fly.',
   train_new_custom_template_name: 'New Custom Template',
   train_new_hiit_template_name: 'New HIIT Template',
+  train_quick_training: 'Quick Training',
+  train_quick_hiit_label: 'Quick HIIT ({time}m)',
+  train_quick_hiit_desc_short: '30s / 15s x 10',
+  train_quick_hiit_name: 'Quick HIIT ({time} min)',
+  train_quick_hiit_desc: 'Work: {work}s, Rest: {rest}s, Rounds: {rounds}',
 
   // History Page
   history_no_data: 'No workout history found for this exercise.',
@@ -314,7 +322,6 @@ export const en = {
   timers_announce_prepare: 'Prepare. Next: {exercise}',
   timers_announce_rest: 'Rest. Next: {exercise}',
   timers_announce_finish: 'Workout finished. Congratulations! You worked for {minutes} minutes.',
-
 
   // Body Parts
   body_part_all: 'All Body Parts',

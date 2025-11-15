@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useContext, useCallback } from 'react';
-import { useI18n } from '../hooks/useI18n';
+import { useI18n } from '../../hooks/useI18n';
 import { useWakeLock } from '../hooks/useWakeLock';
 import { playWarningSound, playEndSound, unlockAudioContext, playTickSound } from '../services/audioService';
 import { Icon } from '../components/common/Icon';
@@ -28,10 +28,7 @@ interface ActiveTimerState {
 
 const TimersPage: React.FC = () => {
   const { t, locale } = useI18n();
-  const { activeHiitSession, endHiitSession, getExerciseById, selectedVoiceURI } = useContext(AppContext);
-
-  const [quickTime, setQuickTime] = useState(300); // 5 minutes default
-  const [hiitConfig, setHiitConfig] = useState({ work: 30, rest: 15, rounds: 10 });
+  const { activeHiitSession, endHiitSession, getExerciseById, selectedVoiceURI, activeQuickTimer, endQuickTimer } = useContext(AppContext);
   
   const [activeTimer, setActiveTimer] = useState<ActiveTimerState>({
     isActive: false, mode: 'quick', timeLeft: 0, totalDuration: 0, isPaused: false,
@@ -41,8 +38,15 @@ const TimersPage: React.FC = () => {
   const intervalRef = useRef<number | null>(null);
   const targetTimeRef = useRef<number>(0);
   const playSoundRef = useRef({ playWarningSound, playEndSound, playTickSound });
-  // FIX: Explicitly initialize useRef with undefined to satisfy the linter rule expecting one argument.
   const prevActiveTimerRef = useRef<ActiveTimerState | undefined>(undefined);
+
+  const startQuickTimer = useCallback((seconds: number) => {
+    unlockAudioContext();
+    targetTimeRef.current = Date.now() + seconds * 1000;
+    setActiveTimer({
+      isActive: true, mode: 'quick', timeLeft: seconds, totalDuration: seconds, isPaused: false,
+    });
+  }, []);
 
   const startHiitTimer = useCallback((routine: Routine) => {
     unlockAudioContext();
@@ -51,7 +55,7 @@ const TimersPage: React.FC = () => {
     const restTime = routine.hiitConfig!.restTime;
     const rounds = routine.exercises.length;
     const prepareTime = routine.hiitConfig!.prepareTime ?? 10;
-    const exercises = routine.exercises.map(ex => getExerciseById(ex.exerciseId)?.name);
+    const exercises = routine.exercises.map(ex => ex.exerciseId ? getExerciseById(ex.exerciseId)?.name : `${t('timers_round')} ${routine.exercises.indexOf(ex) + 1}`);
 
     targetTimeRef.current = Date.now() + prepareTime * 1000;
     setActiveTimer({
@@ -69,13 +73,15 @@ const TimersPage: React.FC = () => {
       exerciseIndex: 0,
       sessionStartTime: Date.now(),
     });
-  }, [getExerciseById]);
+  }, [getExerciseById, t]);
 
   useEffect(() => {
-    if (activeHiitSession && !activeTimer.isActive) {
+    if (activeQuickTimer && !activeTimer.isActive) {
+        startQuickTimer(activeQuickTimer);
+    } else if (activeHiitSession && !activeTimer.isActive) {
       startHiitTimer(activeHiitSession.routine);
     }
-  }, [activeHiitSession, activeTimer.isActive, startHiitTimer]);
+  }, [activeHiitSession, activeQuickTimer, activeTimer.isActive, startHiitTimer, startQuickTimer]);
 
   useEffect(() => {
     if (!activeTimer.isActive || activeTimer.isPaused) {
@@ -96,7 +102,7 @@ const TimersPage: React.FC = () => {
         if (newTimeLeft === 0) {
             playSoundRef.current.playEndSound();
             if (prev.mode === 'quick') {
-                // FIX: Pause the timer when it finishes to stop the interval.
+                endQuickTimer();
                 return { ...prev, timeLeft: 0, isPaused: true };
             }
             if (prev.mode === 'hiit') {
@@ -108,7 +114,7 @@ const TimersPage: React.FC = () => {
                 }
                 if (prev.hiitState === 'work') {
                     if (isLastRound) {
-                        // FIX: Pause the timer when it finishes to stop the interval.
+                        endHiitSession();
                         return { ...prev, timeLeft: 0, isPaused: true };
                     }
                     targetTimeRef.current = Date.now() + prev.restTime! * 1000;
@@ -135,7 +141,7 @@ const TimersPage: React.FC = () => {
     }, 200);
 
     return () => { if(intervalRef.current) clearInterval(intervalRef.current) };
-  }, [activeTimer.isActive, activeTimer.isPaused]);
+  }, [activeTimer.isActive, activeTimer.isPaused, endHiitSession, endQuickTimer]);
   
   // Effect for handling voice announcements
   useEffect(() => {
@@ -170,41 +176,11 @@ const TimersPage: React.FC = () => {
     prevActiveTimerRef.current = activeTimer;
   }, [activeTimer, t, locale, selectedVoiceURI]);
 
-  const startQuickTimer = (seconds: number) => {
-    unlockAudioContext();
-    setQuickTime(seconds);
-    targetTimeRef.current = Date.now() + seconds * 1000;
-    setActiveTimer({
-      isActive: true, mode: 'quick', timeLeft: seconds, totalDuration: seconds, isPaused: false,
-    });
-  };
-
-  const handleStartCustomHiit = () => {
-    const customRoutine: Routine = {
-        id: `custom-hiit-${Date.now()}`,
-        name: t('timers_hiit_title'),
-        description: 'Custom HIIT session from Timers page',
-        isTemplate: true,
-        routineType: 'hiit',
-        hiitConfig: {
-            workTime: hiitConfig.work,
-            restTime: hiitConfig.rest,
-            prepareTime: 10,
-        },
-        exercises: Array.from({ length: hiitConfig.rounds }, (_, i): WorkoutExercise => ({
-            id: `we-custom-${i}`,
-            exerciseId: '', // No real exercise associated
-            sets: [],
-            // FIX: Added missing `effort` and `failure` properties to the `restTime` object when creating a custom HIIT routine. This ensures the `WorkoutExercise` object conforms to its type definition and resolves a TypeScript error.
-            restTime: { normal: 0, warmup: 0, drop: 0, timed: 0, effort: 0, failure: 0 },
-        }))
-    };
-    startHiitTimer(customRoutine);
-  };
-
   const stopTimer = () => {
-    if (activeHiitSession) {
+    if (activeTimer.mode === 'hiit') {
       endHiitSession();
+    } else {
+      endQuickTimer();
     }
     setActiveTimer({ ...activeTimer, isActive: false });
     window.speechSynthesis.cancel(); // Stop any announcements
@@ -217,155 +193,104 @@ const TimersPage: React.FC = () => {
   
   const progress = activeTimer.totalDuration > 0 ? ((activeTimer.totalDuration - activeTimer.timeLeft) / activeTimer.totalDuration) * 100 : 0;
   
-  const quickTimeOptions = [
-    { label: `5 ${t('timers_minute_abbreviation')}`, value: 300 },
-    { label: `10 ${t('timers_minute_abbreviation')}`, value: 600 },
-    { label: `15 ${t('timers_minute_abbreviation')}`, value: 900 },
-  ];
-
-  const renderActiveTimer = () => {
-    const { mode, timeLeft, hiitState, currentRound, totalRounds, exerciseList, exerciseIndex } = activeTimer;
-    const isFinished = timeLeft === 0 && (mode === 'quick' || (hiitState === 'work' && currentRound === totalRounds));
-    
-    const currentExerciseName = exerciseList && exerciseList.length > (exerciseIndex ?? -1) ? exerciseList[exerciseIndex ?? 0] : null;
-    const nextExerciseName = exerciseList && exerciseList.length > (exerciseIndex ?? -1) + 1 ? exerciseList[(exerciseIndex ?? 0) + 1] : null;
-
-    let stateColor = "text-primary";
-    if (mode === 'hiit') {
-        if (hiitState === 'work' && !isFinished) stateColor = "text-red-400";
-        if (hiitState === 'rest' && !isFinished) stateColor = "text-green-400";
-        if (hiitState === 'prepare' && !isFinished) stateColor = "text-yellow-400";
-    }
-    if (isFinished) stateColor = "text-success";
-    
-    return (
-        <div className="fixed inset-0 bg-background z-50 flex flex-col items-center justify-center p-4">
-            <div className="text-center w-full max-w-md">
-                {mode === 'hiit' && (
-                    <div className="mb-4 min-h-24 flex flex-col justify-center">
-                        <p className={`text-4xl font-bold ${hiitState === 'work' && currentExerciseName ? '' : 'uppercase'} ${stateColor}`}>
-                            {isFinished 
-                                ? t('timers_complete') 
-                                : (hiitState === 'work' && currentExerciseName) 
-                                    ? currentExerciseName
-                                    : t(hiitState === 'prepare' ? 'timers_prepare' : `timers_hiit_${hiitState}`)
-                            }
-                        </p>
-                
-                        {!isFinished && (
-                            <p className="text-2xl text-text-secondary">{t('timers_round')} {currentRound} {t('timers_of')} {totalRounds}</p>
-                        )}
-                        
-                        {hiitState === 'prepare' && currentExerciseName && !isFinished && (
-                            <p className="text-lg mt-2 text-text-secondary">Next: {currentExerciseName}</p>
-                        )}
-                        {hiitState === 'rest' && nextExerciseName && !isFinished && (
-                            <p className="text-lg mt-2 text-text-secondary">Next: {nextExerciseName}</p>
-                        )}
-                    </div>
-                )}
-                
-                <div
-                    className="relative w-64 h-64 sm:w-80 sm:h-80 mx-auto flex items-center justify-center cursor-pointer"
-                    onClick={() => !isFinished && togglePause()}
-                >
-                    <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100">
-                        <circle className="text-surface" strokeWidth="5" stroke="currentColor" fill="transparent" r="45" cx="50" cy="50" />
-                        <circle
-                            className={stateColor}
-                            strokeWidth="5"
-                            strokeDasharray={2 * Math.PI * 45}
-                            strokeDashoffset={(2 * Math.PI * 45) * (1 - progress / 100)}
-                            strokeLinecap="round"
-                            stroke="currentColor"
-                            fill="transparent"
-                            r="45"
-                            cx="50"
-                            cy="50"
-                            style={{ transform: 'rotate(-90deg)', transformOrigin: '50% 50%', transition: 'stroke-dashoffset 0.2s linear' }}
-                        />
-                    </svg>
-                    <div className={`font-mono font-bold ${isFinished ? 'text-success' : 'text-text-primary'}`}>
-                        {activeTimer.isPaused && !isFinished ? (
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="w-56 h-56 sm:w-72 sm:h-72 text-text-secondary/40"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                                strokeWidth={1}
-                            >
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M10 9v6m4-6v6" />
-                            </svg>
-                        ) : (
-                            <div className="text-6xl sm:text-7xl">{formatSecondsToMMSS(activeTimer.timeLeft)}</div>
-                        )}
-                    </div>
-                </div>
-
-                <div className="mt-8 flex items-center justify-center space-x-6">
-                    <button onClick={stopTimer} className="bg-red-600/80 hover:bg-red-600 text-white font-bold py-4 px-8 rounded-lg">{t('timers_stop_button')}</button>
-                    {!isFinished && (
-                      <button onClick={togglePause} className="bg-secondary hover:bg-slate-500 text-white font-bold py-4 px-8 rounded-lg">
-                          {activeTimer.isPaused ? t('timers_resume_button') : t('timers_pause_button')}
-                      </button>
-                    )}
-                </div>
-            </div>
-        </div>
-    )
+  if (!activeTimer.isActive) {
+    return null;
   }
 
-  const renderSetup = () => {
-    return (
-      <div className="space-y-8">
-        <h1 className="text-3xl font-bold text-center">{t('nav_timers')}</h1>
-        
-        {/* Quick Timers */}
-        <div className="bg-surface p-4 rounded-lg shadow">
-          <h2 className="text-xl font-semibold mb-4 text-primary">{t('timers_quick_title')}</h2>
-          <div className="grid grid-cols-3 gap-3 mb-4">
-            {quickTimeOptions.map(opt => (
-              <button key={opt.value} onClick={() => startQuickTimer(opt.value)} className="bg-secondary/50 text-text-primary font-bold py-4 rounded-lg text-lg hover:bg-secondary transition-colors">
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
-        
-        {/* HIIT Timer */}
-        <div className="bg-surface p-4 rounded-lg shadow">
-            <h2 className="text-xl font-semibold mb-4 text-primary">{t('timers_hiit_title')}</h2>
-            <div className="grid grid-cols-3 gap-4 mb-4">
-                {[
-                  { label: t('timers_hiit_work'), key: 'work' as const },
-                  { label: t('timers_hiit_rest'), key: 'rest' as const },
-                  { label: t('timers_hiit_rounds'), key: 'rounds' as const }
-                ].map(({label, key}) => (
-                    <div key={key}>
-                        <label className="block text-sm font-medium text-text-secondary mb-1">{label}</label>
-                        <input
-                            type="number"
-                            value={hiitConfig[key]}
-                            onChange={e => setHiitConfig({...hiitConfig, [key]: Math.max(0, parseInt(e.target.value, 10) || 0)})}
-                            className="w-full bg-slate-900 border border-secondary/50 rounded-lg p-2 text-center text-lg"
-                        />
-                    </div>
-                ))}
-            </div>
-            <button onClick={handleStartCustomHiit} className="w-full bg-primary text-white font-bold py-3 rounded-lg hover:bg-sky-600 transition-colors">
-                {t('timers_hiit_start_button')}
-            </button>
-        </div>
-      </div>
-    );
-  };
+  const { mode, timeLeft, hiitState, currentRound, totalRounds, exerciseList, exerciseIndex } = activeTimer;
+  const isFinished = timeLeft === 0 && (mode === 'quick' || (hiitState === 'work' && currentRound === totalRounds));
   
-  if (activeHiitSession) {
-    return activeTimer.isActive ? renderActiveTimer() : null; // Show only timer when launched from routine
-  }
+  const currentExerciseName = exerciseList && exerciseList.length > (exerciseIndex ?? -1) ? exerciseList[exerciseIndex ?? 0] : null;
+  const nextExerciseName = exerciseList && exerciseList.length > (exerciseIndex ?? -1) + 1 ? exerciseList[(exerciseIndex ?? 0) + 1] : null;
 
-  return activeTimer.isActive ? renderActiveTimer() : renderSetup();
+  let stateColor = "text-primary";
+  if (mode === 'hiit') {
+      if (hiitState === 'work' && !isFinished) stateColor = "text-red-400";
+      if (hiitState === 'rest' && !isFinished) stateColor = "text-green-400";
+      if (hiitState === 'prepare' && !isFinished) stateColor = "text-yellow-400";
+  }
+  if (isFinished) stateColor = "text-success";
+  
+  return (
+      <div className="fixed inset-0 bg-background z-50 flex flex-col items-center justify-center p-4">
+          <div className="text-center w-full max-w-md">
+              {mode === 'hiit' ? (
+                  <div className="mb-4 min-h-24 flex flex-col justify-center">
+                      <p className={`text-4xl font-bold ${hiitState === 'work' && currentExerciseName ? '' : 'uppercase'} ${stateColor}`}>
+                          {isFinished 
+                              ? t('timers_complete') 
+                              : (hiitState === 'work' && currentExerciseName) 
+                                  ? currentExerciseName
+                                  : t(hiitState === 'prepare' ? 'timers_prepare' : `timers_hiit_${hiitState}`)
+                          }
+                      </p>
+              
+                      {!isFinished && (
+                          <p className="text-2xl text-text-secondary">{t('timers_round')} {currentRound} {t('timers_of')} {totalRounds}</p>
+                      )}
+                      
+                      {hiitState === 'prepare' && currentExerciseName && !isFinished && (
+                          <p className="text-lg mt-2 text-text-secondary">Next: {currentExerciseName}</p>
+                      )}
+                      {hiitState === 'rest' && nextExerciseName && !isFinished && (
+                          <p className="text-lg mt-2 text-text-secondary">Next: {nextExerciseName}</p>
+                      )}
+                  </div>
+              ) : (
+                <div className="mb-4 min-h-24 flex flex-col justify-center">
+                    <p className={`text-4xl font-bold uppercase ${stateColor}`}>{isFinished ? t('timers_complete') : t('timers_quick_title')}</p>
+                </div>
+              )}
+              
+              <div
+                  className="relative w-64 h-64 sm:w-80 sm:h-80 mx-auto flex items-center justify-center cursor-pointer"
+                  onClick={() => !isFinished && togglePause()}
+              >
+                  <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100">
+                      <circle className="text-surface" strokeWidth="5" stroke="currentColor" fill="transparent" r="45" cx="50" cy="50" />
+                      <circle
+                          className={stateColor}
+                          strokeWidth="5"
+                          strokeDasharray={2 * Math.PI * 45}
+                          strokeDashoffset={(2 * Math.PI * 45) * (1 - progress / 100)}
+                          strokeLinecap="round"
+                          stroke="currentColor"
+                          fill="transparent"
+                          r="45"
+                          cx="50"
+                          cy="50"
+                          style={{ transform: 'rotate(-90deg)', transformOrigin: '50% 50%', transition: 'stroke-dashoffset 0.2s linear' }}
+                      />
+                  </svg>
+                  <div className={`font-mono font-bold ${isFinished ? 'text-success' : 'text-text-primary'}`}>
+                      {activeTimer.isPaused && !isFinished ? (
+                          <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="w-56 h-56 sm:w-72 sm:h-72 text-text-secondary/40"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              strokeWidth={1}
+                          >
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M10 9v6m4-6v6" />
+                          </svg>
+                      ) : (
+                          <div className="text-6xl sm:text-7xl">{formatSecondsToMMSS(activeTimer.timeLeft)}</div>
+                      )}
+                  </div>
+              </div>
+
+              <div className="mt-8 flex items-center justify-center space-x-6">
+                  <button onClick={stopTimer} className="bg-red-600/80 hover:bg-red-600 text-white font-bold py-4 px-8 rounded-lg">{t('timers_stop_button')}</button>
+                  {!isFinished && (
+                    <button onClick={togglePause} className="bg-secondary hover:bg-slate-500 text-white font-bold py-4 px-8 rounded-lg">
+                        {activeTimer.isPaused ? t('timers_resume_button') : t('timers_pause_button')}
+                    </button>
+                  )}
+              </div>
+          </div>
+      </div>
+  );
 };
 
 export default TimersPage;

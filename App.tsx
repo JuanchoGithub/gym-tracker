@@ -12,15 +12,16 @@ import TemplateEditorPage from './pages/TemplateEditorPage';
 import ExerciseEditorPage from './pages/ExerciseEditorPage';
 import HistoryWorkoutEditorPage from './pages/HistoryWorkoutEditorPage';
 import AddExercisePage from './pages/AddExercisePage';
+import SupplementPage from './pages/SupplementPage';
 
-export type Page = 'TRAIN' | 'HISTORY' | 'EXERCISES' | 'TIMERS' | 'PROFILE' | 'ACTIVE_WORKOUT';
+export type Page = 'TRAIN' | 'HISTORY' | 'EXERCISES' | 'SUPPLEMENTS' | 'PROFILE' | 'ACTIVE_WORKOUT';
 
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>('TRAIN');
-  const { activeWorkout, isWorkoutMinimized, editingTemplate, editingExercise, editingHistorySession, activeHiitSession, isAddingExercisesToWorkout, isAddingExercisesToTemplate } = useContext(AppContext);
+  const { activeWorkout, isWorkoutMinimized, editingTemplate, editingExercise, editingHistorySession, activeHiitSession, isAddingExercisesToWorkout, isAddingExercisesToTemplate, activeQuickTimer } = useContext(AppContext);
 
   const renderPage = () => {
-    if (activeHiitSession) {
+    if (activeHiitSession || activeQuickTimer) {
       return <TimersPage />;
     }
     switch (currentPage) {
@@ -30,8 +31,8 @@ const App: React.FC = () => {
         return <HistoryPage />;
       case 'EXERCISES':
         return <ExercisesPage />;
-      case 'TIMERS':
-        return <TimersPage />;
+      case 'SUPPLEMENTS':
+        return <SupplementPage />;
       case 'PROFILE':
         return <ProfilePage />;
       default:
@@ -67,7 +68,7 @@ const App: React.FC = () => {
       </main>
       <div className="flex-shrink-0 relative z-40">
         {activeWorkout && isWorkoutMinimized && <MinimizedWorkoutBar />}
-        {(!activeWorkout || isWorkoutMinimized) && !editingTemplate && !editingExercise && !editingHistorySession && !activeHiitSession && <BottomNavBar currentPage={currentPage} onNavigate={handleNavigate} />}
+        {(!activeWorkout || isWorkoutMinimized) && !editingTemplate && !editingExercise && !editingHistorySession && !activeHiitSession && !activeQuickTimer && <BottomNavBar currentPage={currentPage} onNavigate={handleNavigate} />}
       </div>
     </div>
   );

@@ -81,3 +81,40 @@ export interface ChartDataPoint {
     label: string;
     value: number;
 }
+
+export interface SupplementInfo {
+  dob: string;
+  weight: number;
+  height: number;
+  gender: 'male' | 'female' | 'other';
+  activityLevel: 'beginner' | 'intermediate' | 'advanced';
+  trainingDays: string[];
+  trainingTime: 'morning' | 'afternoon' | 'night';
+  routineType: 'strength' | 'cardio' | 'mixed';
+  objective: 'gain' | 'lose' | 'maintain' | 'recover';
+  proteinConsumption: number | 'unknown';
+  deficiencies: string[];
+  desiredSupplements: string[];
+  allergies: string[];
+  medicalConditions: string;
+  consumptionPreferences: string;
+  hydration: number;
+}
+
+export interface SupplementPlanItem {
+    id: string;
+    time: string;
+    supplement: string;
+    dosage: string;
+    notes: string;
+    isCustom?: boolean;
+    trainingDayOnly?: boolean;
+}
+
+export interface SupplementPlan {
+    info: SupplementInfo;
+    plan: SupplementPlanItem[];
+    warnings: string[];
+    general_tips: string[];
+    createdAt: number;
+}

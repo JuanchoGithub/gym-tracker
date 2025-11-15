@@ -1,6 +1,6 @@
 import React, { createContext, useState, ReactNode, useMemo, useEffect, useCallback } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import { Routine, WorkoutSession, Exercise, WorkoutExercise, PerformedSet, ActiveHiitSession } from '../types';
+import { Routine, WorkoutSession, Exercise, WorkoutExercise, PerformedSet, ActiveHiitSession, SupplementPlan, SupplementPlanItem } from '../types';
 import { PREDEFINED_ROUTINES } from '../constants/routines';
 import { PREDEFINED_EXERCISES } from '../constants/exercises';
 import { useI18n } from '../hooks/useI18n';
@@ -63,6 +63,15 @@ interface AppContextType {
   isAddingExercisesToTemplate: boolean;
   startAddExercisesToTemplate: () => void;
   endAddExercisesToTemplate: (newExerciseIds?: string[]) => void;
+  activeQuickTimer: number | null;
+  startQuickTimer: (duration: number) => void;
+  endQuickTimer: () => void;
+  supplementPlan: SupplementPlan | null;
+  setSupplementPlan: (plan: SupplementPlan | null) => void;
+  userSupplements: SupplementPlanItem[];
+  setUserSupplements: (supplements: SupplementPlanItem[]) => void;
+  takenSupplements: Record<string, string[]>;
+  setTakenSupplements: React.Dispatch<React.SetStateAction<Record<string, string[]>>>;
 }
 
 export const AppContext = createContext<AppContextType>({} as AppContextType);
@@ -84,9 +93,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [enableNotifications, setEnableNotifications] = useLocalStorage<boolean>('enableNotifications', true);
   const [exerciseEditCallback, setExerciseEditCallback] = useState<((exercise: Exercise) => void) | null>(null);
   const [activeHiitSession, setActiveHiitSession] = useLocalStorage<ActiveHiitSession | null>('activeHiitSession', null);
+  const [activeQuickTimer, setActiveQuickTimer] = useLocalStorage<number | null>('activeQuickTimer', null);
   const [selectedVoiceURI, setSelectedVoiceURI] = useLocalStorage<string | null>('selectedVoiceURI', null);
   const [isAddingExercisesToWorkout, setIsAddingExercisesToWorkout] = useState(false);
   const [isAddingExercisesToTemplate, setIsAddingExercisesToTemplate] = useState(false);
+  const [supplementPlan, setSupplementPlan] = useLocalStorage<SupplementPlan | null>('supplementPlan', null);
+  const [userSupplements, setUserSupplements] = useLocalStorage<SupplementPlanItem[]>('userSupplements', []);
+  const [takenSupplements, setTakenSupplements] = useLocalStorage<Record<string, string[]>>('takenSupplements', {});
 
   useEffect(() => {
     // One-time migration from old 'routines' storage to new 'userRoutines'
@@ -427,6 +440,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const minimizeWorkout = useCallback(() => setIsWorkoutMinimized(true), [setIsWorkoutMinimized]);
   const maximizeWorkout = useCallback(() => setIsWorkoutMinimized(false), [setIsWorkoutMinimized]);
 
+  const startQuickTimer = useCallback((duration: number) => {
+    unlockAudioContext();
+    setActiveQuickTimer(duration);
+  }, [setActiveQuickTimer]);
+
+  const endQuickTimer = useCallback(() => {
+    setActiveQuickTimer(null);
+  }, [setActiveQuickTimer]);
+
   const startHiitSession = useCallback((routine: Routine) => {
     // Announce prepare state and first exercise
     const firstExerciseName = getExerciseById(routine.exercises[0]?.exerciseId)?.name || '';
@@ -680,6 +702,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     activeHiitSession,
     startHiitSession,
     endHiitSession,
+    activeQuickTimer,
+    startQuickTimer,
+    endQuickTimer,
     selectedVoiceURI,
     setSelectedVoiceURI,
     isAddingExercisesToWorkout,
@@ -688,6 +713,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     isAddingExercisesToTemplate,
     startAddExercisesToTemplate,
     endAddExercisesToTemplate,
+    supplementPlan,
+    setSupplementPlan,
+    userSupplements,
+    setUserSupplements,
+    takenSupplements,
+    setTakenSupplements,
   }), [
     routines, upsertRoutine, deleteRoutine, history, deleteHistorySession, updateHistorySession, exercises, getExerciseById,
     upsertExercise, activeWorkout, startWorkout, updateActiveWorkout, endWorkout,
@@ -699,8 +730,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     useLocalizedExerciseNames, setUseLocalizedExerciseNames,
     keepScreenAwake, setKeepScreenAwake, enableNotifications, setEnableNotifications,
     allTimeBestSets, activeHiitSession, startHiitSession, endHiitSession,
+    activeQuickTimer, startQuickTimer, endQuickTimer,
     selectedVoiceURI, setSelectedVoiceURI, isAddingExercisesToWorkout, startAddExercisesToWorkout, endAddExercisesToWorkout,
-    isAddingExercisesToTemplate, startAddExercisesToTemplate, endAddExercisesToTemplate
+    isAddingExercisesToTemplate, startAddExercisesToTemplate, endAddExercisesToTemplate,
+    supplementPlan, setSupplementPlan, userSupplements, setUserSupplements,
+    takenSupplements, setTakenSupplements,
   ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

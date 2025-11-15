@@ -1,11 +1,13 @@
 import React, { useContext, useState, useMemo } from 'react';
 import { AppContext } from '../contexts/AppContext';
 import { useI18n } from '../hooks/useI18n';
-import { Routine } from '../types';
+import { Routine, WorkoutExercise } from '../types';
 import RoutinePreviewModal from '../components/modals/RoutinePreviewModal';
 import ConfirmNewWorkoutModal from '../components/modals/ConfirmNewWorkoutModal';
 import { Icon } from '../components/common/Icon';
 import RoutineSection from '../components/train/RoutineSection';
+import QuickTrainingSection from '../components/train/QuickTrainingSection';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 
 const TrainPage: React.FC = () => {
   const { routines, startWorkout, activeWorkout, discardActiveWorkout, maximizeWorkout, startTemplateEdit, startHiitSession, startTemplateDuplicate } = useContext(AppContext);
@@ -13,6 +15,7 @@ const TrainPage: React.FC = () => {
   const [selectedRoutine, setSelectedRoutine] = useState<Routine | null>(null);
   const [isConfirmingNewWorkout, setIsConfirmingNewWorkout] = useState(false);
   const [routineToStart, setRoutineToStart] = useState<Routine | null>(null);
+  const [isQuickTrainingOpen, setIsQuickTrainingOpen] = useLocalStorage('isQuickTrainingOpen', true);
 
   const { latestWorkouts, customTemplates, sampleWorkouts, sampleHiit } = useMemo(() => {
     const latest = routines
@@ -115,6 +118,10 @@ const TrainPage: React.FC = () => {
                     <span>{t('common_new')}</span>
                 </button>
             }
+        />
+        <QuickTrainingSection 
+            isOpen={isQuickTrainingOpen} 
+            onToggle={() => setIsQuickTrainingOpen(prev => !prev)} 
         />
         <RoutineSection 
             title={t('train_sample_hiit')} 

@@ -5,11 +5,15 @@ import { es } from '../locales/es';
 import { instructionsEn } from '../locales/instructions/en';
 import { instructionsEs } from '../locales/instructions/es';
 import { useLocalStorage } from '../hooks/useLocalStorage';
+import { en_exercises } from '../locales/en_exercises';
+import { es_exercises } from '../locales/es_exercises';
+import { en_supplements } from '../locales/en_supplements';
+import { es_supplements } from '../locales/es_supplements';
 
 // Fix: Combine translations and instructions into single objects for each language.
 const translations = {
-  en: { ...en, ...instructionsEn },
-  es: { ...es, ...instructionsEs },
+  en: { ...en, ...instructionsEn, ...en_exercises, ...en_supplements },
+  es: { ...es, ...instructionsEs, ...es_exercises, ...es_supplements },
 };
 
 type Locale = 'en' | 'es';

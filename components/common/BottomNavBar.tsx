@@ -33,7 +33,7 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({ currentPage, onNavigate }) 
     { page: 'TRAIN', label: t('nav_train'), icon: <Icon name="dumbbell" /> },
     { page: 'HISTORY', label: t('nav_history'), icon: <Icon name="history" /> },
     { page: 'EXERCISES', label: t('nav_exercises'), icon: <Icon name="clipboard-list" /> },
-    { page: 'TIMERS', label: t('nav_timers'), icon: <Icon name="stopwatch" /> },
+    { page: 'SUPPLEMENTS', label: t('nav_supplements'), icon: <Icon name="capsule" /> },
     { page: 'PROFILE', label: t('nav_profile'), icon: <Icon name="user" /> },
   ];
 
