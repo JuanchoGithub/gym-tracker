@@ -8,6 +8,13 @@ import DailySupplementList from './DailySupplementList';
 const daysOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 const monthKeys = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
 
+const getDateString = (d: Date) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 const SupplementLog: React.FC = () => {
     const { supplementPlan, takenSupplements } = useContext(AppContext);
     const { t } = useI18n();
@@ -40,7 +47,7 @@ const SupplementLog: React.FC = () => {
         // Add days of the current month
         for (let i = 1; i <= daysInMonth; i++) {
             const date = new Date(year, month, i);
-            const dateString = date.toISOString().split('T')[0];
+            const dateString = getDateString(date);
             const dayOfWeek = daysOfWeek[date.getDay()];
             const isTrainingDay = !!supplementPlan?.info?.trainingDays?.includes(dayOfWeek);
 
@@ -113,12 +120,20 @@ const SupplementLog: React.FC = () => {
             </div>
             
             {selectedDate && (
-                <Modal isOpen={!!selectedDate} onClose={() => setSelectedDate(null)}>
-                    <DailySupplementList date={selectedDate} readOnly title={
-                        <h2 className="text-xl font-bold text-text-primary mb-4 text-center">
-                            {selectedDate.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                        </h2>
-                    } />
+                <Modal 
+                    isOpen={!!selectedDate} 
+                    onClose={() => setSelectedDate(null)}
+                    title={selectedDate.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                    contentClassName="bg-surface rounded-lg shadow-xl w-[calc(100%-1rem)] max-w-lg h-[calc(100%-2rem)] max-h-[600px] m-auto flex flex-col p-4 sm:p-6"
+                >
+                    <div className="flex-grow overflow-y-auto min-h-0 pr-2" style={{ overscrollBehaviorY: 'contain' }}>
+                        <DailySupplementList date={selectedDate} readOnly />
+                    </div>
+                    <div className="flex-shrink-0 pt-4 mt-4 border-t border-secondary/20">
+                        <button onClick={() => setSelectedDate(null)} className="w-full bg-secondary text-white font-bold py-3 rounded-lg hover:bg-slate-600 transition-colors">
+                            {t('common_close')}
+                        </button>
+                    </div>
                 </Modal>
             )}
         </div>

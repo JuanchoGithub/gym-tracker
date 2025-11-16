@@ -40,11 +40,18 @@ interface DailySupplementListProps {
   onOpenExplanation?: (id: string) => void;
 }
 
+const getDateString = (d: Date) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 const DailySupplementList: React.FC<DailySupplementListProps> = ({ date, readOnly = false, title, onOpenExplanation }) => {
   const { supplementPlan, takenSupplements, setTakenSupplements } = useContext(AppContext);
   const { t, locale } = useI18n();
 
-  const dateString = date.toISOString().split('T')[0];
+  const dateString = getDateString(date);
   const takenIds = takenSupplements[dateString] || [];
   
   const getTimeKey = useCallback((time: string): string => {
