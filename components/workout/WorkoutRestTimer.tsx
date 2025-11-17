@@ -1,7 +1,8 @@
+
 import React, { useMemo, useCallback, useContext, useEffect } from 'react';
 import { AppContext } from '../../contexts/AppContext';
 import Timer from './Timer';
-import { scheduleTimerNotification } from '../../services/notificationService';
+import { scheduleTimerNotification, cancelTimerNotification } from '../../services/notificationService';
 import { useI18n } from '../../hooks/useI18n';
 
 const WorkoutRestTimer: React.FC = () => {
@@ -113,6 +114,12 @@ const WorkoutRestTimer: React.FC = () => {
                 });
             }
         }
+        
+        // This cleanup will run when the component unmounts or dependencies change.
+        // It ensures that if the timer is paused, stopped, or changed, the old notification is cancelled.
+        return () => {
+            cancelTimerNotification('rest-timer-finished');
+        };
     }, [activeTimerInfo, enableNotifications, getExerciseById, t]);
     
 

@@ -164,6 +164,7 @@ const ActiveWorkoutPage: React.FC = () => {
             setId: justCompletedSet.id,
             targetTime: Date.now() + duration * 1000,
             totalDuration: duration,
+            initialDuration: duration,
             isPaused: false,
             timeLeftWhenPaused: 0,
         });

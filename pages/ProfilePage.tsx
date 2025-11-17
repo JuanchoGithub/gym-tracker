@@ -109,12 +109,10 @@ const ProfilePage: React.FC = () => {
     if (checked) {
       if (permissionStatus === 'granted') {
           setEnableNotifications(true);
-      } else {
-          const newPermission = await Notification.requestPermission();
-          if (newPermission === 'granted') {
-              setEnableNotifications(true);
-          }
-          setPermissionStatus(newPermission);
+      } else if (permissionStatus !== 'denied') {
+          const permissionGranted = await requestNotificationPermission();
+          setEnableNotifications(permissionGranted);
+          setPermissionStatus(Notification.permission);
       }
     } else {
         setEnableNotifications(false);

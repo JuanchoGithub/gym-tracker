@@ -5,7 +5,8 @@ import { PREDEFINED_ROUTINES } from '../constants/routines';
 import { PREDEFINED_EXERCISES } from '../constants/exercises';
 import { useI18n } from '../hooks/useI18n';
 import { TranslationKey } from './I18nContext';
-import { calculateRecords, getExerciseHistory, calculate1RM } from '../utils/workoutUtils';
+// FIX: Imported 'getTimerDuration' to resolve reference error.
+import { calculateRecords, getExerciseHistory, calculate1RM, getTimerDuration } from '../utils/workoutUtils';
 import { speak } from '../services/speechService';
 import { unlockAudioContext } from '../services/audioService';
 import { reviewSupplementPlan } from '../services/supplementService';
@@ -18,7 +19,8 @@ export interface ActiveTimerInfo {
   exerciseId: string;
   setId: string;
   targetTime: number; // Timestamp (Date.now() + duration) when the timer should end
-  totalDuration: number; // The original duration for progress bar calculation
+  totalDuration: number; // The current total duration for progress bar calculation
+  initialDuration: number; // The original duration for reset
   isPaused: boolean;
   timeLeftWhenPaused: number; // Time left in seconds when it was paused
 }
@@ -929,6 +931,70 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
     setIsAddingExercisesToTemplate(false);
   }, [editingTemplate, defaultRestTimes, updateEditingTemplate, getExerciseById]);
+  
+  const handleUpdateExercise = useCallback((updatedExercise: WorkoutExercise) => {
+    if (!activeWorkout) return;
+
+    const originalExercise = activeWorkout.exercises.find(ex => ex.id === updatedExercise.id);
+    if (!originalExercise) return;
+
+    let justCompletedSet: PerformedSet | null = null;
+    let justCompletedSetIndex: number = -1;
+    let justUncompletedSet: PerformedSet | null = null;
+
+    for (const [index, updatedSet] of updatedExercise.sets.entries()) {
+        const originalSet = originalExercise.sets.find(s => s.id === updatedSet.id);
+        if (originalSet && !originalSet.isComplete && updatedSet.isComplete) {
+            justCompletedSet = updatedSet;
+            justCompletedSetIndex = index;
+            break;
+        }
+        if (originalSet && originalSet.isComplete && !updatedSet.isComplete) {
+            justUncompletedSet = updatedSet;
+            break;
+        }
+    }
+
+    let workoutToUpdate = { ...activeWorkout };
+
+    // If a timer was previously active, log its actual duration.
+    if (justCompletedSet && activeTimerInfo && !activeTimerInfo.isPaused) {
+        const elapsedSeconds = Math.round((Date.now() - (activeTimerInfo.targetTime - activeTimerInfo.totalDuration * 1000)) / 1000);
+        
+        const prevExerciseIndex = workoutToUpdate.exercises.findIndex(e => e.id === activeTimerInfo.exerciseId);
+        if (prevExerciseIndex > -1) {
+            const prevSetIndex = workoutToUpdate.exercises[prevExerciseIndex].sets.findIndex(s => s.id === activeTimerInfo.setId);
+            if (prevSetIndex > -1) {
+                workoutToUpdate.exercises[prevExerciseIndex].sets[prevSetIndex].actualRest = elapsedSeconds;
+            }
+        }
+    }
+    
+    // Update the workout with the changes from the card
+    const updatedExercises = workoutToUpdate.exercises.map(ex =>
+        ex.id === updatedExercise.id ? updatedExercise : ex
+    );
+    workoutToUpdate = { ...workoutToUpdate, exercises: updatedExercises };
+
+    // Set new timer or clear existing one
+    if (justCompletedSet) {
+        const duration = getTimerDuration(justCompletedSet, updatedExercise, justCompletedSetIndex);
+        setActiveTimerInfo({
+            exerciseId: updatedExercise.id,
+            setId: justCompletedSet.id,
+            targetTime: Date.now() + duration * 1000,
+            totalDuration: duration,
+            initialDuration: duration,
+            isPaused: false,
+            timeLeftWhenPaused: 0,
+        });
+    } else if (justUncompletedSet && activeTimerInfo && activeTimerInfo.setId === justUncompletedSet.id) {
+        setActiveTimerInfo(null);
+        cancelTimerNotification('rest-timer-finished');
+    }
+    
+    updateActiveWorkout(workoutToUpdate);
+  }, [activeWorkout, activeTimerInfo, setActiveTimerInfo, updateActiveWorkout]);
 
   const value = useMemo(() => ({
     routines: routines,
@@ -1024,7 +1090,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     newSuggestions, applyPlanSuggestion, applyAllPlanSuggestions, dismissSuggestion, dismissAllSuggestions, clearNewSuggestions,
     profile, updateProfileInfo, currentWeight, logWeight,
     activeTimerInfo, setActiveTimerInfo,
-    collapsedExerciseIds, setCollapsedExerciseIds,
+    collapsedExerciseIds, setCollapsedExerciseIds, handleUpdateExercise,
   ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { playWarningSound, playEndSound, playTickSound } from '../../services/audioService';
 import { Icon } from '../common/Icon';
 import { useI18n } from '../../hooks/useI18n';
@@ -18,53 +18,54 @@ interface TimerProps {
 
 const Timer: React.FC<TimerProps> = ({ timerInfo, effortTime, failureTime, onFinish, onTogglePause, onTimeUpdate, onChangeDuration }) => {
   const { t } = useI18n();
-  
-  const calculateTimeLeft = () => {
-    if (timerInfo.isPaused) {
-        return timerInfo.timeLeftWhenPaused;
-    }
-    return Math.max(0, Math.round((timerInfo.targetTime - Date.now()) / 1000));
-  };
-  
-  const [timeLeft, setTimeLeft] = useState(calculateTimeLeft);
+  const [tick, setTick] = useState(0);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [infoModalContent, setInfoModalContent] = useState<{title: string, message: string} | null>(null);
   
   const onFinishRef = useRef(onFinish);
+  const prevTimeLeftRef = useRef<number>();
 
   useEffect(() => {
     onFinishRef.current = onFinish;
   }, [onFinish]);
 
+  const timeLeft = useMemo(() => {
+    if (timerInfo.isPaused) {
+      return timerInfo.timeLeftWhenPaused;
+    }
+    // tick is a dependency to force re-evaluation
+    return Math.max(0, Math.round((timerInfo.targetTime - Date.now()) / 1000));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timerInfo, tick]);
+
   useEffect(() => {
     if (timerInfo.isPaused) {
-      // If paused, ensure local state reflects the paused time.
-      setTimeLeft(timerInfo.timeLeftWhenPaused);
       return;
     }
-
     const interval = setInterval(() => {
-      const newTimeLeft = calculateTimeLeft();
-      
-      setTimeLeft(prevTimeLeft => {
-        if (prevTimeLeft > 10 && newTimeLeft <= 10) {
+      setTick(t => t + 1);
+    }, 250);
+    return () => clearInterval(interval);
+  }, [timerInfo.isPaused]);
+
+  useEffect(() => {
+    const prevTime = prevTimeLeftRef.current;
+    
+    if (prevTime !== undefined && !timerInfo.isPaused) {
+        if (prevTime > 10 && timeLeft <= 10) {
           playWarningSound();
-        } else if (newTimeLeft <= 3 && newTimeLeft > 0 && prevTimeLeft > newTimeLeft) {
+        } else if (timeLeft <= 3 && timeLeft > 0 && prevTime > timeLeft) {
           playTickSound();
         }
-
-        if (newTimeLeft <= 0 && prevTimeLeft > 0) {
+        if (timeLeft <= 0 && prevTime > 0) {
           playEndSound();
           onFinishRef.current();
         }
-        return newTimeLeft;
-      });
-      
-    }, 250);
+    }
 
-    return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timerInfo.isPaused, timerInfo.targetTime]); // Rerun only when pause state or target changes
+    prevTimeLeftRef.current = timeLeft;
+  }, [timeLeft, timerInfo.isPaused]);
+
 
   const togglePause = () => {
     onTogglePause(!timerInfo.isPaused, timeLeft);
@@ -80,9 +81,10 @@ const Timer: React.FC<TimerProps> = ({ timerInfo, effortTime, failureTime, onFin
   };
 
   const handleReset = () => {
-    const newTimeLeft = timerInfo.totalDuration;
-    onTimeUpdate({ newTimeLeft });
-    if(timerInfo.isPaused) {
+    const newTimeLeft = timerInfo.initialDuration;
+    // The total duration should also be reset for the progress bar.
+    onTimeUpdate({ newTimeLeft, newTotalDuration: timerInfo.initialDuration });
+    if (timerInfo.isPaused) {
         onTogglePause(false, newTimeLeft);
     }
   };
@@ -144,7 +146,7 @@ const Timer: React.FC<TimerProps> = ({ timerInfo, effortTime, failureTime, onFin
                  <div className="flex gap-2 w-full">
                     <button onClick={handleReset} className={presetButtonClass}>
                         <span>{t('timer_reset')}</span>
-                        <span className="font-mono">{formatSecondsToMMSS(timerInfo.totalDuration)}</span>
+                        <span className="font-mono">{formatSecondsToMMSS(timerInfo.initialDuration)}</span>
                     </button>
                     <button onClick={() => onChangeDuration(effortTime)} className={`${presetButtonClass} relative`}>
                         <span>{t('timer_effort')}</span>

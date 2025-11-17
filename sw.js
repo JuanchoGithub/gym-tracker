@@ -1,3 +1,18 @@
+self.addEventListener('push', event => {
+  console.log('[Service Worker] Push Received.');
+  const data = event.data ? event.data.json() : {};
+
+  const title = data.title || 'Gym Tracker Pro';
+  const options = {
+    body: data.body || 'You have a new notification.',
+    icon: '/icon-192x192.png',
+    badge: '/icon-192x192.png', // A badge for Android notifications
+    ...data.options, // Allow passing other options like tag, renotify, etc.
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
 const CACHE_NAME = 'gym-tracker-pro-cache-v1';
 const URLS_TO_CACHE = [
   '/',
