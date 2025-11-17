@@ -38,7 +38,7 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({ currentPage, onNavigate }) 
   ];
 
   return (
-    <nav className="h-20 bg-surface shadow-lg border-t border-secondary/20 flex pb-4">
+    <nav className="h-20 bg-surface shadow-lg border-t border-secondary/20 flex pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
       {navItems.map(item => (
         <NavItem
           key={item.page}
