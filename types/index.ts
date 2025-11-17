@@ -122,6 +122,7 @@ export interface SupplementPlanItem {
     notes: string;
     isCustom?: boolean;
     trainingDayOnly?: boolean;
+    restDayOnly?: boolean;
 }
 
 export interface SupplementPlan {

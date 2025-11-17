@@ -7,6 +7,7 @@ import { getExplanationIdForSupplement } from '../../services/explanationService
 interface SupplementPlanOverviewProps {
   plan: SupplementPlan;
   onRemoveItemRequest: (itemId: string) => void;
+  onComplexRemoveRequest: (item: SupplementPlanItem) => void;
   onAddItemClick: () => void;
   onEditAnswers: () => void;
   onOpenExplanation: (id: string) => void;
@@ -69,8 +70,16 @@ const SupplementItemCard: React.FC<{ item: SupplementPlanItem; onRemove: () => v
   );
 };
 
-const SupplementPlanOverview: React.FC<SupplementPlanOverviewProps> = ({ plan, onRemoveItemRequest, onAddItemClick, onEditAnswers, onOpenExplanation }) => {
+const SupplementPlanOverview: React.FC<SupplementPlanOverviewProps> = ({ plan, onRemoveItemRequest, onComplexRemoveRequest, onAddItemClick, onEditAnswers, onOpenExplanation }) => {
   const { t, locale } = useI18n();
+
+  const handleRemoveClick = (item: SupplementPlanItem) => {
+    if (item.trainingDayOnly || item.restDayOnly) {
+        onRemoveItemRequest(item.id);
+    } else {
+        onComplexRemoveRequest(item);
+    }
+  };
 
   const getTimeKey = useCallback((time: string): string => {
     const keywords = timeKeywords[locale as keyof typeof timeKeywords];
@@ -97,11 +106,12 @@ const SupplementPlanOverview: React.FC<SupplementPlanOverviewProps> = ({ plan, o
     const finalGrouped = Object.keys(groupedByTime).reduce((acc, timeGroupKey) => {
         const items = groupedByTime[timeGroupKey];
         acc[timeGroupKey] = {
-            allDays: items.filter(item => !item.trainingDayOnly),
+            allDays: items.filter(item => !item.trainingDayOnly && !item.restDayOnly),
             workoutOnly: items.filter(item => !!item.trainingDayOnly),
+            restOnly: items.filter(item => !!item.restDayOnly),
         };
         return acc;
-    }, {} as Record<string, { allDays: SupplementPlanItem[], workoutOnly: SupplementPlanItem[] }>);
+    }, {} as Record<string, { allDays: SupplementPlanItem[], workoutOnly: SupplementPlanItem[], restOnly: SupplementPlanItem[] }>);
 
     const orderedGroups = Object.keys(finalGrouped).sort((a, b) => (timeOrder[a] || 99) - (timeOrder[b] || 99));
 
@@ -133,7 +143,8 @@ const SupplementPlanOverview: React.FC<SupplementPlanOverviewProps> = ({ plan, o
         const group = groupedPlan.groupedPlan[groupName];
         const hasAllDaysItems = group.allDays.length > 0;
         const hasWorkoutOnlyItems = group.workoutOnly.length > 0;
-        if (!hasAllDaysItems && !hasWorkoutOnlyItems) return null;
+        const hasRestOnlyItems = group.restOnly.length > 0;
+        if (!hasAllDaysItems && !hasWorkoutOnlyItems && !hasRestOnlyItems) return null;
 
         return (
           <div key={groupName} className="bg-surface/50 p-4 rounded-lg">
@@ -143,9 +154,9 @@ const SupplementPlanOverview: React.FC<SupplementPlanOverviewProps> = ({ plan, o
             <div className="space-y-4">
               {hasAllDaysItems && (
                 <div className="space-y-3">
-                  {hasWorkoutOnlyItems && <h4 className="font-bold text-text-secondary">{t('supplements_all_days')}</h4>}
+                  {(hasWorkoutOnlyItems || hasRestOnlyItems) && <h4 className="font-bold text-text-secondary">{t('supplements_all_days')}</h4>}
                   {group.allDays.map(item => (
-                    <SupplementItemCard item={item} onRemove={() => onRemoveItemRequest(item.id)} key={item.id} onOpenExplanation={onOpenExplanation} />
+                    <SupplementItemCard item={item} onRemove={() => handleRemoveClick(item)} key={item.id} onOpenExplanation={onOpenExplanation} />
                   ))}
                 </div>
               )}
@@ -153,7 +164,15 @@ const SupplementPlanOverview: React.FC<SupplementPlanOverviewProps> = ({ plan, o
                 <div className="space-y-3">
                   <h4 className="font-bold text-primary">{t('supplements_workout_day')}</h4>
                   {group.workoutOnly.map(item => (
-                    <SupplementItemCard item={item} onRemove={() => onRemoveItemRequest(item.id)} key={item.id} onOpenExplanation={onOpenExplanation} />
+                    <SupplementItemCard item={item} onRemove={() => handleRemoveClick(item)} key={item.id} onOpenExplanation={onOpenExplanation} />
+                  ))}
+                </div>
+              )}
+              {hasRestOnlyItems && (
+                <div className="space-y-3">
+                  <h4 className="font-bold text-sky-400">{t('supplements_rest_day')}</h4>
+                  {group.restOnly.map(item => (
+                    <SupplementItemCard item={item} onRemove={() => handleRemoveClick(item)} key={item.id} onOpenExplanation={onOpenExplanation} />
                   ))}
                 </div>
               )}

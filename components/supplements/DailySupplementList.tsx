@@ -84,7 +84,13 @@ const DailySupplementList: React.FC<DailySupplementListProps> = ({ date, readOnl
     }
     
     const itemsForDay = supplementPlan.plan.filter(item => {
-        return !item.trainingDayOnly || isTrainingDay;
+        if (item.restDayOnly) {
+            return !isTrainingDay;
+        }
+        if (item.trainingDayOnly) {
+            return isTrainingDay;
+        }
+        return true; // all days
     }).map(item => {
         // Special logic for creatine on rest days: change its time for display and grouping
         if (getExplanationIdForSupplement(item.supplement) === 'creatine' && !isTrainingDay) {

@@ -10,6 +10,7 @@ import SupplementLog from './SupplementLog';
 import SupplementExplanationModal from './SupplementExplanationModal';
 import { generateSupplementExplanations, Explanation } from '../../services/explanationService';
 import { Icon } from '../common/Icon';
+import DeleteSupplementModal from './DeleteSupplementModal';
 
 const timeKeywords = {
     en: {
@@ -47,6 +48,7 @@ const SupplementSchedule: React.FC<SupplementScheduleProps> = ({ onEditAnswers }
   const [currentView, setCurrentView] = useState<'today' | 'tomorrow' | 'week' | 'log'>('today');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
+  const [deletingItemWithOptions, setDeletingItemWithOptions] = useState<SupplementPlanItem | null>(null);
   const [isExplanationOpen, setIsExplanationOpen] = useState(false);
   const [explanationIdToShow, setExplanationIdToShow] = useState<string | undefined>(undefined);
   const [explanations, setExplanations] = useState<Explanation[]>([]);
@@ -126,6 +128,56 @@ const SupplementSchedule: React.FC<SupplementScheduleProps> = ({ onEditAnswers }
     setDeletingItemId(null);
   };
 
+  const handleRequestComplexRemove = (item: SupplementPlanItem) => {
+    setDeletingItemWithOptions(item);
+  };
+
+  const updateItemDayType = (itemId: string, updates: { trainingDayOnly?: boolean; restDayOnly?: boolean }) => {
+    if (!supplementPlan) return;
+    
+    const newPlanItems = supplementPlan.plan.map(p => {
+        if (p.id === itemId) {
+            const newItem = { ...p };
+            delete newItem.trainingDayOnly;
+            delete newItem.restDayOnly;
+            return { ...newItem, ...updates };
+        }
+        return p;
+    });
+
+    const newPlan = { ...supplementPlan, plan: newPlanItems };
+    setSupplementPlan(newPlan);
+
+    if (userSupplements.some(s => s.id === itemId)) {
+        setUserSupplements(prev => prev.map(s => {
+            if (s.id === itemId) {
+                const newCustomItem = { ...s };
+                delete newCustomItem.trainingDayOnly;
+                delete newCustomItem.restDayOnly;
+                return { ...newCustomItem, ...updates };
+            }
+            return s;
+        }));
+    }
+    setDeletingItemWithOptions(null);
+  };
+
+  const handleSetTrainingOnly = () => {
+    if (!deletingItemWithOptions) return;
+    updateItemDayType(deletingItemWithOptions.id, { trainingDayOnly: true });
+  };
+
+  const handleSetRestOnly = () => {
+    if (!deletingItemWithOptions) return;
+    updateItemDayType(deletingItemWithOptions.id, { restDayOnly: true });
+  };
+
+  const handleRemoveCompletely = () => {
+    if (!deletingItemWithOptions) return;
+    handleRemoveItem(deletingItemWithOptions.id);
+    setDeletingItemWithOptions(null);
+  };
+
   const renderView = () => {
     if (!supplementPlan) return null;
     switch(currentView) {
@@ -137,6 +189,7 @@ const SupplementSchedule: React.FC<SupplementScheduleProps> = ({ onEditAnswers }
         return <SupplementPlanOverview 
           plan={supplementPlan} 
           onRemoveItemRequest={handleRequestRemoveItem} 
+          onComplexRemoveRequest={handleRequestComplexRemove}
           onAddItemClick={() => setIsAddModalOpen(true)}
           onEditAnswers={onEditAnswers}
           onOpenExplanation={handleOpenExplanation}
@@ -194,6 +247,16 @@ const SupplementSchedule: React.FC<SupplementScheduleProps> = ({ onEditAnswers }
               message={t('supplements_delete_confirm_message', { supplementName: itemToDelete.supplement })}
               confirmText={t('common_delete')}
               confirmButtonClass="bg-red-600 hover:bg-red-700"
+            />
+        )}
+        {deletingItemWithOptions && (
+            <DeleteSupplementModal
+                isOpen={!!deletingItemWithOptions}
+                onClose={() => setDeletingItemWithOptions(null)}
+                item={deletingItemWithOptions}
+                onSetTrainingOnly={handleSetTrainingOnly}
+                onSetRestOnly={handleSetRestOnly}
+                onRemoveCompletely={handleRemoveCompletely}
             />
         )}
         <SupplementExplanationModal 
