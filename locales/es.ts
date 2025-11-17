@@ -109,7 +109,7 @@ export const es = {
   workout_sets: 'Series',
   workout_kg: 'kg',
   workout_lbs: 'lbs',
-  workout_reps: 'reps',
+  workout_reps: 'Reps',
   workout_time: 'tiempo',
   workout_finish: 'Finalizar',
   workout_timer_sub: '-10s',
@@ -121,6 +121,10 @@ export const es = {
   active_workout_edit_details_aria: 'Editar detalles del entrenamiento',
   active_workout_minimize_aria: 'Minimizar entrenamiento',
   workout_reorganize_save_order: 'Guardar Orden',
+  workout_previous: 'Anterior',
+  workout_weight: 'Peso',
+  workout_actions: 'Acciones',
+  workout_add_set: 'Agregar Serie',
   
   // Set Type Modal
   set_type_modal_title: 'Tipo de Serie',

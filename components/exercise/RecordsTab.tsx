@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useI18n } from '../../hooks/useI18n';
 import { PersonalRecords } from '../../utils/workoutUtils';
@@ -25,7 +24,7 @@ const RecordItem: React.FC<{ title: string; record: PersonalRecords[keyof Person
         <div className="text-right text-xs text-text-secondary">
           <p>{t('records_achieved_on', { date: new Date(record.session.startTime).toLocaleDateString() })}</p>
           {/* FIX: Used a template literal to construct a valid translation key for the weight unit. */}
-          <p>{displayWeight(record.set.weight)}{t(`workout_${weightUnit}`)} x {record.set.reps} reps</p>
+          <p>{displayWeight(record.set.weight)}{t(`workout_${weightUnit}`)} x {record.set.reps} {t('workout_reps')}</p>
         </div>
       )}
     </div>

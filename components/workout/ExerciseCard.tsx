@@ -298,10 +298,10 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
 
               <div className="grid grid-cols-5 items-center gap-1 sm:gap-2 text-xs text-text-secondary">
                   <div className="text-center font-semibold">{t('workout_set')}</div>
-                  <div className="text-center">Previous</div>
-                  <div className="text-center">Weight ({t(`workout_${weightUnit}`)})</div>
-                  <div className="text-center">Reps</div>
-                  <div className="text-center">Actions</div>
+                  <div className="text-center">{t('workout_previous')}</div>
+                  <div className="text-center">{t('workout_weight')} ({t(`workout_${weightUnit}`)})</div>
+                  <div className="text-center">{t('workout_reps')}</div>
+                  <div className="text-center">{t('workout_actions')}</div>
               </div>
               
               <div className="space-y-2">
@@ -356,7 +356,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
                   className="mt-3 w-full flex items-center justify-center space-x-2 bg-secondary/50 text-text-primary font-medium py-2 rounded-lg hover:bg-secondary transition-colors"
               >
                   <Icon name="plus" className="w-5 h-5" />
-                  <span>Add Set</span>
+                  <span>{t('workout_add_set')}</span>
               </button>
           </div>
         )}

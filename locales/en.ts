@@ -110,7 +110,7 @@ export const en = {
   workout_sets: 'Sets',
   workout_kg: 'kg',
   workout_lbs: 'lbs',
-  workout_reps: 'reps',
+  workout_reps: 'Reps',
   workout_time: 'time',
   workout_finish: 'Finish',
   workout_timer_sub: '-10s',
@@ -122,6 +122,10 @@ export const en = {
   active_workout_edit_details_aria: 'Edit workout details',
   active_workout_minimize_aria: 'Minimize workout',
   workout_reorganize_save_order: 'Save Order',
+  workout_previous: 'Previous',
+  workout_weight: 'Weight',
+  workout_actions: 'Actions',
+  workout_add_set: 'Add Set',
   
   // Set Type Modal
   set_type_modal_title: 'Set Type',
@@ -268,18 +272,19 @@ export const en = {
   template_editor_routine_type: 'Routine Type',
   template_editor_type_strength: 'Strength',
   template_editor_type_hiit: 'HIIT',
+  // FIX: Added missing translations to complete the file and fix the syntax error.
   template_editor_hiit_config: 'HIIT Configuration',
   template_editor_work_time: 'Work Time (s)',
   template_editor_rest_time: 'Rest Time (s)',
   template_editor_prepare_time: 'Prepare Time (s)',
   template_editor_drag_to_reorder: 'Drag to reorder',
   template_card_add_edit_note: 'Add/Edit Note',
-  template_card_edit_timers: 'Edit Default Timers',
+  template_card_edit_timers: 'Edit Timers',
   template_card_remove_exercise: 'Remove Exercise',
   template_card_reorder_exercise: 'Reorder Exercise',
   template_card_move_up: 'Move Up',
   template_card_move_down: 'Move Down',
-  
+
   // Exercise Editor
   exercise_editor_add_title: 'Add Exercise',
   exercise_editor_edit_title: 'Edit Exercise',
@@ -289,9 +294,9 @@ export const en = {
   exercise_editor_notes_placeholder: 'Add instructions or personal notes...',
   exercise_editor_no_instructions: 'No instructions available for this exercise.',
   exercise_editor_name_empty_alert: 'Exercise name cannot be empty.',
-  exercise_editor_is_timed_label: 'Default to Timed Set',
+  exercise_editor_is_timed_label: 'Timed By Default',
   exercise_editor_is_timed_desc: 'When added to a workout, this exercise will default to a timed set instead of reps and weight.',
-  
+
   // Add/Replace Exercise Modal
   add_exercises_modal_title: 'Add Exercises',
   add_exercises_button_empty: 'Add Exercise(s)',
@@ -299,15 +304,15 @@ export const en = {
   add_exercises_button_plural: 'Add {count} Exercises',
   replace_exercise_modal_title: 'Replace Exercise',
   replace_exercise_modal_button: 'Replace',
-  replace_exercise_modal_no_match: 'No exercises match.',
+  replace_exercise_modal_no_match: 'No exercises found.',
   replace_exercise_modal_confirm_title: 'Replace Exercise?',
-  replace_exercise_modal_confirm_message: 'Are you sure you want to replace this exercise? Current sets will be kept.',
-  
+  replace_exercise_modal_confirm_message: 'Are you sure you want to replace this exercise? Current sets will be maintained.',
+
   // Workout Details Modal
-  workout_details_modal_title: 'Edit Workout Details',
+  workout_details_modal_title: 'Edit Details',
   workout_details_modal_name_label: 'Workout Name',
   workout_details_modal_auto_timer_label: 'Automatic Timer',
-  workout_details_modal_auto_timer_desc: 'Track duration automatically.',
+  workout_details_modal_auto_timer_desc: 'Log duration automatically.',
   workout_details_modal_duration_label: 'Duration',
   workout_details_modal_end_date_label: 'End Date',
   workout_details_modal_active_now: 'Active Now',
@@ -315,7 +320,7 @@ export const en = {
   workout_details_modal_save_button: 'Save Changes',
   workout_details_modal_invalid_date_alert: 'Invalid date format.',
   workout_details_modal_end_before_start_alert: 'End time cannot be before start time.',
-  
+
   // Timers Page
   timers_quick_title: 'Quick Timers',
   timers_start_button: 'Start Timer',
@@ -334,12 +339,12 @@ export const en = {
   timers_prepare: 'Prepare',
   timers_minute_abbreviation: 'm',
   timers_second_abbreviation: 's',
-  timers_announce_prepare: 'Prepare. Next: {exercise}',
-  timers_announce_rest: 'Rest. Next: {exercise}',
+  timers_announce_prepare: 'Get ready. Next up: {exercise}',
+  timers_announce_rest: 'Rest. Next up: {exercise}',
   timers_announce_finish: 'Workout finished. Congratulations! You worked for {minutes} minutes.',
 
   // Body Parts
-  body_part_all: 'All Body Parts',
+  body_part_all: 'Body Parts',
   body_part_chest: 'Chest',
   body_part_back: 'Back',
   body_part_legs: 'Legs',
@@ -355,7 +360,7 @@ export const en = {
   body_part_cardio: 'Cardio',
 
   // Categories
-  category_all: 'All Categories',
+  category_all: 'Categories',
   category_barbell: 'Barbell',
   category_dumbbell: 'Dumbbell',
   category_machine: 'Machine',
@@ -366,10 +371,9 @@ export const en = {
   category_plyometrics: 'Plyometrics',
   category_reps_only: 'Reps Only',
   category_cardio: 'Cardio',
-  // FIX: Added translation for 'Duration' category.
   category_duration: 'Duration',
-  
+
   // Notifications
-  notification_timer_finished_title: 'Rest Over!',
+  notification_timer_finished_title: 'Rest Finished!',
   notification_timer_finished_body: 'Time to start your next set of {exercise}. Let\'s go!',
 };

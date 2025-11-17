@@ -5,6 +5,7 @@ import TemplateSetRow from './TemplateSetRow';
 import ChangeTimerModal from '../modals/ChangeTimerModal';
 import EditSetTimerModal from '../modals/EditSetTimerModal';
 import { useI18n } from '../../hooks/useI18n';
+import { useMeasureUnit } from '../../hooks/useWeight';
 
 interface TemplateExerciseCardProps {
   workoutExercise: WorkoutExercise;
@@ -27,6 +28,7 @@ const TemplateExerciseCard: React.FC<TemplateExerciseCardProps> = (props) => {
     onDragStart, onDragEnter, onDragEnd, isBeingDraggedOver, isMoveUpDisabled, isMoveDownDisabled
   } = props;
   const { t } = useI18n();
+  const { weightUnit } = useMeasureUnit();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNoteEditing, setIsNoteEditing] = useState(false);
   const [isDefaultsTimerModalOpen, setIsDefaultsTimerModalOpen] = useState(false);
@@ -186,7 +188,7 @@ const TemplateExerciseCard: React.FC<TemplateExerciseCardProps> = (props) => {
           
           <div className="grid grid-cols-12 items-center gap-2 text-xs text-text-secondary">
             <div className="col-span-2 text-center font-semibold">{t('workout_set')}</div>
-            <div className="col-span-4 text-center">{t('weight_unit')}</div>
+            <div className="col-span-4 text-center">{t('workout_weight')} ({t(`workout_${weightUnit}`)})</div>
             <div className="col-span-4 text-center">{t('workout_reps')}</div>
             <div className="col-span-2 text-center"></div>
           </div>
@@ -213,7 +215,7 @@ const TemplateExerciseCard: React.FC<TemplateExerciseCardProps> = (props) => {
               className="mt-3 w-full flex items-center justify-center space-x-2 bg-secondary/50 text-text-primary font-medium py-2 rounded-lg hover:bg-secondary transition-colors"
           >
               <Icon name="plus" className="w-5 h-5" />
-              <span>Add Set</span>
+              <span>{t('workout_add_set')}</span>
           </button>
 
         </div>
