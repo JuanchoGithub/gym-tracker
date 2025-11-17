@@ -387,11 +387,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [setUserRoutines]);
   
   const routines = useMemo(() => {
+    const translatedPredefinedRoutines = PREDEFINED_ROUTINES.map(r => {
+      const nameKey = (r.id.replace(/-/g, '_') + '_name') as TranslationKey;
+      const descKey = (r.id.replace(/-/g, '_') + '_desc') as TranslationKey;
+      const translatedName = t(nameKey);
+      const translatedDesc = t(descKey);
+      return {
+        ...r,
+        name: translatedName !== nameKey ? translatedName : r.name,
+        description: translatedDesc !== descKey ? translatedDesc : r.description,
+      };
+    });
+
     const predefinedIds = new Set(PREDEFINED_ROUTINES.map(r => r.id));
     // Filter out any predefined routines that might have snuck into userRoutines
     const filteredUserRoutines = userRoutines.filter(r => !predefinedIds.has(r.id));
-    return [...PREDEFINED_ROUTINES, ...filteredUserRoutines];
-  }, [userRoutines]);
+    return [...translatedPredefinedRoutines, ...filteredUserRoutines];
+  }, [userRoutines, t]);
 
   const exercises = useMemo(() => {
     if (useLocalizedExerciseNames && locale !== 'en') {

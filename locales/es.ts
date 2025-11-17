@@ -31,13 +31,13 @@ export const es = {
 
   // Train Page
   train_routines_title: 'Mis Rutinas',
-  train_start_empty: 'Empezar Entrenamiento Vacío',
-  train_latest_workouts: 'Últimos Entrenamientos',
+  train_start_empty: 'Empezar Rutina Vacía',
+  train_latest_workouts: 'Últimas Rutinas',
   train_my_templates: 'Mis Plantillas',
-  train_sample_workouts: 'Entrenamientos de Muestra',
+  train_sample_workouts: 'Rutinas de Muestra',
   train_sample_hiit: 'HIIT de Muestra',
-  train_empty_workout_name: 'Entrenamiento Vacío',
-  train_empty_workout_desc: 'Un entrenamiento vacío para armar sobre la marcha.',
+  train_empty_workout_name: 'Rutina Vacía',
+  train_empty_workout_desc: 'Una rutina vacía para armar sobre la marcha.',
   train_new_custom_template_name: 'Nueva Plantilla Personalizada',
   train_new_hiit_template_name: 'Nueva Plantilla HIIT',
   train_quick_training: 'Entrenamiento Rápido',
@@ -60,7 +60,7 @@ export const es = {
   history_menu_delete: 'Borrar Entrenamiento',
   history_save_template_title: 'Guardar como Plantilla',
   history_template_name_label: 'Nombre de la Plantilla',
-  history_template_name_placeholder: 'Ej: Mi Súper Entrenamiento',
+  history_template_name_placeholder: 'Ej: Mi Súper Rutina',
   history_delete_confirm_title: '¿Borrar Entrenamiento?',
   history_delete_confirm_message: '¿Estás seguro de que querés borrar permanentemente esta sesión de entrenamiento?',
   history_workout_editor_title: 'Editar Entrenamiento',
@@ -165,7 +165,7 @@ export const es = {
   // Routine Preview Modal
   routine_preview_exercises: 'Ejercicios',
   routine_preview_view_exercise_details: 'Ver detalles del ejercicio',
-  routine_preview_start_workout: 'Empezar Entrenamiento',
+  routine_preview_start_workout: 'Empezar Rutina',
 
   // Finish Workout Confirmation
   finish_workout_confirm_title: '¿Finalizar Entrenamiento?',
@@ -249,7 +249,7 @@ export const es = {
   routine_panel_edit_exercises: 'Editar Ejercicios',
   routine_panel_edit_note: 'Editar Nota',
   routine_panel_rename_title: 'Renombrar Plantilla',
-  routine_panel_rename_workout_title: 'Renombrar Entrenamiento',
+  routine_panel_rename_workout_title: 'Renombrar Rutina',
   routine_panel_edit_note_title: 'Editar Nota',
   routine_panel_note_placeholder: 'Agregá una descripción para tu plantilla...',
   
@@ -375,4 +375,26 @@ export const es = {
   // Notifications
   notification_timer_finished_title: '¡Descanso Terminado!',
   notification_timer_finished_body: 'Hora de empezar tu próxima serie de {exercise}. ¡Vamos!',
+
+  // Sample Routine Names & Descriptions
+  rt_1_name: 'StrongLifts 5x5 - Rutina A',
+  rt_1_desc: 'Un programa de fuerza clásico enfocado en levantamientos compuestos.',
+  rt_2_name: 'StrongLifts 5x5 - Rutina B',
+  rt_2_desc: 'El segundo entrenamiento del programa 5x5.',
+  rt_3_name: 'PHUL - Tren Superior Potencia',
+  rt_3_desc: 'Programa de entrenamiento de Potencia Hipertrofia Tren Superior e Inferior.',
+  rt_4_name: 'PHUL - Tren Inferior Potencia',
+  rt_4_desc: 'Programa de entrenamiento de Potencia Hipertrofia Tren Superior e Inferior.',
+  rt_ppl_push_name: 'PPL - Día de Empuje',
+  rt_ppl_push_desc: 'Se enfoca en pecho, hombros y tríceps.',
+  rt_ppl_pull_name: 'PPL - Día de Tirón',
+  rt_ppl_pull_desc: 'Se enfoca en espalda y bíceps.',
+  rt_ppl_legs_name: 'PPL - Día de Piernas',
+  rt_ppl_legs_desc: 'Se enfoca en cuádriceps, isquiotibiales, glúteos y pantorrillas.',
+  rt_full_body_name: 'Explosión de Cuerpo Completo',
+  rt_full_body_desc: 'Un entrenamiento completo que trabaja todos los grupos musculares principales.',
+  rt_hiit_7min_name: 'Rutina Clásica de 7 Minutos',
+  rt_hiit_7min_desc: '12 ejercicios de peso corporal realizados durante 30 segundos con 10 segundos de descanso entre ellos.',
+  rt_hiit_beginner_name: 'Circuito HIIT para Principiantes',
+  rt_hiit_beginner_desc: 'Un entrenamiento de 15 minutos con 30s de trabajo y 30s de descanso. Completar 3 rondas.',
 };

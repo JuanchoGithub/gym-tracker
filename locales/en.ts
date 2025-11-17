@@ -376,4 +376,26 @@ export const en = {
   // Notifications
   notification_timer_finished_title: 'Rest Finished!',
   notification_timer_finished_body: 'Time to start your next set of {exercise}. Let\'s go!',
+
+  // Sample Routine Names & Descriptions
+  rt_1_name: 'StrongLifts 5x5 - Workout A',
+  rt_1_desc: 'A classic strength program focusing on compound lifts.',
+  rt_2_name: 'StrongLifts 5x5 - Workout B',
+  rt_2_desc: 'The second workout of the 5x5 program.',
+  rt_3_name: 'PHUL - Upper Power',
+  rt_3_desc: 'Power Hypertrophy Upper Lower training program.',
+  rt_4_name: 'PHUL - Lower Power',
+  rt_4_desc: 'Power Hypertrophy Upper Lower training program.',
+  rt_ppl_push_name: 'PPL - Push Day',
+  rt_ppl_push_desc: 'Focuses on chest, shoulders, and triceps.',
+  rt_ppl_pull_name: 'PPL - Pull Day',
+  rt_ppl_pull_desc: 'Focuses on back and biceps.',
+  rt_ppl_legs_name: 'PPL - Leg Day',
+  rt_ppl_legs_desc: 'Focuses on quads, hamstrings, glutes, and calves.',
+  rt_full_body_name: 'Full Body Blast',
+  rt_full_body_desc: 'A comprehensive workout hitting all major muscle groups.',
+  rt_hiit_7min_name: 'Classic 7-Minute Workout',
+  rt_hiit_7min_desc: '12 bodyweight exercises performed for 30 seconds with 10 seconds of rest in between.',
+  rt_hiit_beginner_name: 'Beginner HIIT Circuit',
+  rt_hiit_beginner_desc: 'A 15-minute workout with 30s work and 30s rest. Complete 3 rounds.',
 };
