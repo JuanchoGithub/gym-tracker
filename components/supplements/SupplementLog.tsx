@@ -127,7 +127,7 @@ const SupplementLog: React.FC = () => {
                     contentClassName="bg-surface rounded-lg shadow-xl w-[calc(100%-1rem)] max-w-lg h-[calc(100%-2rem)] max-h-[600px] m-auto flex flex-col p-4 sm:p-6"
                 >
                     <div className="flex-grow overflow-y-auto min-h-0 pr-2" style={{ overscrollBehaviorY: 'contain' }}>
-                        <DailySupplementList date={selectedDate} readOnly />
+                        <DailySupplementList date={selectedDate} />
                     </div>
                     <div className="flex-shrink-0 pt-4 mt-4 border-t border-secondary/20">
                         <button onClick={() => setSelectedDate(null)} className="w-full bg-secondary text-white font-bold py-3 rounded-lg hover:bg-slate-600 transition-colors">
