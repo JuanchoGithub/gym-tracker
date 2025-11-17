@@ -10,6 +10,7 @@ import Modal from '../components/common/Modal';
 import { useWakeLock } from '../hooks/useWakeLock';
 import { scheduleTimerNotification, cancelTimerNotification } from '../services/notificationService';
 import TimedSetTimerModal from '../components/modals/TimedSetTimerModal';
+import Timer from '../components/workout/Timer';
 
 const ActiveWorkoutPage: React.FC = () => {
   const { activeWorkout, updateActiveWorkout, endWorkout, discardActiveWorkout, getExerciseById, minimizeWorkout, keepScreenAwake, enableNotifications, startAddExercisesToWorkout } = useContext(AppContext);
@@ -26,7 +27,7 @@ const ActiveWorkoutPage: React.FC = () => {
   const dragOverItem = useRef<number | null>(null);
   const [draggedOverIndex, setDraggedOverIndex] = useState<number | null>(null);
 
-  useWakeLock(keepScreenAwake || !!activeTimedSet || isReorganizeMode);
+  useWakeLock(keepScreenAwake || !!activeTimedSet || isReorganizeMode || !!activeTimerInfo);
 
   const hasInvalidCompletedSets = useMemo(() => {
     if (!activeWorkout) return false;
@@ -111,6 +112,10 @@ const ActiveWorkoutPage: React.FC = () => {
         case 'timed': 
             duration = restTime.timed;
             break;
+        case 'failure':
+            duration = restTime.failure;
+            break;
+        case 'normal':
         default: 
             duration = restTime.normal;
     }
@@ -275,6 +280,26 @@ const ActiveWorkoutPage: React.FC = () => {
     setActiveTimedSet(null);
   };
 
+  const activeTimerExercise = useMemo(() => {
+    if (!activeTimerInfo || !activeWorkout) return null;
+    return activeWorkout.exercises.find(ex => ex.id === activeTimerInfo.exerciseId);
+  }, [activeTimerInfo, activeWorkout]);
+
+  const activeTimerSet = useMemo(() => {
+    if (!activeTimerExercise) return null;
+    return activeTimerExercise.sets.find(s => s.id === activeTimerInfo!.setId);
+  }, [activeTimerExercise, activeTimerInfo]);
+
+  const activeTimerSetIndex = useMemo(() => {
+    if (!activeTimerExercise || !activeTimerSet) return -1;
+    return activeTimerExercise.sets.findIndex(s => s.id === activeTimerSet!.id);
+  }, [activeTimerExercise, activeTimerSet]);
+
+  const activeTimerDuration = useMemo(() => {
+    if (!activeTimerExercise || !activeTimerSet || activeTimerSetIndex === -1) return 0;
+    return getTimerDuration(activeTimerSet, activeTimerExercise, activeTimerSetIndex);
+  }, [activeTimerExercise, activeTimerSet, activeTimerSetIndex]);
+
   if (!activeWorkout) {
     return <div>{t('active_workout_no_active')}</div>;
   }
@@ -314,6 +339,22 @@ const ActiveWorkoutPage: React.FC = () => {
                 </>
               )}
           </div>
+          {activeTimerInfo && activeTimerExercise && activeTimerSet && (
+            <div className="container mx-auto mt-2">
+                <Timer
+                    duration={activeTimerDuration}
+                    effortTime={activeTimerExercise.restTime.effort}
+                    failureTime={activeTimerExercise.restTime.failure}
+                    onFinish={() => handleTimerFinish(activeTimerInfo.exerciseId, activeTimerInfo.setId)}
+                    onTimeChange={(newDuration) => {
+                        const exerciseInfo = getExerciseById(activeTimerExercise.exerciseId);
+                        if (exerciseInfo) {
+                            handleTimerChange(newDuration, exerciseInfo.name);
+                        }
+                    }}
+                />
+            </div>
+          )}
       </div>
       
       <div className="text-center -mt-2 space-y-1">
@@ -344,8 +385,6 @@ const ActiveWorkoutPage: React.FC = () => {
                   exerciseInfo={exerciseInfo}
                   onUpdate={handleUpdateExercise}
                   activeTimerInfo={activeTimerInfo}
-                  onTimerFinish={handleTimerFinish}
-                  onTimerChange={handleTimerChange}
                   onStartTimedSet={handleStartTimedSet}
                   isReorganizeMode={isReorganizeMode}
                   onDragStart={(e) => handleDragStart(e, index)}

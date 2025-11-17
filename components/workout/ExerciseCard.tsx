@@ -1,7 +1,6 @@
 import React, { useState, useContext, useMemo } from 'react';
 import { Exercise, WorkoutExercise, PerformedSet, SetType } from '../../types';
 import SetRow from './SetRow';
-import Timer from './Timer';
 import { Icon } from '../common/Icon';
 import { useI18n } from '../../hooks/useI18n';
 import ExerciseHeader from './ExerciseHeader';
@@ -16,8 +15,6 @@ interface ExerciseCardProps {
   exerciseInfo: Exercise;
   onUpdate: (updatedExercise: WorkoutExercise) => void;
   activeTimerInfo?: { exerciseId: string; setId: string; startTime: number } | null;
-  onTimerFinish?: (finishedExerciseId: string, finishedSetId: string) => void;
-  onTimerChange?: (newDuration: number, exerciseName: string) => void;
   onStartTimedSet?: (exercise: WorkoutExercise, set: PerformedSet) => void;
   
   // Reorder props
@@ -35,7 +32,7 @@ interface ExerciseCardProps {
 
 const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
   const { 
-    workoutExercise, exerciseInfo, onUpdate, activeTimerInfo, onTimerFinish, onTimerChange, onStartTimedSet,
+    workoutExercise, exerciseInfo, onUpdate, activeTimerInfo, onStartTimedSet,
     isReorganizeMode, onDragStart, onDragEnter, onDragEnd, onMoveUp, onMoveDown, isMoveUpDisabled, isMoveDownDisabled, onReorganize, isBeingDraggedOver
   } = props;
   const { t } = useI18n();
@@ -55,45 +52,6 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
   const isWeightOptional = useMemo(() => {
     return ['Bodyweight', 'Assisted Bodyweight', 'Reps Only', 'Cardio', 'Duration'].includes(exerciseInfo.category);
   }, [exerciseInfo.category]);
-
-  const getTimerDuration = (set: PerformedSet, setIndex: number): number => {
-    if (set.rest !== undefined && set.rest !== null) return set.rest;
-
-    const restTime = workoutExercise.restTime;
-    let duration: number;
-
-    switch (set.type) {
-        case 'warmup': 
-            duration = restTime.warmup;
-            break;
-        case 'drop': 
-            duration = restTime.drop;
-            break;
-        case 'timed': 
-            duration = restTime.timed || 10;
-            break;
-        case 'failure':
-            duration = restTime.failure;
-            break;
-        case 'normal':
-        default: 
-            duration = restTime.normal;
-    }
-
-    // Is it the last set of the exercise?
-    const isLastSetOfExercise = setIndex === workoutExercise.sets.length - 1;
-
-    // Is it the last warmup set before a normal set?
-    const isLastWarmup = set.type === 'warmup' && 
-                        setIndex < workoutExercise.sets.length - 1 &&
-                        workoutExercise.sets[setIndex + 1].type !== 'warmup';
-
-    if (isLastSetOfExercise || isLastWarmup) {
-        duration *= 2;
-    }
-    
-    return duration;
-  };
   
   const handleUpdateSet = (updatedSet: PerformedSet) => {
     const oldSetIndex = workoutExercise.sets.findIndex(s => s.id === updatedSet.id);
@@ -324,17 +282,6 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
                               previousSetData={previousSetData}
                               isWeightOptional={isWeightOptional}
                           />
-                          {isActiveTimer && onTimerFinish && onTimerChange && (
-                            <div className="w-full rounded-lg">
-                              <Timer 
-                                  duration={getTimerDuration(set, setIndex)} 
-                                  effortTime={workoutExercise.restTime.effort}
-                                  failureTime={workoutExercise.restTime.failure}
-                                  onFinish={() => onTimerFinish(workoutExercise.id, set.id)} 
-                                  onTimeChange={(newTime) => onTimerChange(newTime, exerciseInfo.name)}
-                              />
-                            </div>
-                          )}
                           {showFinishedTimer && set.actualRest !== undefined && (
                             <div className="w-full">
                               <div className="my-2 flex items-center justify-center text-sm text-success">
