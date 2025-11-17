@@ -4,105 +4,47 @@ import { Icon } from '../common/Icon';
 import { useI18n } from '../../hooks/useI18n';
 import { formatTime, formatSecondsToMMSS } from '../../utils/timeUtils';
 import Modal from '../common/Modal';
+import { ActiveTimerInfo } from '../../contexts/AppContext';
 
 interface TimerProps {
-  duration: number; // in seconds
+  timerInfo: ActiveTimerInfo;
   effortTime: number;
   failureTime: number;
   onFinish: () => void;
-  onTimeChange?: (newTime: number) => void;
+  onTogglePause: (isPaused: boolean, timeLeft: number) => void;
+  onTimeUpdate: (updates: { newTimeLeft?: number, newTotalDuration?: number }) => void;
+  onChangeDuration: (newDuration: number) => void;
 }
 
-const Timer: React.FC<TimerProps> = ({ duration: initialDuration, effortTime, failureTime, onFinish, onTimeChange }) => {
+const Timer: React.FC<TimerProps> = ({ timerInfo, effortTime, failureTime, onFinish, onTogglePause, onTimeUpdate, onChangeDuration }) => {
   const { t } = useI18n();
-  const [totalDuration, setTotalDuration] = useState(initialDuration);
-  const [timeLeft, setTimeLeft] = useState(initialDuration);
-  const [isPaused, setIsPaused] = useState(false);
+  
+  const calculateTimeLeft = () => {
+    if (timerInfo.isPaused) {
+        return timerInfo.timeLeftWhenPaused;
+    }
+    return Math.max(0, Math.round((timerInfo.targetTime - Date.now()) / 1000));
+  };
+  
+  const [timeLeft, setTimeLeft] = useState(calculateTimeLeft);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [infoModalContent, setInfoModalContent] = useState<{title: string, message: string} | null>(null);
   
-  const targetTimeRef = useRef<number>(0);
   const onFinishRef = useRef(onFinish);
-  const onTimeChangeRef = useRef(onTimeChange);
-  const isInitialMount = useRef(true);
 
   useEffect(() => {
     onFinishRef.current = onFinish;
   }, [onFinish]);
 
   useEffect(() => {
-    onTimeChangeRef.current = onTimeChange;
-  }, [onTimeChange]);
-
-  const resetTimer = (newDuration: number) => {
-    setIsPaused(false);
-    setTimeLeft(newDuration);
-    targetTimeRef.current = Date.now() + newDuration * 1000;
-  };
-
-  const setTimer = (newDuration: number) => {
-    setTotalDuration(newDuration);
-    resetTimer(newDuration);
-    onTimeChangeRef.current?.(newDuration);
-  }
-
-  useEffect(() => {
-    if (isInitialMount.current) {
-        isInitialMount.current = false;
-        // Initial setup logic:
-        setTotalDuration(initialDuration);
-        resetTimer(initialDuration);
-        return;
-    }
-    
-    // This now runs only on subsequent renders when initialDuration changes.
-    const oldDuration = totalDuration;
-    if (initialDuration === oldDuration) return; // No change in prop
-
-    // If timer is not running, just reset to new duration
-    if (isPaused || timeLeft <= 0) {
-        setTotalDuration(initialDuration);
-        resetTimer(initialDuration);
-        return;
-    }
-
-    const currentElapsed = oldDuration - timeLeft;
-
-    // Slashing
-    if (initialDuration < oldDuration) {
-        if (currentElapsed >= initialDuration) {
-            const newTimeLeft = 5;
-            targetTimeRef.current = Date.now() + newTimeLeft * 1000;
-            setTimeLeft(newTimeLeft);
-            const newTotalDuration = currentElapsed + newTimeLeft;
-            setTotalDuration(newTotalDuration);
-            onTimeChangeRef.current?.(newTotalDuration);
-        } else {
-            const newTimeLeft = initialDuration - currentElapsed;
-            targetTimeRef.current = Date.now() + newTimeLeft * 1000;
-            setTimeLeft(newTimeLeft);
-            setTotalDuration(initialDuration);
-            onTimeChangeRef.current?.(initialDuration);
-        }
-    } else if (initialDuration > oldDuration) { // Increasing
-        const newTimeLeft = initialDuration - currentElapsed;
-        targetTimeRef.current = Date.now() + newTimeLeft * 1000;
-        setTimeLeft(newTimeLeft);
-        setTotalDuration(initialDuration);
-        onTimeChangeRef.current?.(initialDuration);
-    }
-    
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialDuration]);
-
-  useEffect(() => {
-    if (isPaused || timeLeft <= 0) {
+    if (timerInfo.isPaused) {
+      // If paused, ensure local state reflects the paused time.
+      setTimeLeft(timerInfo.timeLeftWhenPaused);
       return;
     }
 
     const interval = setInterval(() => {
-      const remainingMs = targetTimeRef.current - Date.now();
-      const newTimeLeft = Math.max(0, Math.round(remainingMs / 1000));
+      const newTimeLeft = calculateTimeLeft();
       
       setTimeLeft(prevTimeLeft => {
         if (prevTimeLeft > 10 && newTimeLeft <= 10) {
@@ -118,56 +60,41 @@ const Timer: React.FC<TimerProps> = ({ duration: initialDuration, effortTime, fa
         return newTimeLeft;
       });
       
-      if (newTimeLeft <= 0) {
-        setIsPaused(true);
-      }
-    }, 1000);
+    }, 250);
 
     return () => clearInterval(interval);
-  }, [isPaused, timeLeft]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timerInfo.isPaused, timerInfo.targetTime]); // Rerun only when pause state or target changes
 
   const togglePause = () => {
-    setIsPaused(prevIsPaused => {
-      const nextIsPaused = !prevIsPaused;
-      if (!nextIsPaused) { // Resuming
-        targetTimeRef.current = Date.now() + timeLeft * 1000;
-      }
-      return nextIsPaused;
-    });
+    onTogglePause(!timerInfo.isPaused, timeLeft);
   };
 
   const modifyTime = (amount: number) => {
-    const newTotal = Math.max(0, totalDuration + amount);
-    setTotalDuration(newTotal);
-
-    setTimeLeft(prev => {
-      const newTime = Math.max(0, prev + amount);
-      if (!isPaused) {
-        targetTimeRef.current = Date.now() + newTime * 1000;
-      }
-      onTimeChangeRef.current?.(newTime);
-      if (newTime === 0 && amount < 0) {
+    const newTimeLeft = Math.max(0, timeLeft + amount);
+    const newTotalDuration = Math.max(0, timerInfo.totalDuration + amount);
+    onTimeUpdate({ newTimeLeft, newTotalDuration });
+    if (newTimeLeft === 0 && amount < 0) {
         onFinishRef.current();
-      }
-      return newTime;
-    });
+    }
   };
 
   const handleReset = () => {
-    setTimer(initialDuration);
+    const newTimeLeft = timerInfo.totalDuration;
+    onTimeUpdate({ newTimeLeft });
+    if(timerInfo.isPaused) {
+        onTogglePause(false, newTimeLeft);
+    }
   };
 
   const handleSkip = () => {
-    setIsPaused(true);
-    setTimeLeft(0);
-    onTimeChangeRef.current?.(0);
     onFinishRef.current();
   };
 
-  const elapsedSeconds = Math.max(0, totalDuration - timeLeft);
+  const elapsedSeconds = Math.max(0, timerInfo.totalDuration - timeLeft);
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
-  const progress = totalDuration > 0 ? (elapsedSeconds / totalDuration) * 100 : 0;
+  const progress = timerInfo.totalDuration > 0 ? (elapsedSeconds / timerInfo.totalDuration) * 100 : 0;
 
   const presetButtonClass = "flex-1 bg-secondary text-text-primary font-semibold py-3 rounded-lg flex flex-col items-center justify-center text-sm";
   const infoButtonClass = "absolute top-1 right-1 text-text-secondary/50 hover:text-text-secondary";
@@ -202,10 +129,10 @@ const Timer: React.FC<TimerProps> = ({ duration: initialDuration, effortTime, fa
                             style={{ width: `${progress}%`, transition: 'width 200ms linear' }}
                         ></div>
                         <span className="relative flex items-center">
-                            <Icon name={isPaused ? 'play' : 'pause'} className="w-10 h-10 mr-3"/>
+                            <Icon name={timerInfo.isPaused ? 'play' : 'pause'} className="w-10 h-10 mr-3"/>
                             <div className="flex flex-col text-left">
-                                <span className="text-xl font-bold leading-tight">{isPaused ? t('timer_resume') : t('timer_pause')}</span>
-                                <span className="text-sm font-mono font-normal leading-tight">{formatTime(elapsedSeconds)} / {formatTime(totalDuration)}</span>
+                                <span className="text-xl font-bold leading-tight">{timerInfo.isPaused ? t('timer_resume') : t('timer_pause')}</span>
+                                <span className="text-sm font-mono font-normal leading-tight">{formatTime(elapsedSeconds)} / {formatTime(timerInfo.totalDuration)}</span>
                             </div>
                         </span>
                     </button>
@@ -217,16 +144,16 @@ const Timer: React.FC<TimerProps> = ({ duration: initialDuration, effortTime, fa
                  <div className="flex gap-2 w-full">
                     <button onClick={handleReset} className={presetButtonClass}>
                         <span>{t('timer_reset')}</span>
-                        <span className="font-mono">{formatSecondsToMMSS(initialDuration)}</span>
+                        <span className="font-mono">{formatSecondsToMMSS(timerInfo.totalDuration)}</span>
                     </button>
-                    <button onClick={() => setTimer(effortTime)} className={`${presetButtonClass} relative`}>
+                    <button onClick={() => onChangeDuration(effortTime)} className={`${presetButtonClass} relative`}>
                         <span>{t('timer_effort')}</span>
                         <span className="font-mono">{formatSecondsToMMSS(effortTime)}</span>
                         <div className={infoButtonClass} onClick={(e) => { e.stopPropagation(); setInfoModalContent({title: t('timer_effort_desc_title'), message: t('timer_effort_desc')})}}>
                             <Icon name="question-mark-circle" className="w-4 h-4" />
                         </div>
                     </button>
-                    <button onClick={() => setTimer(failureTime)} className={`${presetButtonClass} relative`}>
+                    <button onClick={() => onChangeDuration(failureTime)} className={`${presetButtonClass} relative`}>
                         <span>{t('timer_failure')}</span>
                         <span className="font-mono">{formatSecondsToMMSS(failureTime)}</span>
                         <div className={infoButtonClass} onClick={(e) => { e.stopPropagation(); setInfoModalContent({title: t('timer_failure_desc_title'), message: t('timer_failure_desc')})}}>

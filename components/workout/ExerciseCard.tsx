@@ -14,7 +14,6 @@ interface ExerciseCardProps {
   workoutExercise: WorkoutExercise;
   exerciseInfo: Exercise;
   onUpdate: (updatedExercise: WorkoutExercise) => void;
-  activeTimerInfo?: { exerciseId: string; setId: string; startTime: number } | null;
   onStartTimedSet?: (exercise: WorkoutExercise, set: PerformedSet) => void;
   
   // Reorder props
@@ -32,12 +31,12 @@ interface ExerciseCardProps {
 
 const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
   const { 
-    workoutExercise, exerciseInfo, onUpdate, activeTimerInfo, onStartTimedSet,
+    workoutExercise, exerciseInfo, onUpdate, onStartTimedSet,
     isReorganizeMode, onDragStart, onDragEnter, onDragEnd, onMoveUp, onMoveDown, isMoveUpDisabled, isMoveDownDisabled, onReorganize, isBeingDraggedOver
   } = props;
   const { t } = useI18n();
   const { weightUnit } = useMeasureUnit();
-  const { history: allHistory } = useContext(AppContext);
+  const { history: allHistory, activeTimerInfo } = useContext(AppContext);
   const [completedSets, setCompletedSets] = useState(workoutExercise.sets.filter(s => s.isComplete).length);
   const [isNoteEditing, setIsNoteEditing] = useState(false);
   const [note, setNote] = useState(workoutExercise.note || '');

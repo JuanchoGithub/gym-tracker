@@ -1,4 +1,4 @@
-import { WorkoutSession, PerformedSet } from '../types';
+import { WorkoutSession, PerformedSet, WorkoutExercise } from '../types';
 
 export type ExerciseHistory = {
   session: WorkoutSession;
@@ -78,4 +78,39 @@ export const findBestSet = (sets: PerformedSet[]): PerformedSet | null => {
         const current1RM = calculate1RM(current.weight, current.reps);
         return current1RM > best1RM ? current : best;
     }, normalSets[0]);
+};
+
+export const getTimerDuration = (set: PerformedSet, workoutExercise: WorkoutExercise, setIndex: number): number => {
+    if (set.rest !== undefined && set.rest !== null) return set.rest;
+    const restTime = workoutExercise.restTime;
+    let duration: number;
+
+    switch (set.type) {
+        case 'warmup': 
+            duration = restTime.warmup;
+            break;
+        case 'drop': 
+            duration = restTime.drop;
+            break;
+        case 'timed': 
+            duration = restTime.timed;
+            break;
+        case 'failure':
+            duration = restTime.failure;
+            break;
+        case 'normal':
+        default: 
+            duration = restTime.normal;
+    }
+
+    const isLastSetOfExercise = setIndex === workoutExercise.sets.length - 1;
+    const isLastWarmup = set.type === 'warmup' && 
+                        setIndex < workoutExercise.sets.length - 1 &&
+                        workoutExercise.sets[setIndex + 1].type !== 'warmup';
+
+    if (isLastSetOfExercise || isLastWarmup) {
+        duration *= 2;
+    }
+    
+    return duration;
 };
