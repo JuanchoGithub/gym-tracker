@@ -27,12 +27,16 @@ interface ExerciseCardProps {
   isMoveDownDisabled: boolean;
   onReorganize: () => void;
   isBeingDraggedOver?: boolean;
+
+  isCollapsed: boolean;
+  onToggleCollapse: () => void;
 }
 
 const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
   const { 
     workoutExercise, exerciseInfo, onUpdate, onStartTimedSet,
-    isReorganizeMode, onDragStart, onDragEnter, onDragEnd, onMoveUp, onMoveDown, isMoveUpDisabled, isMoveDownDisabled, onReorganize, isBeingDraggedOver
+    isReorganizeMode, onDragStart, onDragEnter, onDragEnd, onMoveUp, onMoveDown, isMoveUpDisabled, isMoveDownDisabled, onReorganize, isBeingDraggedOver,
+    isCollapsed, onToggleCollapse
   } = props;
   const { t } = useI18n();
   const { weightUnit } = useMeasureUnit();
@@ -41,8 +45,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
   const [isNoteEditing, setIsNoteEditing] = useState(false);
   const [note, setNote] = useState(workoutExercise.note || '');
   const [isDefaultsTimerModalOpen, setIsDefaultsTimerModalOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
-
+  
   const lastPerformance = useMemo(() => {
     const history = getExerciseHistory(allHistory, exerciseInfo.id);
     return history.length > 0 ? history[0] : null;
@@ -224,7 +227,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
                 onUpdate={onUpdate}
                 onAddNote={() => { setIsNoteEditing(true); setNote(workoutExercise.note || ''); }}
                 onOpenTimerModal={() => setIsDefaultsTimerModalOpen(true)}
-                onToggleCollapse={() => setIsCollapsed(prev => !prev)}
+                onToggleCollapse={onToggleCollapse}
                 onMoveUp={onMoveUp}
                 onMoveDown={onMoveDown}
                 isMoveUpDisabled={isMoveUpDisabled}

@@ -15,7 +15,7 @@ import { getTimerDuration } from '../utils/workoutUtils';
 
 const ActiveWorkoutPage: React.FC = () => {
   // FIX: Destructured `startAddExercisesToWorkout` from AppContext.
-  const { activeWorkout, updateActiveWorkout, endWorkout, discardActiveWorkout, getExerciseById, minimizeWorkout, keepScreenAwake, activeTimerInfo, setActiveTimerInfo, startAddExercisesToWorkout } = useContext(AppContext);
+  const { activeWorkout, updateActiveWorkout, endWorkout, discardActiveWorkout, getExerciseById, minimizeWorkout, keepScreenAwake, activeTimerInfo, setActiveTimerInfo, startAddExercisesToWorkout, collapsedExerciseIds, setCollapsedExerciseIds } = useContext(AppContext);
   const { t } = useI18n();
   const elapsedTime = useWorkoutTimer(activeWorkout?.startTime);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -27,6 +27,8 @@ const ActiveWorkoutPage: React.FC = () => {
   const dragItem = useRef<number | null>(null);
   const dragOverItem = useRef<number | null>(null);
   const [draggedOverIndex, setDraggedOverIndex] = useState<number | null>(null);
+
+  const collapsedSet = useMemo(() => new Set(collapsedExerciseIds), [collapsedExerciseIds]);
 
   useWakeLock(keepScreenAwake || !!activeTimedSet || isReorganizeMode || (!!activeTimerInfo && !activeTimerInfo.isPaused));
 
@@ -97,6 +99,18 @@ const ActiveWorkoutPage: React.FC = () => {
     updateActiveWorkout({ ...activeWorkout, exercises: newExercises });
   };
   // --- End Reorganization Logic ---
+  
+  const handleToggleCollapse = (exerciseId: string) => {
+    setCollapsedExerciseIds(prevIds => {
+      const newSet = new Set(prevIds);
+      if (newSet.has(exerciseId)) {
+        newSet.delete(exerciseId);
+      } else {
+        newSet.add(exerciseId);
+      }
+      return Array.from(newSet);
+    });
+  };
 
   const handleUpdateExercise = (updatedExercise: WorkoutExercise) => {
     if (!activeWorkout) return;
@@ -292,6 +306,8 @@ const ActiveWorkoutPage: React.FC = () => {
                   isMoveDownDisabled={index === exercisesToShow.length - 1}
                   onReorganize={handleEnterReorganizeMode}
                   isBeingDraggedOver={draggedOverIndex === index && dragItem.current !== index}
+                  isCollapsed={collapsedSet.has(exercise.id)}
+                  onToggleCollapse={() => handleToggleCollapse(exercise.id)}
               />
           ) : null;
         }) : (

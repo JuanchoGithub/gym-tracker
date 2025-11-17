@@ -96,6 +96,8 @@ interface AppContextType {
   logWeight: (weightInKg: number) => void;
   activeTimerInfo: ActiveTimerInfo | null;
   setActiveTimerInfo: React.Dispatch<React.SetStateAction<ActiveTimerInfo | null>>;
+  collapsedExerciseIds: string[];
+  setCollapsedExerciseIds: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
 export const AppContext = createContext<AppContextType>({} as AppContextType);
@@ -129,6 +131,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [takenSupplements, setTakenSupplements] = useLocalStorage<Record<string, string[]>>('takenSupplements', {});
   const [profile, setProfile] = useLocalStorage<Profile>('profile', { weightHistory: [] });
   const [activeTimerInfo, setActiveTimerInfo] = useLocalStorage<ActiveTimerInfo | null>('activeRestTimer', null);
+  const [collapsedExerciseIds, setCollapsedExerciseIds] = useLocalStorage<string[]>('collapsedExerciseIds', []);
 
   
   // New state for automated supplement review
@@ -505,6 +508,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const startWorkout = useCallback((routine: Routine) => {
     unlockAudioContext();
     setActiveTimerInfo(null);
+    setCollapsedExerciseIds([]);
     // Deep copy to avoid mutating the original routine/template
     const newWorkoutExercises: WorkoutExercise[] = JSON.parse(JSON.stringify(routine.exercises));
 
@@ -606,7 +610,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
     setActiveWorkout(newWorkout);
     setIsWorkoutMinimized(false);
-  }, [setActiveWorkout, setIsWorkoutMinimized, defaultRestTimes, history, setActiveTimerInfo]);
+  }, [setActiveWorkout, setIsWorkoutMinimized, defaultRestTimes, history, setActiveTimerInfo, setCollapsedExerciseIds]);
 
   const updateActiveWorkout = useCallback((workout: WorkoutSession) => {
     setActiveWorkout(workout);
@@ -615,6 +619,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const endWorkout = useCallback(() => {
     if (activeWorkout) {
       setActiveTimerInfo(null);
+      setCollapsedExerciseIds([]);
       cancelTimerNotification('rest-timer-finished');
       const workoutEndTime = activeWorkout.endTime > 0 ? activeWorkout.endTime : Date.now();
       
@@ -684,14 +689,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setActiveWorkout(null);
       setIsWorkoutMinimized(false);
     }
-  }, [activeWorkout, history, routines, setActiveWorkout, setHistory, setIsWorkoutMinimized, setUserRoutines, setActiveTimerInfo]);
+  }, [activeWorkout, history, routines, setActiveWorkout, setHistory, setIsWorkoutMinimized, setUserRoutines, setActiveTimerInfo, setCollapsedExerciseIds]);
 
   const discardActiveWorkout = useCallback(() => {
     setActiveTimerInfo(null);
+    setCollapsedExerciseIds([]);
     cancelTimerNotification('rest-timer-finished');
     setActiveWorkout(null);
     setIsWorkoutMinimized(false);
-  }, [setActiveWorkout, setIsWorkoutMinimized, setActiveTimerInfo]);
+  }, [setActiveWorkout, setIsWorkoutMinimized, setActiveTimerInfo, setCollapsedExerciseIds]);
   
   const minimizeWorkout = useCallback(() => setIsWorkoutMinimized(true), [setIsWorkoutMinimized]);
   const maximizeWorkout = useCallback(() => setIsWorkoutMinimized(false), [setIsWorkoutMinimized]);
@@ -997,6 +1003,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     logWeight,
     activeTimerInfo,
     setActiveTimerInfo,
+    collapsedExerciseIds,
+    setCollapsedExerciseIds,
   }), [
     routines, upsertRoutine, deleteRoutine, history, deleteHistorySession, updateHistorySession, exercises, getExerciseById,
     upsertExercise, activeWorkout, startWorkout, updateActiveWorkout, endWorkout,
@@ -1016,6 +1024,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     newSuggestions, applyPlanSuggestion, applyAllPlanSuggestions, dismissSuggestion, dismissAllSuggestions, clearNewSuggestions,
     profile, updateProfileInfo, currentWeight, logWeight,
     activeTimerInfo, setActiveTimerInfo,
+    collapsedExerciseIds, setCollapsedExerciseIds,
   ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

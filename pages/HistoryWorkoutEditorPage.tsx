@@ -22,6 +22,19 @@ const HistoryWorkoutEditorPage: React.FC = () => {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isAddExerciseModalOpen, setIsAddExerciseModalOpen] = useState(false);
   const [isConfirmingBack, setIsConfirmingBack] = useState(false);
+  const [collapsedExercises, setCollapsedExercises] = useState<Set<string>>(new Set());
+
+  const handleToggleCollapse = (exerciseId: string) => {
+    setCollapsedExercises(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(exerciseId)) {
+            newSet.delete(exerciseId);
+        } else {
+            newSet.add(exerciseId);
+        }
+        return newSet;
+    });
+  };
 
   const handleMoveExercise = (fromIndex: number, toIndex: number) => {
     if (!workout || toIndex < 0 || toIndex >= workout.exercises.length) return;
@@ -140,20 +153,18 @@ const HistoryWorkoutEditorPage: React.FC = () => {
         {workout.exercises.length > 0 ? workout.exercises.map((exercise, index) => {
           const exerciseInfo = getExerciseById(exercise.exerciseId);
           return exerciseInfo ? (
-              // FIX: Added missing properties to the ExerciseCard component to satisfy its required props.
               <ExerciseCard
                   key={exercise.id}
                   workoutExercise={exercise}
                   exerciseInfo={exerciseInfo}
                   onUpdate={handleUpdateExercise}
-                  activeTimerInfo={null}
-                  onTimerFinish={() => {}}
-                  onTimerChange={() => {}}
                   onMoveUp={() => handleMoveExercise(index, index - 1)}
                   onMoveDown={() => handleMoveExercise(index, index + 1)}
                   isMoveUpDisabled={index === 0}
                   isMoveDownDisabled={workout.exercises.length - 1 === index}
                   onReorganize={() => { /* Not implemented on this page */ }}
+                  isCollapsed={collapsedExercises.has(exercise.id)}
+                  onToggleCollapse={() => handleToggleCollapse(exercise.id)}
               />
           ) : null;
         }) : (
