@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Page } from '../../App';
 import { useI18n } from '../../hooks/useI18n';
@@ -38,7 +39,7 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({ currentPage, onNavigate }) 
   ];
 
   return (
-    <nav className="h-20 bg-surface shadow-lg border-t border-secondary/20 flex pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
+    <nav className="h-[calc(5rem+env(safe-area-inset-bottom))] bg-surface shadow-lg border-t border-secondary/20 flex pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
       {navItems.map(item => (
         <NavItem
           key={item.page}
