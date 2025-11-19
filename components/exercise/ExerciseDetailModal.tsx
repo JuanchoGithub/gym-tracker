@@ -12,6 +12,7 @@ import DescriptionTab from './DescriptionTab';
 import HistoryTab from './HistoryTab';
 import GraphsTab from './GraphsTab';
 import RecordsTab from './RecordsTab';
+import { getBodyPartColor, getCategoryColor } from '../../utils/colorUtils';
 
 interface ExerciseDetailModalProps {
   exercise: Exercise;
@@ -68,71 +69,74 @@ const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({ exercise, isO
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
-      <div className="flex flex-col h-[70vh] max-h-[550px]">
+    <Modal isOpen={isOpen} onClose={onClose} contentClassName="bg-[#0f172a] rounded-2xl shadow-2xl w-full max-w-xl m-4 p-0 flex flex-col h-[85vh] max-h-[750px] border border-white/10 overflow-hidden">
+      <div className="flex flex-col h-full">
         {/* Custom Header */}
-        <div className="flex items-center justify-between mb-4 flex-shrink-0 gap-2">
-            <div className="flex-1 text-left">
-                <button onClick={onClose} className="text-text-secondary hover:text-text-primary p-1 -ml-1">
+        <div className="bg-[#0f172a] p-5 pb-0 flex-shrink-0 relative z-10">
+            <div className="flex justify-between items-start mb-2">
+                 <button onClick={onClose} className="p-2 -ml-2 -mt-2 rounded-full text-text-secondary hover:text-white hover:bg-white/5 transition-colors">
                     <Icon name="x" className="w-6 h-6" />
                 </button>
+                <div className="flex items-center space-x-1 -mt-1 -mr-2">
+                    <button onClick={handleDuplicate} className="p-2 text-text-secondary hover:text-white hover:bg-white/5 rounded-full transition-colors" title="Duplicate">
+                        <Icon name="duplicate" className="w-5 h-5" />
+                    </button>
+                    <button onClick={handleEdit} className="p-2 text-text-secondary hover:text-white hover:bg-white/5 rounded-full transition-colors" title={t('exercise_edit')}>
+                        <Icon name="edit" className="w-5 h-5" />
+                    </button>
+                </div>
             </div>
-            <div className="flex-shrink min-w-0 text-center">
-                <h2 className="font-bold text-text-primary text-base sm:text-xl truncate" title={exercise.name}>
+
+            <div className="text-center px-2 mb-4">
+                <h2 className="text-2xl font-bold text-white mb-2 leading-tight">
                     {exercise.name}
                 </h2>
-                <div className="flex items-center justify-center gap-2 mt-1 flex-wrap">
-                    <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">{t(getBodyPartTKey(exercise.bodyPart))}</span>
-                    <span className="text-xs bg-secondary/30 text-text-secondary px-2 py-0.5 rounded-full">{t(getCategoryTKey(exercise.category))}</span>
+                <div className="flex items-center justify-center gap-2 flex-wrap">
+                    <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md border border-white/5 uppercase tracking-wide ${getBodyPartColor(exercise.bodyPart)}`}>
+                        {t(getBodyPartTKey(exercise.bodyPart))}
+                    </span>
+                    <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md border border-white/5 uppercase tracking-wide ${getCategoryColor(exercise.category)}`}>
+                        {t(getCategoryTKey(exercise.category))}
+                    </span>
                     {exercise.isTimed && (
-                        <span className="text-xs bg-yellow-400/20 text-yellow-300 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <span className="text-[10px] font-bold bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 px-2.5 py-1 rounded-md flex items-center gap-1 uppercase tracking-wide">
                             <Icon name="stopwatch" className="w-3 h-3" />
                             <span>{t('set_type_timed')}</span>
                         </span>
                     )}
                 </div>
             </div>
-            <div className="flex-1 flex items-center justify-end space-x-1">
-                <button onClick={handleDuplicate} className="text-text-secondary hover:text-text-primary p-1" title="Duplicate">
-                    <Icon name="duplicate" className="w-5 h-5" />
+            
+            {/* Segmented Control Tabs */}
+            <div className="bg-surface-highlight/40 p-1 rounded-xl flex mt-2 mb-4 border border-white/5">
+                {TABS.map(tab => (
+                <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex-1 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all duration-200 ${
+                    activeTab === tab.id
+                        ? 'bg-primary text-white shadow-md'
+                        : 'text-text-secondary hover:text-white hover:bg-white/5'
+                    }`}
+                >
+                    {tab.label}
                 </button>
-                <button onClick={handleEdit} className="text-text-secondary hover:text-text-primary p-1" title={t('exercise_edit')}>
-                    <Icon name="edit" className="w-5 h-5" />
-                </button>
+                ))}
             </div>
-        </div>
-        
-        {/* Tabs */}
-        <div className="border-b border-secondary/20 mb-4 flex-shrink-0">
-          <nav className="flex" aria-label="Tabs">
-            {TABS.map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 py-3 px-1 text-center font-medium text-xs sm:text-sm border-b-2 transition-colors duration-200 whitespace-nowrap ${
-                  activeTab === tab.id
-                    ? 'border-primary text-primary bg-primary/10'
-                    : 'border-transparent text-text-secondary hover:text-text-primary hover:border-slate-600'
-                }`}
-              >
-                <span>{tab.label}</span>
-              </button>
-            ))}
-          </nav>
         </div>
 
         {/* Scrollable Tab Content */}
-        <div className="flex-grow overflow-y-auto pr-2" style={{ overscrollBehaviorY: 'contain' }}>
+        <div className="flex-grow overflow-y-auto px-5 pb-5 bg-gradient-to-b from-[#0f172a] to-[#0b1120]" style={{ overscrollBehaviorY: 'contain' }}>
             {renderTabContent()}
         </div>
 
         {/* Conditional Footer */}
         {(onSelectForAdd || onAddAndClose) && (
-            <div className="flex-shrink-0 pt-4 mt-4 border-t border-secondary/20 flex flex-col sm:flex-row gap-3">
+            <div className="flex-shrink-0 p-4 bg-[#0f172a] border-t border-white/10 flex flex-col sm:flex-row gap-3 shadow-[0_-10px_20px_rgba(0,0,0,0.3)] z-20 safe-area-bottom">
                 {onSelectForAdd && (
                     <button 
                         onClick={handleSelectForAdd}
-                        className="w-full bg-secondary text-white font-bold py-3 rounded-lg hover:bg-slate-600 transition-colors"
+                        className="flex-1 bg-surface hover:bg-surface-highlight text-white font-bold py-3.5 rounded-xl transition-colors border border-white/10"
                     >
                         {t('common_select')}
                     </button>
@@ -140,7 +144,7 @@ const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({ exercise, isO
                 {onAddAndClose && (
                     <button
                         onClick={handleAddAndClose}
-                        className="w-full bg-primary text-white font-bold py-3 rounded-lg hover:bg-sky-600 transition-colors"
+                        className="flex-1 bg-primary hover:bg-primary-content text-white font-bold py-3.5 rounded-xl transition-colors shadow-lg shadow-primary/20"
                     >
                         {t('common_add_and_close')}
                     </button>
