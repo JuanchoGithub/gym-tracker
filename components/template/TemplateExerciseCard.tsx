@@ -49,7 +49,9 @@ const TemplateExerciseCard: React.FC<TemplateExerciseCardProps> = (props) => {
     if (oldSet.weight !== updatedSet.weight && updatedSet.isWeightInherited === false) {
         for (let i = oldSetIndex + 1; i < newSets.length; i++) {
             if (newSets[i].isWeightInherited !== false) {
-                newSets[i] = { ...newSets[i], weight: updatedSet.weight, isWeightInherited: true };
+                if (newSets[i].type === updatedSet.type) {
+                    newSets[i] = { ...newSets[i], weight: updatedSet.weight, isWeightInherited: true };
+                }
             } else {
                 break;
             }
@@ -60,7 +62,9 @@ const TemplateExerciseCard: React.FC<TemplateExerciseCardProps> = (props) => {
     if (oldSet.reps !== updatedSet.reps && updatedSet.isRepsInherited === false) {
         for (let i = oldSetIndex + 1; i < newSets.length; i++) {
             if (newSets[i].reps === 0 || newSets[i].isRepsInherited !== false) {
-                newSets[i] = { ...newSets[i], reps: updatedSet.reps, isRepsInherited: true };
+                if (newSets[i].type === updatedSet.type) {
+                    newSets[i] = { ...newSets[i], reps: updatedSet.reps, isRepsInherited: true };
+                }
             } else {
                 break;
             }

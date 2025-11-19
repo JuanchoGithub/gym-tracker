@@ -1,5 +1,4 @@
 
-
 // FIX: Corrected the type definition to allow for proper key inference by TypeScript.
 export const es = {
   // Common
@@ -130,6 +129,11 @@ export const es = {
   workout_actions: 'Acciones',
   workout_add_set: 'Agregar Serie',
   
+  // Weight Input Modal
+  weight_input_modal_title: 'Ingresá tu Peso',
+  weight_input_modal_message: 'Para rastrear este ejercicio de peso corporal con precisión, por favor ingresá tu peso actual. Esto se guardará en tu perfil.',
+  weight_input_save: 'Guardar Peso',
+
   // Set Type Modal
   set_type_modal_title: 'Tipo de Serie',
   set_type_normal: 'Normal',

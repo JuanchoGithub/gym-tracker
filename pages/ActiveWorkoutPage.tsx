@@ -1,3 +1,4 @@
+
 import React, { useContext, useState, useMemo, useRef } from 'react';
 import { AppContext } from '../contexts/AppContext';
 import { useI18n } from '../hooks/useI18n';
@@ -12,10 +13,11 @@ import { cancelTimerNotification } from '../services/notificationService';
 import TimedSetTimerModal from '../components/modals/TimedSetTimerModal';
 import WorkoutRestTimer from '../components/workout/WorkoutRestTimer';
 import { getTimerDuration } from '../utils/workoutUtils';
+import WeightInputModal from '../components/modals/WeightInputModal';
 
 const ActiveWorkoutPage: React.FC = () => {
   // FIX: Destructured `startAddExercisesToWorkout` from AppContext.
-  const { activeWorkout, updateActiveWorkout, endWorkout, discardActiveWorkout, getExerciseById, minimizeWorkout, keepScreenAwake, activeTimerInfo, setActiveTimerInfo, startAddExercisesToWorkout, collapsedExerciseIds, setCollapsedExerciseIds } = useContext(AppContext);
+  const { activeWorkout, updateActiveWorkout, endWorkout, discardActiveWorkout, getExerciseById, minimizeWorkout, keepScreenAwake, activeTimerInfo, setActiveTimerInfo, startAddExercisesToWorkout, collapsedExerciseIds, setCollapsedExerciseIds, currentWeight, logWeight } = useContext(AppContext);
   const { t } = useI18n();
   const elapsedTime = useWorkoutTimer(activeWorkout?.startTime);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -27,6 +29,10 @@ const ActiveWorkoutPage: React.FC = () => {
   const dragItem = useRef<number | null>(null);
   const dragOverItem = useRef<number | null>(null);
   const [draggedOverIndex, setDraggedOverIndex] = useState<number | null>(null);
+  
+  const [isWeightInputModalOpen, setIsWeightInputModalOpen] = useState(false);
+  const [pendingExerciseUpdate, setPendingExerciseUpdate] = useState<WorkoutExercise | null>(null);
+
 
   const collapsedSet = useMemo(() => new Set(collapsedExerciseIds), [collapsedExerciseIds]);
 
@@ -135,6 +141,18 @@ const ActiveWorkoutPage: React.FC = () => {
         }
     }
 
+    // Intercept completion for bodyweight exercises if user weight is missing
+    if (justCompletedSet && (!currentWeight || currentWeight <= 0) && justCompletedSet.weight === 0) {
+      const exerciseInfo = getExerciseById(updatedExercise.exerciseId);
+      const isBodyweight = exerciseInfo && ['Bodyweight', 'Assisted Bodyweight', 'Plyometrics'].includes(exerciseInfo.category);
+      
+      if (isBodyweight) {
+          setPendingExerciseUpdate(updatedExercise);
+          setIsWeightInputModalOpen(true);
+          return;
+      }
+    }
+
     let workoutToUpdate = { ...activeWorkout };
 
     // If a timer was previously active, log its actual duration.
@@ -175,6 +193,29 @@ const ActiveWorkoutPage: React.FC = () => {
     
     updateActiveWorkout(workoutToUpdate);
   };
+  
+  const handleWeightModalSave = (weightInKg: number) => {
+    logWeight(weightInKg);
+    
+    if (pendingExerciseUpdate) {
+      const adjustedExercise = { ...pendingExerciseUpdate };
+      // Update any recently completed sets that had 0 weight to the new weight
+      adjustedExercise.sets = adjustedExercise.sets.map(s => {
+          // Check if it is complete and weight is 0 (or essentially 0)
+          // Use a small epsilon just in case, though exact 0 is expected
+          if (s.isComplete && s.weight === 0) {
+              return { ...s, weight: weightInKg };
+          }
+          return s;
+      });
+      
+      handleUpdateExercise(adjustedExercise);
+      setPendingExerciseUpdate(null);
+    }
+    
+    setIsWeightInputModalOpen(false);
+  };
+
 
   const handleFinishWorkout = () => {
     setIsConfirmingFinish(true);
@@ -378,6 +419,12 @@ const ActiveWorkoutPage: React.FC = () => {
           </div>
         </div>
       </Modal>
+
+      <WeightInputModal
+        isOpen={isWeightInputModalOpen}
+        onClose={() => setIsWeightInputModalOpen(false)}
+        onSave={handleWeightModalSave}
+      />
     </div>
   );
 };

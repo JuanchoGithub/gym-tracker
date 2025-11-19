@@ -1,6 +1,6 @@
 
 import React, { useState, useContext, useMemo } from 'react';
-import { Exercise, WorkoutExercise, PerformedSet, SetType } from '../../types';
+import { Exercise, WorkoutExercise, PerformedSet } from '../../types';
 import SetRow from './SetRow';
 import { Icon } from '../common/Icon';
 import { useI18n } from '../../hooks/useI18n';
@@ -99,7 +99,11 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
         for (let i = oldSetIndex + 1; i < newSets.length; i++) {
             const currentSet = newSets[i];
             if (currentSet.isComplete || currentSet.isWeightInherited === false || currentSet.type === 'timed') break;
-            newSets[i] = { ...currentSet, weight: finalUpdatedSet.weight, isWeightInherited: true };
+            
+            // Only inherit if the set type matches
+            if (currentSet.type === finalUpdatedSet.type) {
+                newSets[i] = { ...currentSet, weight: finalUpdatedSet.weight, isWeightInherited: true };
+            }
         }
     }
     
@@ -107,7 +111,11 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
         for (let i = oldSetIndex + 1; i < newSets.length; i++) {
             const currentSet = newSets[i];
             if (currentSet.isComplete || currentSet.isRepsInherited === false) break;
-            newSets[i] = { ...currentSet, reps: finalUpdatedSet.reps, isRepsInherited: true };
+            
+            // Only inherit if the set type matches
+            if (currentSet.type === finalUpdatedSet.type) {
+                newSets[i] = { ...currentSet, reps: finalUpdatedSet.reps, isRepsInherited: true };
+            }
         }
     }
     
@@ -203,26 +211,26 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
   if (isReorganizeMode) {
     return (
       <div 
-        className="bg-surface sm:rounded-lg shadow-md p-3 relative flex items-center gap-4 cursor-grab"
+        className="bg-surface border border-white/5 rounded-2xl shadow-sm p-5 relative flex items-center gap-4 cursor-grab active:cursor-grabbing hover:bg-surface-highlight/50 transition-colors"
         draggable
         onDragStart={onDragStart}
         onDragEnter={onDragEnter}
         onDragEnd={onDragEnd}
         onDragOver={(e) => e.preventDefault()}
         >
-          {isBeingDraggedOver && <div className="absolute -top-1 left-0 w-full h-1 bg-primary rounded-full"></div>}
+          {isBeingDraggedOver && <div className="absolute -top-1 left-0 w-full h-1 bg-primary rounded-full animate-pulse"></div>}
           <Icon name="sort" className="w-6 h-6 text-text-secondary flex-shrink-0" />
-          <span className="font-bold text-lg text-primary truncate flex-grow">{exerciseInfo.name}</span>
+          <span className="font-bold text-lg text-text-primary truncate flex-grow">{exerciseInfo.name}</span>
       </div>
     );
   }
 
   return (
     <div 
-      className={`bg-surface sm:rounded-lg shadow-md transition-all ${allSetsCompleted ? 'border-2 border-success' : 'border-2 border-transparent'}`}
+      className={`bg-surface rounded-2xl shadow-md transition-all duration-300 border ${allSetsCompleted ? 'border-success/30 shadow-success/5' : 'border-white/5 shadow-black/20'}`}
       onDragOver={(e) => isReorganizeMode && e.preventDefault()}
     >
-        <div className="sticky top-[56px] bg-surface z-10 p-3 border-b border-secondary/20 sm:rounded-t-lg">
+        <div className={`sticky top-12 bg-surface z-10 px-4 py-1.5 border-b border-white/5 transition-all duration-200 ${isCollapsed ? 'rounded-2xl' : 'rounded-t-2xl'}`}>
              <ExerciseHeader 
                 workoutExercise={workoutExercise}
                 exerciseInfo={exerciseInfo}
@@ -238,35 +246,37 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
             />
         </div>
         {!isCollapsed && (
-          <div className="p-2 sm:p-3 space-y-2">
+          <div className="p-3 sm:p-4 space-y-2 bg-gradient-to-b from-surface to-background/50 rounded-b-2xl">
               {isNoteEditing && (
-                  <div className="mb-2">
+                  <div className="mb-4 bg-surface-highlight/30 p-3 rounded-xl border border-white/5">
                       <textarea 
                           value={note}
                           onChange={(e) => setNote(e.target.value)}
                           placeholder="Add a note for this exercise..."
-                          className="w-full bg-slate-900 border border-secondary/50 rounded-lg p-2 text-sm"
+                          className="w-full bg-background border border-white/10 rounded-lg p-3 text-sm text-text-primary placeholder-text-secondary focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                           rows={2}
                       />
-                      <div className="flex justify-end space-x-2 mt-1">
-                          <button onClick={() => setIsNoteEditing(false)} className="text-text-secondary text-sm px-3 py-1 hover:bg-secondary/50 rounded-md">Cancel</button>
-                          <button onClick={handleSaveNote} className="bg-primary text-white px-3 py-1 rounded-md text-sm">Save</button>
+                      <div className="flex justify-end space-x-3 mt-2">
+                          <button onClick={() => setIsNoteEditing(false)} className="text-text-secondary text-sm px-3 py-1.5 hover:bg-white/5 rounded-md transition-colors">Cancel</button>
+                          <button onClick={handleSaveNote} className="bg-primary text-white px-4 py-1.5 rounded-md text-sm font-medium shadow-md hover:bg-primary-content transition-colors">Save</button>
                       </div>
                   </div>
               )}
               {!isNoteEditing && workoutExercise.note && (
-                  <p className="text-sm text-text-secondary italic my-2 p-2 bg-slate-900/50 rounded-md">"{workoutExercise.note}"</p>
+                  <div className="text-sm text-text-secondary/90 italic my-2 p-3 bg-yellow-500/5 border-l-2 border-yellow-500/30 rounded-r-md">
+                    "{workoutExercise.note}"
+                  </div>
               )}
 
-              <div className="grid grid-cols-5 items-center gap-1 sm:gap-2 text-xs text-text-secondary">
-                  <div className="text-center font-semibold">{t('workout_set')}</div>
+              <div className="grid grid-cols-5 items-center gap-2 text-[10px] sm:text-xs font-bold text-text-secondary uppercase tracking-wider mb-2 px-2">
+                  <div className="text-center">{t('workout_set')}</div>
                   <div className="text-center">{t('workout_previous')}</div>
-                  <div className="text-center">{t('workout_weight')} ({t(`workout_${weightUnit}` as TranslationKey)})</div>
+                  <div className="text-center">{t('workout_weight')} <span className="text-[9px] text-text-secondary/50 lowercase">({t(`workout_${weightUnit}` as TranslationKey)})</span></div>
                   <div className="text-center">{t('workout_reps')}</div>
-                  <div className="text-center">{t('workout_actions')}</div>
+                  <div className="text-center"></div>
               </div>
               
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                   {workoutExercise.sets.map((set, setIndex) => {
                     if (set.type === 'normal') {
                       normalSetCounter++;
@@ -287,13 +297,13 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
                               isWeightOptional={isWeightOptional}
                           />
                           {showFinishedTimer && set.actualRest !== undefined && (
-                            <div className="w-full">
-                              <div className="my-2 flex items-center justify-center text-sm text-success">
-                                  <div className="flex-grow h-px bg-success/30"></div>
-                                  <span className="mx-4 font-mono">
-                                    {formatSecondsToMMSS(set.actualRest)}
+                            <div className="w-full animate-fadeIn">
+                              <div className="flex items-center justify-center text-xs text-success font-medium">
+                                  <div className="flex-grow h-px bg-success/10"></div>
+                                  <span className="mx-3 bg-success/10 px-2 py-0.5 rounded-full border border-success/20">
+                                    {formatSecondsToMMSS(set.actualRest)} rest
                                   </span>
-                                  <div className="flex-grow h-px bg-success/30"></div>
+                                  <div className="flex-grow h-px bg-success/10"></div>
                               </div>
                             </div>
                           )}
@@ -304,7 +314,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
               
               <button 
                   onClick={handleAddSet}
-                  className="mt-3 w-full flex items-center justify-center space-x-2 bg-secondary/50 text-text-primary font-medium py-2 rounded-lg hover:bg-secondary transition-colors"
+                  className="mt-4 w-full flex items-center justify-center space-x-2 bg-surface-highlight/30 hover:bg-surface-highlight/50 text-primary/80 hover:text-primary font-semibold py-3 rounded-xl border border-dashed border-primary/20 hover:border-primary/40 transition-all active:scale-[0.99]"
               >
                   <Icon name="plus" className="w-5 h-5" />
                   <span>{t('workout_add_set')}</span>

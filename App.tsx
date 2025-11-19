@@ -61,15 +61,17 @@ const App: React.FC = () => {
     return renderPage();
   }
 
+  const showBottomNav = (!activeWorkout || isWorkoutMinimized) && !editingTemplate && !editingExercise && !editingHistorySession && !activeHiitSession && !activeQuickTimer;
+
   return (
-    <div className="fixed inset-0 h-[100dvh] w-full bg-background text-text-primary font-sans flex flex-col overflow-hidden">
-      <main className="flex-grow container mx-auto px-2 sm:px-4 py-4 overflow-y-auto relative overscroll-y-none">
+    <div className="fixed inset-0 h-[100dvh] w-full bg-background text-text-primary font-sans flex flex-col overflow-hidden bg-gradient-to-b from-background to-[#020617]">
+      <main className={`flex-grow container mx-auto px-3 sm:px-4 py-6 overflow-y-auto relative overscroll-y-none scroll-smooth ${showBottomNav ? 'pb-32' : 'pb-8'}`}>
         {renderContent()}
         {editingExercise && <ExerciseEditorPage />}
       </main>
       <div className="flex-shrink-0 relative z-40">
         {activeWorkout && isWorkoutMinimized && <MinimizedWorkoutBar />}
-        {(!activeWorkout || isWorkoutMinimized) && !editingTemplate && !editingExercise && !editingHistorySession && !activeHiitSession && !activeQuickTimer && <BottomNavBar currentPage={currentPage} onNavigate={handleNavigate} />}
+        {showBottomNav && <BottomNavBar currentPage={currentPage} onNavigate={handleNavigate} />}
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import { PerformedSet } from '../../types';
 import { playWarningSound, playEndSound } from '../../services/audioService';
 import { Icon } from '../common/Icon';
@@ -6,6 +7,8 @@ import { useI18n } from '../../hooks/useI18n';
 import { formatSecondsToMMSS } from '../../utils/timeUtils';
 import { useWakeLock } from '../../hooks/useWakeLock';
 import { lockBodyScroll, unlockBodyScroll } from '../../utils/timeUtils';
+import { AppContext } from '../../contexts/AppContext';
+import { speak } from '../../services/speechService';
 
 interface TimedSetTimerModalProps {
   isOpen: boolean;
@@ -24,7 +27,8 @@ interface TimerState {
 }
 
 const TimedSetTimerModal: React.FC<TimedSetTimerModalProps> = ({ isOpen, onFinish, onClose, set, exerciseName, restTime }) => {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const { selectedVoiceURI } = useContext(AppContext);
   const [timerState, setTimerState] = useState<TimerState>({ phase: 'prepare', currentRep: 1, timeLeft: 10, totalDuration: 10 });
   const [isPaused, setIsPaused] = useState(false);
 
@@ -48,8 +52,9 @@ const TimedSetTimerModal: React.FC<TimedSetTimerModalProps> = ({ isOpen, onFinis
       setIsPaused(false);
       targetTimeRef.current = Date.now() + 10 * 1000;
       setTimerState({ phase: 'prepare', currentRep: 1, timeLeft: 10, totalDuration: 10 });
+      speak(t('timers_announce_prepare', { exercise: exerciseName }), selectedVoiceURI, locale);
     }
-  }, [isOpen]);
+  }, [isOpen, exerciseName, locale, selectedVoiceURI, t]);
 
   useEffect(() => {
     if (!isOpen || isPaused || timerState.phase === 'finished') {
@@ -74,9 +79,11 @@ const TimedSetTimerModal: React.FC<TimedSetTimerModalProps> = ({ isOpen, onFinis
           }
           if (prev.phase === 'work') {
             if (prev.currentRep < set.reps) {
+              speak(t('timers_announce_rest', { exercise: exerciseName }), selectedVoiceURI, locale);
               targetTimeRef.current = Date.now() + restTime * 1000;
               return { ...prev, phase: 'rest', timeLeft: restTime, totalDuration: restTime };
             } else {
+              speak(t('timers_complete'), selectedVoiceURI, locale);
               onFinishRef.current();
               return { ...prev, phase: 'finished' };
             }
@@ -91,7 +98,7 @@ const TimedSetTimerModal: React.FC<TimedSetTimerModalProps> = ({ isOpen, onFinis
     }, 200);
 
     return () => clearInterval(interval);
-  }, [isOpen, isPaused, timerState, set, restTime]);
+  }, [isOpen, isPaused, timerState, set, restTime, exerciseName, locale, selectedVoiceURI, t]);
 
   const togglePause = () => {
     setIsPaused(prev => {
@@ -142,7 +149,6 @@ const TimedSetTimerModal: React.FC<TimedSetTimerModalProps> = ({ isOpen, onFinis
         </div>
 
         <div className="mt-8 flex items-center justify-center space-x-6">
-          {/* FIX: Replaced non-existent 'common_close' translation key with 'common_cancel'. */}
           <button onClick={onClose} className="bg-red-600/80 hover:bg-red-600 text-white font-bold py-4 px-8 rounded-lg">{isFinished ? t('common_cancel') : t('timers_stop_button')}</button>
           {!isFinished && (
             <button onClick={togglePause} className="bg-secondary hover:bg-slate-500 text-white font-bold py-4 px-8 rounded-lg">

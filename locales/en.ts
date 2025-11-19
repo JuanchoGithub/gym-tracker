@@ -1,5 +1,4 @@
 
-
 // FIX: Corrected the type definition to allow for proper key inference by TypeScript.
 export const en = {
   // Common
@@ -131,6 +130,11 @@ export const en = {
   workout_actions: 'Actions',
   workout_add_set: 'Add Set',
   
+  // Weight Input Modal
+  weight_input_modal_title: 'Enter Your Weight',
+  weight_input_modal_message: 'To accurately track this bodyweight exercise, please enter your current body weight. This will be saved to your profile.',
+  weight_input_save: 'Save Weight',
+
   // Set Type Modal
   set_type_modal_title: 'Set Type',
   set_type_normal: 'Normal',

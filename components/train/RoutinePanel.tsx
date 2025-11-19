@@ -1,3 +1,4 @@
+
 import React, { useContext, useState, useRef } from 'react';
 import { Routine } from '../../types';
 import { AppContext } from '../../contexts/AppContext';
@@ -29,7 +30,7 @@ const RoutinePanel: React.FC<RoutinePanelProps> = ({ routine, onClick, onEdit, o
 
   const routineType = routine.routineType || 'strength';
   const typeLabel = routineType === 'hiit' ? t('template_editor_type_hiit') : t('template_editor_type_strength');
-  const typeColor = routineType === 'hiit' ? 'bg-rose-500/20 text-rose-400' : 'bg-sky-500/20 text-sky-400';
+  const typeColor = routineType === 'hiit' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 'bg-primary/10 text-primary border-primary/20';
 
   const exerciseNames = routine.exercises
     .map(ex => getExerciseById(ex.exerciseId)?.name)
@@ -91,60 +92,55 @@ const RoutinePanel: React.FC<RoutinePanelProps> = ({ routine, onClick, onEdit, o
 
   if (isCustomTemplate || isLatestWorkout) {
     menuItems.push({ id: 'rename', label: t('common_rename'), action: (e: React.MouseEvent) => { e.stopPropagation(); setIsRenameModalOpen(true); setNewName(routine.name); setIsMenuOpen(false); }, className: 'text-text-primary', icon: 'edit' });
-    menuItems.push({ id: 'delete', label: t('common_delete'), action: handleOpenDeleteConfirm, className: 'text-red-400', icon: 'trash' });
+    menuItems.push({ id: 'delete', label: t('common_delete'), action: handleOpenDeleteConfirm, className: 'text-danger', icon: 'trash' });
   }
 
 
   return (
     <>
       <div
-        className="bg-surface p-3 sm:p-4 rounded-lg shadow cursor-pointer hover:bg-slate-700 transition-colors h-full flex flex-col justify-between relative"
+        className="group bg-surface/50 backdrop-blur-sm border border-white/5 p-5 rounded-2xl shadow-sm hover:shadow-lg hover:shadow-primary/5 hover:border-primary/20 hover:bg-surface/80 transition-all duration-200 cursor-pointer h-full flex flex-col justify-between relative active:scale-[0.98]"
         onClick={() => onClick(routine)}
       >
         <div>
-          <div className="flex justify-between items-start">
-              <h3 className="font-bold text-lg text-primary mb-1 pr-8">{routine.name}</h3>
+          <div className="flex justify-between items-start gap-2">
+              <h3 className="font-bold text-lg text-text-primary mb-1 pr-6 leading-tight group-hover:text-primary transition-colors">{routine.name}</h3>
               {menuItems.length > 0 && (
                    <div className="relative" ref={menuRef}>
-                      <button onClick={(e) => { e.stopPropagation(); setIsMenuOpen(!isMenuOpen);}} className="text-text-secondary hover:text-primary p-1 absolute top-[-8px] right-[-8px]">
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); setIsMenuOpen(!isMenuOpen);}} 
+                        className="text-text-secondary hover:text-primary p-2 -mr-2 -mt-2 rounded-full hover:bg-white/5 transition-colors"
+                      >
                           <Icon name="ellipsis" className="w-5 h-5"/>
                       </button>
                       {isMenuOpen && (
-                          <div className="absolute right-0 mt-6 w-48 bg-slate-600 rounded-md shadow-lg z-10">
-                            {menuItems.map((item, index) => {
-                                const isFirst = index === 0;
-                                const isLast = index === menuItems.length - 1;
-                                let classNames = 'w-full text-left px-3 py-2 text-sm hover:bg-slate-500 flex items-center gap-2';
-                                if (isFirst && isLast) classNames += ' rounded-md';
-                                else if (isFirst) classNames += ' rounded-t-md';
-                                else if (isLast) classNames += ' rounded-b-md';
-
-                                return (
-                                    <button key={item.id} onClick={item.action} className={`${classNames} ${item.className}`}>
-                                        <Icon name={item.icon as any} className="w-4 h-4" />
-                                        <span>{item.label}</span>
-                                    </button>
-                                );
-                            })}
+                          <div className="absolute right-0 mt-2 w-48 bg-surface border border-white/10 rounded-xl shadow-xl z-10 overflow-hidden ring-1 ring-black/20">
+                            {menuItems.map((item) => (
+                                <button key={item.id} onClick={item.action} className={`w-full text-left px-4 py-3 text-sm hover:bg-white/5 flex items-center gap-3 ${item.className}`}>
+                                    <Icon name={item.icon as any} className="w-4 h-4 opacity-70" />
+                                    <span>{item.label}</span>
+                                </button>
+                            ))}
                           </div>
                       )}
                    </div>
               )}
           </div>
-          <div className="mt-1 mb-2">
-            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${typeColor}`}>
+          <div className="mt-2 mb-3 flex items-center gap-2">
+            <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md border ${typeColor}`}>
               {typeLabel}
             </span>
+             {routine.lastUsed && (
+              <span className="text-[10px] text-text-secondary/60 flex items-center">
+                <Icon name="history" className="w-3 h-3 mr-1 opacity-60" />
+                {new Date(routine.lastUsed).toLocaleDateString(undefined, { month: 'short', day: 'numeric'})}
+              </span>
+            )}
           </div>
-          <p className="text-sm text-text-secondary truncate" title={exerciseNames}>
+          <p className="text-sm text-text-secondary line-clamp-2 leading-relaxed" title={exerciseNames}>
             {exerciseNames || t('routine_panel_no_exercises')}
           </p>
         </div>
-        {routine.lastUsed && (
-          <p className="text-xs text-text-secondary/70 mt-3 text-right">
-            {t('routine_panel_last_used', { date: new Date(routine.lastUsed).toLocaleDateString() })}
-          </p>
-        )}
       </div>
 
       <ConfirmModal
@@ -154,7 +150,7 @@ const RoutinePanel: React.FC<RoutinePanelProps> = ({ routine, onClick, onEdit, o
         title={routine.isTemplate ? t('routine_panel_delete_confirm_title') : t('history_delete_confirm_title')}
         message={t('routine_panel_delete_confirm', { name: routine.name })}
         confirmText={t('common_delete')}
-        confirmButtonClass="bg-red-600 hover:bg-red-700"
+        confirmButtonClass="bg-danger hover:bg-red-600"
       />
 
       <Modal isOpen={isRenameModalOpen} onClose={() => setIsRenameModalOpen(false)} title={routine.isTemplate ? t('routine_panel_rename_title') : t('routine_panel_rename_workout_title')}>
@@ -163,12 +159,12 @@ const RoutinePanel: React.FC<RoutinePanelProps> = ({ routine, onClick, onEdit, o
                 type="text"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
-                className="w-full bg-slate-900 border border-secondary/50 rounded-lg p-2 mb-4"
+                className="w-full bg-background border border-surface-highlight rounded-lg p-3 text-text-primary focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all mb-4"
                 autoFocus
               />
-              <div className="flex justify-end space-x-2">
-                  <button type="button" onClick={() => setIsRenameModalOpen(false)} className="bg-secondary px-4 py-2 rounded-lg">{t('common_cancel')}</button>
-                  <button type="submit" className="bg-primary px-4 py-2 rounded-lg">{t('common_save')}</button>
+              <div className="flex justify-end space-x-3">
+                  <button type="button" onClick={() => setIsRenameModalOpen(false)} className="px-4 py-2 rounded-lg text-text-secondary hover:bg-white/5 transition-colors">{t('common_cancel')}</button>
+                  <button type="submit" className="bg-primary text-white font-medium px-4 py-2 rounded-lg hover:bg-primary-content transition-colors shadow-lg shadow-primary/20">{t('common_save')}</button>
               </div>
           </form>
       </Modal>
@@ -178,14 +174,14 @@ const RoutinePanel: React.FC<RoutinePanelProps> = ({ routine, onClick, onEdit, o
               <textarea
                 value={newNote}
                 onChange={(e) => setNewNote(e.target.value)}
-                className="w-full bg-slate-900 border border-secondary/50 rounded-lg p-2 mb-4"
+                className="w-full bg-background border border-surface-highlight rounded-lg p-3 text-text-primary focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all mb-4"
                 rows={4}
                 placeholder={t('routine_panel_note_placeholder')}
                 autoFocus
               />
-              <div className="flex justify-end space-x-2">
-                  <button type="button" onClick={() => setIsNoteModalOpen(false)} className="bg-secondary px-4 py-2 rounded-lg">{t('common_cancel')}</button>
-                  <button type="submit" className="bg-primary px-4 py-2 rounded-lg">{t('common_save')}</button>
+              <div className="flex justify-end space-x-3">
+                  <button type="button" onClick={() => setIsNoteModalOpen(false)} className="px-4 py-2 rounded-lg text-text-secondary hover:bg-white/5 transition-colors">{t('common_cancel')}</button>
+                  <button type="submit" className="bg-primary text-white font-medium px-4 py-2 rounded-lg hover:bg-primary-content transition-colors shadow-lg shadow-primary/20">{t('common_save')}</button>
               </div>
           </form>
       </Modal>

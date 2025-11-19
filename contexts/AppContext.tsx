@@ -535,6 +535,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
         const exerciseHistory = getExerciseHistory(history, ex.exerciseId);
         const lastPerformance = exerciseHistory.length > 0 ? exerciseHistory[0].exerciseData : null;
+        const exerciseInfo = getExerciseById(ex.exerciseId);
+
+        // Check if exercise is bodyweight based for default weighting
+        const isBodyweight = exerciseInfo && ['Bodyweight', 'Assisted Bodyweight', 'Plyometrics'].includes(exerciseInfo.category);
 
         // Group last performance sets by type for smarter inheritance
         const lastSetsByType = lastPerformance ? lastPerformance.sets.reduce((acc, set) => {
@@ -561,6 +565,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             set.historicalWeight = set.weight;
             set.historicalReps = set.reps;
             set.historicalTime = set.time;
+            
+            // Pre-fill bodyweight if applicable and available
+            if (isBodyweight && currentWeight && currentWeight > 0 && set.weight === 0) {
+                set.weight = currentWeight;
+            }
 
             if (routine.isTemplate) {
                 if (lastPerformance) {
@@ -625,7 +634,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
     setActiveWorkout(newWorkout);
     setIsWorkoutMinimized(false);
-  }, [setActiveWorkout, setIsWorkoutMinimized, defaultRestTimes, history, setActiveTimerInfo, setCollapsedExerciseIds]);
+  }, [setActiveWorkout, setIsWorkoutMinimized, defaultRestTimes, history, setActiveTimerInfo, setCollapsedExerciseIds, getExerciseById, currentWeight]);
 
   const updateActiveWorkout = useCallback((workout: WorkoutSession) => {
     setActiveWorkout(workout);
@@ -876,17 +885,56 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const newExercises: WorkoutExercise[] = newExerciseIds.map(exerciseId => {
         const exercise = getExerciseById(exerciseId);
         const isTimed = exercise && exercise.isTimed;
+        const isBodyweight = exercise && ['Bodyweight', 'Assisted Bodyweight', 'Plyometrics'].includes(exercise.category);
+
+        // Determine defaults from history
+        const exerciseHistory = getExerciseHistory(history, exerciseId);
+        const lastPerformance = exerciseHistory.length > 0 ? exerciseHistory[0].exerciseData : null;
+        
+        let lastSet: PerformedSet | undefined;
+        if (lastPerformance) {
+            // Try to find a completed normal set, otherwise any completed set
+             lastSet = lastPerformance.sets.find(s => s.type === 'normal' && s.isComplete) 
+                    || lastPerformance.sets.find(s => s.isComplete);
+        }
+
+        let defaultReps = isTimed ? 1 : 0;
+        let defaultTime = isTimed ? 60 : undefined;
+        let defaultWeight = 0;
+
+        if (lastSet) {
+            defaultReps = lastSet.reps;
+            if (isTimed) defaultTime = lastSet.time;
+            defaultWeight = lastSet.weight;
+        }
+
+        // Override weight for bodyweight exercises
+        if (isBodyweight) {
+            if (currentWeight && currentWeight > 0) {
+                defaultWeight = currentWeight;
+            } else if (!currentWeight) {
+                // Ensure it's 0 if no profile weight is set, so the modal triggers on completion
+                defaultWeight = 0;
+            }
+        }
+
         return {
           id: `we-${Date.now()}-${Math.random()}`,
           exerciseId,
           sets: [
               {
                   id: `set-${Date.now()}-${Math.random()}`,
-                  reps: isTimed ? 1 : 0,
-                  weight: 0,
-                  time: isTimed ? 60 : undefined,
+                  reps: defaultReps,
+                  weight: defaultWeight,
+                  time: defaultTime,
                   type: isTimed ? 'timed' : 'normal',
                   isComplete: false,
+                  isRepsInherited: !!lastSet,
+                  isWeightInherited: !!lastSet || (isBodyweight && !!currentWeight),
+                  isTimeInherited: !!lastSet,
+                  historicalReps: lastSet?.reps,
+                  historicalWeight: lastSet?.weight,
+                  historicalTime: lastSet?.time,
               }
           ],
           restTime: { ...defaultRestTimes },
@@ -899,7 +947,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       });
     }
     setIsAddingExercisesToWorkout(false);
-  }, [activeWorkout, defaultRestTimes, updateActiveWorkout, getExerciseById]);
+  }, [activeWorkout, defaultRestTimes, updateActiveWorkout, getExerciseById, currentWeight, history]);
 
   const startAddExercisesToTemplate = useCallback(() => {
     setIsAddingExercisesToTemplate(true);
