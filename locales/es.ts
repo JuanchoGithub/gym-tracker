@@ -1,3 +1,5 @@
+
+
 // FIX: Corrected the type definition to allow for proper key inference by TypeScript.
 export const es = {
   // Common
@@ -21,6 +23,8 @@ export const es = {
   common_next: 'Siguiente',
   common_back: 'Atrás',
   common_ok: 'Ver Plan',
+  common_view: 'Ver',
+  common_step: 'Paso',
   
   // Navigation
   nav_train: 'Entrenar',

@@ -1,5 +1,4 @@
 
-
 import React, { useState, useContext, useMemo } from 'react';
 import { AppContext } from '../contexts/AppContext';
 import { useI18n } from '../hooks/useI18n';
@@ -12,6 +11,7 @@ import { getBodyPartTKey, getCategoryTKey } from '../utils/i18nUtils';
 // FIX: Replaced `useWeight` with the correct `useMeasureUnit` hook.
 import { useMeasureUnit } from '../hooks/useWeight';
 import { getBodyPartColor, getCategoryColor } from '../utils/colorUtils';
+import { TranslationKey } from '../contexts/I18nContext';
 
 const ExercisesPage: React.FC = () => {
   const { exercises, startExerciseEdit, allTimeBestSets } = useContext(AppContext);
@@ -138,7 +138,7 @@ const ExercisesPage: React.FC = () => {
                 {bestSet && (
                   <p className="text-xs text-warning mt-2 font-mono flex items-center gap-1">
                       <Icon name="trophy" className="w-3 h-3" />
-                      <span>{displayWeight(bestSet.weight)} {t(`workout_${weightUnit}`)} x {bestSet.reps} {t('workout_reps')}</span>
+                      <span>{displayWeight(bestSet.weight)} {t(`workout_${weightUnit}` as TranslationKey)} x {bestSet.reps} {t('workout_reps')}</span>
                   </p>
                 )}
               </div>

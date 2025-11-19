@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Exercise, WorkoutExercise, PerformedSet, SetType } from '../../types';
 import { Icon } from '../common/Icon';
@@ -6,6 +7,7 @@ import ChangeTimerModal from '../modals/ChangeTimerModal';
 import EditSetTimerModal from '../modals/EditSetTimerModal';
 import { useI18n } from '../../hooks/useI18n';
 import { useMeasureUnit } from '../../hooks/useWeight';
+import { TranslationKey } from '../../contexts/I18nContext';
 
 interface TemplateExerciseCardProps {
   workoutExercise: WorkoutExercise;
@@ -188,7 +190,7 @@ const TemplateExerciseCard: React.FC<TemplateExerciseCardProps> = (props) => {
           
           <div className="grid grid-cols-12 items-center gap-2 text-xs text-text-secondary">
             <div className="col-span-2 text-center font-semibold">{t('workout_set')}</div>
-            <div className="col-span-4 text-center">{t('workout_weight')} ({t(`workout_${weightUnit}`)})</div>
+            <div className="col-span-4 text-center">{t('workout_weight')} ({t(`workout_${weightUnit}` as TranslationKey)})</div>
             <div className="col-span-4 text-center">{t('workout_reps')}</div>
             <div className="col-span-2 text-center"></div>
           </div>

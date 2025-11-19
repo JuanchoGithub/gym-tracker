@@ -1,8 +1,10 @@
+
 import React from 'react';
 import { useI18n } from '../../hooks/useI18n';
 import { PersonalRecords } from '../../utils/workoutUtils';
 import { Icon } from '../common/Icon';
 import { useMeasureUnit } from '../../hooks/useWeight';
+import { TranslationKey } from '../../contexts/I18nContext';
 
 interface RecordsTabProps {
   records: PersonalRecords;
@@ -24,7 +26,7 @@ const RecordItem: React.FC<{ title: string; record: PersonalRecords[keyof Person
         <div className="text-right text-xs text-text-secondary">
           <p>{t('records_achieved_on', { date: new Date(record.session.startTime).toLocaleDateString() })}</p>
           {/* FIX: Used a template literal to construct a valid translation key for the weight unit. */}
-          <p>{displayWeight(record.set.weight)}{t(`workout_${weightUnit}`)} x {record.set.reps} {t('workout_reps')}</p>
+          <p>{displayWeight(record.set.weight)}{t(`workout_${weightUnit}` as TranslationKey)} x {record.set.reps} {t('workout_reps')}</p>
         </div>
       )}
     </div>

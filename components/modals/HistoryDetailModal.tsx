@@ -1,3 +1,4 @@
+
 import React, { useContext, useMemo } from 'react';
 import { WorkoutSession, SetType } from '../../types';
 import Modal from '../common/Modal';
@@ -9,6 +10,7 @@ import { formatTime } from '../../utils/timeUtils';
 import { getExerciseHistory, calculate1RM } from '../../utils/workoutUtils';
 import { Icon } from '../common/Icon';
 import Pill from '../common/Pill';
+import { TranslationKey } from '../../contexts/I18nContext';
 
 interface HistoryDetailModalProps {
   session: WorkoutSession;
@@ -79,7 +81,7 @@ const HistoryDetailModal: React.FC<HistoryDetailModalProps> = ({ session, isOpen
                 </div>
                 <div className="grid grid-cols-3 gap-2 mb-4 flex-shrink-0">
                     <StatItem icon={<Icon name="history" className="w-5 h-5"/>} label={t('history_total_time')} value={totalTime} />
-                    <StatItem icon={<Icon name="weight" className="w-5 h-5"/>} label={t('history_total_volume')} value={`${displayWeight(totalVolume, true)} ${t(`workout_${weightUnit}`)}`} />
+                    <StatItem icon={<Icon name="weight" className="w-5 h-5"/>} label={t('history_total_volume')} value={`${displayWeight(totalVolume, true)} ${t(`workout_${weightUnit}` as TranslationKey)}`} />
                     <StatItem icon={<Icon name="trophy" className="w-5 h-5"/>} label={t('history_prs')} value={session.prCount || 0} />
                 </div>
 
@@ -108,7 +110,7 @@ const HistoryDetailModal: React.FC<HistoryDetailModalProps> = ({ session, isOpen
                                         return (
                                             <div key={set.id} className={`grid grid-cols-12 gap-2 items-center text-sm py-1 rounded -mx-1 px-1 ${getSetTypeStyles(set.type)}`}>
                                                 <div className="col-span-1 font-bold">{setIndex + 1}</div>
-                                                <div className="col-span-5 font-mono flex items-center">{displayWeight(set.weight)}{t(`workout_${weightUnit}`)} x {set.reps}</div>
+                                                <div className="col-span-5 font-mono flex items-center">{displayWeight(set.weight)}{t(`workout_${weightUnit}` as TranslationKey)} x {set.reps}</div>
                                                 <div className="col-span-3 text-right font-mono flex items-center justify-end">
                                                     <span>{displayWeight(volume)}</span>
                                                     {getComparisonPill(volume, prevVolume)}

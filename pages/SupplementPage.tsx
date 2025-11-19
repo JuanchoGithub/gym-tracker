@@ -9,6 +9,7 @@ import SupplementSchedule from '../components/supplements/SupplementSchedule';
 import SupplementReviewModal from '../components/supplements/SupplementReviewModal';
 import { useMeasureUnit } from '../hooks/useWeight';
 import { convertCmToFtIn, convertFtInToCm } from '../utils/weightUtils';
+import { TranslationKey } from '../contexts/I18nContext';
 
 const daysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
@@ -183,7 +184,7 @@ const SupplementPage: React.FC = () => {
                         <label className="block text-sm font-medium text-text-secondary">{t('supplements_weight_label')}</label>
                         <div className="relative mt-1">
                           <input type="number" required value={formData.weight || ''} onChange={e => handleInputChange('weight', parseFloat(e.target.value))} className="w-full bg-surface border border-secondary/50 rounded-lg p-2 pr-12" />
-                          <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-text-secondary">{t(`workout_${weightUnit}`)}</span>
+                          <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-text-secondary">{t(`workout_${weightUnit}` as TranslationKey)}</span>
                         </div>
                     </div>
                     <div>
@@ -298,33 +299,68 @@ const SupplementPage: React.FC = () => {
                 </div>
                  <div>
                     <label className="block text-sm font-medium text-text-secondary">{t('supplements_deficiencies_label')}</label>
-                    <input type="text" value={formData.deficiencies?.join(', ') || ''} onChange={e => handleInputChange('deficiencies', e.target.value.split(',').map(s => s.trim()))} placeholder={t('supplements_deficiencies_placeholder')} className="w-full bg-surface border border-secondary/50 rounded-lg p-2 mt-1" />
+                    <input 
+                        type="text" 
+                        value={formData.deficiencies?.join(', ') || ''} 
+                        onChange={e => handleInputChange('deficiencies', e.target.value.split(',').map(s => s.trim()).filter(Boolean))} 
+                        placeholder={t('supplements_deficiencies_placeholder')} 
+                        className="w-full bg-surface border border-secondary/50 rounded-lg p-2 mt-1" 
+                    />
                 </div>
-                <div>
+                 <div>
                     <label className="block text-sm font-medium text-text-secondary">{t('supplements_desired_label')}</label>
-                    <input type="text" value={formData.desiredSupplements?.join(', ') || ''} onChange={e => handleInputChange('desiredSupplements', e.target.value.split(',').map(s => s.trim()))} placeholder={t('supplements_desired_placeholder')} className="w-full bg-surface border border-secondary/50 rounded-lg p-2 mt-1" />
+                    <input 
+                        type="text" 
+                        value={formData.desiredSupplements?.join(', ') || ''} 
+                        onChange={e => handleInputChange('desiredSupplements', e.target.value.split(',').map(s => s.trim()).filter(Boolean))} 
+                        placeholder={t('supplements_desired_placeholder')} 
+                        className="w-full bg-surface border border-secondary/50 rounded-lg p-2 mt-1" 
+                    />
                 </div>
             </div>
         );
         case 4: return (
-            <div className="space-y-4">
+             <div className="space-y-4">
                 <h3 className="text-xl font-semibold text-center">{t('supplements_step_4_title')}</h3>
                  <div>
                     <label className="block text-sm font-medium text-text-secondary">{t('supplements_allergies_label')}</label>
-                    <input type="text" value={formData.allergies?.join(', ') || ''} onChange={e => handleInputChange('allergies', e.target.value.split(',').map(s => s.trim()))} placeholder={t('supplements_allergies_placeholder')} className="w-full bg-surface border border-secondary/50 rounded-lg p-2 mt-1" />
+                    <input 
+                        type="text" 
+                        value={formData.allergies?.join(', ') || ''} 
+                        onChange={e => handleInputChange('allergies', e.target.value.split(',').map(s => s.trim()).filter(Boolean))} 
+                        placeholder={t('supplements_allergies_placeholder')} 
+                        className="w-full bg-surface border border-secondary/50 rounded-lg p-2 mt-1" 
+                    />
                 </div>
                 <div>
                     <label className="block text-sm font-medium text-text-secondary">{t('supplements_medical_label')}</label>
-                    <input type="text" value={formData.medicalConditions || ''} onChange={e => handleInputChange('medicalConditions', e.target.value)} placeholder={t('supplements_medical_placeholder')} className="w-full bg-surface border border-secondary/50 rounded-lg p-2 mt-1" />
+                    <input 
+                        type="text" 
+                        value={formData.medicalConditions || ''} 
+                        onChange={e => handleInputChange('medicalConditions', e.target.value)} 
+                        placeholder={t('supplements_medical_placeholder')} 
+                        className="w-full bg-surface border border-secondary/50 rounded-lg p-2 mt-1" 
+                    />
                 </div>
-                 <div>
+                <div>
                     <label className="block text-sm font-medium text-text-secondary">{t('supplements_preferences_label')}</label>
-                    <input type="text" value={formData.consumptionPreferences || ''} onChange={e => handleInputChange('consumptionPreferences', e.target.value)} placeholder={t('supplements_preferences_placeholder')} className="w-full bg-surface border border-secondary/50 rounded-lg p-2 mt-1" />
+                    <input 
+                        type="text" 
+                        value={formData.consumptionPreferences || ''} 
+                        onChange={e => handleInputChange('consumptionPreferences', e.target.value)} 
+                        placeholder={t('supplements_preferences_placeholder')} 
+                        className="w-full bg-surface border border-secondary/50 rounded-lg p-2 mt-1" 
+                    />
                 </div>
                 <div>
                     <label className="block text-sm font-medium text-text-secondary">{t('supplements_hydration_label')}</label>
-                    <input type="range" min="0" max="6" step="0.5" value={formData.hydration || 2} onChange={e => handleInputChange('hydration', parseFloat(e.target.value))} className="w-full mt-1" />
-                    <div className="text-center font-bold text-primary">{formData.hydration} L</div>
+                    <input 
+                        type="number" 
+                        step="0.1" 
+                        value={formData.hydration || ''} 
+                        onChange={e => handleInputChange('hydration', parseFloat(e.target.value))} 
+                        className="w-full bg-surface border border-secondary/50 rounded-lg p-2 mt-1" 
+                    />
                 </div>
             </div>
         );
@@ -332,99 +368,89 @@ const SupplementPage: React.FC = () => {
     }
   };
 
-  const renderContent = () => {
-    return (
-      <div className="space-y-4">
-        {newSuggestions.length > 0 && (
-          <div className="bg-indigo-600/20 border border-indigo-500 text-indigo-200 px-4 py-3 rounded-lg flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <Icon name="sparkles" className="w-6 h-6 text-indigo-400" />
-              <p className="font-semibold">{t('supplements_review_notification_banner', { count: newSuggestions.length })}</p>
+  return (
+    <div className="space-y-4">
+      {!wizardActive && !supplementPlan && !planJustGenerated && (
+        <div className="text-center py-10 px-4">
+            <div className="mb-6 flex justify-center">
+                <Icon name="capsule" className="w-20 h-20 text-primary/80" />
             </div>
-            <button onClick={() => setIsReviewModalOpen(true)} className="bg-indigo-500 hover:bg-indigo-400 text-white font-bold py-2 px-4 rounded-lg text-sm flex-shrink-0">
-              {t('common_view')}
+            <h1 className="text-3xl font-bold mb-4">{t('supplements_title')}</h1>
+            <p className="text-text-secondary mb-8 max-w-md mx-auto">{t('supplements_create_plan_desc')}</p>
+            <button 
+                onClick={handleStartWizard}
+                className="bg-primary hover:bg-sky-500 text-white font-bold py-4 px-8 rounded-full shadow-lg text-lg transition-transform hover:scale-105"
+            >
+                {t('supplements_create_plan_cta')}
             </button>
-          </div>
+        </div>
+      )}
+
+      {wizardActive && (
+        <div className="bg-surface p-4 sm:p-6 rounded-lg shadow-lg max-w-lg mx-auto">
+            <div className="mb-6">
+                <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                    <div className="h-full bg-primary transition-all duration-300" style={{ width: `${(currentStep / 4) * 100}%` }}></div>
+                </div>
+                <div className="text-right text-xs text-text-secondary mt-1">{t('common_step')} {currentStep} / 4</div>
+            </div>
+
+            <form onSubmit={handleGeneratePlan}>
+                {renderStep()}
+                
+                <div className="flex justify-between mt-8 pt-4 border-t border-secondary/20">
+                    {currentStep > 1 ? (
+                        <button type="button" onClick={handleBack} className="bg-secondary hover:bg-slate-500 text-white font-bold py-2 px-6 rounded-lg transition-colors">{t('common_back')}</button>
+                    ) : (
+                        <button type="button" onClick={() => setWizardActive(false)} className="text-text-secondary hover:text-primary font-bold py-2 px-4">{t('common_cancel')}</button>
+                    )}
+
+                    {currentStep < 4 ? (
+                        <button type="button" onClick={handleNext} className="bg-primary hover:bg-sky-500 text-white font-bold py-2 px-6 rounded-lg transition-colors ml-auto">{t('common_next')}</button>
+                    ) : (
+                         <button type="submit" disabled={isLoading} className="bg-success hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg transition-colors ml-auto flex items-center gap-2">
+                            {isLoading ? (
+                                <>
+                                    <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                                    <span>Generating...</span>
+                                </>
+                            ) : t('supplements_generate_plan_button')}
+                         </button>
+                    )}
+                </div>
+                {error && <p className="text-red-400 text-center mt-4">{error}</p>}
+            </form>
+        </div>
+      )}
+
+      {!wizardActive && supplementPlan && (
+          <SupplementSchedule onEditAnswers={handleEditAnswers} />
+      )}
+
+        {!wizardActive && newSuggestions.length > 0 && (
+            <div className="fixed bottom-20 left-4 right-4 z-30">
+                <div className="bg-primary text-white p-4 rounded-lg shadow-xl flex items-center justify-between cursor-pointer" onClick={() => setIsReviewModalOpen(true)}>
+                    <div className="flex items-center gap-3">
+                        <Icon name="sparkles" className="w-6 h-6 text-yellow-300" />
+                        <div>
+                            <p className="font-bold">{t('supplements_review_notification_banner', { count: newSuggestions.length })}</p>
+                        </div>
+                    </div>
+                    <Icon name="arrow-right" className="w-5 h-5" />
+                </div>
+            </div>
         )}
 
-        {(() => {
-          if (isLoading) {
-            return (
-                <div className="text-center space-y-4 flex flex-col items-center justify-center h-full pt-10">
-                    <Icon name="capsule" className="w-16 h-16 text-primary animate-pulse" />
-                    <h2 className="text-2xl font-bold">{t('supplements_generating_plan')}</h2>
-                    <p className="text-text-secondary max-w-sm">{t('supplements_generating_plan_desc')}</p>
-                </div>
-            );
-          }
-        
-          if (supplementPlan && planJustGenerated) {
-            return (
-              <div className="text-center space-y-6 flex flex-col items-center justify-center h-full pt-10">
-                <Icon name="check" className="w-20 h-20 text-success bg-success/20 rounded-full p-4"/>
-                <h1 className="text-3xl font-bold">{t('supplements_plan_ready')}</h1>
-                <p className="text-text-secondary max-w-md">{t('supplements_plan_ready_desc')}</p>
-                <button onClick={() => setPlanJustGenerated(false)} className="bg-primary text-white font-bold py-3 px-8 rounded-lg text-lg">
-                  {t('common_ok')}
-                </button>
-              </div>
-            );
-          }
-        
-          if (supplementPlan) {
-            return <SupplementSchedule onEditAnswers={handleEditAnswers} />;
-          }
-        
-          if (wizardActive) {
-            return (
-                <form onSubmit={handleGeneratePlan} className="space-y-6">
-                    <h1 className="text-2xl font-bold text-center">{t('supplements_wizard_title')}</h1>
-                    {error && <p className="text-red-400 text-center bg-red-500/10 p-3 rounded-lg">{error}</p>}
-                    <div className="p-4 bg-surface rounded-lg">
-                        {renderStep()}
-                    </div>
-                    <div className="flex justify-between items-center">
-                        {currentStep > 1 ? (
-                        <button type="button" onClick={handleBack} className="bg-secondary text-white font-bold py-3 px-6 rounded-lg">{t('common_back')}</button>
-                        ) : <div></div>}
-                        {currentStep < 4 ? (
-                        <button type="button" onClick={handleNext} className="bg-primary text-white font-bold py-3 px-6 rounded-lg">{t('common_next')}</button>
-                        ) : (
-                        <button type="submit" className="bg-success text-white font-bold py-3 px-6 rounded-lg">{t('supplements_generate_plan_button')}</button>
-                        )}
-                    </div>
-                </form>
-            );
-          }
-
-          return (
-            <div className="text-center space-y-6 flex flex-col items-center justify-center h-full pt-10">
-              <Icon name="capsule" className="w-20 h-20 text-primary" />
-              <h1 className="text-3xl font-bold">{t('supplements_title')}</h1>
-              <p className="text-text-secondary max-w-md">{t('supplements_create_plan_desc')}</p>
-              <button onClick={handleStartWizard} className="bg-primary text-white font-bold py-3 px-6 rounded-lg text-lg">
-                {t('supplements_create_plan_cta')}
-              </button>
-            </div>
-          );
-        })()}
-      </div>
-    );
-  };
-
-  return (
-    <>
-      {renderContent()}
-      <SupplementReviewModal
-          isOpen={isReviewModalOpen}
-          onClose={() => setIsReviewModalOpen(false)}
-          suggestions={newSuggestions}
-          onApply={applyPlanSuggestion}
-          onApplyAll={handleApplyAll}
-          onDismiss={dismissSuggestion}
-          onDismissAll={handleDismissAll}
-      />
-    </>
+        <SupplementReviewModal 
+            isOpen={isReviewModalOpen}
+            onClose={() => setIsReviewModalOpen(false)}
+            suggestions={newSuggestions}
+            onApply={applyPlanSuggestion}
+            onApplyAll={handleApplyAll}
+            onDismiss={dismissSuggestion}
+            onDismissAll={handleDismissAll}
+        />
+    </div>
   );
 };
 

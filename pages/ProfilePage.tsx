@@ -1,5 +1,4 @@
 
-
 import React, { useContext, useState, useEffect } from 'react';
 import { I18nContext, TranslationKey } from '../contexts/I18nContext';
 import { useI18n } from '../hooks/useI18n';
@@ -226,7 +225,7 @@ const ProfilePage: React.FC = () => {
                   className="w-full bg-slate-700 border border-secondary/50 rounded-md p-2 pr-12"
                   placeholder="70.5"
                 />
-                <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-text-secondary pointer-events-none">{t(`workout_${weightUnit}`)}</span>
+                <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-text-secondary pointer-events-none">{t(`workout_${weightUnit}` as TranslationKey)}</span>
                 <button 
                   onClick={() => setIsWeightChartOpen(true)} 
                   className="p-2 text-text-secondary hover:text-primary bg-slate-700 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"

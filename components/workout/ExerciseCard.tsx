@@ -1,3 +1,4 @@
+
 import React, { useState, useContext, useMemo } from 'react';
 import { Exercise, WorkoutExercise, PerformedSet, SetType } from '../../types';
 import SetRow from './SetRow';
@@ -9,6 +10,7 @@ import ChangeTimerModal from '../modals/ChangeTimerModal';
 import { formatSecondsToMMSS } from '../../utils/timeUtils';
 import { AppContext } from '../../contexts/AppContext';
 import { getExerciseHistory } from '../../utils/workoutUtils';
+import { TranslationKey } from '../../contexts/I18nContext';
 
 interface ExerciseCardProps {
   workoutExercise: WorkoutExercise;
@@ -259,7 +261,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
               <div className="grid grid-cols-5 items-center gap-1 sm:gap-2 text-xs text-text-secondary">
                   <div className="text-center font-semibold">{t('workout_set')}</div>
                   <div className="text-center">{t('workout_previous')}</div>
-                  <div className="text-center">{t('workout_weight')} ({t(`workout_${weightUnit}`)})</div>
+                  <div className="text-center">{t('workout_weight')} ({t(`workout_${weightUnit}` as TranslationKey)})</div>
                   <div className="text-center">{t('workout_reps')}</div>
                   <div className="text-center">{t('workout_actions')}</div>
               </div>

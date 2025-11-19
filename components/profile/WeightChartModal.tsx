@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import Modal from '../common/Modal';
 import { WeightEntry, ChartDataPoint } from '../../types';
@@ -5,6 +6,7 @@ import Chart from '../common/Chart';
 import { useMeasureUnit } from '../../hooks/useWeight';
 import { useI18n } from '../../hooks/useI18n';
 import { convertKgToLbs } from '../../utils/weightUtils';
+import { TranslationKey } from '../../contexts/I18nContext';
 
 interface WeightChartModalProps {
   isOpen: boolean;
@@ -26,7 +28,7 @@ const WeightChartModal: React.FC<WeightChartModalProps> = ({ isOpen, onClose, hi
     }, [history, weightUnit]);
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title={`${t('profile_weight_history_chart_title')} (${t(`workout_${weightUnit}`)})`}>
+        <Modal isOpen={isOpen} onClose={onClose} title={`${t('profile_weight_history_chart_title')} (${t(`workout_${weightUnit}` as TranslationKey)})`}>
             <div className="h-64">
                 <Chart data={chartData} />
             </div>

@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useContext, useRef } from 'react';
 import { Exercise, WorkoutExercise, PerformedSet } from '../../types';
 import { getExerciseHistory } from '../../utils/workoutUtils';
@@ -148,12 +149,12 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = (props) => {
 
     const renderFocusContent = () => {
         switch (focusType) {
-            case 'total_volume': return `${displayWeight(totalVolume, true)} ${t(`workout_${weightUnit}`)}`;
+            case 'total_volume': return `${displayWeight(totalVolume, true)} ${t(`workout_${weightUnit}` as TranslationKey)}`;
             case 'volume_increase': 
                 if (volumeIncrease === null) return 'N/A';
-                return `${volumeIncrease > 0 ? '+' : ''}${displayWeight(volumeIncrease, true)} ${t(`workout_${weightUnit}`)}`;
+                return `${volumeIncrease > 0 ? '+' : ''}${displayWeight(volumeIncrease, true)} ${t(`workout_${weightUnit}` as TranslationKey)}`;
             case 'total_reps': return `${totalReps} ${t('workout_reps')}`;
-            case 'weight_by_rep': return `${displayWeight(avgWeightPerRep)} ${t(`workout_${weightUnit}`)}/rep`;
+            case 'weight_by_rep': return `${displayWeight(avgWeightPerRep)} ${t(`workout_${weightUnit}` as TranslationKey)}/rep`;
             default: return <Icon name="question-mark-circle" className="w-5 h-5"/>;
         }
     };

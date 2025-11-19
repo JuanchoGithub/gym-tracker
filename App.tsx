@@ -1,3 +1,4 @@
+
 import React, { useState, useContext } from 'react';
 import BottomNavBar from './components/common/BottomNavBar';
 import TrainPage from './pages/TrainPage';
@@ -61,8 +62,8 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="h-screen bg-background text-text-primary font-sans flex flex-col overflow-hidden">
-      <main className="flex-grow container mx-auto px-2 sm:px-4 py-4 overflow-y-auto relative">
+    <div className="fixed inset-0 h-[100dvh] w-full bg-background text-text-primary font-sans flex flex-col overflow-hidden">
+      <main className="flex-grow container mx-auto px-2 sm:px-4 py-4 overflow-y-auto relative overscroll-y-none">
         {renderContent()}
         {editingExercise && <ExerciseEditorPage />}
       </main>

@@ -1,7 +1,9 @@
+
 import React from 'react';
 import Modal from '../common/Modal';
 import { useI18n } from '../../hooks/useI18n';
 import { useMeasureUnit } from '../../hooks/useWeight';
+import { TranslationKey } from '../../contexts/I18nContext';
 
 interface SelectBarModalProps {
   isOpen: boolean;
@@ -38,7 +40,7 @@ const SelectBarModal: React.FC<SelectBarModalProps> = ({ isOpen, onClose, curren
             <span className="font-semibold">{bar.name}</span>
             <span className={currentBarWeight === bar.weight ? 'text-white/80' : 'text-text-secondary'}>
               {/* FIX: Used a template literal to construct a valid translation key for the weight unit. */}
-              {displayWeight(bar.weight)} {t(`workout_${weightUnit}`)}
+              {displayWeight(bar.weight)} {t(`workout_${weightUnit}` as TranslationKey)}
             </span>
           </button>
         ))}

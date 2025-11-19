@@ -1,3 +1,4 @@
+
 import React, { useContext, useState } from 'react';
 import { AppContext } from '../contexts/AppContext';
 import { useI18n } from '../hooks/useI18n';
@@ -10,6 +11,7 @@ import ConfirmModal from '../components/modals/ConfirmModal';
 import Modal from '../components/common/Modal';
 import HistoryDetailModal from '../components/modals/HistoryDetailModal';
 import HistoryChartsTab from '../components/history/HistoryChartsTab';
+import { TranslationKey } from '../contexts/I18nContext';
 
 const HistoryPage: React.FC = () => {
   const { history, getExerciseById, deleteHistorySession, upsertRoutine, startWorkout, startHistoryEdit, routines } = useContext(AppContext);
@@ -136,7 +138,7 @@ const HistoryPage: React.FC = () => {
                 
                 <div className="grid grid-cols-3 gap-2 mb-4">
                     <StatItem icon={<Icon name="history" className="w-5 h-5"/>} label={t('history_total_time')} value={totalTime} />
-                    <StatItem icon={<Icon name="weight" className="w-5 h-5"/>} label={t('history_total_volume')} value={`${displayWeight(totalVolume, true)} ${t(`workout_${weightUnit}`)}`} />
+                    <StatItem icon={<Icon name="weight" className="w-5 h-5"/>} label={t('history_total_volume')} value={`${displayWeight(totalVolume, true)} ${t(`workout_${weightUnit}` as TranslationKey)}`} />
                     <StatItem icon={<Icon name="trophy" className="w-5 h-5"/>} label={t('history_prs')} value={session.prCount || 0} />
                 </div>
 
@@ -155,7 +157,7 @@ const HistoryPage: React.FC = () => {
                           <span className="font-semibold text-text-primary">{normalSetsCount}x {exerciseInfo?.name || t('history_page_unknown_exercise')}</span>
                         </div>
                         <div className="text-right text-text-secondary">
-                          {bestSet ? `${displayWeight(bestSet.weight)} ${t(`workout_${weightUnit}`)} x ${bestSet.reps} ${t('workout_reps')}` : '-'}
+                          {bestSet ? `${displayWeight(bestSet.weight)} ${t(`workout_${weightUnit}` as TranslationKey)} x ${bestSet.reps} ${t('workout_reps')}` : '-'}
                         </div>
                       </div>
                     );

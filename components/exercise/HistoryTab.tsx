@@ -1,11 +1,11 @@
 
-
 import React from 'react';
 import { useI18n } from '../../hooks/useI18n';
 import { ExerciseHistory, calculate1RM } from '../../utils/workoutUtils';
 // FIX: Replaced `useWeight` with the correct `useMeasureUnit` hook.
 import { useMeasureUnit } from '../../hooks/useWeight';
 import { Icon } from '../common/Icon';
+import { TranslationKey } from '../../contexts/I18nContext';
 
 interface HistoryTabProps {
   history: ExerciseHistory;
@@ -64,7 +64,7 @@ const HistoryTab: React.FC<HistoryTabProps> = ({ history }) => {
                   <div key={set.id} className="grid grid-cols-12 gap-2 items-center text-sm py-1">
                     <div className="col-span-6 flex items-center font-mono">
                         <span className="font-sans font-bold w-6 text-center mr-2">{setIndex + 1}</span>
-                        {displayWeight(set.weight)}{t(`workout_${weightUnit}`)} x {set.reps}
+                        {displayWeight(set.weight)}{t(`workout_${weightUnit}` as TranslationKey)} x {set.reps}
                         {getComparisonIcon(est1RM, prevEst1RM)}
                     </div>
                     <div className="col-span-3 text-right font-mono flex items-center justify-end">

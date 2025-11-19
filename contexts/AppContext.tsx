@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, ReactNode, useMemo, useEffect, useCallback } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { Routine, WorkoutSession, Exercise, WorkoutExercise, PerformedSet, ActiveHiitSession, SupplementPlan, SupplementPlanItem, SupplementSuggestion, RejectedSuggestion, Profile } from '../types';
@@ -83,7 +84,7 @@ interface AppContextType {
   supplementPlan: SupplementPlan | null;
   setSupplementPlan: (plan: SupplementPlan | null) => void;
   userSupplements: SupplementPlanItem[];
-  setUserSupplements: (supplements: SupplementPlanItem[]) => void;
+  setUserSupplements: React.Dispatch<React.SetStateAction<SupplementPlanItem[]>>;
   takenSupplements: Record<string, string[]>;
   setTakenSupplements: React.Dispatch<React.SetStateAction<Record<string, string[]>>>;
   newSuggestions: SupplementSuggestion[];

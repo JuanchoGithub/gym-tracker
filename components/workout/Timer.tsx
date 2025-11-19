@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { playWarningSound, playEndSound, playTickSound } from '../../services/audioService';
 import { Icon } from '../common/Icon';
@@ -23,7 +24,7 @@ const Timer: React.FC<TimerProps> = ({ timerInfo, effortTime, failureTime, onFin
   const [infoModalContent, setInfoModalContent] = useState<{title: string, message: string} | null>(null);
   
   const onFinishRef = useRef(onFinish);
-  const prevTimeLeftRef = useRef<number>();
+  const prevTimeLeftRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     onFinishRef.current = onFinish;
