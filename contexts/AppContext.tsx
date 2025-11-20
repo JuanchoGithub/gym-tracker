@@ -100,6 +100,8 @@ interface AppContextType {
   setActiveTimerInfo: React.Dispatch<React.SetStateAction<ActiveTimerInfo | null>>;
   collapsedExerciseIds: string[];
   setCollapsedExerciseIds: React.Dispatch<React.SetStateAction<string[]>>;
+  collapsedSupersetIds: string[];
+  setCollapsedSupersetIds: React.Dispatch<React.SetStateAction<string[]>>;
   activeTimedSet: { exercise: WorkoutExercise; set: PerformedSet } | null;
   setActiveTimedSet: React.Dispatch<React.SetStateAction<{ exercise: WorkoutExercise; set: PerformedSet } | null>>;
 }
@@ -140,6 +142,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [profile, setProfile] = useLocalStorage<Profile>('profile', { weightHistory: [] });
   const [activeTimerInfo, setActiveTimerInfo] = useLocalStorage<ActiveTimerInfo | null>('activeRestTimer', null);
   const [collapsedExerciseIds, setCollapsedExerciseIds] = useLocalStorage<string[]>('collapsedExerciseIds', []);
+  const [collapsedSupersetIds, setCollapsedSupersetIds] = useLocalStorage<string[]>('collapsedSupersetIds', []);
   const [activeTimedSet, setActiveTimedSet] = useState<{ exercise: WorkoutExercise; set: PerformedSet } | null>(null);
 
   
@@ -520,6 +523,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     unlockAudioContext();
     setActiveTimerInfo(null);
     setCollapsedExerciseIds([]);
+    setCollapsedSupersetIds([]);
     const newWorkoutExercises: WorkoutExercise[] = JSON.parse(JSON.stringify(routine.exercises));
 
     newWorkoutExercises.forEach((ex, exIndex) => {
@@ -607,7 +611,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       supersets: routine.supersets || {},
     });
     setIsWorkoutMinimized(false);
-  }, [history, defaultRestTimes, exercises, getExerciseById, setActiveWorkout, setIsWorkoutMinimized, setActiveTimerInfo, setCollapsedExerciseIds, currentWeight]);
+  }, [history, defaultRestTimes, exercises, getExerciseById, setActiveWorkout, setIsWorkoutMinimized, setActiveTimerInfo, setCollapsedExerciseIds, setCollapsedSupersetIds, currentWeight]);
   
   const updateActiveWorkout = useCallback((workout: WorkoutSession) => {
     setActiveWorkout(workout);
@@ -640,9 +644,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setActiveTimerInfo(null);
       setActiveTimedSet(null);
       setCollapsedExerciseIds([]);
+      setCollapsedSupersetIds([]);
       cancelTimerNotification('rest-timer-finished');
     }
-  }, [activeWorkout, setHistory, setUserRoutines, setActiveWorkout, setIsWorkoutMinimized, setActiveTimerInfo, setCollapsedExerciseIds, setActiveTimedSet, history]);
+  }, [activeWorkout, setHistory, setUserRoutines, setActiveWorkout, setIsWorkoutMinimized, setActiveTimerInfo, setCollapsedExerciseIds, setCollapsedSupersetIds, setActiveTimedSet, history]);
 
   const discardActiveWorkout = useCallback(() => {
     setActiveWorkout(null);
@@ -650,8 +655,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setActiveTimerInfo(null);
     setActiveTimedSet(null);
     setCollapsedExerciseIds([]);
+    setCollapsedSupersetIds([]);
     cancelTimerNotification('rest-timer-finished');
-  }, [setActiveWorkout, setIsWorkoutMinimized, setActiveTimerInfo, setCollapsedExerciseIds, setActiveTimedSet]);
+  }, [setActiveWorkout, setIsWorkoutMinimized, setActiveTimerInfo, setCollapsedExerciseIds, setCollapsedSupersetIds, setActiveTimedSet]);
   
   const minimizeWorkout = useCallback(() => setIsWorkoutMinimized(true), [setIsWorkoutMinimized]);
   const maximizeWorkout = useCallback(() => setIsWorkoutMinimized(false), [setIsWorkoutMinimized]);
@@ -930,6 +936,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setActiveTimerInfo,
     collapsedExerciseIds,
     setCollapsedExerciseIds,
+    collapsedSupersetIds,
+    setCollapsedSupersetIds,
     activeTimedSet,
     setActiveTimedSet
   };

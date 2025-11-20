@@ -74,7 +74,7 @@ const App: React.FC = () => {
 
   return (
     <div className="fixed inset-0 h-[100dvh] w-full bg-background text-text-primary font-sans flex flex-col overflow-hidden bg-gradient-to-b from-background to-[#020617]">
-      <main className={`flex-grow container mx-auto px-3 sm:px-4 py-6 overflow-y-auto relative overscroll-y-none scroll-smooth ${paddingBottomClass}`}>
+      <main className={`flex-grow container mx-auto px-3 sm:px-4 py-6 overflow-y-auto overflow-x-hidden relative overscroll-y-none scroll-smooth ${paddingBottomClass}`}>
         {renderContent()}
         {editingExercise && <ExerciseEditorPage />}
       </main>

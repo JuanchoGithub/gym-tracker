@@ -103,7 +103,7 @@ const SupersetPlayer: React.FC<SupersetPlayerProps> = ({
         const ensureSetExists = () => {
             if (!currentWorkoutExercise.sets[currentRoundIndex]) {
                 const prevSet = currentWorkoutExercise.sets[currentRoundIndex - 1];
-                const lastSet = currentWorkoutExercise.sets[currentWorkoutExercise.sets.length - 1] || { reps: 10, weight: 0, type: 'normal' };
+                const lastSet = currentWorkoutExercise.sets[currentWorkoutExercise.sets.length - 1] || { reps: 10, weight: 0, type: 'normal', time: 0 };
                 
                 const newSet: PerformedSet = {
                     id: `set-${Date.now()}-${Math.random()}`,
@@ -220,7 +220,7 @@ const SupersetPlayer: React.FC<SupersetPlayerProps> = ({
     const handleOneMoar = () => {
         // 1. Add a new set to ALL exercises in this superset
         exercises.forEach(ex => {
-            const lastSet = ex.sets[ex.sets.length - 1] || { reps: 10, weight: 0, type: 'normal' };
+            const lastSet = ex.sets[ex.sets.length - 1] || { reps: 10, weight: 0, type: 'normal', time: 0 };
             const newSet: PerformedSet = {
                 id: `set-${Date.now()}-${Math.random()}`,
                 reps: lastSet.reps,

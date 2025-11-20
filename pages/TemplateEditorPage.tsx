@@ -14,9 +14,10 @@ const TemplateEditorPage: React.FC = () => {
     const { t } = useI18n();
     const [originalTemplate] = useState<Routine | null>(() => JSON.parse(JSON.stringify(editingTemplate)));
     const [isConfirmingBack, setIsConfirmingBack] = useState(false);
-    const dragItem = useRef<number | null>(null);
-    const dragOverItem = useRef<number | null>(null);
-    const [draggedOverIndex, setDraggedOverIndex] = useState<number | null>(null);
+    
+    const dragInfo = useRef<{ type: 'item' | 'superset', indices: number[] } | null>(null);
+    const dragOverInfo = useRef<{ type: 'item' | 'superset', indices: number[] } | null>(null);
+    const [draggedOverIndices, setDraggedOverIndices] = useState<number[] | null>(null);
 
     const availableSupersets = useMemo(() => {
         if (!editingTemplate || !editingTemplate.supersets) return [];
@@ -39,7 +40,7 @@ const TemplateEditorPage: React.FC = () => {
     
     const handleConfirmDiscard = () => {
         endTemplateEdit();
-        setIsConfirmingBack(false); // This will be unmounted, but good practice
+        setIsConfirmingBack(false);
     };
 
     const handleSave = () => {
@@ -80,13 +81,15 @@ const TemplateEditorPage: React.FC = () => {
         });
     };
     
-    const handleDragStart = (e: React.DragEvent<HTMLDivElement>, position: number) => {
-        dragItem.current = position;
+    const handleDragStart = (e: React.DragEvent<HTMLDivElement>, type: 'item' | 'superset', indices: number[]) => {
+        e.stopPropagation();
+        dragInfo.current = { type, indices };
     };
-    
-    const handleDragEnter = (e: React.DragEvent<HTMLDivElement>, position: number) => {
-        dragOverItem.current = position;
-        setDraggedOverIndex(position);
+
+    const handleDragEnter = (e: React.DragEvent<HTMLDivElement>, type: 'item' | 'superset', indices: number[]) => {
+        e.stopPropagation();
+        dragOverInfo.current = { type, indices };
+        setDraggedOverIndices(indices);
     };
 
     const handleMoveExercise = (fromIndex: number, toIndex: number) => {
@@ -100,17 +103,77 @@ const TemplateEditorPage: React.FC = () => {
     };
 
     const handleDrop = () => {
-        if (!editingTemplate || dragItem.current === null || dragOverItem.current === null || dragItem.current === dragOverItem.current) {
-            setDraggedOverIndex(null);
-            dragItem.current = null;
+        if (!editingTemplate || !dragInfo.current || !dragOverInfo.current) return;
+        
+        const source = dragInfo.current;
+        const target = dragOverInfo.current;
+        
+        if (source.indices[0] === target.indices[0]) {
+            setDraggedOverIndices(null);
+            dragInfo.current = null;
+            dragOverInfo.current = null;
             return;
         }
+
+        const newExercises = [...editingTemplate.exercises];
+        const sourceIndices = source.indices.sort((a, b) => a - b);
+        const removedItems = newExercises.splice(sourceIndices[0], sourceIndices.length);
         
-        handleMoveExercise(dragItem.current, dragOverItem.current);
+        let insertIndex = target.indices[0];
+        if (insertIndex > sourceIndices[0]) {
+            insertIndex -= sourceIndices.length;
+        }
         
-        dragItem.current = null;
-        dragOverItem.current = null;
-        setDraggedOverIndex(null);
+        // Logic for adopting Superset ID
+        if (source.type === 'item') {
+            const targetItem = newExercises[insertIndex] || (insertIndex > 0 ? newExercises[insertIndex-1] : null);
+            
+            if (target.type === 'superset' && targetItem && targetItem.supersetId) {
+                 removedItems[0].supersetId = targetItem.supersetId;
+            } else if (target.type === 'item' && targetItem && targetItem.supersetId) {
+                 removedItems[0].supersetId = targetItem.supersetId;
+            } else if (target.type === 'item' && targetItem && !targetItem.supersetId) {
+                 delete removedItems[0].supersetId;
+            }
+        }
+        
+        newExercises.splice(insertIndex, 0, ...removedItems);
+        
+        updateEditingTemplate({ ...editingTemplate, exercises: newExercises });
+        dragInfo.current = null;
+        dragOverInfo.current = null;
+        setDraggedOverIndices(null);
+    };
+
+    const handleMoveSuperset = (indices: number[], direction: 'up' | 'down') => {
+        if (!editingTemplate) return;
+        const newExercises = [...editingTemplate.exercises];
+        const sortedIndices = indices.sort((a, b) => a - b);
+        const startIndex = sortedIndices[0];
+        const count = sortedIndices.length;
+        
+        const grouped = groupExercises(newExercises, editingTemplate.supersets);
+        const currentGroupIndex = grouped.findIndex(g => g.type === 'superset' && g.indices[0] === startIndex);
+
+        if (direction === 'up') {
+             if (currentGroupIndex > 0) {
+                const prevGroup = grouped[currentGroupIndex - 1];
+                const prevGroupStart = prevGroup.type === 'superset' ? prevGroup.indices[0] : prevGroup.index;
+                const removed = newExercises.splice(startIndex, count);
+                newExercises.splice(prevGroupStart, 0, ...removed);
+            }
+        } else {
+             if (currentGroupIndex < grouped.length - 1) {
+                 const nextGroup = grouped[currentGroupIndex + 1];
+                 const nextGroupEnd = nextGroup.type === 'superset' ? nextGroup.indices[nextGroup.indices.length - 1] : nextGroup.index;
+                 const insertIndex = nextGroupEnd + 1;
+                 const adjustedInsert = insertIndex - count;
+                 const removed = newExercises.splice(startIndex, count);
+                 newExercises.splice(adjustedInsert, 0, ...removed);
+             }
+        }
+        
+        updateEditingTemplate({ ...editingTemplate, exercises: newExercises });
     };
 
     // Superset Logic
@@ -141,10 +204,7 @@ const TemplateEditorPage: React.FC = () => {
         const currentExercise = editingTemplate.exercises.find(ex => ex.id === exerciseId);
         if (!currentExercise) return;
 
-        // Remove from current position
         const exercisesWithoutItem = editingTemplate.exercises.filter(ex => ex.id !== exerciseId);
-        
-        // Find insertion index (after the last exercise of the target superset)
         let insertionIndex = -1;
         for (let i = exercisesWithoutItem.length - 1; i >= 0; i--) {
             if (exercisesWithoutItem[i].supersetId === targetSupersetId) {
@@ -155,7 +215,6 @@ const TemplateEditorPage: React.FC = () => {
 
         const updatedItem = { ...currentExercise, supersetId: targetSupersetId };
         const finalExercises = [...exercisesWithoutItem];
-        
         if (insertionIndex !== -1) {
             finalExercises.splice(insertionIndex + 1, 0, updatedItem);
         } else {
@@ -177,7 +236,6 @@ const TemplateEditorPage: React.FC = () => {
             }
             return ex;
         });
-        
         const updatedSupersets = { ...editingTemplate.supersets };
         delete updatedSupersets[supersetId];
 
@@ -340,15 +398,16 @@ const TemplateEditorPage: React.FC = () => {
                                 const index = group.index;
                                 const exerciseInfo = getExerciseById(we.exerciseId);
                                 if (!exerciseInfo) return null;
+                                const isBeingDraggedOver = draggedOverIndices?.includes(index) && dragInfo.current?.indices[0] !== index;
 
                                 if (isHiit) {
                                     return (
                                         <div
                                             key={we.id}
-                                            className={`bg-surface border border-white/5 p-4 rounded-xl flex items-center gap-4 relative transition-all cursor-grab active:cursor-grabbing shadow-sm ${dragItem.current === index ? 'opacity-50 scale-95' : 'opacity-100 hover:border-white/10'}`}
+                                            className={`bg-surface border border-white/5 p-4 rounded-xl flex items-center gap-4 relative transition-all cursor-grab active:cursor-grabbing shadow-sm ${isBeingDraggedOver ? 'bg-surface-highlight/30' : ''}`}
                                             draggable
-                                            onDragStart={(e) => handleDragStart(e, index)}
-                                            onDragEnter={(e) => handleDragEnter(e, index)}
+                                            onDragStart={(e) => handleDragStart(e, 'item', [index])}
+                                            onDragEnter={(e) => handleDragEnter(e, 'item', [index])}
                                             onDragEnd={handleDrop}
                                             onDragOver={(e) => e.preventDefault()}
                                             title={t('template_editor_drag_to_reorder')}
@@ -358,7 +417,7 @@ const TemplateEditorPage: React.FC = () => {
                                             <button onClick={() => handleRemoveExercise(we.id)} className="p-2 text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-lg transition-colors">
                                                 <Icon name="trash" className="w-5 h-5" />
                                             </button>
-                                            {draggedOverIndex === index && dragItem.current !== index && <div className="absolute -top-1 left-0 w-full h-1 bg-primary rounded-full animate-pulse"></div>}
+                                            {isBeingDraggedOver && <div className="absolute -top-1 left-0 w-full h-1 bg-primary rounded-full animate-pulse"></div>}
                                         </div>
                                     );
                                 } else {
@@ -373,10 +432,10 @@ const TemplateEditorPage: React.FC = () => {
                                             onMoveDown={() => handleMoveExercise(index, index + 1)}
                                             isMoveUpDisabled={index === 0}
                                             isMoveDownDisabled={index === editingTemplate.exercises.length - 1}
-                                            onDragStart={(e) => handleDragStart(e, index)}
-                                            onDragEnter={(e) => handleDragEnter(e, index)}
+                                            onDragStart={(e) => handleDragStart(e, 'item', [index])}
+                                            onDragEnter={(e) => handleDragEnter(e, 'item', [index])}
                                             onDragEnd={handleDrop}
-                                            isBeingDraggedOver={draggedOverIndex === index && dragItem.current !== index}
+                                            isBeingDraggedOver={isBeingDraggedOver}
                                             onCreateSuperset={!we.supersetId ? () => handleCreateSuperset(we.id) : undefined}
                                             onJoinSuperset={!we.supersetId ? (supersetId) => handleJoinSuperset(we.id, supersetId) : undefined}
                                             availableSupersets={availableSupersets}
@@ -385,6 +444,8 @@ const TemplateEditorPage: React.FC = () => {
                                 }
                             } else {
                                 const definition = group.definition || { id: group.supersetId, name: 'Superset', color: 'indigo' };
+                                const isBeingDraggedOver = draggedOverIndices?.length === group.indices.length && draggedOverIndices.every((val, i) => val === group.indices[i]) && dragInfo.current?.indices[0] !== group.indices[0];
+
                                 return (
                                     <SupersetCard 
                                         key={group.supersetId} 
@@ -392,10 +453,19 @@ const TemplateEditorPage: React.FC = () => {
                                         onRename={(name) => handleRenameSuperset(group.supersetId, name)}
                                         onUngroup={() => handleUngroupSuperset(group.supersetId)}
                                         onAddExercise={() => startAddExercisesToTemplate(group.supersetId)}
+                                        onMoveUp={() => handleMoveSuperset(group.indices, 'up')}
+                                        onMoveDown={() => handleMoveSuperset(group.indices, 'down')}
+                                        isReorganizeMode={true} // Template editor is implicitly reorganize mode-ish for superset drag
+                                        onDragStart={(e) => handleDragStart(e, 'superset', group.indices)}
+                                        onDragEnter={(e) => handleDragEnter(e, 'superset', group.indices)}
+                                        onDragEnd={handleDrop}
+                                        isBeingDraggedOver={isBeingDraggedOver}
                                     >
                                         {group.exercises.map((we, i) => {
                                             const index = group.indices[i];
                                             const exerciseInfo = getExerciseById(we.exerciseId);
+                                            const isItemDraggedOver = draggedOverIndices?.includes(index) && dragInfo.current?.indices[0] !== index;
+
                                             if (!exerciseInfo) return null;
                                             return (
                                                 <TemplateExerciseCard 
@@ -408,10 +478,10 @@ const TemplateEditorPage: React.FC = () => {
                                                     onMoveDown={() => handleMoveExercise(index, index + 1)}
                                                     isMoveUpDisabled={index === 0}
                                                     isMoveDownDisabled={index === editingTemplate.exercises.length - 1}
-                                                    onDragStart={(e) => handleDragStart(e, index)}
-                                                    onDragEnter={(e) => handleDragEnter(e, index)}
+                                                    onDragStart={(e) => handleDragStart(e, 'item', [index])}
+                                                    onDragEnter={(e) => handleDragEnter(e, 'item', [index])}
                                                     onDragEnd={handleDrop}
-                                                    isBeingDraggedOver={draggedOverIndex === index && dragItem.current !== index}
+                                                    isBeingDraggedOver={isItemDraggedOver}
                                                 />
                                             );
                                         })}

@@ -19,7 +19,7 @@ import SupersetView from '../components/workout/SupersetView';
 import SupersetPlayer from '../components/workout/SupersetPlayer';
 
 const ActiveWorkoutPage: React.FC = () => {
-  const { activeWorkout, updateActiveWorkout, endWorkout, discardActiveWorkout, getExerciseById, minimizeWorkout, keepScreenAwake, activeTimerInfo, setActiveTimerInfo, startAddExercisesToWorkout, collapsedExerciseIds, setCollapsedExerciseIds, currentWeight, logWeight, activeTimedSet, setActiveTimedSet } = useContext(AppContext);
+  const { activeWorkout, updateActiveWorkout, endWorkout, discardActiveWorkout, getExerciseById, minimizeWorkout, keepScreenAwake, activeTimerInfo, setActiveTimerInfo, startAddExercisesToWorkout, collapsedExerciseIds, setCollapsedExerciseIds, collapsedSupersetIds, setCollapsedSupersetIds, currentWeight, logWeight, activeTimedSet, setActiveTimedSet } = useContext(AppContext);
   const { t } = useI18n();
   const elapsedTime = useWorkoutTimer(activeWorkout?.startTime);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -27,9 +27,11 @@ const ActiveWorkoutPage: React.FC = () => {
   
   const [isReorganizeMode, setIsReorganizeMode] = useState(false);
   const [tempExercises, setTempExercises] = useState<WorkoutExercise[]>([]);
-  const dragItem = useRef<number | null>(null);
-  const dragOverItem = useRef<number | null>(null);
-  const [draggedOverIndex, setDraggedOverIndex] = useState<number | null>(null);
+  
+  // Drag state
+  const dragInfo = useRef<{ type: 'item' | 'superset', indices: number[] } | null>(null);
+  const dragOverInfo = useRef<{ type: 'item' | 'superset', indices: number[] } | null>(null);
+  const [draggedOverIndices, setDraggedOverIndices] = useState<number[] | null>(null);
   
   const [isWeightInputModalOpen, setIsWeightInputModalOpen] = useState(false);
   const [pendingExerciseUpdate, setPendingExerciseUpdate] = useState<WorkoutExercise | null>(null);
@@ -37,6 +39,7 @@ const ActiveWorkoutPage: React.FC = () => {
   const [activeSupersetPlayerId, setActiveSupersetPlayerId] = useState<string | null>(null);
 
   const collapsedSet = useMemo(() => new Set(collapsedExerciseIds), [collapsedExerciseIds]);
+  const collapsedSupersetSet = useMemo(() => new Set(collapsedSupersetIds), [collapsedSupersetIds]);
 
   useWakeLock(keepScreenAwake || !!activeTimedSet || isReorganizeMode || (!!activeTimerInfo && !activeTimerInfo.isPaused) || !!activeSupersetPlayerId);
 
@@ -91,23 +94,71 @@ const ActiveWorkoutPage: React.FC = () => {
     setTempExercises([]);
   };
 
-  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, position: number) => {
-    dragItem.current = position;
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, type: 'item' | 'superset', indices: number[]) => {
+    e.stopPropagation();
+    dragInfo.current = { type, indices };
   };
-  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>, position: number) => {
-    dragOverItem.current = position;
-    setDraggedOverIndex(position);
+
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>, type: 'item' | 'superset', indices: number[]) => {
+    e.stopPropagation();
+    dragOverInfo.current = { type, indices };
+    setDraggedOverIndices(indices);
   };
 
   const handleDrop = () => {
-    if (dragItem.current === null || dragOverItem.current === null) return;
+    if (!dragInfo.current || !dragOverInfo.current) return;
+    
+    const source = dragInfo.current;
+    const target = dragOverInfo.current;
+    
+    // Don't do anything if dropping on itself
+    if (source.indices[0] === target.indices[0]) {
+        setDraggedOverIndices(null);
+        dragInfo.current = null;
+        dragOverInfo.current = null;
+        return;
+    }
+
     const newExercises = [...tempExercises];
-    const dragItemContent = newExercises.splice(dragItem.current, 1)[0];
-    newExercises.splice(dragOverItem.current, 0, dragItemContent);
-    dragItem.current = null;
-    dragOverItem.current = null;
-    setDraggedOverIndex(null);
+    
+    // Extract source items
+    // Note: We assume contiguous indices for supersets which is guaranteed by grouping logic
+    // We need to handle extraction carefully if indices are not sorted, but they should be.
+    const sourceIndices = source.indices.sort((a, b) => a - b);
+    const removedItems = newExercises.splice(sourceIndices[0], sourceIndices.length);
+    
+    // Determine insertion index
+    // If target is later in the array, we need to adjust index because of splice
+    let insertIndex = target.indices[0];
+    if (insertIndex > sourceIndices[0]) {
+        insertIndex -= sourceIndices.length;
+    }
+    
+    // Logic for adopting Superset ID
+    if (source.type === 'item') {
+        const targetItem = newExercises[insertIndex] || (insertIndex > 0 ? newExercises[insertIndex-1] : null);
+        
+        // If target group is a superset, adopt its ID
+        if (target.type === 'superset' && targetItem && targetItem.supersetId) {
+             removedItems[0].supersetId = targetItem.supersetId;
+        } 
+        // If target is an item that has a superset ID (dropping inside superset view), adopt it
+        else if (target.type === 'item' && targetItem && targetItem.supersetId) {
+             removedItems[0].supersetId = targetItem.supersetId;
+        }
+        // If dropping outside, clear ID?
+        // If dropping on a 'single' type target which has no supersetId, clear it
+        else if (target.type === 'item' && targetItem && !targetItem.supersetId) {
+             delete removedItems[0].supersetId;
+        }
+    }
+    
+    newExercises.splice(insertIndex, 0, ...removedItems);
+    
     setTempExercises(newExercises);
+    dragInfo.current = null;
+    dragOverInfo.current = null;
+    setDraggedOverIndices(null);
   };
 
   const handleMoveExercise = (fromIndex: number, toIndex: number) => {
@@ -116,6 +167,58 @@ const ActiveWorkoutPage: React.FC = () => {
     const [movedItem] = newExercises.splice(fromIndex, 1);
     newExercises.splice(toIndex, 0, movedItem);
     updateActiveWorkout({ ...activeWorkout, exercises: newExercises });
+  };
+
+  const handleMoveSuperset = (indices: number[], direction: 'up' | 'down') => {
+    const exercisesList = isReorganizeMode ? tempExercises : activeWorkout?.exercises;
+    if (!exercisesList) return;
+
+    const newExercises = [...exercisesList];
+    const sortedIndices = indices.sort((a, b) => a - b);
+    const startIndex = sortedIndices[0];
+    const count = sortedIndices.length;
+    
+    if (direction === 'up') {
+        if (startIndex === 0) return;
+        
+        const grouped = groupExercises(newExercises, activeWorkout?.supersets);
+        const currentGroupIndex = grouped.findIndex(g => g.type === 'superset' && g.indices[0] === startIndex);
+        
+        if (currentGroupIndex > 0) {
+            const prevGroup = grouped[currentGroupIndex - 1];
+            const prevGroupStart = prevGroup.type === 'superset' ? prevGroup.indices[0] : prevGroup.index;
+            
+            // Move our block to prevGroupStart
+            const removed = newExercises.splice(startIndex, count);
+            newExercises.splice(prevGroupStart, 0, ...removed);
+        } else if (currentGroupIndex === -1) {
+             // Fallback for single items or issues
+             // Should not happen if called from SupersetCard
+        }
+
+    } else {
+         const grouped = groupExercises(newExercises, activeWorkout?.supersets);
+         const currentGroupIndex = grouped.findIndex(g => g.type === 'superset' && g.indices[0] === startIndex);
+         
+         if (currentGroupIndex < grouped.length - 1) {
+             const nextGroup = grouped[currentGroupIndex + 1];
+             
+             const nextGroupEndIndex = nextGroup.type === 'superset' ? nextGroup.indices[nextGroup.indices.length - 1] : nextGroup.index;
+             const insertIndex = nextGroupEndIndex + 1;
+             
+             // We need to adjust insertIndex because we are removing items first
+             const adjustedInsert = insertIndex - count;
+             
+             const removed = newExercises.splice(startIndex, count);
+             newExercises.splice(adjustedInsert, 0, ...removed);
+         }
+    }
+
+    if (isReorganizeMode) {
+        setTempExercises(newExercises);
+    } else if (activeWorkout) {
+        updateActiveWorkout({ ...activeWorkout, exercises: newExercises });
+    }
   };
   // --- End Reorganization Logic ---
   
@@ -126,6 +229,18 @@ const ActiveWorkoutPage: React.FC = () => {
         newSet.delete(exerciseId);
       } else {
         newSet.add(exerciseId);
+      }
+      return Array.from(newSet);
+    });
+  };
+
+  const handleToggleSupersetCollapse = (supersetId: string) => {
+    setCollapsedSupersetIds(prevIds => {
+      const newSet = new Set(prevIds);
+      if (newSet.has(supersetId)) {
+        newSet.delete(supersetId);
+      } else {
+        newSet.add(supersetId);
       }
       return Array.from(newSet);
     });
@@ -245,6 +360,9 @@ const ActiveWorkoutPage: React.FC = () => {
 
       const updatedExercises = [...activeWorkout.exercises];
       updatedExercises[exerciseIndex] = { ...updatedExercises[exerciseIndex], supersetId: newSupersetId };
+      
+      // Add new superset ID to collapsed state immediately
+      setCollapsedSupersetIds(prev => [...prev, newSupersetId]);
 
       updateActiveWorkout({
           ...activeWorkout,
@@ -298,6 +416,9 @@ const ActiveWorkoutPage: React.FC = () => {
       
       const updatedSupersets = { ...activeWorkout.supersets };
       delete updatedSupersets[supersetId];
+      
+      // Remove from collapsed state if present
+      setCollapsedSupersetIds(prev => prev.filter(id => id !== supersetId));
 
       updateActiveWorkout({
           ...activeWorkout,
@@ -326,10 +447,7 @@ const ActiveWorkoutPage: React.FC = () => {
     
     if (pendingExerciseUpdate) {
       const adjustedExercise = { ...pendingExerciseUpdate };
-      // Update any recently completed sets that had 0 weight to the new weight
       adjustedExercise.sets = adjustedExercise.sets.map(s => {
-          // Check if it is complete and weight is 0 (or essentially 0)
-          // Use a small epsilon just in case, though exact 0 is expected
           if (s.isComplete && s.weight === 0) {
               return { ...s, weight: weightInKg };
           }
@@ -350,7 +468,6 @@ const ActiveWorkoutPage: React.FC = () => {
   
   const confirmFinishWorkout = () => {
     endWorkout();
-    // No need to close modal, component will unmount
   };
 
   const cancelFinishWorkout = () => {
@@ -359,7 +476,6 @@ const ActiveWorkoutPage: React.FC = () => {
 
   const handleDiscardWorkout = () => {
     discardActiveWorkout();
-    // Component will unmount, no need to close modal
   };
 
   const handleSaveDetails = (updatedDetails: Partial<WorkoutSession>) => {
@@ -387,9 +503,7 @@ const ActiveWorkoutPage: React.FC = () => {
         return ex;
     });
     
-    // This will trigger the rest timer logic
     handleUpdateExercise(updatedExercises.find(ex => ex.id === exercise.id)!);
-    
     setActiveTimedSet(null);
   };
 
@@ -403,6 +517,8 @@ const ActiveWorkoutPage: React.FC = () => {
 
   const renderExercise = (exercise: WorkoutExercise, index: number) => {
       const exerciseInfo = getExerciseById(exercise.exerciseId);
+      const isBeingDraggedOver = draggedOverIndices?.includes(index) && dragInfo.current?.indices[0] !== index;
+
       return exerciseInfo ? (
           <ExerciseCard
               key={exercise.id}
@@ -411,15 +527,15 @@ const ActiveWorkoutPage: React.FC = () => {
               onUpdate={handleUpdateExercise}
               onStartTimedSet={handleStartTimedSet}
               isReorganizeMode={isReorganizeMode}
-              onDragStart={(e) => handleDragStart(e, index)}
-              onDragEnter={(e) => handleDragEnter(e, index)}
+              onDragStart={(e) => handleDragStart(e, 'item', [index])}
+              onDragEnter={(e) => handleDragEnter(e, 'item', [index])}
               onDragEnd={handleDrop}
               onMoveUp={() => handleMoveExercise(index, index - 1)}
               onMoveDown={() => handleMoveExercise(index, index + 1)}
               isMoveUpDisabled={index === 0}
               isMoveDownDisabled={index === exercisesToShow.length - 1}
               onReorganize={handleEnterReorganizeMode}
-              isBeingDraggedOver={draggedOverIndex === index && dragItem.current !== index}
+              isBeingDraggedOver={isBeingDraggedOver}
               isCollapsed={collapsedSet.has(exercise.id)}
               onToggleCollapse={() => handleToggleCollapse(exercise.id)}
               onRemove={handleRemoveExercise}
@@ -493,7 +609,8 @@ const ActiveWorkoutPage: React.FC = () => {
             } else {
                 // Superset Group
                 const definition = group.definition || { id: group.supersetId, name: 'Superset', color: 'indigo' };
-                
+                const isBeingDraggedOver = draggedOverIndices?.length === group.indices.length && draggedOverIndices.every((val, i) => val === group.indices[i]) && dragInfo.current?.indices[0] !== group.indices[0];
+
                 return (
                     <SupersetCard 
                         key={group.supersetId} 
@@ -503,6 +620,15 @@ const ActiveWorkoutPage: React.FC = () => {
                         onAddExercise={() => startAddExercisesToWorkout(group.supersetId)}
                         onPlay={() => handlePlaySuperset(group.supersetId)}
                         exercises={group.exercises}
+                        isCollapsed={collapsedSupersetSet.has(group.supersetId)}
+                        onToggleCollapse={() => handleToggleSupersetCollapse(group.supersetId)}
+                        onMoveUp={() => handleMoveSuperset(group.indices, 'up')}
+                        onMoveDown={() => handleMoveSuperset(group.indices, 'down')}
+                        isReorganizeMode={isReorganizeMode}
+                        onDragStart={(e) => handleDragStart(e, 'superset', group.indices)}
+                        onDragEnter={(e) => handleDragEnter(e, 'superset', group.indices)}
+                        onDragEnd={handleDrop}
+                        isBeingDraggedOver={isBeingDraggedOver}
                     >
                         <SupersetView 
                             exercises={group.exercises}
@@ -512,11 +638,11 @@ const ActiveWorkoutPage: React.FC = () => {
                             onRemoveExercise={handleRemoveExercise}
                             onMoveExercise={handleMoveExercise}
                             onStartTimedSet={handleStartTimedSet}
-                            onDragStart={handleDragStart}
-                            onDragEnter={handleDragEnter}
+                            onDragStart={(e, index) => handleDragStart(e, 'item', [index])}
+                            onDragEnter={(e, index) => handleDragEnter(e, 'item', [index])}
                             onDragEnd={handleDrop}
-                            draggedOverIndex={draggedOverIndex}
-                            dragItemIndex={dragItem.current}
+                            draggedOverIndex={draggedOverIndices ? draggedOverIndices[0] : null}
+                            dragItemIndex={dragInfo.current ? dragInfo.current.indices[0] : null}
                         />
                     </SupersetCard>
                 );

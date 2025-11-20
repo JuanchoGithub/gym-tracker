@@ -80,7 +80,7 @@ const ExercisesPage: React.FC = () => {
         </button>
       </div>
 
-      <div className="sticky top-0 z-30 bg-[#0f172a]/95 backdrop-blur-xl py-4 -mx-4 px-4 border-b border-white/5 shadow-sm">
+      <div className="sticky top-0 z-30 bg-[#0f172a]/95 backdrop-blur-xl py-4 -mx-3 sm:-mx-4 px-3 sm:px-4 border-b border-white/5 shadow-sm">
         <div className="flex flex-col gap-3 max-w-4xl mx-auto">
             <div className="flex gap-3 items-center">
                 <div className="relative flex-grow group">
