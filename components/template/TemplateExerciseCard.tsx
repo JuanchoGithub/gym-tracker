@@ -8,6 +8,7 @@ import EditSetTimerModal from '../modals/EditSetTimerModal';
 import { useI18n } from '../../hooks/useI18n';
 import { useMeasureUnit } from '../../hooks/useWeight';
 import { TranslationKey } from '../../contexts/I18nContext';
+import SelectSupersetModal from '../modals/SelectSupersetModal';
 
 interface TemplateExerciseCardProps {
   workoutExercise: WorkoutExercise;
@@ -22,18 +23,23 @@ interface TemplateExerciseCardProps {
   isBeingDraggedOver: boolean;
   isMoveUpDisabled: boolean;
   isMoveDownDisabled: boolean;
+  onCreateSuperset?: () => void;
+  onJoinSuperset?: (supersetId: string) => void;
+  availableSupersets?: { id: string; name: string; exercises: string[] }[];
 }
 
 const TemplateExerciseCard: React.FC<TemplateExerciseCardProps> = (props) => {
   const {
     workoutExercise, exerciseInfo, onUpdate, onRemove, onMoveUp, onMoveDown,
-    onDragStart, onDragEnter, onDragEnd, isBeingDraggedOver, isMoveUpDisabled, isMoveDownDisabled
+    onDragStart, onDragEnter, onDragEnd, isBeingDraggedOver, isMoveUpDisabled, isMoveDownDisabled,
+    onCreateSuperset, onJoinSuperset, availableSupersets = []
   } = props;
   const { t } = useI18n();
   const { weightUnit } = useMeasureUnit();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNoteEditing, setIsNoteEditing] = useState(false);
   const [isDefaultsTimerModalOpen, setIsDefaultsTimerModalOpen] = useState(false);
+  const [isSupersetModalOpen, setIsSupersetModalOpen] = useState(false);
   const [editingSetTimer, setEditingSetTimer] = useState<PerformedSet | null>(null);
   const [note, setNote] = useState(workoutExercise.note || '');
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -108,7 +114,6 @@ const TemplateExerciseCard: React.FC<TemplateExerciseCardProps> = (props) => {
     setIsNoteEditing(false);
   };
   
-  // FIX: Corrected the type of `newTimers` to include `effort` and `failure` properties, aligning it with the expected type for `restTime` in `WorkoutExercise` and resolving a TypeScript error.
   const handleSaveDefaultsTimer = (newTimers: { normal: number; warmup: number; drop: number; timed: number; effort: number; failure: number; }) => {
     // When defaults change, remove overrides that match the *new* default for that set type
     const updatedSets = workoutExercise.sets.map(set => {
@@ -147,6 +152,24 @@ const TemplateExerciseCard: React.FC<TemplateExerciseCardProps> = (props) => {
     }
   }
 
+  const handleSupersetAction = () => {
+      if (availableSupersets.length > 0) {
+          setIsSupersetModalOpen(true);
+      } else if (onCreateSuperset) {
+          onCreateSuperset();
+      }
+      setIsMenuOpen(false);
+  };
+
+  const handleSupersetSelection = (id: string | 'new') => {
+      setIsSupersetModalOpen(false);
+      if (id === 'new' && onCreateSuperset) {
+          onCreateSuperset();
+      } else if (id !== 'new' && onJoinSuperset) {
+          onJoinSuperset(id);
+      }
+  };
+
   return (
     <>
     <div 
@@ -168,7 +191,16 @@ const TemplateExerciseCard: React.FC<TemplateExerciseCardProps> = (props) => {
             <Icon name="ellipsis" />
           </button>
           {isMenuOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-slate-700 rounded-md shadow-lg z-10" onMouseLeave={() => setIsMenuOpen(false)}>
+            <div className="absolute right-0 mt-2 w-56 bg-slate-700 rounded-md shadow-lg z-10" onMouseLeave={() => setIsMenuOpen(false)}>
+              {onCreateSuperset && (
+                <>
+                <button onClick={handleSupersetAction} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600 flex items-center gap-2 font-bold text-indigo-400">
+                    <Icon name="duplicate" className="w-4 h-4"/>
+                    <span>{availableSupersets.length > 0 ? "Add to Superset" : "Create Superset"}</span>
+                </button>
+                <div className="h-px bg-secondary/50 my-1"></div>
+                </>
+              )}
               <button onClick={() => { setIsNoteEditing(true); setIsMenuOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">{t('template_card_add_edit_note')}</button>
               <button onClick={() => { setIsDefaultsTimerModalOpen(true); setIsMenuOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">{t('template_card_edit_timers')}</button>
               <button onClick={() => { onMoveUp(); setIsMenuOpen(false); }} disabled={isMoveUpDisabled} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed">{t('template_card_move_up')}</button>
@@ -242,6 +274,12 @@ const TemplateExerciseCard: React.FC<TemplateExerciseCardProps> = (props) => {
         onSave={handleSaveSetTimer}
       />
     )}
+    <SelectSupersetModal
+        isOpen={isSupersetModalOpen}
+        onClose={() => setIsSupersetModalOpen(false)}
+        availableSupersets={availableSupersets}
+        onSelect={handleSupersetSelection}
+    />
     </>
   );
 };

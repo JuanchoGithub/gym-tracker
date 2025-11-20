@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useContext, useRef } from 'react';
-import { Exercise, WorkoutExercise, PerformedSet } from '../../types';
+import { Exercise, WorkoutExercise, PerformedSet, SupersetDefinition } from '../../types';
 import { getExerciseHistory } from '../../utils/workoutUtils';
 import { Icon } from '../common/Icon';
 import { AppContext } from '../../contexts/AppContext';
@@ -13,6 +13,7 @@ import { useI18n } from '../../hooks/useI18n';
 import { useMeasureUnit } from '../../hooks/useWeight';
 import { TranslationKey } from '../../contexts/I18nContext';
 import { useClickOutside } from '../../hooks/useClickOutside';
+import SelectSupersetModal from '../modals/SelectSupersetModal';
 
 interface ExerciseHeaderProps {
     workoutExercise: WorkoutExercise;
@@ -27,6 +28,9 @@ interface ExerciseHeaderProps {
     isMoveDownDisabled: boolean;
     onReorganize: () => void;
     onRemove?: () => void;
+    onCreateSuperset?: () => void;
+    onJoinSuperset?: (supersetId: string) => void;
+    availableSupersets?: { id: string; name: string; exercises: string[] }[];
 }
 
 type FocusType = 'q_mark' | 'total_volume' | 'volume_increase' | 'total_reps' | 'weight_by_rep';
@@ -34,7 +38,8 @@ type FocusType = 'q_mark' | 'total_volume' | 'volume_increase' | 'total_reps' | 
 const ExerciseHeader: React.FC<ExerciseHeaderProps> = (props) => {
     const { 
         workoutExercise, exerciseInfo, onUpdate, onAddNote, onOpenTimerModal, onToggleCollapse, 
-        onMoveUp, onMoveDown, isMoveUpDisabled, isMoveDownDisabled, onReorganize, onRemove 
+        onMoveUp, onMoveDown, isMoveUpDisabled, isMoveDownDisabled, onReorganize, onRemove, 
+        onCreateSuperset, onJoinSuperset, availableSupersets = []
     } = props;
     const { history: allHistory } = useContext(AppContext);
     const { t } = useI18n();
@@ -47,6 +52,7 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = (props) => {
     const [isConfirmReplaceOpen, setIsConfirmReplaceOpen] = useState(false);
     const [isConfirmRemoveOpen, setIsConfirmRemoveOpen] = useState(false);
     const [isBarModalOpen, setIsBarModalOpen] = useState(false);
+    const [isSupersetModalOpen, setIsSupersetModalOpen] = useState(false);
     
     const focusMenuRef = useRef<HTMLDivElement>(null);
     const optionsMenuRef = useRef<HTMLDivElement>(null);
@@ -156,6 +162,24 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = (props) => {
         setIsConfirmRemoveOpen(false);
     };
 
+    const handleSupersetAction = () => {
+        if (availableSupersets.length > 0) {
+            setIsSupersetModalOpen(true);
+        } else if (onCreateSuperset) {
+            onCreateSuperset();
+        }
+        setIsOptionsMenuOpen(false);
+    };
+
+    const handleSupersetSelection = (id: string | 'new') => {
+        setIsSupersetModalOpen(false);
+        if (id === 'new' && onCreateSuperset) {
+            onCreateSuperset();
+        } else if (id !== 'new' && onJoinSuperset) {
+            onJoinSuperset(id);
+        }
+    };
+
     const renderFocusContent = () => {
         switch (focusType) {
             case 'total_volume': return `${displayWeight(totalVolume, true)} ${t(`workout_${weightUnit}` as TranslationKey)}`;
@@ -202,7 +226,16 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = (props) => {
                         <Icon name="ellipsis" />
                     </button>
                     {isOptionsMenuOpen && (
-                        <div className="absolute right-0 mt-2 w-48 bg-slate-700 rounded-md shadow-lg z-30">
+                        <div className="absolute right-0 mt-2 w-56 bg-slate-700 rounded-md shadow-lg z-30 max-h-80 overflow-y-auto">
+                            {onCreateSuperset && (
+                                <>
+                                <button onClick={handleSupersetAction} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600 flex items-center gap-2 font-bold text-indigo-400">
+                                    <Icon name="duplicate" className="w-4 h-4"/>
+                                    <span>{availableSupersets.length > 0 ? "Add to Superset" : "Create Superset"}</span>
+                                </button>
+                                <div className="h-px bg-secondary/50 my-1"></div>
+                                </>
+                            )}
                             <button onClick={() => { onMoveUp(); setIsOptionsMenuOpen(false); }} disabled={isMoveUpDisabled} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
                                 <Icon name="arrow-up" className="w-4 h-4"/>
                                 <span>{t('exercise_header_menu_move_up')}</span>
@@ -259,6 +292,13 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = (props) => {
             message={t('remove_exercise_confirm_message')}
             confirmText={t('common_delete')}
             confirmButtonClass="bg-red-600 hover:bg-red-700"
+        />
+        
+        <SelectSupersetModal 
+            isOpen={isSupersetModalOpen}
+            onClose={() => setIsSupersetModalOpen(false)}
+            availableSupersets={availableSupersets}
+            onSelect={handleSupersetSelection}
         />
       </>
     );

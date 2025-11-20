@@ -3,7 +3,7 @@ import React, { useContext, useState, useMemo, useRef } from 'react';
 import { AppContext } from '../contexts/AppContext';
 import { useI18n } from '../hooks/useI18n';
 import ExerciseCard from '../components/workout/ExerciseCard';
-import { WorkoutExercise, WorkoutSession, PerformedSet } from '../types';
+import { WorkoutExercise, WorkoutSession, PerformedSet, SupersetDefinition } from '../types';
 import { useWorkoutTimer } from '../hooks/useWorkoutTimer';
 import { Icon } from '../components/common/Icon';
 import WorkoutDetailsModal from '../components/modals/WorkoutDetailsModal';
@@ -12,8 +12,11 @@ import { useWakeLock } from '../hooks/useWakeLock';
 import { cancelTimerNotification } from '../services/notificationService';
 import TimedSetTimerModal from '../components/modals/TimedSetTimerModal';
 import WorkoutRestTimer from '../components/workout/WorkoutRestTimer';
-import { getTimerDuration } from '../utils/workoutUtils';
+import { getTimerDuration, groupExercises } from '../utils/workoutUtils';
 import WeightInputModal from '../components/modals/WeightInputModal';
+import SupersetCard from '../components/workout/SupersetCard';
+import SupersetView from '../components/workout/SupersetView';
+import SupersetPlayer from '../components/workout/SupersetPlayer';
 
 const ActiveWorkoutPage: React.FC = () => {
   const { activeWorkout, updateActiveWorkout, endWorkout, discardActiveWorkout, getExerciseById, minimizeWorkout, keepScreenAwake, activeTimerInfo, setActiveTimerInfo, startAddExercisesToWorkout, collapsedExerciseIds, setCollapsedExerciseIds, currentWeight, logWeight, activeTimedSet, setActiveTimedSet } = useContext(AppContext);
@@ -30,11 +33,12 @@ const ActiveWorkoutPage: React.FC = () => {
   
   const [isWeightInputModalOpen, setIsWeightInputModalOpen] = useState(false);
   const [pendingExerciseUpdate, setPendingExerciseUpdate] = useState<WorkoutExercise | null>(null);
-
+  
+  const [activeSupersetPlayerId, setActiveSupersetPlayerId] = useState<string | null>(null);
 
   const collapsedSet = useMemo(() => new Set(collapsedExerciseIds), [collapsedExerciseIds]);
 
-  useWakeLock(keepScreenAwake || !!activeTimedSet || isReorganizeMode || (!!activeTimerInfo && !activeTimerInfo.isPaused));
+  useWakeLock(keepScreenAwake || !!activeTimedSet || isReorganizeMode || (!!activeTimerInfo && !activeTimerInfo.isPaused) || !!activeSupersetPlayerId);
 
   const hasInvalidCompletedSets = useMemo(() => {
     if (!activeWorkout) return false;
@@ -59,6 +63,17 @@ const ActiveWorkoutPage: React.FC = () => {
       }
     }
     return false;
+  }, [activeWorkout, getExerciseById]);
+
+  const availableSupersets = useMemo(() => {
+      if (!activeWorkout || !activeWorkout.supersets) return [];
+      return Object.values(activeWorkout.supersets).map((superset: SupersetDefinition) => ({
+          id: superset.id,
+          name: superset.name,
+          exercises: activeWorkout.exercises
+            .filter(ex => ex.supersetId === superset.id)
+            .map(ex => getExerciseById(ex.exerciseId)?.name || 'Unknown')
+      }));
   }, [activeWorkout, getExerciseById]);
 
   // --- Reorganization Logic ---
@@ -193,23 +208,117 @@ const ActiveWorkoutPage: React.FC = () => {
     workoutToUpdate = { ...workoutToUpdate, exercises: updatedExercises };
 
     // Set new timer or clear existing one
-    if (justCompletedSet) {
-        const duration = getTimerDuration(justCompletedSet, updatedExercise, justCompletedSetIndex);
-        setActiveTimerInfo({
-            exerciseId: updatedExercise.id,
-            setId: justCompletedSet.id,
-            targetTime: Date.now() + duration * 1000,
-            totalDuration: duration,
-            initialDuration: duration,
-            isPaused: false,
-            timeLeftWhenPaused: 0,
-        });
-    } else if (justUncompletedSet && activeTimerInfo && activeTimerInfo.setId === justUncompletedSet.id) {
-        setActiveTimerInfo(null);
-        cancelTimerNotification('rest-timer-finished');
+    // Note: The SupersetPlayer handles its own timer, so we skip this if playing
+    if (!activeSupersetPlayerId) {
+        if (justCompletedSet) {
+            const duration = getTimerDuration(justCompletedSet, updatedExercise, justCompletedSetIndex);
+            setActiveTimerInfo({
+                exerciseId: updatedExercise.id,
+                setId: justCompletedSet.id,
+                targetTime: Date.now() + duration * 1000,
+                totalDuration: duration,
+                initialDuration: duration,
+                isPaused: false,
+                timeLeftWhenPaused: 0,
+            });
+        } else if (justUncompletedSet && activeTimerInfo && activeTimerInfo.setId === justUncompletedSet.id) {
+            setActiveTimerInfo(null);
+            cancelTimerNotification('rest-timer-finished');
+        }
     }
     
     updateActiveWorkout(workoutToUpdate);
+  };
+
+  // Superset Actions
+  const handleCreateSuperset = (exerciseId: string) => {
+      if (!activeWorkout) return;
+      const exerciseIndex = activeWorkout.exercises.findIndex(ex => ex.id === exerciseId);
+      if (exerciseIndex === -1) return;
+
+      const newSupersetId = `superset-${Date.now()}`;
+      const newSupersetDef = {
+          id: newSupersetId,
+          name: 'Superset',
+          color: 'indigo',
+      };
+
+      const updatedExercises = [...activeWorkout.exercises];
+      updatedExercises[exerciseIndex] = { ...updatedExercises[exerciseIndex], supersetId: newSupersetId };
+
+      updateActiveWorkout({
+          ...activeWorkout,
+          exercises: updatedExercises,
+          supersets: { ...activeWorkout.supersets, [newSupersetId]: newSupersetDef }
+      });
+  };
+
+  const handleJoinSuperset = (exerciseId: string, targetSupersetId: string) => {
+      if (!activeWorkout) return;
+      const currentExercise = activeWorkout.exercises.find(ex => ex.id === exerciseId);
+      if (!currentExercise) return;
+
+      // Remove from current position
+      const exercisesWithoutItem = activeWorkout.exercises.filter(ex => ex.id !== exerciseId);
+      
+      // Find insertion index (after the last exercise of the target superset)
+      let insertionIndex = -1;
+      for (let i = exercisesWithoutItem.length - 1; i >= 0; i--) {
+          if (exercisesWithoutItem[i].supersetId === targetSupersetId) {
+              insertionIndex = i;
+              break;
+          }
+      }
+
+      const updatedItem = { ...currentExercise, supersetId: targetSupersetId };
+      const finalExercises = [...exercisesWithoutItem];
+      
+      if (insertionIndex !== -1) {
+          finalExercises.splice(insertionIndex + 1, 0, updatedItem);
+      } else {
+          // Should be rare if superset exists, but fallback to append
+          finalExercises.push(updatedItem);
+      }
+
+      updateActiveWorkout({
+          ...activeWorkout,
+          exercises: finalExercises
+      });
+  };
+
+  const handleUngroupSuperset = (supersetId: string) => {
+      if (!activeWorkout) return;
+      const updatedExercises = activeWorkout.exercises.map(ex => {
+          if (ex.supersetId === supersetId) {
+              const { supersetId: _, ...rest } = ex;
+              return rest;
+          }
+          return ex;
+      });
+      
+      const updatedSupersets = { ...activeWorkout.supersets };
+      delete updatedSupersets[supersetId];
+
+      updateActiveWorkout({
+          ...activeWorkout,
+          exercises: updatedExercises,
+          supersets: updatedSupersets
+      });
+  };
+
+  const handleRenameSuperset = (supersetId: string, newName: string) => {
+      if (!activeWorkout || !activeWorkout.supersets) return;
+      updateActiveWorkout({
+          ...activeWorkout,
+          supersets: {
+              ...activeWorkout.supersets,
+              [supersetId]: { ...activeWorkout.supersets[supersetId], name: newName }
+          }
+      });
+  };
+
+  const handlePlaySuperset = (supersetId: string) => {
+      setActiveSupersetPlayerId(supersetId);
   };
   
   const handleWeightModalSave = (weightInKg: number) => {
@@ -288,8 +397,39 @@ const ActiveWorkoutPage: React.FC = () => {
     return <div>{t('active_workout_no_active')}</div>;
   }
 
+  // Rendering logic for grouped exercises
   const exercisesToShow = isReorganizeMode ? tempExercises : activeWorkout.exercises;
-  
+  const groupedExercises = groupExercises(exercisesToShow, activeWorkout.supersets);
+
+  const renderExercise = (exercise: WorkoutExercise, index: number) => {
+      const exerciseInfo = getExerciseById(exercise.exerciseId);
+      return exerciseInfo ? (
+          <ExerciseCard
+              key={exercise.id}
+              workoutExercise={exercise}
+              exerciseInfo={exerciseInfo}
+              onUpdate={handleUpdateExercise}
+              onStartTimedSet={handleStartTimedSet}
+              isReorganizeMode={isReorganizeMode}
+              onDragStart={(e) => handleDragStart(e, index)}
+              onDragEnter={(e) => handleDragEnter(e, index)}
+              onDragEnd={handleDrop}
+              onMoveUp={() => handleMoveExercise(index, index - 1)}
+              onMoveDown={() => handleMoveExercise(index, index + 1)}
+              isMoveUpDisabled={index === 0}
+              isMoveDownDisabled={index === exercisesToShow.length - 1}
+              onReorganize={handleEnterReorganizeMode}
+              isBeingDraggedOver={draggedOverIndex === index && dragItem.current !== index}
+              isCollapsed={collapsedSet.has(exercise.id)}
+              onToggleCollapse={() => handleToggleCollapse(exercise.id)}
+              onRemove={handleRemoveExercise}
+              onCreateSuperset={!exercise.supersetId ? () => handleCreateSuperset(exercise.id) : undefined}
+              onJoinSuperset={!exercise.supersetId ? (supersetId) => handleJoinSuperset(exercise.id, supersetId) : undefined}
+              availableSupersets={availableSupersets}
+          />
+      ) : null;
+  };
+
   return (
     <div className="space-y-4">
       <div className="sticky top-0 bg-background/80 backdrop-blur-sm z-20 -mx-2 sm:-mx-4 px-2 sm:px-4 py-2 border-b border-secondary/20">
@@ -347,30 +487,40 @@ const ActiveWorkoutPage: React.FC = () => {
       </div>
 
       <div className="-mx-2 space-y-4 sm:-mx-4">
-        {exercisesToShow.length > 0 ? exercisesToShow.map((exercise, index) => {
-          const exerciseInfo = getExerciseById(exercise.exerciseId);
-          return exerciseInfo ? (
-              <ExerciseCard
-                  key={exercise.id}
-                  workoutExercise={exercise}
-                  exerciseInfo={exerciseInfo}
-                  onUpdate={handleUpdateExercise}
-                  onStartTimedSet={handleStartTimedSet}
-                  isReorganizeMode={isReorganizeMode}
-                  onDragStart={(e) => handleDragStart(e, index)}
-                  onDragEnter={(e) => handleDragEnter(e, index)}
-                  onDragEnd={handleDrop}
-                  onMoveUp={() => handleMoveExercise(index, index - 1)}
-                  onMoveDown={() => handleMoveExercise(index, index + 1)}
-                  isMoveUpDisabled={index === 0}
-                  isMoveDownDisabled={index === exercisesToShow.length - 1}
-                  onReorganize={handleEnterReorganizeMode}
-                  isBeingDraggedOver={draggedOverIndex === index && dragItem.current !== index}
-                  isCollapsed={collapsedSet.has(exercise.id)}
-                  onToggleCollapse={() => handleToggleCollapse(exercise.id)}
-                  onRemove={handleRemoveExercise}
-              />
-          ) : null;
+        {groupedExercises.length > 0 ? groupedExercises.map((group, groupIndex) => {
+            if (group.type === 'single') {
+                return renderExercise(group.exercise, group.index);
+            } else {
+                // Superset Group
+                const definition = group.definition || { id: group.supersetId, name: 'Superset', color: 'indigo' };
+                
+                return (
+                    <SupersetCard 
+                        key={group.supersetId} 
+                        definition={definition}
+                        onRename={(name) => handleRenameSuperset(group.supersetId, name)}
+                        onUngroup={() => handleUngroupSuperset(group.supersetId)}
+                        onAddExercise={() => startAddExercisesToWorkout(group.supersetId)}
+                        onPlay={() => handlePlaySuperset(group.supersetId)}
+                        exercises={group.exercises}
+                    >
+                        <SupersetView 
+                            exercises={group.exercises}
+                            indices={group.indices}
+                            isReorganizeMode={isReorganizeMode}
+                            onUpdateExercise={handleUpdateExercise}
+                            onRemoveExercise={handleRemoveExercise}
+                            onMoveExercise={handleMoveExercise}
+                            onStartTimedSet={handleStartTimedSet}
+                            onDragStart={handleDragStart}
+                            onDragEnter={handleDragEnter}
+                            onDragEnd={handleDrop}
+                            draggedOverIndex={draggedOverIndex}
+                            dragItemIndex={dragItem.current}
+                        />
+                    </SupersetCard>
+                );
+            }
         }) : (
           <div className="mx-2 rounded-lg bg-surface px-4 py-10 text-center sm:mx-4">
               <p className="text-lg font-semibold text-text-primary">{t('active_workout_empty_title')}</p>
@@ -380,7 +530,7 @@ const ActiveWorkoutPage: React.FC = () => {
       </div>
       
       <button
-        onClick={startAddExercisesToWorkout}
+        onClick={() => startAddExercisesToWorkout()}
         className="w-full flex items-center justify-center space-x-2 bg-secondary/50 text-text-primary font-medium py-3 rounded-lg hover:bg-secondary transition-colors"
       >
         <Icon name="plus" className="w-5 h-5" />
@@ -405,6 +555,16 @@ const ActiveWorkoutPage: React.FC = () => {
             restTime={activeTimedSet.exercise.restTime.timed}
             exerciseName={getExerciseById(activeTimedSet.exercise.exerciseId)?.name || ''}
         />
+      )}
+
+      {activeSupersetPlayerId && (
+          <SupersetPlayer 
+             supersetId={activeSupersetPlayerId}
+             supersetName={activeWorkout?.supersets?.[activeSupersetPlayerId]?.name || 'Superset'}
+             exercises={activeWorkout?.exercises.filter(ex => ex.supersetId === activeSupersetPlayerId) || []}
+             onUpdateExercise={handleUpdateExercise}
+             onClose={() => setActiveSupersetPlayerId(null)}
+          />
       )}
 
       <Modal

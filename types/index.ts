@@ -1,3 +1,4 @@
+
 export type BodyPart = 'Chest' | 'Back' | 'Legs' | 'Glutes' | 'Shoulders' | 'Biceps' | 'Triceps' | 'Core' | 'Full Body' | 'Calves' | 'Forearms' | 'Mobility' | 'Cardio';
 
 // FIX: Added 'Duration' to the ExerciseCategory type to match its usage in the application.
@@ -45,6 +46,13 @@ export interface WorkoutExercise {
   };
   note?: string;
   barWeight?: number;
+  supersetId?: string;
+}
+
+export interface SupersetDefinition {
+  id: string;
+  name: string;
+  color?: string;
 }
 
 export interface Routine {
@@ -52,6 +60,7 @@ export interface Routine {
   name: string;
   description: string;
   exercises: WorkoutExercise[];
+  supersets?: Record<string, SupersetDefinition>;
   isTemplate?: boolean; // true for templates
   lastUsed?: number; // timestamp for latest workouts
   originId?: string; // The ID of the template this was based on
@@ -70,6 +79,7 @@ export interface WorkoutSession {
   startTime: number; // timestamp
   endTime: number; // timestamp
   exercises: WorkoutExercise[]; // This will store the completed sets
+  supersets?: Record<string, SupersetDefinition>;
   prCount?: number;
 }
 

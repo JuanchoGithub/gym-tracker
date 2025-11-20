@@ -1,7 +1,7 @@
 
 import React, { createContext, useState, ReactNode, useMemo, useEffect, useCallback } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import { Routine, WorkoutSession, Exercise, WorkoutExercise, PerformedSet, ActiveHiitSession, SupplementPlan, SupplementPlanItem, SupplementSuggestion, RejectedSuggestion, Profile } from '../types';
+import { Routine, WorkoutSession, Exercise, WorkoutExercise, PerformedSet, ActiveHiitSession, SupplementPlan, SupplementPlanItem, SupplementSuggestion, RejectedSuggestion, Profile, SupersetDefinition } from '../types';
 import { PREDEFINED_ROUTINES } from '../constants/routines';
 import { PREDEFINED_EXERCISES } from '../constants/exercises';
 import { useI18n } from '../hooks/useI18n';
@@ -72,10 +72,10 @@ interface AppContextType {
   selectedVoiceURI: string | null;
   setSelectedVoiceURI: (uri: string | null) => void;
   isAddingExercisesToWorkout: boolean;
-  startAddExercisesToWorkout: () => void;
+  startAddExercisesToWorkout: (targetSupersetId?: string) => void;
   endAddExercisesToWorkout: (newExerciseIds?: string[]) => void;
   isAddingExercisesToTemplate: boolean;
-  startAddExercisesToTemplate: () => void;
+  startAddExercisesToTemplate: (targetSupersetId?: string) => void;
   endAddExercisesToTemplate: (newExerciseIds?: string[]) => void;
   activeQuickTimer: number | null;
   startQuickTimer: (duration: number) => void;
@@ -128,8 +128,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [activeHiitSession, setActiveHiitSession] = useLocalStorage<ActiveHiitSession | null>('activeHiitSession', null);
   const [activeQuickTimer, setActiveQuickTimer] = useLocalStorage<number | null>('activeQuickTimer', null);
   const [selectedVoiceURI, setSelectedVoiceURI] = useLocalStorage<string | null>('selectedVoiceURI', null);
+  
+  // Add Exercise state now includes an optional targetSupersetId
   const [isAddingExercisesToWorkout, setIsAddingExercisesToWorkout] = useState(false);
   const [isAddingExercisesToTemplate, setIsAddingExercisesToTemplate] = useState(false);
+  const [targetSupersetId, setTargetSupersetId] = useState<string | undefined>(undefined);
+
   const [supplementPlan, setSupplementPlan] = useLocalStorage<SupplementPlan | null>('supplementPlan', null);
   const [userSupplements, setUserSupplements] = useLocalStorage<SupplementPlanItem[]>('userSupplements', []);
   const [takenSupplements, setTakenSupplements] = useLocalStorage<Record<string, string[]>>('takenSupplements', {});
@@ -600,6 +604,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       startTime: Date.now(),
       endTime: 0,
       exercises: newWorkoutExercises,
+      supersets: routine.supersets || {},
     });
     setIsWorkoutMinimized(false);
   }, [history, defaultRestTimes, exercises, getExerciseById, setActiveWorkout, setIsWorkoutMinimized, setActiveTimerInfo, setCollapsedExerciseIds, currentWeight]);
@@ -737,12 +742,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setActiveHiitSession(null);
   }, [setActiveHiitSession]);
   
-  const startAddExercisesToWorkout = useCallback(() => setIsAddingExercisesToWorkout(true), []);
+  const startAddExercisesToWorkout = useCallback((targetSupersetId?: string) => {
+      setIsAddingExercisesToWorkout(true);
+      setTargetSupersetId(targetSupersetId);
+  }, []);
   
   const endAddExercisesToWorkout = useCallback((newExerciseIds?: string[]) => {
       setIsAddingExercisesToWorkout(false);
       if (newExerciseIds && newExerciseIds.length > 0 && activeWorkout) {
-          const newWorkoutExercises: WorkoutExercise[] = newExerciseIds.map((id, index) => ({
+          const newWorkoutExercises: WorkoutExercise[] = newExerciseIds.map((id) => ({
               id: `we-${Date.now()}-${Math.random()}`,
               exerciseId: id,
               sets: [
@@ -755,16 +763,43 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                   }
               ],
               restTime: { ...defaultRestTimes },
+              supersetId: targetSupersetId
           }));
+
+          // Insert logic: if targetSupersetId is present, find the last exercise in that superset and insert after it
+          let updatedExercises = [...activeWorkout.exercises];
+          if (targetSupersetId) {
+             // Find the index of the last exercise in this superset
+             let insertIndex = -1;
+             for (let i = updatedExercises.length - 1; i >= 0; i--) {
+                 if (updatedExercises[i].supersetId === targetSupersetId) {
+                     insertIndex = i;
+                     break;
+                 }
+             }
+             
+             if (insertIndex !== -1) {
+                 updatedExercises.splice(insertIndex + 1, 0, ...newWorkoutExercises);
+             } else {
+                 // Should not happen if targetSupersetId is valid, but fallback to append
+                 updatedExercises = [...updatedExercises, ...newWorkoutExercises];
+             }
+          } else {
+              updatedExercises = [...updatedExercises, ...newWorkoutExercises];
+          }
           
           updateActiveWorkout({
               ...activeWorkout,
-              exercises: [...activeWorkout.exercises, ...newWorkoutExercises],
+              exercises: updatedExercises,
           });
       }
-  }, [activeWorkout, defaultRestTimes, updateActiveWorkout]);
+      setTargetSupersetId(undefined);
+  }, [activeWorkout, defaultRestTimes, updateActiveWorkout, targetSupersetId]);
   
-  const startAddExercisesToTemplate = useCallback(() => setIsAddingExercisesToTemplate(true), []);
+  const startAddExercisesToTemplate = useCallback((targetSupersetId?: string) => {
+      setIsAddingExercisesToTemplate(true);
+      setTargetSupersetId(targetSupersetId);
+  }, []);
   
   const endAddExercisesToTemplate = useCallback((newExerciseIds?: string[]) => {
       setIsAddingExercisesToTemplate(false);
@@ -782,14 +817,35 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                   }
               ],
               restTime: { ...defaultRestTimes },
+              supersetId: targetSupersetId
           }));
           
+          let updatedExercises = [...editingTemplate.exercises];
+          if (targetSupersetId) {
+             let insertIndex = -1;
+             for (let i = updatedExercises.length - 1; i >= 0; i--) {
+                 if (updatedExercises[i].supersetId === targetSupersetId) {
+                     insertIndex = i;
+                     break;
+                 }
+             }
+             
+             if (insertIndex !== -1) {
+                 updatedExercises.splice(insertIndex + 1, 0, ...newWorkoutExercises);
+             } else {
+                 updatedExercises = [...updatedExercises, ...newWorkoutExercises];
+             }
+          } else {
+              updatedExercises = [...updatedExercises, ...newWorkoutExercises];
+          }
+
           updateEditingTemplate({
               ...editingTemplate,
-              exercises: [...editingTemplate.exercises, ...newWorkoutExercises],
+              exercises: updatedExercises,
           });
       }
-  }, [editingTemplate, defaultRestTimes, updateEditingTemplate]);
+      setTargetSupersetId(undefined);
+  }, [editingTemplate, defaultRestTimes, updateEditingTemplate, targetSupersetId]);
 
   const startQuickTimer = useCallback((duration: number) => {
       setActiveQuickTimer(duration);

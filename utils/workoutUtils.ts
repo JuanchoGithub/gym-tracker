@@ -1,4 +1,5 @@
-import { WorkoutSession, PerformedSet, WorkoutExercise } from '../types';
+
+import { WorkoutSession, PerformedSet, WorkoutExercise, Routine, SupersetDefinition } from '../types';
 
 export type ExerciseHistory = {
   session: WorkoutSession;
@@ -113,4 +114,68 @@ export const getTimerDuration = (set: PerformedSet, workoutExercise: WorkoutExer
     }
     
     return duration;
+};
+
+
+// Helper to group exercises into supersets for rendering
+export type GroupedExerciseItem = 
+    | { type: 'single', exercise: WorkoutExercise, index: number }
+    | { type: 'superset', exercises: WorkoutExercise[], supersetId: string, definition?: SupersetDefinition, indices: number[] };
+
+export const groupExercises = (exercises: WorkoutExercise[], supersets?: Record<string, SupersetDefinition>): GroupedExerciseItem[] => {
+    const grouped: GroupedExerciseItem[] = [];
+    let currentSuperset: WorkoutExercise[] = [];
+    let currentSupersetId: string | null = null;
+    let currentIndices: number[] = [];
+
+    exercises.forEach((exercise, index) => {
+        if (exercise.supersetId) {
+            if (currentSupersetId && currentSupersetId !== exercise.supersetId) {
+                // Finish previous superset
+                 grouped.push({
+                    type: 'superset',
+                    exercises: currentSuperset,
+                    supersetId: currentSupersetId,
+                    definition: supersets?.[currentSupersetId],
+                    indices: currentIndices
+                });
+                currentSuperset = [exercise];
+                currentIndices = [index];
+                currentSupersetId = exercise.supersetId;
+            } else {
+                // Continue or start new superset
+                currentSuperset.push(exercise);
+                currentIndices.push(index);
+                currentSupersetId = exercise.supersetId;
+            }
+        } else {
+            // If we were tracking a superset, push it
+            if (currentSupersetId) {
+                 grouped.push({
+                    type: 'superset',
+                    exercises: currentSuperset,
+                    supersetId: currentSupersetId,
+                    definition: supersets?.[currentSupersetId],
+                    indices: currentIndices
+                });
+                currentSuperset = [];
+                currentIndices = [];
+                currentSupersetId = null;
+            }
+            grouped.push({ type: 'single', exercise, index });
+        }
+    });
+
+    // Push remaining superset
+    if (currentSupersetId && currentSuperset.length > 0) {
+        grouped.push({
+            type: 'superset',
+            exercises: currentSuperset,
+            supersetId: currentSupersetId,
+            definition: supersets?.[currentSupersetId],
+            indices: currentIndices
+        });
+    }
+
+    return grouped;
 };
