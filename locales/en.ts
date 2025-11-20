@@ -226,6 +226,7 @@ export const en = {
   exercise_header_menu_move_up: 'Move Up',
   exercise_header_menu_move_down: 'Move Down',
   exercise_header_menu_reorganize: 'Reorganize Order',
+  exercise_header_menu_remove: 'Remove Exercise',
 
   // Timer Modal
   timer_modal_title: 'Add rest timers',
@@ -315,6 +316,9 @@ export const en = {
   replace_exercise_modal_no_match: 'No exercises found.',
   replace_exercise_modal_confirm_title: 'Replace Exercise?',
   replace_exercise_modal_confirm_message: 'Are you sure you want to replace this exercise? Current sets will be maintained.',
+  
+  remove_exercise_confirm_title: 'Remove Exercise?',
+  remove_exercise_confirm_message: 'Are you sure you want to remove this exercise from the workout? All sets data will be lost.',
 
   // Workout Details Modal
   workout_details_modal_title: 'Edit Details',

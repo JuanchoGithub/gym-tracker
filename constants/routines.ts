@@ -1,3 +1,4 @@
+
 import { Routine, PerformedSet, WorkoutExercise } from '../types';
 import { PREDEFINED_EXERCISES } from './exercises';
 
@@ -22,18 +23,19 @@ const createWorkoutExercise = (exerciseId: string, sets: PerformedSet[], restTim
     }
 
     return {
-    id: `re-${Math.random()}`,
-    exerciseId,
-    sets,
-    restTime: {
-        normal: restTime,
-        warmup: 60,
-        drop: 30,
-        timed: 10,
-        effort: 180,
-        failure: 300,
-    }
-}};
+        id: `re-${Math.random()}`,
+        exerciseId,
+        sets,
+        restTime: {
+            normal: restTime,
+            warmup: 60,
+            drop: 30,
+            timed: 10,
+            effort: 180,
+            failure: 300
+        }
+    };
+};
 
 const createHiitExercise = (exerciseId: string): WorkoutExercise => ({
     id: `we-${exerciseId}-${Math.random()}`,

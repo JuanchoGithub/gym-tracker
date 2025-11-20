@@ -8,9 +8,9 @@ import ChangeTimerModal from '../modals/ChangeTimerModal';
 import ReplaceExerciseModal from '../modals/ReplaceExerciseModal';
 import SelectBarModal from '../modals/SelectBarModal';
 import Modal from '../common/Modal';
+import ConfirmModal from '../modals/ConfirmModal';
 import { useI18n } from '../../hooks/useI18n';
 import { useMeasureUnit } from '../../hooks/useWeight';
-// FIX: Import 'TranslationKey' type to resolve TypeScript error.
 import { TranslationKey } from '../../contexts/I18nContext';
 import { useClickOutside } from '../../hooks/useClickOutside';
 
@@ -26,6 +26,7 @@ interface ExerciseHeaderProps {
     isMoveUpDisabled: boolean;
     isMoveDownDisabled: boolean;
     onReorganize: () => void;
+    onRemove?: () => void;
 }
 
 type FocusType = 'q_mark' | 'total_volume' | 'volume_increase' | 'total_reps' | 'weight_by_rep';
@@ -33,7 +34,7 @@ type FocusType = 'q_mark' | 'total_volume' | 'volume_increase' | 'total_reps' | 
 const ExerciseHeader: React.FC<ExerciseHeaderProps> = (props) => {
     const { 
         workoutExercise, exerciseInfo, onUpdate, onAddNote, onOpenTimerModal, onToggleCollapse, 
-        onMoveUp, onMoveDown, isMoveUpDisabled, isMoveDownDisabled, onReorganize 
+        onMoveUp, onMoveDown, isMoveUpDisabled, isMoveDownDisabled, onReorganize, onRemove 
     } = props;
     const { history: allHistory } = useContext(AppContext);
     const { t } = useI18n();
@@ -44,6 +45,7 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = (props) => {
     const [focusType, setFocusType] = useState<FocusType>('q_mark');
     const [isReplaceModalOpen, setIsReplaceModalOpen] = useState(false);
     const [isConfirmReplaceOpen, setIsConfirmReplaceOpen] = useState(false);
+    const [isConfirmRemoveOpen, setIsConfirmRemoveOpen] = useState(false);
     const [isBarModalOpen, setIsBarModalOpen] = useState(false);
     
     const focusMenuRef = useRef<HTMLDivElement>(null);
@@ -146,6 +148,13 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = (props) => {
 
     const handleReplaceExercise = (newExerciseId: string) => onUpdate({ ...workoutExercise, exerciseId: newExerciseId });
     const handleSelectBar = (barWeight: number) => onUpdate({ ...workoutExercise, barWeight });
+    
+    const handleConfirmRemove = () => {
+        if (onRemove) {
+            onRemove();
+        }
+        setIsConfirmRemoveOpen(false);
+    };
 
     const renderFocusContent = () => {
         switch (focusType) {
@@ -164,7 +173,7 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = (props) => {
         { labelKey: 'exercise_header_focus_volume_increase', focusType: 'volume_increase' },
         { labelKey: 'exercise_header_focus_total_reps', focusType: 'total_reps' },
         { labelKey: 'exercise_header_focus_weight_by_rep', focusType: 'weight_by_rep' },
-    ]
+    ];
     
     return (
       <>
@@ -212,6 +221,15 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = (props) => {
                             <button onClick={() => { onOpenTimerModal(); setIsOptionsMenuOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">{t('exercise_header_menu_change_timer')}</button>
                             <button onClick={() => { setIsConfirmReplaceOpen(true); setIsOptionsMenuOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">{t('exercise_header_menu_replace')}</button>
                             <button onClick={() => { setIsBarModalOpen(true); setIsOptionsMenuOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">{t('bar_type')}</button>
+                            {onRemove && (
+                                <>
+                                    <div className="h-px bg-secondary/50 my-1"></div>
+                                    <button onClick={() => { setIsConfirmRemoveOpen(true); setIsOptionsMenuOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-slate-600 flex items-center gap-2">
+                                        <Icon name="trash" className="w-4 h-4"/>
+                                        <span>{t('exercise_header_menu_remove')}</span>
+                                    </button>
+                                </>
+                            )}
                         </div>
                     )}
                 </div>
@@ -232,6 +250,15 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = (props) => {
             onSelectExercise={handleReplaceExercise}
             title={t('replace_exercise_modal_title')}
             buttonText={t('replace_exercise_modal_button')}
+        />
+        <ConfirmModal
+            isOpen={isConfirmRemoveOpen}
+            onClose={() => setIsConfirmRemoveOpen(false)}
+            onConfirm={handleConfirmRemove}
+            title={t('remove_exercise_confirm_title')}
+            message={t('remove_exercise_confirm_message')}
+            confirmText={t('common_delete')}
+            confirmButtonClass="bg-red-600 hover:bg-red-700"
         />
       </>
     );

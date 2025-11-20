@@ -225,6 +225,7 @@ export const es = {
   exercise_header_menu_move_up: 'Mover Arriba',
   exercise_header_menu_move_down: 'Mover Abajo',
   exercise_header_menu_reorganize: 'Reorganizar Orden',
+  exercise_header_menu_remove: 'Quitar Ejercicio',
 
   // Timer Modal
   timer_modal_title: 'Agregar tiempos de descanso',
@@ -313,6 +314,9 @@ export const es = {
   replace_exercise_modal_no_match: 'No se encontraron ejercicios.',
   replace_exercise_modal_confirm_title: '¿Reemplazar Ejercicio?',
   replace_exercise_modal_confirm_message: '¿Estás seguro de que querés reemplazar este ejercicio? Las series actuales se mantendrán.',
+
+  remove_exercise_confirm_title: '¿Quitar Ejercicio?',
+  remove_exercise_confirm_message: '¿Estás seguro de que querés quitar este ejercicio del entrenamiento? Se perderán los datos de las series.',
 
   // Workout Details Modal
   workout_details_modal_title: 'Editar Detalles',

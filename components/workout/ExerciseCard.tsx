@@ -32,13 +32,14 @@ interface ExerciseCardProps {
 
   isCollapsed: boolean;
   onToggleCollapse: () => void;
+  onRemove?: (exerciseId: string) => void;
 }
 
 const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
   const { 
     workoutExercise, exerciseInfo, onUpdate, onStartTimedSet,
     isReorganizeMode, onDragStart, onDragEnter, onDragEnd, onMoveUp, onMoveDown, isMoveUpDisabled, isMoveDownDisabled, onReorganize, isBeingDraggedOver,
-    isCollapsed, onToggleCollapse
+    isCollapsed, onToggleCollapse, onRemove
   } = props;
   const { t } = useI18n();
   const { weightUnit } = useMeasureUnit();
@@ -243,6 +244,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
                 isMoveUpDisabled={isMoveUpDisabled}
                 isMoveDownDisabled={isMoveDownDisabled}
                 onReorganize={onReorganize}
+                onRemove={onRemove ? () => onRemove(workoutExercise.id) : undefined}
             />
         </div>
         {!isCollapsed && (

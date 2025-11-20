@@ -6,7 +6,6 @@ import { PREDEFINED_ROUTINES } from '../constants/routines';
 import { PREDEFINED_EXERCISES } from '../constants/exercises';
 import { useI18n } from '../hooks/useI18n';
 import { TranslationKey } from './I18nContext';
-// FIX: Imported 'getTimerDuration' to resolve reference error.
 import { calculateRecords, getExerciseHistory, calculate1RM, getTimerDuration } from '../utils/workoutUtils';
 import { speak } from '../services/speechService';
 import { unlockAudioContext } from '../services/audioService';
@@ -101,6 +100,8 @@ interface AppContextType {
   setActiveTimerInfo: React.Dispatch<React.SetStateAction<ActiveTimerInfo | null>>;
   collapsedExerciseIds: string[];
   setCollapsedExerciseIds: React.Dispatch<React.SetStateAction<string[]>>;
+  activeTimedSet: { exercise: WorkoutExercise; set: PerformedSet } | null;
+  setActiveTimedSet: React.Dispatch<React.SetStateAction<{ exercise: WorkoutExercise; set: PerformedSet } | null>>;
 }
 
 export const AppContext = createContext<AppContextType>({} as AppContextType);
@@ -135,6 +136,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [profile, setProfile] = useLocalStorage<Profile>('profile', { weightHistory: [] });
   const [activeTimerInfo, setActiveTimerInfo] = useLocalStorage<ActiveTimerInfo | null>('activeRestTimer', null);
   const [collapsedExerciseIds, setCollapsedExerciseIds] = useLocalStorage<string[]>('collapsedExerciseIds', []);
+  const [activeTimedSet, setActiveTimedSet] = useState<{ exercise: WorkoutExercise; set: PerformedSet } | null>(null);
 
   
   // New state for automated supplement review
@@ -142,8 +144,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [rejectedSuggestions, setRejectedSuggestions] = useLocalStorage<RejectedSuggestion[]>('rejectedSuggestions', []);
   const [newSuggestions, setNewSuggestions] = useState<SupplementSuggestion[]>([]);
 
+  // One-time migration from old 'weightUnit' to 'measureUnit'
   useEffect(() => {
-    // One-time migration from old 'weightUnit' to 'measureUnit'
     const oldWeightUnitRaw = window.localStorage.getItem('weightUnit');
     if (oldWeightUnitRaw) {
         try {
@@ -210,26 +212,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
         const allSuggestions = reviewSupplementPlan(supplementPlan, history, t);
         
-        const currentPlanIdentifiers = new Set(supplementPlan.plan.map(p => p.id));
-        
         const finalSuggestions = allSuggestions.filter(suggestion => {
-            // Filter out rejected suggestions
             if (rejectedIdentifiers.has(suggestion.identifier)) {
                 return false;
             }
 
-            // Filter out suggestions that are already effectively applied
-            // FIX: Stored `suggestion.action` in a local variable `action` before the switch statement. This is a common pattern to help TypeScript's control flow analysis correctly narrow the discriminated union type within the `filter` callback, resolving errors where properties like 'item' or 'itemId' were not recognized on the narrowed type.
             const action = suggestion.action;
             switch(action.type) {
                 case 'ADD':
                     return !supplementPlan.plan.some(item => item.supplement === action.item.supplement);
                 case 'REMOVE':
-                    return currentPlanIdentifiers.has(action.itemId);
+                    return new Set(supplementPlan.plan.map(p => p.id)).has(action.itemId);
                 case 'UPDATE':
                     const itemToUpdate = supplementPlan.plan.find(item => item.id === action.itemId);
-                    if (!itemToUpdate) return false; // Item doesn't exist to be updated
-                    // Check if any of the proposed updates are actually different
+                    if (!itemToUpdate) return false;
                     return Object.keys(action.updates).some(key => {
                         const K = key as keyof typeof action.updates;
                         return itemToUpdate[K] !== action.updates[K];
@@ -257,7 +253,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         runDailyAnalysis();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [supplementPlan]); // Rerun when supplement plan is loaded/changed.
+  }, [supplementPlan]);
 
   const clearNewSuggestions = useCallback(() => {
     setNewSuggestions([]);
@@ -359,7 +355,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
 
   useEffect(() => {
-    // One-time migration from old 'routines' storage to new 'userRoutines'
     const oldRoutinesRaw = window.localStorage.getItem('routines');
     if (oldRoutinesRaw) {
       try {
@@ -368,7 +363,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         
         const nonPredefinedRoutines = oldRoutinesFromStorage.filter(r => !predefinedIds.has(r.id));
         
-        // Merge with any existing userRoutines to be safe, avoiding duplicates.
         setUserRoutines(currentUserRoutines => {
             const existingIds = new Set(currentUserRoutines.map(r => r.id));
             const routinesToMigrate = nonPredefinedRoutines.filter(r => !existingIds.has(r.id));
@@ -381,7 +375,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         window.localStorage.removeItem('routines');
       } catch (e) {
         console.error("Failed to migrate old routines:", e);
-        // still remove the old key to prevent re-running failed migration
         window.localStorage.removeItem('routines');
       }
     }
@@ -401,7 +394,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     });
 
     const predefinedIds = new Set(PREDEFINED_ROUTINES.map(r => r.id));
-    // Filter out any predefined routines that might have snuck into userRoutines
     const filteredUserRoutines = userRoutines.filter(r => !predefinedIds.has(r.id));
     return [...translatedPredefinedRoutines, ...filteredUserRoutines];
   }, [userRoutines, t]);
@@ -416,7 +408,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 return { ...ex, name: translatedName };
             }
         }
-        return ex; // return original for custom or untranslated
+        return ex;
       });
     }
     return rawExercises;
@@ -524,23 +516,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     unlockAudioContext();
     setActiveTimerInfo(null);
     setCollapsedExerciseIds([]);
-    // Deep copy to avoid mutating the original routine/template
     const newWorkoutExercises: WorkoutExercise[] = JSON.parse(JSON.stringify(routine.exercises));
 
     newWorkoutExercises.forEach((ex, exIndex) => {
         ex.id = `we-${Date.now()}-${exIndex}`;
-
-        // Ensure all rest time properties exist, falling back to defaults
         ex.restTime = { ...defaultRestTimes, ...ex.restTime };
 
         const exerciseHistory = getExerciseHistory(history, ex.exerciseId);
         const lastPerformance = exerciseHistory.length > 0 ? exerciseHistory[0].exerciseData : null;
         const exerciseInfo = getExerciseById(ex.exerciseId);
-
-        // Check if exercise is bodyweight based for default weighting
         const isBodyweight = exerciseInfo && ['Bodyweight', 'Assisted Bodyweight', 'Plyometrics'].includes(exerciseInfo.category);
 
-        // Group last performance sets by type for smarter inheritance
         const lastSetsByType = lastPerformance ? lastPerformance.sets.reduce((acc, set) => {
             if (!acc[set.type]) {
                 acc[set.type] = [];
@@ -550,23 +536,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }, {} as Record<string, PerformedSet[]>) : {};
 
         const currentSetTypeCounters: Record<string, number> = {
-            normal: 0,
-            warmup: 0,
-            drop: 0,
-            failure: 0,
-            timed: 0,
+            normal: 0, warmup: 0, drop: 0, failure: 0, timed: 0,
         };
 
         ex.sets.forEach((set: PerformedSet, setIndex: number) => {
             set.id = `set-${Date.now()}-${exIndex}-${setIndex}`;
             set.isComplete = false;
-
-            // Store the template values as historical fallback
             set.historicalWeight = set.weight;
             set.historicalReps = set.reps;
             set.historicalTime = set.time;
             
-            // Pre-fill bodyweight if applicable and available
             if (isBodyweight && currentWeight && currentWeight > 0 && set.weight === 0) {
                 set.weight = currentWeight;
             }
@@ -579,12 +558,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
                     let lastSetToInheritFrom: PerformedSet | null = null;
                     if (lastSetsOfSameType.length > 0) {
-                        // Use the set at the same type-specific index, or fall back to the last available set of that type.
                         lastSetToInheritFrom = lastSetsOfSameType[typeSpecificIndex] || lastSetsOfSameType[lastSetsOfSameType.length - 1];
                     }
 
                     if (lastSetToInheritFrom) {
-                        // Since we grouped by type, we know the types match.
                         if (set.type === 'timed') {
                             set.reps = lastSetToInheritFrom.reps;
                             set.time = lastSetToInheritFrom.time;
@@ -601,7 +578,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                             set.isRepsInherited = true;
                         }
                     } else {
-                        // No last performance for this specific set type.
                         set.isWeightInherited = true;
                         set.isRepsInherited = true;
                         set.isTimeInherited = true;
@@ -609,169 +585,88 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
                     currentSetTypeCounters[setType]++;
                 } else {
-                    // No last performance for this exercise at all.
                     set.isWeightInherited = true;
                     set.isRepsInherited = true;
                     set.isTimeInherited = true;
                 }
-            } else {
-                // For "Latest Workouts", the routine itself IS the last performance data.
-                // Just mark everything as inherited.
-                set.isWeightInherited = true;
-                set.isRepsInherited = true;
-                set.isTimeInherited = true;
             }
         });
     });
 
-    const newWorkout: WorkoutSession = {
+    setActiveWorkout({
       id: `session-${Date.now()}`,
       routineId: routine.id,
       routineName: routine.name,
       startTime: Date.now(),
       endTime: 0,
       exercises: newWorkoutExercises,
-    };
-    setActiveWorkout(newWorkout);
+    });
     setIsWorkoutMinimized(false);
-  }, [setActiveWorkout, setIsWorkoutMinimized, defaultRestTimes, history, setActiveTimerInfo, setCollapsedExerciseIds, getExerciseById, currentWeight]);
-
+  }, [history, defaultRestTimes, exercises, getExerciseById, setActiveWorkout, setIsWorkoutMinimized, setActiveTimerInfo, setCollapsedExerciseIds, currentWeight]);
+  
   const updateActiveWorkout = useCallback((workout: WorkoutSession) => {
     setActiveWorkout(workout);
   }, [setActiveWorkout]);
 
   const endWorkout = useCallback(() => {
     if (activeWorkout) {
-      setActiveTimerInfo(null);
-      setCollapsedExerciseIds([]);
-      cancelTimerNotification('rest-timer-finished');
-      const workoutEndTime = activeWorkout.endTime > 0 ? activeWorkout.endTime : Date.now();
+      const completedWorkout = { ...activeWorkout, endTime: Date.now() };
       
-      const finishedWorkoutForHistory: WorkoutSession = {
-        ...activeWorkout,
-        endTime: workoutEndTime,
-        exercises: activeWorkout.exercises.map(ex => ({
-            ...ex,
-            sets: ex.sets.filter(s => s.isComplete)
-        })).filter(ex => ex.sets.length > 0)
-      };
+      // Calculate PRs
+      let prCount = 0;
+      completedWorkout.exercises.forEach(ex => {
+          const exerciseHistory = getExerciseHistory(history, ex.exerciseId);
+          const previousRecords = calculateRecords(exerciseHistory);
+          const currentRecords = calculateRecords([{ session: completedWorkout, exerciseData: { sets: ex.sets } }]);
+          
+          if (currentRecords.maxWeight && (!previousRecords.maxWeight || currentRecords.maxWeight.value > previousRecords.maxWeight.value)) prCount++;
+          else if (currentRecords.maxReps && (!previousRecords.maxReps || currentRecords.maxReps.value > previousRecords.maxReps.value)) prCount++;
+          else if (currentRecords.maxVolume && (!previousRecords.maxVolume || currentRecords.maxVolume.value > previousRecords.maxVolume.value)) prCount++;
+      });
+      completedWorkout.prCount = prCount;
 
-      if (finishedWorkoutForHistory.exercises.length > 0) {
-        // Calculate PRs before saving
-        let prCount = 0;
-        const previousHistory = [...history];
-        
-        finishedWorkoutForHistory.exercises.forEach(ex => {
-            const exerciseHistory = getExerciseHistory(previousHistory, ex.exerciseId);
-            const oldRecords = calculateRecords(exerciseHistory);
-            
-            ex.sets.filter(s => s.type === 'normal').forEach(set => {
-                let isPr = false;
-                const volume = set.weight * set.reps;
-
-                if (!oldRecords.maxWeight || set.weight > oldRecords.maxWeight.value) {
-                    isPr = true;
-                } else if (!oldRecords.maxReps || set.reps > oldRecords.maxReps.value) {
-                    isPr = true;
-                } else if (!oldRecords.maxVolume || volume > oldRecords.maxVolume.value) {
-                    isPr = true;
-                }
-                
-                if (isPr) {
-                    prCount++;
-                }
-            });
-        });
-        finishedWorkoutForHistory.prCount = prCount;
-
-        setHistory(prev => [finishedWorkoutForHistory, ...prev]);
-
-        // Create the "Latest Workout" routine. It should include *all* sets from the session,
-        // both completed and incomplete, to allow the user to repeat the full workout.
-        const exercisesForLatestRoutine = activeWorkout.exercises.filter(ex => ex.sets.length > 0);
-        const sourceRoutine = routines.find(r => r.id === activeWorkout.routineId);
-
-        const newLatestRoutine: Routine = {
-          id: `latest-${workoutEndTime}-${Math.random()}`,
-          name: activeWorkout.routineName,
-          description: `Completed on ${new Date(activeWorkout.startTime).toLocaleDateString()}`,
-          exercises: exercisesForLatestRoutine, // Use all original sets
-          isTemplate: false,
-          lastUsed: workoutEndTime,
-          originId: activeWorkout.routineId,
-          routineType: sourceRoutine?.routineType || 'strength',
-        };
-
-        setUserRoutines(prevUserRoutines => {
-            const routinesWithoutSource = sourceRoutine && !sourceRoutine.isTemplate 
-                ? prevUserRoutines.filter(r => r.id !== sourceRoutine.id)
-                : prevUserRoutines;
-            
-            return [...routinesWithoutSource, newLatestRoutine];
-        });
-      }
+      setHistory(prev => [...prev, completedWorkout]);
+      
+      // Update lastUsed for the routine template
+      setUserRoutines(prev => prev.map(r => r.id === activeWorkout.routineId ? { ...r, lastUsed: Date.now() } : r));
+      
       setActiveWorkout(null);
       setIsWorkoutMinimized(false);
+      setActiveTimerInfo(null);
+      setActiveTimedSet(null);
+      setCollapsedExerciseIds([]);
+      cancelTimerNotification('rest-timer-finished');
     }
-  }, [activeWorkout, history, routines, setActiveWorkout, setHistory, setIsWorkoutMinimized, setUserRoutines, setActiveTimerInfo, setCollapsedExerciseIds]);
+  }, [activeWorkout, setHistory, setUserRoutines, setActiveWorkout, setIsWorkoutMinimized, setActiveTimerInfo, setCollapsedExerciseIds, setActiveTimedSet, history]);
 
   const discardActiveWorkout = useCallback(() => {
-    setActiveTimerInfo(null);
-    setCollapsedExerciseIds([]);
-    cancelTimerNotification('rest-timer-finished');
     setActiveWorkout(null);
     setIsWorkoutMinimized(false);
-  }, [setActiveWorkout, setIsWorkoutMinimized, setActiveTimerInfo, setCollapsedExerciseIds]);
+    setActiveTimerInfo(null);
+    setActiveTimedSet(null);
+    setCollapsedExerciseIds([]);
+    cancelTimerNotification('rest-timer-finished');
+  }, [setActiveWorkout, setIsWorkoutMinimized, setActiveTimerInfo, setCollapsedExerciseIds, setActiveTimedSet]);
   
   const minimizeWorkout = useCallback(() => setIsWorkoutMinimized(true), [setIsWorkoutMinimized]);
   const maximizeWorkout = useCallback(() => setIsWorkoutMinimized(false), [setIsWorkoutMinimized]);
 
-  const startQuickTimer = useCallback((duration: number) => {
-    unlockAudioContext();
-    setActiveQuickTimer(duration);
-  }, [setActiveQuickTimer]);
-
-  const endQuickTimer = useCallback(() => {
-    setActiveQuickTimer(null);
-  }, [setActiveQuickTimer]);
-
-  const startHiitSession = useCallback((routine: Routine) => {
-    // Announce prepare state and first exercise
-    const firstExerciseName = getExerciseById(routine.exercises[0]?.exerciseId)?.name || '';
-    speak(t('timers_announce_prepare', { exercise: firstExerciseName }), selectedVoiceURI, locale);
-
-    const newSession: ActiveHiitSession = {
-        routine: JSON.parse(JSON.stringify(routine)), // deep copy
-        startTime: Date.now(),
-    };
-    setActiveHiitSession(newSession);
-  }, [setActiveHiitSession, getExerciseById, t, selectedVoiceURI, locale]);
-
-  const endHiitSession = useCallback(() => {
-      setActiveHiitSession(null);
-  }, [setActiveHiitSession]);
+  const startTemplateEdit = useCallback((template: Routine) => {
+    setEditingTemplate(JSON.parse(JSON.stringify(template)));
+  }, []);
+  
+  const startTemplateDuplicate = useCallback((template: Routine) => {
+    const copy = JSON.parse(JSON.stringify(template));
+    copy.id = `custom-${Date.now()}`;
+    copy.name = `${template.name} (Copy)`;
+    copy.originId = template.id;
+    delete copy.lastUsed;
+    setEditingTemplate(copy);
+  }, []);
 
   const updateEditingTemplate = useCallback((template: Routine) => {
     setEditingTemplate(template);
   }, []);
-
-  const startTemplateEdit = useCallback((template: Routine) => {
-    setEditingTemplate(template);
-  }, []);
-
-  const startTemplateDuplicate = useCallback((routineToDuplicate: Routine) => {
-    const newTemplate: Routine = {
-        ...JSON.parse(JSON.stringify(routineToDuplicate)), // Deep copy
-        id: `custom-${Date.now()}`,
-        originId: routineToDuplicate.originId || routineToDuplicate.id,
-        name: `${routineToDuplicate.name} (Copy)`,
-        isTemplate: true,
-        lastUsed: undefined,
-        routineType: routineToDuplicate.routineType,
-        hiitConfig: routineToDuplicate.hiitConfig ? { ...routineToDuplicate.hiitConfig } : undefined,
-    };
-    startTemplateEdit(newTemplate);
-  }, [startTemplateEdit]);
 
   const endTemplateEdit = useCallback((savedTemplate?: Routine) => {
     if (savedTemplate) {
@@ -781,284 +676,131 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [upsertRoutine]);
 
   const startExerciseEdit = useCallback((exercise: Exercise, onSaveCallback?: (savedExercise: Exercise) => void) => {
-    setEditingExercise(exercise);
-    if (onSaveCallback) {
-        setExerciseEditCallback(() => onSaveCallback);
-    }
+      setEditingExercise(JSON.parse(JSON.stringify(exercise)));
+      if (onSaveCallback) {
+          setExerciseEditCallback(() => onSaveCallback);
+      } else {
+          setExerciseEditCallback(null);
+      }
+  }, []);
+
+  const startExerciseDuplicate = useCallback((exercise: Exercise, onSaveCallback?: (savedExercise: Exercise) => void) => {
+      const copy = JSON.parse(JSON.stringify(exercise));
+      copy.id = `custom-${Date.now()}`;
+      copy.name = `${exercise.name} (Copy)`;
+      setEditingExercise(copy);
+      if (onSaveCallback) {
+          setExerciseEditCallback(() => onSaveCallback);
+      } else {
+          setExerciseEditCallback(null);
+      }
   }, []);
 
   const endExerciseEdit = useCallback((savedExercise?: Exercise) => {
-    if (savedExercise) {
-      upsertExercise(savedExercise);
-      if (exerciseEditCallback) {
-          exerciseEditCallback(savedExercise);
+      if (savedExercise) {
+          upsertExercise(savedExercise);
+          if (exerciseEditCallback) {
+              exerciseEditCallback(savedExercise);
+          }
       }
-    }
-    setEditingExercise(null);
-    setExerciseEditCallback(null);
+      setEditingExercise(null);
+      setExerciseEditCallback(null);
   }, [upsertExercise, exerciseEditCallback]);
-
-  const startExerciseDuplicate = useCallback((exerciseToDuplicate: Exercise, onSaveCallback?: (savedExercise: Exercise) => void) => {
-    const originalExercise = rawExercises.find(e => e.id === exerciseToDuplicate.id) || exerciseToDuplicate;
-    let description = '';
-    const isStock = originalExercise.id.startsWith('ex-');
-
-    if (isStock) {
-        const instructionKey = originalExercise.id.replace('-', '_') + '_ins';
-        const instructions = t_ins(instructionKey);
-        if (instructions && instructions.steps.length > 0 && instructions.title !== instructionKey) {
-            description = instructions.steps.join('\n');
-        }
-    } else {
-        description = originalExercise.notes || '';
-    }
-    
-    const newExercise: Exercise = {
-        ...originalExercise,
-        id: `custom-${Date.now()}`,
-        name: `${exerciseToDuplicate.name} (Copy)`,
-        notes: description
-    };
-    startExerciseEdit(newExercise, onSaveCallback);
-  }, [rawExercises, t_ins, startExerciseEdit]);
-
-  const deleteHistorySession = useCallback((sessionId: string) => {
-    setHistory(prev => prev.filter(s => s.id !== sessionId));
-  }, [setHistory]);
-
-  const updateHistorySession = useCallback((session: WorkoutSession) => {
-    const previousHistory = history.filter(h => h.startTime < session.startTime && h.id !== session.id);
-    
-    let prCount = 0;
-    session.exercises.forEach(ex => {
-        const exerciseHistory = getExerciseHistory(previousHistory, ex.exerciseId);
-        const oldRecords = calculateRecords(exerciseHistory);
-        
-        ex.sets.forEach(set => {
-            if (set.isComplete && set.type === 'normal') {
-                let isPrForSet = false;
-                const volume = set.weight * set.reps;
-
-                if (!oldRecords.maxWeight || set.weight > oldRecords.maxWeight.value) {
-                    isPrForSet = true;
-                } else if (!oldRecords.maxReps || set.reps > oldRecords.maxReps.value) {
-                    isPrForSet = true;
-                } else if (!oldRecords.maxVolume || volume > oldRecords.maxVolume.value) {
-                    isPrForSet = true;
-                }
-                
-                if (isPrForSet) {
-                    prCount++;
-                }
-            }
-        });
-    });
-    const sessionWithRecalculatedPRs = { ...session, prCount };
-
-    setHistory(prev => {
-        const index = prev.findIndex(s => s.id === session.id);
-        if (index === -1) return prev;
-        const newHistory = [...prev];
-        newHistory[index] = sessionWithRecalculatedPRs;
-        newHistory.sort((a, b) => b.startTime - a.startTime);
-        return newHistory;
-    });
-  }, [history, setHistory]);
-
+  
   const startHistoryEdit = useCallback((session: WorkoutSession) => {
-    setEditingHistorySession(session);
+      setEditingHistorySession(JSON.parse(JSON.stringify(session)));
   }, []);
-
+  
+  const deleteHistorySession = useCallback((sessionId: string) => {
+      setHistory(prev => prev.filter(s => s.id !== sessionId));
+  }, [setHistory]);
+  
+  const updateHistorySession = useCallback((session: WorkoutSession) => {
+      setHistory(prev => prev.map(s => s.id === session.id ? session : s));
+  }, [setHistory]);
+  
   const endHistoryEdit = useCallback((savedSession?: WorkoutSession) => {
-    if (savedSession) {
-      updateHistorySession(savedSession);
-    }
-    setEditingHistorySession(null);
+      if (savedSession) {
+          updateHistorySession(savedSession);
+      }
+      setEditingHistorySession(null);
   }, [updateHistorySession]);
 
-  const startAddExercisesToWorkout = useCallback(() => {
-    setIsAddingExercisesToWorkout(true);
-  }, []);
+  const startHiitSession = useCallback((routine: Routine) => {
+      setActiveHiitSession({
+          routine: JSON.parse(JSON.stringify(routine)),
+          startTime: Date.now(),
+      });
+  }, [setActiveHiitSession]);
 
+  const endHiitSession = useCallback(() => {
+      setActiveHiitSession(null);
+  }, [setActiveHiitSession]);
+  
+  const startAddExercisesToWorkout = useCallback(() => setIsAddingExercisesToWorkout(true), []);
+  
   const endAddExercisesToWorkout = useCallback((newExerciseIds?: string[]) => {
-    if (newExerciseIds && newExerciseIds.length > 0 && activeWorkout) {
-      const newExercises: WorkoutExercise[] = newExerciseIds.map(exerciseId => {
-        const exercise = getExerciseById(exerciseId);
-        const isTimed = exercise && exercise.isTimed;
-        const isBodyweight = exercise && ['Bodyweight', 'Assisted Bodyweight', 'Plyometrics'].includes(exercise.category);
-
-        // Determine defaults from history
-        const exerciseHistory = getExerciseHistory(history, exerciseId);
-        const lastPerformance = exerciseHistory.length > 0 ? exerciseHistory[0].exerciseData : null;
-        
-        let lastSet: PerformedSet | undefined;
-        if (lastPerformance) {
-            // Try to find a completed normal set, otherwise any completed set
-             lastSet = lastPerformance.sets.find(s => s.type === 'normal' && s.isComplete) 
-                    || lastPerformance.sets.find(s => s.isComplete);
-        }
-
-        let defaultReps = isTimed ? 1 : 0;
-        let defaultTime = isTimed ? 60 : undefined;
-        let defaultWeight = 0;
-
-        if (lastSet) {
-            defaultReps = lastSet.reps;
-            if (isTimed) defaultTime = lastSet.time;
-            defaultWeight = lastSet.weight;
-        }
-
-        // Override weight for bodyweight exercises
-        if (isBodyweight) {
-            if (currentWeight && currentWeight > 0) {
-                defaultWeight = currentWeight;
-            } else if (!currentWeight) {
-                // Ensure it's 0 if no profile weight is set, so the modal triggers on completion
-                defaultWeight = 0;
-            }
-        }
-
-        return {
-          id: `we-${Date.now()}-${Math.random()}`,
-          exerciseId,
-          sets: [
-              {
-                  id: `set-${Date.now()}-${Math.random()}`,
-                  reps: defaultReps,
-                  weight: defaultWeight,
-                  time: defaultTime,
-                  type: isTimed ? 'timed' : 'normal',
-                  isComplete: false,
-                  isRepsInherited: !!lastSet,
-                  isWeightInherited: !!lastSet || (isBodyweight && !!currentWeight),
-                  isTimeInherited: !!lastSet,
-                  historicalReps: lastSet?.reps,
-                  historicalWeight: lastSet?.weight,
-                  historicalTime: lastSet?.time,
-              }
-          ],
-          restTime: { ...defaultRestTimes },
-        };
-      });
-
-      updateActiveWorkout({
-          ...activeWorkout,
-          exercises: [...activeWorkout.exercises, ...newExercises],
-      });
-    }
-    setIsAddingExercisesToWorkout(false);
-  }, [activeWorkout, defaultRestTimes, updateActiveWorkout, getExerciseById, currentWeight, history]);
-
-  const startAddExercisesToTemplate = useCallback(() => {
-    setIsAddingExercisesToTemplate(true);
-  }, []);
-
-  const endAddExercisesToTemplate = useCallback((newExerciseIds?: string[]) => {
-    if (newExerciseIds && newExerciseIds.length > 0 && editingTemplate) {
-      let newExercises: WorkoutExercise[];
-      if (editingTemplate.routineType === 'hiit') {
-          newExercises = newExerciseIds.map(exerciseId => ({
+      setIsAddingExercisesToWorkout(false);
+      if (newExerciseIds && newExerciseIds.length > 0 && activeWorkout) {
+          const newWorkoutExercises: WorkoutExercise[] = newExerciseIds.map((id, index) => ({
               id: `we-${Date.now()}-${Math.random()}`,
-              exerciseId,
-              sets: [{ id: `set-${Date.now()}-${Math.random()}`, reps: 1, weight: 0, type: 'normal', isComplete: false } as PerformedSet],
-              restTime: { normal: 0, warmup: 0, drop: 0, timed: 0, effort: 0, failure: 0 },
+              exerciseId: id,
+              sets: [
+                  {
+                    id: `set-${Date.now()}-${Math.random()}`,
+                    reps: 0,
+                    weight: 0,
+                    type: 'normal',
+                    isComplete: false,
+                  }
+              ],
+              restTime: { ...defaultRestTimes },
           }));
-      } else {
-          newExercises = newExerciseIds.map(exId => {
-              const exercise = getExerciseById(exId);
-              const isTimed = exercise && exercise.isTimed;
-              return {
-                  id: `we-${Date.now()}-${Math.random()}`,
-                  exerciseId: exId,
-                  sets: Array.from({ length: 1 }, () => ({
-                      id: `set-${Date.now()}-${Math.random()}`,
-                      reps: isTimed ? 1 : 10,
-                      weight: 0,
-                      time: isTimed ? 60 : undefined,
-                      type: isTimed ? 'timed' : 'normal',
-                      isRepsInherited: false,
-                      isWeightInherited: false,
-                      isTimeInherited: false,
-                  } as PerformedSet)),
-                  restTime: { ...defaultRestTimes },
-              };
+          
+          updateActiveWorkout({
+              ...activeWorkout,
+              exercises: [...activeWorkout.exercises, ...newWorkoutExercises],
           });
       }
-
-      updateEditingTemplate({
-          ...editingTemplate,
-          exercises: [...editingTemplate.exercises, ...newExercises],
-      });
-    }
-    setIsAddingExercisesToTemplate(false);
-  }, [editingTemplate, defaultRestTimes, updateEditingTemplate, getExerciseById]);
+  }, [activeWorkout, defaultRestTimes, updateActiveWorkout]);
   
-  const handleUpdateExercise = useCallback((updatedExercise: WorkoutExercise) => {
-    if (!activeWorkout) return;
+  const startAddExercisesToTemplate = useCallback(() => setIsAddingExercisesToTemplate(true), []);
+  
+  const endAddExercisesToTemplate = useCallback((newExerciseIds?: string[]) => {
+      setIsAddingExercisesToTemplate(false);
+      if (newExerciseIds && newExerciseIds.length > 0 && editingTemplate) {
+          const newWorkoutExercises: WorkoutExercise[] = newExerciseIds.map((id) => ({
+              id: `we-template-${Date.now()}-${Math.random()}`,
+              exerciseId: id,
+              sets: [
+                  {
+                      id: `set-template-${Date.now()}-${Math.random()}`,
+                      reps: 10,
+                      weight: 0,
+                      type: 'normal',
+                      isComplete: false,
+                  }
+              ],
+              restTime: { ...defaultRestTimes },
+          }));
+          
+          updateEditingTemplate({
+              ...editingTemplate,
+              exercises: [...editingTemplate.exercises, ...newWorkoutExercises],
+          });
+      }
+  }, [editingTemplate, defaultRestTimes, updateEditingTemplate]);
 
-    const originalExercise = activeWorkout.exercises.find(ex => ex.id === updatedExercise.id);
-    if (!originalExercise) return;
+  const startQuickTimer = useCallback((duration: number) => {
+      setActiveQuickTimer(duration);
+  }, [setActiveQuickTimer]);
 
-    let justCompletedSet: PerformedSet | null = null;
-    let justCompletedSetIndex: number = -1;
-    let justUncompletedSet: PerformedSet | null = null;
+  const endQuickTimer = useCallback(() => {
+      setActiveQuickTimer(null);
+  }, [setActiveQuickTimer]);
 
-    for (const [index, updatedSet] of updatedExercise.sets.entries()) {
-        const originalSet = originalExercise.sets.find(s => s.id === updatedSet.id);
-        if (originalSet && !originalSet.isComplete && updatedSet.isComplete) {
-            justCompletedSet = updatedSet;
-            justCompletedSetIndex = index;
-            break;
-        }
-        if (originalSet && originalSet.isComplete && !updatedSet.isComplete) {
-            justUncompletedSet = updatedSet;
-            break;
-        }
-    }
-
-    let workoutToUpdate = { ...activeWorkout };
-
-    // If a timer was previously active, log its actual duration.
-    if (justCompletedSet && activeTimerInfo && !activeTimerInfo.isPaused) {
-        const elapsedSeconds = Math.round((Date.now() - (activeTimerInfo.targetTime - activeTimerInfo.totalDuration * 1000)) / 1000);
-        
-        const prevExerciseIndex = workoutToUpdate.exercises.findIndex(e => e.id === activeTimerInfo.exerciseId);
-        if (prevExerciseIndex > -1) {
-            const prevSetIndex = workoutToUpdate.exercises[prevExerciseIndex].sets.findIndex(s => s.id === activeTimerInfo.setId);
-            if (prevSetIndex > -1) {
-                workoutToUpdate.exercises[prevExerciseIndex].sets[prevSetIndex].actualRest = elapsedSeconds;
-            }
-        }
-    }
-    
-    // Update the workout with the changes from the card
-    const updatedExercises = workoutToUpdate.exercises.map(ex =>
-        ex.id === updatedExercise.id ? updatedExercise : ex
-    );
-    workoutToUpdate = { ...workoutToUpdate, exercises: updatedExercises };
-
-    // Set new timer or clear existing one
-    if (justCompletedSet) {
-        const duration = getTimerDuration(justCompletedSet, updatedExercise, justCompletedSetIndex);
-        setActiveTimerInfo({
-            exerciseId: updatedExercise.id,
-            setId: justCompletedSet.id,
-            targetTime: Date.now() + duration * 1000,
-            totalDuration: duration,
-            initialDuration: duration,
-            isPaused: false,
-            timeLeftWhenPaused: 0,
-        });
-    } else if (justUncompletedSet && activeTimerInfo && activeTimerInfo.setId === justUncompletedSet.id) {
-        setActiveTimerInfo(null);
-        cancelTimerNotification('rest-timer-finished');
-    }
-    
-    updateActiveWorkout(workoutToUpdate);
-  }, [activeWorkout, activeTimerInfo, setActiveTimerInfo, updateActiveWorkout]);
-
-  const value = useMemo(() => ({
-    routines: routines,
+  const value = {
+    routines,
     upsertRoutine,
     deleteRoutine,
     history,
@@ -1101,9 +843,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     activeHiitSession,
     startHiitSession,
     endHiitSession,
-    activeQuickTimer,
-    startQuickTimer,
-    endQuickTimer,
     selectedVoiceURI,
     setSelectedVoiceURI,
     isAddingExercisesToWorkout,
@@ -1112,6 +851,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     isAddingExercisesToTemplate,
     startAddExercisesToTemplate,
     endAddExercisesToTemplate,
+    activeQuickTimer,
+    startQuickTimer,
+    endQuickTimer,
     supplementPlan,
     setSupplementPlan,
     userSupplements,
@@ -1132,27 +874,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setActiveTimerInfo,
     collapsedExerciseIds,
     setCollapsedExerciseIds,
-  }), [
-    routines, upsertRoutine, deleteRoutine, history, deleteHistorySession, updateHistorySession, exercises, getExerciseById,
-    upsertExercise, activeWorkout, startWorkout, updateActiveWorkout, endWorkout,
-    isWorkoutMinimized, minimizeWorkout, maximizeWorkout, discardActiveWorkout,
-    measureUnit, setMeasureUnit, defaultRestTimes, setDefaultRestTimes,
-    editingTemplate, updateEditingTemplate, startTemplateEdit, startTemplateDuplicate, endTemplateEdit, editingExercise,
-    startExerciseEdit, endExerciseEdit, startExerciseDuplicate,
-    editingHistorySession, startHistoryEdit, endHistoryEdit,
-    useLocalizedExerciseNames, setUseLocalizedExerciseNames,
-    keepScreenAwake, setKeepScreenAwake, enableNotifications, setEnableNotifications,
-    allTimeBestSets, activeHiitSession, startHiitSession, endHiitSession,
-    activeQuickTimer, startQuickTimer, endQuickTimer,
-    selectedVoiceURI, setSelectedVoiceURI, isAddingExercisesToWorkout, startAddExercisesToWorkout, endAddExercisesToWorkout,
-    isAddingExercisesToTemplate, startAddExercisesToTemplate, endAddExercisesToTemplate,
-    supplementPlan, setSupplementPlan, userSupplements, setUserSupplements,
-    takenSupplements, setTakenSupplements,
-    newSuggestions, applyPlanSuggestion, applyAllPlanSuggestions, dismissSuggestion, dismissAllSuggestions, clearNewSuggestions,
-    profile, updateProfileInfo, currentWeight, logWeight,
-    activeTimerInfo, setActiveTimerInfo,
-    collapsedExerciseIds, setCollapsedExerciseIds, handleUpdateExercise,
-  ]);
+    activeTimedSet,
+    setActiveTimedSet
+  };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };

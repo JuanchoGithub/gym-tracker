@@ -1,3 +1,4 @@
+
 import React, { useContext, useState, useMemo } from 'react';
 import { AppContext } from '../contexts/AppContext';
 import { useI18n } from '../hooks/useI18n';
@@ -63,6 +64,22 @@ const HistoryWorkoutEditorPage: React.FC = () => {
           ex.id === updatedExercise.id ? updatedExercise : ex
       );
       return { ...prevWorkout, exercises: updatedExercises };
+    });
+  };
+  
+  const handleRemoveExercise = (exerciseId: string) => {
+    setWorkout(prev => {
+        if (!prev) return null;
+        return {
+            ...prev,
+            exercises: prev.exercises.filter(ex => ex.id !== exerciseId)
+        };
+    });
+    // Remove from collapsed set if present
+    setCollapsedExercises(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(exerciseId);
+        return newSet;
     });
   };
   
@@ -165,6 +182,7 @@ const HistoryWorkoutEditorPage: React.FC = () => {
                   onReorganize={() => { /* Not implemented on this page */ }}
                   isCollapsed={collapsedExercises.has(exercise.id)}
                   onToggleCollapse={() => handleToggleCollapse(exercise.id)}
+                  onRemove={handleRemoveExercise}
               />
           ) : null;
         }) : (

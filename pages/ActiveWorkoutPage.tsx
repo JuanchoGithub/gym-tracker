@@ -16,13 +16,11 @@ import { getTimerDuration } from '../utils/workoutUtils';
 import WeightInputModal from '../components/modals/WeightInputModal';
 
 const ActiveWorkoutPage: React.FC = () => {
-  // FIX: Destructured `startAddExercisesToWorkout` from AppContext.
-  const { activeWorkout, updateActiveWorkout, endWorkout, discardActiveWorkout, getExerciseById, minimizeWorkout, keepScreenAwake, activeTimerInfo, setActiveTimerInfo, startAddExercisesToWorkout, collapsedExerciseIds, setCollapsedExerciseIds, currentWeight, logWeight } = useContext(AppContext);
+  const { activeWorkout, updateActiveWorkout, endWorkout, discardActiveWorkout, getExerciseById, minimizeWorkout, keepScreenAwake, activeTimerInfo, setActiveTimerInfo, startAddExercisesToWorkout, collapsedExerciseIds, setCollapsedExerciseIds, currentWeight, logWeight, activeTimedSet, setActiveTimedSet } = useContext(AppContext);
   const { t } = useI18n();
   const elapsedTime = useWorkoutTimer(activeWorkout?.startTime);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isConfirmingFinish, setIsConfirmingFinish] = useState(false);
-  const [activeTimedSet, setActiveTimedSet] = useState<{ exercise: WorkoutExercise; set: PerformedSet } | null>(null);
   
   const [isReorganizeMode, setIsReorganizeMode] = useState(false);
   const [tempExercises, setTempExercises] = useState<WorkoutExercise[]>([]);
@@ -116,6 +114,26 @@ const ActiveWorkoutPage: React.FC = () => {
       }
       return Array.from(newSet);
     });
+  };
+
+  const handleRemoveExercise = (exerciseId: string) => {
+    if (!activeWorkout) return;
+
+    // Clean up timers
+    if (activeTimerInfo && activeTimerInfo.exerciseId === exerciseId) {
+        setActiveTimerInfo(null);
+        cancelTimerNotification('rest-timer-finished');
+    }
+    
+    if (activeTimedSet && activeTimedSet.exercise.id === exerciseId) {
+        setActiveTimedSet(null);
+    }
+
+    // Clean up collapsed state
+    setCollapsedExerciseIds(prev => prev.filter(id => id !== exerciseId));
+
+    const updatedExercises = activeWorkout.exercises.filter(ex => ex.id !== exerciseId);
+    updateActiveWorkout({ ...activeWorkout, exercises: updatedExercises });
   };
 
   const handleUpdateExercise = (updatedExercise: WorkoutExercise) => {
@@ -350,6 +368,7 @@ const ActiveWorkoutPage: React.FC = () => {
                   isBeingDraggedOver={draggedOverIndex === index && dragItem.current !== index}
                   isCollapsed={collapsedSet.has(exercise.id)}
                   onToggleCollapse={() => handleToggleCollapse(exercise.id)}
+                  onRemove={handleRemoveExercise}
               />
           ) : null;
         }) : (
