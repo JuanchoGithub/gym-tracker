@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 const ICONS: Record<string, React.ReactNode> = {
@@ -48,7 +49,7 @@ const ICONS: Record<string, React.ReactNode> = {
   save: <path strokeLinecap="round" strokeLinejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V3" />,
   trash: <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />,
   weight: <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4" />,
-  stopwatch: <path strokeLinecap="round" strokeLinejoin="round" d="M12 15V7.5m5.25 5.25L12 12m6.75 0a9 9 0 11-18 0 9 9 0 0118 0zM12 3v.75m-3.75 1.5L7.5 6m7.5 0l-.75-1.5" />,
+  stopwatch: <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z M12 2v2" />,
   capsule: (
     <g fill="currentColor" stroke="none" transform="scale(0.75)">
         <path d="M25.4,16.5l1.9-1.9c1.3-1.3,2.1-3.1,2.1-4.9c0-1.9-0.7-3.6-2.1-4.9c-1.3-1.3-3.1-2.1-4.9-2.1s-3.6,0.7-5,2.1L4.7,17.4

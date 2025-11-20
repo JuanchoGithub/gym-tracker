@@ -10,6 +10,7 @@ import { BODY_PART_OPTIONS, CATEGORY_OPTIONS } from '../../constants/filters';
 import { getBodyPartTKey, getCategoryTKey } from '../../utils/i18nUtils';
 import ExerciseDetailModal from '../exercise/ExerciseDetailModal';
 import { getBodyPartColor, getCategoryColor } from '../../utils/colorUtils';
+import { searchExercises } from '../../utils/searchUtils';
 
 interface ReplaceExerciseModalProps {
   isOpen: boolean;
@@ -38,12 +39,18 @@ const ReplaceExerciseModal: React.FC<ReplaceExerciseModalProps> = ({ isOpen, onC
   ], [t]);
 
   const filteredExercises = useMemo(() => {
-    return exercises
-      .filter(ex => ex.name.toLowerCase().includes(searchTerm.toLowerCase()))
-      .filter(ex => selectedBodyPart === 'All' || ex.bodyPart === selectedBodyPart)
-      .filter(ex => selectedCategory === 'All' || ex.category === selectedCategory)
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [exercises, searchTerm, selectedBodyPart, selectedCategory]);
+    let result = searchExercises(exercises, searchTerm, t);
+
+    if (selectedBodyPart !== 'All') {
+      result = result.filter(ex => ex.bodyPart === selectedBodyPart);
+    }
+    
+    if (selectedCategory !== 'All') {
+      result = result.filter(ex => ex.category === selectedCategory);
+    }
+
+    return result.sort((a, b) => a.name.localeCompare(b.name));
+  }, [exercises, searchTerm, selectedBodyPart, selectedCategory, t]);
 
   const handleSelectExercise = (exerciseId: string) => {
     onSelectExercise(exerciseId);

@@ -10,6 +10,9 @@ import { BODY_PART_OPTIONS, CATEGORY_OPTIONS } from '../../constants/filters';
 import { getBodyPartTKey, getCategoryTKey } from '../../utils/i18nUtils';
 import ExerciseDetailModal from '../exercise/ExerciseDetailModal';
 import { getBodyPartColor, getCategoryColor } from '../../utils/colorUtils';
+import { useMeasureUnit } from '../../hooks/useWeight';
+import { TranslationKey } from '../../contexts/I18nContext';
+import { searchExercises } from '../../utils/searchUtils';
 
 interface AddExercisesModalProps {
   isOpen: boolean;
@@ -18,8 +21,9 @@ interface AddExercisesModalProps {
 }
 
 const AddExercisesModal: React.FC<AddExercisesModalProps> = ({ isOpen, onClose, onAdd }) => {
-  const { exercises, startExerciseEdit } = useContext(AppContext);
+  const { exercises, startExerciseEdit, allTimeBestSets } = useContext(AppContext);
   const { t } = useI18n();
+  const { displayWeight, weightUnit } = useMeasureUnit();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBodyPart, setSelectedBodyPart] = useState<BodyPart | 'All'>('All');
   const [selectedCategory, setSelectedCategory] = useState<ExerciseCategory | 'All'>('All');
@@ -39,12 +43,18 @@ const AddExercisesModal: React.FC<AddExercisesModalProps> = ({ isOpen, onClose, 
   ], [t]);
 
   const filteredExercises = useMemo(() => {
-    return exercises
-      .filter(ex => ex.name.toLowerCase().includes(searchTerm.toLowerCase()))
-      .filter(ex => selectedBodyPart === 'All' || ex.bodyPart === selectedBodyPart)
-      .filter(ex => selectedCategory === 'All' || ex.category === selectedCategory)
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [exercises, searchTerm, selectedBodyPart, selectedCategory]);
+    let result = searchExercises(exercises, searchTerm, t);
+
+    if (selectedBodyPart !== 'All') {
+      result = result.filter(ex => ex.bodyPart === selectedBodyPart);
+    }
+    
+    if (selectedCategory !== 'All') {
+      result = result.filter(ex => ex.category === selectedCategory);
+    }
+
+    return result.sort((a, b) => a.name.localeCompare(b.name));
+  }, [exercises, searchTerm, selectedBodyPart, selectedCategory, t]);
   
   useEffect(() => {
     if (newlyCreatedId) {
@@ -159,11 +169,13 @@ const AddExercisesModal: React.FC<AddExercisesModalProps> = ({ isOpen, onClose, 
 
               {/* Exercise List */}
               <div
-                className="flex-grow overflow-y-auto px-2 sm:px-4 py-4 space-y-2"
+                className="flex-grow overflow-y-auto px-2 sm:px-4 py-4 space-y-3"
                 style={{ overscrollBehaviorY: 'contain' }}
               >
                   {filteredExercises.map(exercise => {
                     const isSelected = selectedIds.includes(exercise.id);
+                    const bestSet = allTimeBestSets[exercise.id];
+
                     return (
                       <div
                           key={exercise.id}
@@ -175,48 +187,68 @@ const AddExercisesModal: React.FC<AddExercisesModalProps> = ({ isOpen, onClose, 
                             }
                           }}
                           onClick={() => handleToggleSelect(exercise.id)}
-                          className={`group relative p-3 sm:p-4 rounded-xl border transition-all duration-200 cursor-pointer flex items-center gap-3 sm:gap-4
+                          className={`group relative p-3 rounded-2xl border transition-all duration-200 cursor-pointer flex flex-col gap-3
                             ${isSelected 
                                 ? 'bg-primary/10 border-primary/50 shadow-[0_0_15px_rgba(56,189,248,0.15)]' 
-                                : 'bg-surface/40 border-white/5 hover:bg-surface/60 hover:border-white/10'
+                                : 'bg-[#1e293b] border-white/5 hover:bg-surface-highlight/30 hover:border-white/10 shadow-sm'
                             }`}
                       >
-                          {/* Custom Selection Checkbox */}
-                          <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200 flex-shrink-0
-                              ${isSelected 
-                                  ? 'bg-primary scale-110 shadow-sm' 
-                                  : 'border-2 border-white/20 group-hover:border-white/40 bg-transparent'
-                              }`}>
-                              {isSelected && <Icon name="check" className="w-4 h-4 text-white stroke-[3]" />}
-                          </div>
+                          <div className="flex items-start gap-3">
+                              {/* Checkbox */}
+                              <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200 flex-shrink-0 mt-0.5
+                                  ${isSelected 
+                                      ? 'bg-primary scale-110 shadow-sm' 
+                                      : 'border-2 border-white/20 group-hover:border-white/40 bg-transparent'
+                                  }`}>
+                                  {isSelected && <Icon name="check" className="w-4 h-4 text-white stroke-[3]" />}
+                              </div>
 
-                          <div className="flex-grow min-w-0">
-                              <div className="flex justify-between items-start">
-                                <h3 className={`font-bold text-base truncate pr-2 transition-colors ${isSelected ? 'text-primary' : 'text-text-primary'}`}>
-                                    {exercise.name}
-                                </h3>
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); setViewingExercise(exercise); }}
-                                    className="text-text-secondary/50 hover:text-primary p-1.5 rounded-full hover:bg-white/5 transition-colors flex-shrink-0 -mt-1.5 -mr-1.5"
-                                    aria-label={`View details for ${exercise.name}`}
-                                >
-                                    <Icon name="question-mark-circle" className="w-5 h-5" />
-                                </button>
+                              <div className="flex-grow min-w-0">
+                                  <div className="flex justify-between items-start mb-1">
+                                    <h3 className={`font-bold text-base truncate pr-2 transition-colors ${isSelected ? 'text-primary' : 'text-text-primary'}`}>
+                                        {exercise.name}
+                                    </h3>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); setViewingExercise(exercise); }}
+                                        className="text-text-secondary/50 hover:text-primary p-1.5 rounded-full hover:bg-white/5 transition-colors flex-shrink-0 -mt-1.5 -mr-1.5"
+                                        aria-label={`View details for ${exercise.name}`}
+                                    >
+                                        <Icon name="question-mark-circle" className="w-5 h-5" />
+                                    </button>
+                                  </div>
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border border-white/5 uppercase tracking-wide ${getBodyPartColor(exercise.bodyPart)}`}>
+                                        {t(getBodyPartTKey(exercise.bodyPart))}
+                                      </span>
+                                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border border-white/5 uppercase tracking-wide ${getCategoryColor(exercise.category)}`}>
+                                        {t(getCategoryTKey(exercise.category))}
+                                      </span>
+                                      {exercise.isTimed && (
+                                        <span className="text-[10px] font-bold bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 px-2 py-0.5 rounded-md flex items-center gap-1 uppercase tracking-wide">
+                                            <Icon name="stopwatch" className="w-3 h-3" />
+                                            <span>{t('set_type_timed')}</span>
+                                        </span>
+                                      )}
+                                  </div>
                               </div>
-                              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md border border-white/5 uppercase tracking-wide ${getBodyPartColor(exercise.bodyPart)}`}>
-                                    {t(getBodyPartTKey(exercise.bodyPart))}
-                                  </span>
-                                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md border border-white/5 uppercase tracking-wide ${getCategoryColor(exercise.category)}`}>
-                                    {t(getCategoryTKey(exercise.category))}
-                                  </span>
-                                  {exercise.isTimed && (
-                                    <span className="text-[10px] font-semibold bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 px-2 py-0.5 rounded-md flex items-center gap-1 uppercase tracking-wide">
-                                        <Icon name="stopwatch" className="w-3 h-3" />
-                                        <span>{t('set_type_timed')}</span>
-                                    </span>
-                                  )}
-                              </div>
+                          </div>
+                          
+                          {/* Best Set Info Bar */}
+                          <div className={`px-3 py-2 rounded-lg flex items-center justify-between text-xs border border-white/5 ${isSelected ? 'bg-primary/5' : 'bg-black/20'}`}>
+                               {bestSet ? (
+                                   <div className="flex items-center gap-2 w-full">
+                                        <Icon name="trophy" className="w-3.5 h-3.5 text-yellow-500 flex-shrink-0" />
+                                        <span className="text-text-secondary/70 uppercase tracking-wider font-semibold text-[10px] mr-auto">{t('history_best_set')}</span>
+                                        <span className="text-text-primary font-mono font-bold">
+                                          {displayWeight(bestSet.weight)} {t(`workout_${weightUnit}` as TranslationKey)} × {bestSet.reps}
+                                        </span>
+                                   </div>
+                               ) : (
+                                   <div className="flex items-center gap-2 w-full opacity-50">
+                                      <div className="w-1.5 h-1.5 rounded-full bg-white/20"></div>
+                                      <span className="text-text-secondary/70 italic">No records yet</span>
+                                   </div>
+                               )}
                           </div>
                       </div>
                     );
