@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef, useContext } from 'react';
+import React, { useState, useEffect, useRef, useContext, useMemo } from 'react';
 import { WorkoutExercise, PerformedSet, Exercise } from '../../types';
 import { Icon } from '../common/Icon';
 import { useI18n } from '../../hooks/useI18n';
@@ -32,6 +32,13 @@ const SupersetPlayer: React.FC<SupersetPlayerProps> = ({
     const { displayWeight, getStoredWeight, weightUnit } = useMeasureUnit();
     useWakeLock(true);
 
+    // Store the initial number of rounds to maintain "Round X of Y" consistency.
+    // If user does extra rounds, Y stays fixed (e.g., Round 4 (Extra)).
+    const [initialTotalRounds] = useState(() => {
+        if (!exercises || exercises.length === 0) return 1;
+        return Math.max(...exercises.map(ex => ex.sets.length));
+    });
+
     // Calculate starting position based on first incomplete set across exercises
     const calculateStartIndex = () => {
         let minSets = 999;
@@ -39,7 +46,7 @@ const SupersetPlayer: React.FC<SupersetPlayerProps> = ({
             const completedCount = ex.sets.filter(s => s.isComplete).length;
             if (completedCount < minSets) minSets = completedCount;
         });
-        return minSets; // e.g. if everyone has done 1 set, start at index 1 (Round 2)
+        return minSets; 
     };
 
     const [currentRoundIndex, setCurrentRoundIndex] = useState(calculateStartIndex());
@@ -56,23 +63,46 @@ const SupersetPlayer: React.FC<SupersetPlayerProps> = ({
     // Derived state
     const currentWorkoutExercise = exercises[currentExerciseIndex];
     const currentExerciseInfo = getExerciseById(currentWorkoutExercise.exerciseId);
+    
+    const totalRoundsCurrent = Math.max(...exercises.map(ex => ex.sets.length));
+    
+    // Determine if we are in the final rest period (all planned exercises/rounds done)
+    const isLastExerciseOfLoop = currentExerciseIndex === exercises.length - 1;
+    const isLastRoundOfLoop = currentRoundIndex === totalRoundsCurrent - 1;
+    const isFinalRest = phase === 'transition' && isLastExerciseOfLoop && isLastRoundOfLoop;
+
+    // Next Up Logic
     const nextExerciseIndex = (currentExerciseIndex + 1) % exercises.length;
     const nextWorkoutExercise = exercises[nextExerciseIndex];
     const nextExerciseInfo = getExerciseById(nextWorkoutExercise.exerciseId);
+    
+    // Calculate the round number for the "Next Up" item
+    const nextRoundIndex = isLastExerciseOfLoop ? currentRoundIndex + 1 : currentRoundIndex;
 
-    const totalRounds = Math.max(...exercises.map(ex => ex.sets.length));
-    const roundsLeft = Math.max(0, totalRounds - (currentRoundIndex + 1));
+    // Display Strings Helper
+    const getRoundDisplayString = (roundIdx: number) => {
+        const roundNum = roundIdx + 1;
+        if (roundNum > initialTotalRounds) {
+            return `ROUND ${roundNum}`; // Extra round
+        }
+        return `ROUND ${roundNum} OF ${initialTotalRounds}`;
+    };
+    
+    const getShortRoundDisplayString = (roundIdx: number) => {
+        const roundNum = roundIdx + 1;
+        if (roundNum > initialTotalRounds) {
+            return `(Round ${roundNum})`;
+        }
+        return `(Round ${roundNum} of ${initialTotalRounds})`;
+    };
 
     // Ensure set exists for current round
     useEffect(() => {
         if (phase !== 'work') return;
         
         const ensureSetExists = () => {
-            // Check if set exists at this index
             if (!currentWorkoutExercise.sets[currentRoundIndex]) {
-                // Try to inherit from previous set of THIS exercise
                 const prevSet = currentWorkoutExercise.sets[currentRoundIndex - 1];
-                // Or fallback to last existing set (which might be the same if index is 0 and logic is weird, but usually safe)
                 const lastSet = currentWorkoutExercise.sets[currentWorkoutExercise.sets.length - 1] || { reps: 10, weight: 0, type: 'normal' };
                 
                 const newSet: PerformedSet = {
@@ -87,7 +117,7 @@ const SupersetPlayer: React.FC<SupersetPlayerProps> = ({
                     isTimeInherited: true,
                 };
                 const updatedSets = [...currentWorkoutExercise.sets];
-                updatedSets[currentRoundIndex] = newSet; // Ensure it's at the right index, filling gaps if necessary (though uncommon here)
+                updatedSets[currentRoundIndex] = newSet;
                 
                 onUpdateExercise({ ...currentWorkoutExercise, sets: updatedSets });
             }
@@ -97,7 +127,7 @@ const SupersetPlayer: React.FC<SupersetPlayerProps> = ({
     }, [currentRoundIndex, currentExerciseIndex, phase, currentWorkoutExercise, onUpdateExercise]);
 
 
-    // Load values into inputs when entering work phase or changing exercise
+    // Load values into inputs
     useEffect(() => {
         if (phase === 'work') {
             const set = currentWorkoutExercise.sets[currentRoundIndex];
@@ -108,10 +138,6 @@ const SupersetPlayer: React.FC<SupersetPlayerProps> = ({
                 let initialReps = set.reps;
                 let initialTime = set.time;
 
-                // Inheritance Logic:
-                // If the current set is incomplete, we prioritize values from the immediately preceding set 
-                // of the same exercise (if available) over the values currently in the set object (which might be old template data or 0).
-                // This ensures that if user did 50kg in Set 1, Set 2 defaults to 50kg even if template said 0.
                 if (!set.isComplete && prevSet) {
                     if (prevSet.weight > 0) initialWeight = prevSet.weight;
                     if (prevSet.reps > 0) initialReps = prevSet.reps;
@@ -135,6 +161,12 @@ const SupersetPlayer: React.FC<SupersetPlayerProps> = ({
             intervalRef.current = window.setInterval(() => {
                 setTimeLeft((prev) => {
                     if (prev <= 1) {
+                        // If it's the final rest, we don't auto-advance to a non-existent round.
+                        // We just stop the timer and wait for user input (One Moar or Finish)
+                        if (isFinalRest) {
+                            if (intervalRef.current) clearInterval(intervalRef.current);
+                            return 0;
+                        }
                         handleTransitionComplete();
                         return 0;
                     }
@@ -146,14 +178,12 @@ const SupersetPlayer: React.FC<SupersetPlayerProps> = ({
         return () => {
             if (intervalRef.current) clearInterval(intervalRef.current);
         };
-    }, [phase]);
+    }, [phase, isFinalRest]);
 
     const handleTransitionComplete = () => {
         if (intervalRef.current) clearInterval(intervalRef.current);
         
-        // Move to next
-        const isLastExerciseInRound = currentExerciseIndex === exercises.length - 1;
-        if (isLastExerciseInRound) {
+        if (isLastExerciseOfLoop) {
             setCurrentRoundIndex(prev => prev + 1);
             setCurrentExerciseIndex(0);
         } else {
@@ -172,7 +202,6 @@ const SupersetPlayer: React.FC<SupersetPlayerProps> = ({
         const updatedSet: PerformedSet = {
             ...set,
             isComplete: true,
-            // If timed, weightInput maps to time, repsInput to reps
             weight: set.type === 'timed' ? 0 : getStoredWeight(val1),
             time: set.type === 'timed' ? val1 : set.time,
             reps: val2,
@@ -184,9 +213,38 @@ const SupersetPlayer: React.FC<SupersetPlayerProps> = ({
         newSets[currentRoundIndex] = updatedSet;
         onUpdateExercise({ ...currentWorkoutExercise, sets: newSets });
 
-        // Start transition
-        setTimeLeft(10); // Reset timer
+        setTimeLeft(10); 
         setPhase('transition');
+    };
+
+    const handleOneMoar = () => {
+        // 1. Add a new set to ALL exercises in this superset
+        exercises.forEach(ex => {
+            const lastSet = ex.sets[ex.sets.length - 1] || { reps: 10, weight: 0, type: 'normal' };
+            const newSet: PerformedSet = {
+                id: `set-${Date.now()}-${Math.random()}`,
+                reps: lastSet.reps,
+                weight: lastSet.weight,
+                time: lastSet.time,
+                type: lastSet.type,
+                isComplete: false,
+                isRepsInherited: true,
+                isWeightInherited: true,
+                isTimeInherited: true,
+            };
+            // We call update for each exercise. 
+            // Since ActiveWorkoutPage updates state, this is valid but might cause multiple re-renders.
+            // Given the small number of exercises in a superset, this is acceptable.
+            onUpdateExercise({ ...ex, sets: [...ex.sets, newSet] });
+        });
+
+        // 2. Advance indices
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        setCurrentRoundIndex(prev => prev + 1);
+        setCurrentExerciseIndex(0);
+        
+        // 3. Go to work
+        setPhase('work');
     };
 
     const adjustValue = (setter: React.Dispatch<React.SetStateAction<string>>, value: string, delta: number) => {
@@ -200,20 +258,22 @@ const SupersetPlayer: React.FC<SupersetPlayerProps> = ({
     const currentSet = currentWorkoutExercise.sets[currentRoundIndex] || { type: 'normal' };
     const isTimed = currentSet.type === 'timed';
     
-    // Get previous data for ghost text
     const prevHistory = getExerciseHistory(allHistory, currentWorkoutExercise.exerciseId);
     const lastPerformance = prevHistory.length > 0 ? prevHistory[0].exerciseData.sets[currentRoundIndex] : null;
 
     return (
         <div className="fixed inset-0 bg-background z-50 flex flex-col">
             {/* Header */}
-            <div className="flex justify-between items-start p-4 bg-surface border-b border-white/10 relative">
-                <div className="flex flex-col">
+            <div className="flex items-center justify-center p-4 bg-surface border-b border-white/10 relative">
+                <div className="flex flex-col items-center">
                     <span className="text-2xl font-black text-indigo-400 uppercase tracking-wider flex items-center gap-2">
-                        ROUND {currentRoundIndex + 1} OF {totalRounds} <span className="text-sm font-bold text-indigo-400/60 mt-1">({roundsLeft} LEFT)</span>
+                        {getRoundDisplayString(currentRoundIndex)}
                     </span>
                     <span className="text-sm text-text-secondary font-medium mt-0.5">
-                         {currentExerciseInfo.name} ({currentExerciseIndex + 1} / {exercises.length})
+                        {phase === 'work' 
+                            ? `${currentExerciseInfo.name} (${currentExerciseIndex + 1} / ${exercises.length})`
+                            : (isFinalRest ? 'Superset Finished' : 'Rest & Switch')
+                        }
                     </span>
                 </div>
                 <button onClick={onClose} className="p-2 bg-white/5 rounded-full hover:bg-white/10 absolute right-4 top-4">
@@ -226,35 +286,69 @@ const SupersetPlayer: React.FC<SupersetPlayerProps> = ({
                     // TRANSITION VIEW
                     <div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-indigo-900/20 animate-fadeIn">
                         <div className="text-center mb-8">
-                            <p className="text-yellow-400 font-bold text-xl mb-2 uppercase tracking-widest">Rest & Switch</p>
-                            <div className="text-8xl font-mono font-bold text-white mb-2">{timeLeft}</div>
-                            <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden max-w-xs mx-auto">
-                                <div 
-                                    className="h-full bg-yellow-400 transition-all duration-1000 ease-linear"
-                                    style={{ width: `${(timeLeft / 10) * 100}%` }}
-                                />
+                            <p className="text-yellow-400 font-bold text-xl mb-2 uppercase tracking-widest">
+                                {isFinalRest ? 'Superset Complete!' : 'Rest & Switch'}
+                            </p>
+                            <div className={`font-mono font-bold text-white mb-2 ${isFinalRest ? 'text-6xl' : 'text-8xl'}`}>
+                                {isFinalRest ? <Icon name="check" className="w-24 h-24 mx-auto text-success" /> : timeLeft}
                             </div>
+                            {!isFinalRest && (
+                                <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden max-w-xs mx-auto">
+                                    <div 
+                                        className="h-full bg-yellow-400 transition-all duration-1000 ease-linear"
+                                        style={{ width: `${(timeLeft / 10) * 100}%` }}
+                                    />
+                                </div>
+                            )}
                         </div>
 
                         <div className="bg-surface p-6 rounded-2xl border border-white/10 w-full max-w-sm mb-8">
-                            <p className="text-text-secondary text-sm mb-1 text-center uppercase font-bold">Next Up</p>
-                            <p className="text-2xl font-bold text-white text-center">{nextExerciseInfo?.name}</p>
+                            {isFinalRest ? (
+                                <div className="text-center">
+                                    <p className="text-text-secondary text-sm mb-1 uppercase font-bold">Good Job!</p>
+                                    <p className="text-xl font-bold text-white">All rounds completed.</p>
+                                </div>
+                            ) : (
+                                <div className="text-center">
+                                    <p className="text-text-secondary text-sm mb-1 uppercase font-bold">Next Up</p>
+                                    <p className="text-2xl font-bold text-white">{nextExerciseInfo?.name}</p>
+                                    <p className="text-indigo-300 text-sm font-bold mt-1">{getShortRoundDisplayString(nextRoundIndex)}</p>
+                                </div>
+                            )}
                         </div>
 
-                        <div className="flex gap-4 w-full max-w-sm">
-                            <button 
-                                onClick={() => setTimeLeft(prev => prev + 10)}
-                                className="flex-1 bg-surface border border-white/10 py-4 rounded-xl font-bold text-text-primary active:scale-95 transition-transform"
-                            >
-                                +10s
-                            </button>
-                            <button 
-                                onClick={handleTransitionComplete}
-                                className="flex-[2] bg-primary text-white py-4 rounded-xl font-bold text-lg active:scale-95 transition-transform shadow-lg shadow-primary/20"
-                            >
-                                Start Now
-                            </button>
-                        </div>
+                        {isFinalRest ? (
+                            <div className="flex gap-4 w-full max-w-sm flex-col sm:flex-row">
+                                <button 
+                                    onClick={onClose}
+                                    className="flex-1 bg-surface border border-white/10 py-4 rounded-xl font-bold text-text-primary active:scale-95 transition-transform"
+                                >
+                                    Finish
+                                </button>
+                                <button 
+                                    onClick={handleOneMoar}
+                                    className="flex-[2] bg-indigo-500 hover:bg-indigo-400 text-white py-4 rounded-xl font-bold text-lg active:scale-95 transition-transform shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2"
+                                >
+                                    <Icon name="plus" className="w-5 h-5" />
+                                    DO ONE MOAR!
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="flex gap-4 w-full max-w-sm">
+                                <button 
+                                    onClick={() => setTimeLeft(prev => prev + 10)}
+                                    className="flex-1 bg-surface border border-white/10 py-4 rounded-xl font-bold text-text-primary active:scale-95 transition-transform"
+                                >
+                                    +10s
+                                </button>
+                                <button 
+                                    onClick={handleTransitionComplete}
+                                    className="flex-[2] bg-primary text-white py-4 rounded-xl font-bold text-lg active:scale-95 transition-transform shadow-lg shadow-primary/20"
+                                >
+                                    Start Now
+                                </button>
+                            </div>
+                        )}
                     </div>
                 ) : (
                     // WORK VIEW
@@ -262,8 +356,8 @@ const SupersetPlayer: React.FC<SupersetPlayerProps> = ({
                          <div className="text-center mb-4">
                             <h2 className="text-2xl sm:text-4xl font-bold text-white leading-tight mb-2">{currentExerciseInfo.name}</h2>
                             <div className="flex items-center justify-center gap-2">
-                                <span className="bg-surface-highlight px-3 py-1 rounded-full text-xs font-bold uppercase text-text-secondary">
-                                    Round {currentRoundIndex + 1}
+                                <span className="bg-surface-highlight px-3 py-1 rounded-full text-xs font-bold text-text-secondary">
+                                    {getShortRoundDisplayString(currentRoundIndex)}
                                 </span>
                                 {currentSet.type !== 'normal' && (
                                     <span className="bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-3 py-1 rounded-full text-xs font-bold uppercase">
