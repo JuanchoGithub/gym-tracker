@@ -63,14 +63,23 @@ const App: React.FC = () => {
 
   const showBottomNav = (!activeWorkout || isWorkoutMinimized) && !editingTemplate && !editingExercise && !editingHistorySession && !activeHiitSession && !activeQuickTimer;
 
+  const paddingBottomClass = (() => {
+    if (showBottomNav) {
+        if (activeWorkout && isWorkoutMinimized) return 'pb-52'; // Nav (4.5rem) + Min Bar (~3.5rem) + Timer space
+        return 'pb-32'; // Nav only
+    }
+    if (activeWorkout && isWorkoutMinimized) return 'pb-24'; // Minimized Bar only
+    return 'pb-8'; // Nothing
+  })();
+
   return (
     <div className="fixed inset-0 h-[100dvh] w-full bg-background text-text-primary font-sans flex flex-col overflow-hidden bg-gradient-to-b from-background to-[#020617]">
-      <main className={`flex-grow container mx-auto px-3 sm:px-4 py-6 overflow-y-auto relative overscroll-y-none scroll-smooth ${showBottomNav ? 'pb-32' : 'pb-8'}`}>
+      <main className={`flex-grow container mx-auto px-3 sm:px-4 py-6 overflow-y-auto relative overscroll-y-none scroll-smooth ${paddingBottomClass}`}>
         {renderContent()}
         {editingExercise && <ExerciseEditorPage />}
       </main>
       <div className="flex-shrink-0 relative z-40">
-        {activeWorkout && isWorkoutMinimized && <MinimizedWorkoutBar />}
+        {activeWorkout && isWorkoutMinimized && <MinimizedWorkoutBar withBottomNav={showBottomNav} />}
         {showBottomNav && <BottomNavBar currentPage={currentPage} onNavigate={handleNavigate} />}
       </div>
     </div>

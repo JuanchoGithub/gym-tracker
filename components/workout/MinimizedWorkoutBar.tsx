@@ -1,17 +1,26 @@
+
 import React, { useContext } from 'react';
 import { AppContext } from '../../contexts/AppContext';
 import { useWorkoutTimer } from '../../hooks/useWorkoutTimer';
 import { Icon } from '../common/Icon';
 import WorkoutRestTimer from './WorkoutRestTimer';
 
-const MinimizedWorkoutBar: React.FC = () => {
+interface MinimizedWorkoutBarProps {
+    withBottomNav: boolean;
+}
+
+const MinimizedWorkoutBar: React.FC<MinimizedWorkoutBarProps> = ({ withBottomNav }) => {
     const { activeWorkout, maximizeWorkout } = useContext(AppContext);
     const elapsedTime = useWorkoutTimer(activeWorkout?.startTime);
 
     if (!activeWorkout) return null;
 
+    const positionClasses = withBottomNav 
+        ? 'bottom-[calc(4.5rem+env(safe-area-inset-bottom))] border-b border-white/10' 
+        : 'bottom-0 pb-[env(safe-area-inset-bottom)]';
+
     return (
-        <div className="bg-primary shadow-lg w-full">
+        <div className={`fixed left-0 right-0 z-40 bg-primary shadow-lg w-full transition-all duration-300 ${positionClasses}`}>
             <button
                 onClick={maximizeWorkout}
                 className="h-14 text-white flex items-center justify-between px-4 z-40 w-full"
