@@ -1,9 +1,8 @@
 
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useMemo } from 'react';
 import { AppContext } from '../contexts/AppContext';
 import { useI18n } from '../hooks/useI18n';
 import { Routine, WorkoutSession } from '../types';
-// FIX: Replaced `useWeight` with the correct `useMeasureUnit` hook.
 import { useMeasureUnit } from '../hooks/useWeight';
 import { formatTime } from '../utils/timeUtils';
 import { findBestSet } from '../utils/workoutUtils';
@@ -17,7 +16,6 @@ import { TranslationKey } from '../contexts/I18nContext';
 const HistoryPage: React.FC = () => {
   const { history, getExerciseById, deleteHistorySession, upsertRoutine, startWorkout, startHistoryEdit, routines } = useContext(AppContext);
   const { t } = useI18n();
-  // FIX: Replaced `useWeight` with `useMeasureUnit` and destructured `weightUnit`.
   const { displayWeight, weightUnit } = useMeasureUnit();
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [viewingSession, setViewingSession] = useState<WorkoutSession | null>(null);
@@ -26,6 +24,10 @@ const HistoryPage: React.FC = () => {
   const [deletingSession, setDeletingSession] = useState<WorkoutSession | null>(null);
   const [templatingSession, setTemplatingSession] = useState<WorkoutSession | null>(null);
   const [newTemplateName, setNewTemplateName] = useState('');
+
+  const sortedHistory = useMemo(() => {
+    return [...history].sort((a, b) => b.startTime - a.startTime);
+  }, [history]);
 
   const confirmDelete = () => {
     if (deletingSession) {
@@ -107,7 +109,7 @@ const HistoryPage: React.FC = () => {
             </button>
         </div>
 
-        {activeTab === 'list' && history.map((session: WorkoutSession) => {
+        {activeTab === 'list' && sortedHistory.map((session: WorkoutSession) => {
           const totalTime = session.endTime > 0 ? formatTime(Math.round((session.endTime - session.startTime) / 1000)) : 'N/A';
           const totalVolume = session.exercises.reduce((total, ex) => {
             return total + ex.sets.reduce((exTotal, set) => exTotal + (set.weight * set.reps), 0);

@@ -25,9 +25,6 @@ const HistoryTab: React.FC<HistoryTabProps> = ({ history }) => {
     );
   }
 
-  // Reverse history to show newest first
-  const reversedHistory = [...history].reverse();
-
   const getComparisonIcon = (current: number, prev: number | undefined) => {
     if (prev === undefined || isNaN(current) || isNaN(prev)) return null;
     const diff = current - prev;
@@ -44,9 +41,9 @@ const HistoryTab: React.FC<HistoryTabProps> = ({ history }) => {
       {/* Vertical Line */}
       <div className="absolute top-2 bottom-4 left-[21px] w-0.5 bg-gradient-to-b from-primary/50 via-white/10 to-transparent"></div>
 
-      {reversedHistory.map((entry, entryIndex) => {
-        // For comparison, look at the next item in the reversed array (which is historically previous)
-        const prevEntry = reversedHistory[entryIndex + 1];
+      {history.map((entry, entryIndex) => {
+        // For comparison, look at the next item in the array (which is historically previous since array is sorted newest->oldest)
+        const prevEntry = history[entryIndex + 1];
         const date = new Date(entry.session.startTime);
         
         return (
