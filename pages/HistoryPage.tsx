@@ -1,5 +1,5 @@
 
-import React, { useContext, useState, useMemo } from 'react';
+import React, { useContext, useState } from 'react';
 import { AppContext } from '../contexts/AppContext';
 import { useI18n } from '../hooks/useI18n';
 import { Routine, WorkoutSession } from '../types';
@@ -24,10 +24,6 @@ const HistoryPage: React.FC = () => {
   const [deletingSession, setDeletingSession] = useState<WorkoutSession | null>(null);
   const [templatingSession, setTemplatingSession] = useState<WorkoutSession | null>(null);
   const [newTemplateName, setNewTemplateName] = useState('');
-
-  const sortedHistory = useMemo(() => {
-    return [...history].sort((a, b) => b.startTime - a.startTime);
-  }, [history]);
 
   const confirmDelete = () => {
     if (deletingSession) {
@@ -109,7 +105,7 @@ const HistoryPage: React.FC = () => {
             </button>
         </div>
 
-        {activeTab === 'list' && sortedHistory.map((session: WorkoutSession) => {
+        {activeTab === 'list' && history.map((session: WorkoutSession) => {
           const totalTime = session.endTime > 0 ? formatTime(Math.round((session.endTime - session.startTime) / 1000)) : 'N/A';
           const totalVolume = session.exercises.reduce((total, ex) => {
             return total + ex.sets.reduce((exTotal, set) => exTotal + (set.weight * set.reps), 0);

@@ -634,7 +634,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       });
       completedWorkout.prCount = prCount;
 
-      setHistory(prev => [...prev, completedWorkout]);
+      // Save sorted history (Newest First)
+      setHistory(prev => [completedWorkout, ...prev].sort((a, b) => b.startTime - a.startTime));
       
       // Update lastUsed for the routine template
       setUserRoutines(prev => prev.map(r => r.id === activeWorkout.routineId ? { ...r, lastUsed: Date.now() } : r));
@@ -727,7 +728,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [setHistory]);
   
   const updateHistorySession = useCallback((session: WorkoutSession) => {
-      setHistory(prev => prev.map(s => s.id === session.id ? session : s));
+      // Update and sort immediately
+      setHistory(prev => 
+        prev.map(s => s.id === session.id ? session : s)
+            .sort((a, b) => b.startTime - a.startTime)
+      );
   }, [setHistory]);
   
   const endHistoryEdit = useCallback((savedSession?: WorkoutSession) => {

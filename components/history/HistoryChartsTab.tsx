@@ -1,3 +1,4 @@
+
 import React, { useMemo, useContext } from 'react';
 import { AppContext } from '../../contexts/AppContext';
 import { WorkoutSession, ChartDataPoint } from '../../types';
@@ -25,11 +26,13 @@ const HistoryChartsTab: React.FC<HistoryChartsTabProps> = ({ history }) => {
             return { totalVolume: [], topExercises: [] };
         }
 
-        const reversedHistory = [...history].reverse(); // Oldest first
+        // Sort Ascending (Oldest -> Newest) for chronological charts
+        // This ensures the chart draws from left (past) to right (present)
+        const chronologicalHistory = [...history].sort((a, b) => a.startTime - b.startTime);
         const dateFormat: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
 
         // 1. Total Volume Over Time
-        const totalVolumeData: ChartDataPoint[] = reversedHistory.map(session => {
+        const totalVolumeData: ChartDataPoint[] = chronologicalHistory.map(session => {
             const totalVolume = session.exercises.reduce((total, ex) => {
                 return total + ex.sets.reduce((exTotal, set) => exTotal + (set.weight * set.reps), 0);
             }, 0);
@@ -44,15 +47,11 @@ const HistoryChartsTab: React.FC<HistoryChartsTabProps> = ({ history }) => {
         const exerciseCounts = new Map<string, number>();
         history.forEach(session => {
             const sessionExercises = new Set(session.exercises.map(ex => ex.exerciseId));
-            // FIX: Explicitly type `exerciseId` as a string to resolve type inference issue.
             sessionExercises.forEach((exerciseId: string) => {
                 exerciseCounts.set(exerciseId, (exerciseCounts.get(exerciseId) || 0) + 1);
             });
         });
 
-        // FIX: Refactored to use objects instead of tuples to avoid potential type inference issues with sorting.
-        // FIX: Explicitly type `[exerciseId, count]` to prevent them from being inferred as `unknown`.
-        // FIX: The previous fix was incorrect. Refactoring to iterate over keys and get values to avoid tuple destructuring issues with map iterators in some TypeScript environments.
         const exercisesWithCounts = Array.from(exerciseCounts.keys()).map(exerciseId => ({
             exerciseId,
             count: exerciseCounts.get(exerciseId) || 0
@@ -64,7 +63,7 @@ const HistoryChartsTab: React.FC<HistoryChartsTabProps> = ({ history }) => {
             const exerciseInfo = getExerciseById(exerciseId);
             const data: ChartDataPoint[] = [];
 
-            reversedHistory.forEach(session => {
+            chronologicalHistory.forEach(session => {
                 const exerciseInSession = session.exercises.find(ex => ex.exerciseId === exerciseId);
                 if (exerciseInSession) {
                     const exerciseVolume = exerciseInSession.sets.reduce((sum, set) => sum + set.weight * set.reps, 0);

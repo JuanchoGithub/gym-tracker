@@ -24,13 +24,22 @@ export const calculate1RM = (weight: number, reps: number): number => {
 export const getExerciseHistory = (history: WorkoutSession[], exerciseId: string): ExerciseHistory => {
   return history
     .map(session => {
-      const exerciseData = session.exercises.find(ex => ex.exerciseId === exerciseId);
-      return exerciseData ? { session, exerciseData: { sets: exerciseData.sets.filter(s => s.isComplete) } } : null;
+      // Filter to get ALL instances of this exercise in the session (e.g., if added multiple times or in supersets)
+      const matchingExercises = session.exercises.filter(ex => ex.exerciseId === exerciseId);
+      
+      if (matchingExercises.length === 0) return null;
+
+      // Merge sets from all instances that are completed
+      const allSets = matchingExercises.flatMap(ex => ex.sets).filter(s => s.isComplete);
+
+      if (allSets.length === 0) return null;
+
+      return { session, exerciseData: { sets: allSets } };
     })
     .filter((entry): entry is { session: WorkoutSession; exerciseData: { sets: PerformedSet[] } } => 
-        entry !== null && entry.exerciseData.sets.length > 0
+        entry !== null
     )
-    .sort((a, b) => b.session.startTime - a.session.startTime);
+    .sort((a, b) => b.session.startTime - a.session.startTime); // Descending: Newest first
 };
 
 export const calculateRecords = (exerciseHistory: ExerciseHistory): PersonalRecords => {
