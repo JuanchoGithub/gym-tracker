@@ -17,7 +17,7 @@ const SupplementPage: React.FC = () => {
   const { 
     supplementPlan, setSupplementPlan, userSupplements,
     newSuggestions, applyPlanSuggestion, applyAllPlanSuggestions, dismissSuggestion, dismissAllSuggestions, clearNewSuggestions,
-    profile, currentWeight
+    profile, currentWeight, activeWorkout, isWorkoutMinimized
   } = useContext(AppContext);
   const { t } = useI18n();
   const { measureUnit, weightUnit } = useMeasureUnit();
@@ -428,7 +428,7 @@ const SupplementPage: React.FC = () => {
       )}
 
         {!wizardActive && newSuggestions.length > 0 && (
-            <div className="fixed bottom-20 left-4 right-4 z-30">
+            <div className={`fixed left-4 right-4 z-30 transition-all duration-300 ${activeWorkout && isWorkoutMinimized ? 'bottom-[calc(16rem+env(safe-area-inset-bottom))]' : 'bottom-[calc(7.5rem+env(safe-area-inset-bottom))]'}`}>
                 <div className="bg-primary text-white p-4 rounded-lg shadow-xl flex items-center justify-between cursor-pointer" onClick={() => setIsReviewModalOpen(true)}>
                     <div className="flex items-center gap-3">
                         <Icon name="sparkles" className="w-6 h-6 text-yellow-300" />

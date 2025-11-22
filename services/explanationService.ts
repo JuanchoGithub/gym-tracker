@@ -1,3 +1,4 @@
+
 import { SupplementPlan } from '../types';
 
 export interface Explanation {
@@ -78,6 +79,7 @@ export const generateSupplementExplanations = (plan: SupplementPlan, t: (key: st
         let timingContent = '';
         if (proteinItems.some(p => p.time.match(/post-workout|post-entreno|post-entrenamiento/i))) timingContent += t('explanation_protein_timing_post_workout') + '\n';
         if (proteinItems.some(p => p.time.match(/breakfast|desayuno|morning|mañana/i))) timingContent += t('explanation_protein_timing_morning') + '\n';
+        if (proteinItems.some(p => p.time.match(/lunch|almuerzo/i))) timingContent += t('explanation_protein_timing_lunch') + '\n';
         if (proteinItems.some(p => p.time.match(/bed|dormir/i))) timingContent += t('explanation_protein_timing_evening') + '\n';
         if (timingContent) sections.push({ subtitle: t('explanation_protein_timing'), content: timingContent.trim() });
         

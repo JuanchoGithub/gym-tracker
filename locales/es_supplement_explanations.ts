@@ -1,3 +1,4 @@
+
 export const es_supplement_explanations = {
   explanation_modal_title: 'Sobre tu Plan de Suplementos',
   explanation_general_title: 'Principios Generales',
@@ -15,6 +16,7 @@ export const es_supplement_explanations = {
   explanation_protein_timing: '¿Por qué estos horarios?',
   explanation_protein_timing_post_workout: '• **Post-Entrenamiento:** Tus músculos son más receptivos a los nutrientes justo después de entrenar. Un batido de proteínas aquí inicia el proceso de recuperación.',
   explanation_protein_timing_morning: '• **Mañana/Desayuno:** Tomar proteína por la mañana ayuda a prevenir la degradación muscular después del ayuno nocturno.',
+  explanation_protein_timing_lunch: '• **Almuerzo:** Espaciar la ingesta de proteínas mejora la absorción. Como entrenás por la mañana, consumir proteínas en el almuerzo mantiene los niveles altos después de tu ventana post-entrenamiento.',
   explanation_protein_timing_evening: '• **Noche/Antes de dormir:** Una proteína de digestión lenta (o cualquier proteína) antes de dormir puede proporcionar una liberación constante de aminoácidos durante la noche, ayudando a la recuperación mientras dormís.',
   
   explanation_creatine_title: 'Creatina',

@@ -1,3 +1,4 @@
+
 import React, { useMemo, useCallback } from 'react';
 import { SupplementPlan, SupplementPlanItem } from '../../types';
 import { useI18n } from '../../hooks/useI18n';
@@ -18,6 +19,7 @@ const timeKeywords = {
         morning: /morning|breakfast/i,
         pre_workout: /pre-workout/i,
         post_workout: /post-workout/i,
+        lunch: /lunch/i,
         with_meal: /meal/i,
         evening: /evening|bed/i,
     },
@@ -25,6 +27,7 @@ const timeKeywords = {
         morning: /mañana|desayuno/i,
         pre_workout: /pre-entreno/i,
         post_workout: /post-entreno|post-entrenamiento/i,
+        lunch: /almuerzo/i,
         with_meal: /comida/i,
         evening: /noche|dormir/i,
     }
@@ -34,6 +37,7 @@ const timeOrder: { [key: string]: number } = {
     morning: 1,
     pre_workout: 2,
     post_workout: 3,
+    lunch: 3.5,
     with_meal: 4,
     evening: 5,
     daily: 6

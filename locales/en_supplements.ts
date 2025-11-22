@@ -1,3 +1,4 @@
+
 export const en_supplements = {
   // Supplements Page
   supplements_title: 'Supplement Plan',
@@ -150,6 +151,7 @@ export const en_supplements = {
   supplements_note_protein_dose: 'Dose {doseNum} of {totalDoses} to help reach your daily protein goal of ~{goal}g.',
   supplements_note_protein_post_workout: 'Take after your workout to kickstart muscle repair.',
   supplements_note_protein_breakfast: 'Take with your first meal to ensure a steady supply of protein throughout the day.',
+  supplements_note_protein_lunch: 'Take with your midday meal to maintain amino acid levels.',
   supplements_note_protein_bedtime: 'Take before bed to aid muscle recovery overnight.',
   supplements_note_creatine: 'Improves strength, power output, and muscle mass. Mix with water or your post-workout shake.',
   supplements_note_omega: 'Supports joint health, reduces inflammation, and aids in overall recovery.',
@@ -169,6 +171,7 @@ export const en_supplements = {
   supplements_time_with_meal: 'Daily with a meal',
   supplements_time_morning_with_meal: 'Morning with a meal containing fat',
   supplements_time_with_breakfast: 'With Breakfast',
+  supplements_time_lunch: 'With Lunch',
   supplements_time_before_bed: 'Before Bed',
   supplements_time_pre_workout: 'Pre-workout',
 
@@ -176,6 +179,7 @@ export const en_supplements = {
   supplements_timegroup_morning: 'Morning',
   supplements_timegroup_pre_workout: 'Pre-Workout',
   supplements_timegroup_post_workout: 'Post-Workout',
+  supplements_timegroup_lunch: 'Lunch',
   supplements_timegroup_with_meal: 'With a Meal',
   supplements_timegroup_evening: 'Evening / Before Bed',
   supplements_timegroup_daily: 'Any Time',

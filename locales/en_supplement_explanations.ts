@@ -1,3 +1,4 @@
+
 export const en_supplement_explanations = {
   explanation_modal_title: 'About Your Supplement Plan',
   explanation_general_title: 'General Principles',
@@ -15,6 +16,7 @@ export const en_supplement_explanations = {
   explanation_protein_timing: 'Why these times?',
   explanation_protein_timing_post_workout: '• **Post-Workout:** Your muscles are most receptive to nutrients right after training. A protein shake here kickstarts the recovery process.',
   explanation_protein_timing_morning: '• **Morning/Breakfast:** Taking protein in the morning helps prevent muscle breakdown after an overnight fast.',
+  explanation_protein_timing_lunch: '• **Lunch:** Spacing out protein intake improves absorption. Since you train in the morning, having protein at lunch keeps levels high after your post-workout window.',
   explanation_protein_timing_evening: '• **Evening/Before Bed:** A slow-digesting protein (or any protein) before bed can provide a steady release of amino acids overnight, aiding recovery while you sleep.',
   
   explanation_creatine_title: 'Creatine',

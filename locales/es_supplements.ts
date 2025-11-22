@@ -1,3 +1,4 @@
+
 export const es_supplements = {
   // Supplements Page
   supplements_title: 'Plan de Suplementos',
@@ -150,6 +151,7 @@ export const es_supplements = {
   supplements_note_protein_dose: 'Dosis {doseNum} de {totalDoses} para ayudarte a alcanzar tu meta diaria de proteína de ~{goal}g.',
   supplements_note_protein_post_workout: 'Tomar después de entrenar para iniciar la reparación y crecimiento muscular.',
   supplements_note_protein_breakfast: 'Tomar con tu primera comida para asegurar un suministro constante de proteína durante el día.',
+  supplements_note_protein_lunch: 'Tomar con tu comida del mediodía para mantener los niveles de aminoácidos.',
   supplements_note_protein_bedtime: 'Tomar antes de dormir para ayudar a la recuperación muscular durante la noche.',
   supplements_note_creatine: 'Mejora la fuerza, la potencia y la masa muscular. Mezclala con agua o tu batido post-entrenamiento.',
   supplements_note_omega: 'Apoya la salud articular, reduce la inflamación y ayuda en la recuperación general.',
@@ -169,6 +171,7 @@ export const es_supplements = {
   supplements_time_with_meal: 'Diario con una comida',
   supplements_time_morning_with_meal: 'Durante la mañana con una comida que contenga grasas',
   supplements_time_with_breakfast: 'Con el Desayuno',
+  supplements_time_lunch: 'Con el Almuerzo',
   supplements_time_before_bed: 'Antes de Dormir',
   supplements_time_pre_workout: 'Pre-entrenamiento',
   
@@ -176,6 +179,7 @@ export const es_supplements = {
   supplements_timegroup_morning: 'Mañana',
   supplements_timegroup_pre_workout: 'Pre-Entreno',
   supplements_timegroup_post_workout: 'Post-Entreno',
+  supplements_timegroup_lunch: 'Almuerzo',
   supplements_timegroup_with_meal: 'Con Comida',
   supplements_timegroup_evening: 'Noche / Antes de Dormir',
   supplements_timegroup_daily: 'Cualquier Momento',

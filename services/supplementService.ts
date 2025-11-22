@@ -1,3 +1,4 @@
+
 import { SupplementInfo, SupplementPlan, SupplementPlanItem, WorkoutSession, SupplementSuggestion } from '../types';
 import { getExplanationIdForSupplement } from './explanationService';
 
@@ -6,6 +7,7 @@ const timeOrder: { [key: string]: number } = {
     'Morning': 1,
     'Pre-workout': 2,
     'Post-workout': 3,
+    'Lunch': 3.5,
     'Daily with a meal': 4,
     'Evening': 5,
     'Daily': 6
@@ -15,6 +17,7 @@ const getTimeKey = (time: string): string => {
     if (time.includes('Morning')) return 'Morning';
     if (time.includes('Pre-workout')) return 'Pre-workout';
     if (time.includes('Post-workout')) return 'Post-workout';
+    if (time.includes('Lunch') || time.includes('Almuerzo')) return 'Lunch';
     if (time.includes('Evening')) return 'Evening';
     if (time.includes('meal')) return 'Daily with a meal';
     return 'Daily';
@@ -90,14 +93,22 @@ export const generateSupplementPlan = (info: SupplementInfo, t: (key: string, re
                 trainingDayOnly: true,
             });
 
-            // Dose 2: With breakfast
+            // Dose 2: With breakfast OR Lunch (if training in morning)
             if (doses >= 2) {
+                let timeKey = 'supplements_time_with_breakfast';
+                let noteKey = 'supplements_note_protein_breakfast';
+
+                if (info.trainingTime === 'morning') {
+                    timeKey = 'supplements_time_lunch';
+                    noteKey = 'supplements_note_protein_lunch';
+                }
+
                 plan.push({
                     id: `gen-protein-2-${Date.now()}`,
-                    time: t('supplements_time_with_breakfast'),
+                    time: t(timeKey),
                     supplement: proteinType,
                     dosage: `~${dosagePerServing}g`,
-                    notes: t('supplements_note_protein_breakfast') + ' ' + t('supplements_note_protein_dose', { doseNum: 2, totalDoses: doses, goal: Math.round(prot_total_needed) }),
+                    notes: t(noteKey) + ' ' + t('supplements_note_protein_dose', { doseNum: 2, totalDoses: doses, goal: Math.round(prot_total_needed) }),
                 });
             }
 
