@@ -1,4 +1,5 @@
 
+
 export const es_supplement_explanations = {
   explanation_modal_title: 'Sobre tu Plan de Suplementos',
   explanation_general_title: 'Principios Generales',
@@ -46,6 +47,14 @@ export const es_supplement_explanations = {
   explanation_caffeine_title: 'Cafeína',
   explanation_caffeine_why: '¿Por qué se recomendó esto?',
   explanation_caffeine_why_content: 'Como estimulante del sistema nervioso central, la cafeína puede mejorar el enfoque, la energía y el rendimiento durante tus entrenamientos. La dosis se calcula en función de tu peso corporal. Tené en cuenta tu ingesta diaria total de otras fuentes como el café.',
+
+  explanation_eaa_title: 'EAAs / BCAAs',
+  explanation_eaa_why: '¿Por qué se recomendó esto?',
+  explanation_eaa_why_content: 'Se recomiendan los Aminoácidos Esenciales (EAAs) o BCAAs porque tus datos de entrenamiento indican una alta densidad de entrenamiento o entrenamiento en ayunas. Proporcionan una fuente de combustible fácilmente disponible para los músculos, ayudando a prevenir el catabolismo (degradación muscular) durante sesiones intensas.',
+
+  explanation_zma_title: 'ZMA',
+  explanation_zma_why: '¿Por qué se recomendó esto?',
+  explanation_zma_why_content: 'ZMA es una combinación de Zinc, Magnesio y Vitamina B6. Se recomienda para vos debido a la alta frecuencia de entrenamiento que afecta al sistema nervioso central. ZMA apoya el sueño profundo y el equilibrio hormonal, acelerando la recuperación.',
 
   scoop_fraction_less_half: 'menos de media',
   scoop_fraction_half: 'media',

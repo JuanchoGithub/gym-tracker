@@ -1,11 +1,14 @@
 
+
 import { SupplementInfo, SupplementPlan, SupplementPlanItem, WorkoutSession, SupplementSuggestion } from '../types';
 import { getExplanationIdForSupplement } from './explanationService';
+import { PREDEFINED_EXERCISES } from '../constants/exercises';
 
 // Sort helper
 const timeOrder: { [key: string]: number } = {
     'Morning': 1,
     'Pre-workout': 2,
+    'Intra-workout': 2.5,
     'Post-workout': 3,
     'Lunch': 3.5,
     'Daily with a meal': 4,
@@ -16,6 +19,7 @@ const timeOrder: { [key: string]: number } = {
 const getTimeKey = (time: string): string => {
     if (time.includes('Morning')) return 'Morning';
     if (time.includes('Pre-workout')) return 'Pre-workout';
+    if (time.includes('Intra-workout')) return 'Intra-workout';
     if (time.includes('Post-workout')) return 'Post-workout';
     if (time.includes('Lunch') || time.includes('Almuerzo')) return 'Lunch';
     if (time.includes('Evening')) return 'Evening';
@@ -259,8 +263,9 @@ export const reviewSupplementPlan = (
   t: (key: string, replacements?: Record<string, string | number>) => string
 ): SupplementSuggestion[] => {
     const suggestions: SupplementSuggestion[] = [];
-    const fourWeeksAgo = new Date();
-    fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
+    const now = new Date();
+    const fourWeeksAgo = new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000);
+    const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
 
     const recentHistory = history.filter(s => s.startTime > fourWeeksAgo.getTime());
 
@@ -268,20 +273,112 @@ export const reviewSupplementPlan = (
         return []; // Not enough data to make suggestions
     }
 
-    // Calculate total volume in the last 4 weeks
-    const totalVolume = recentHistory.reduce((total, session) => {
+    // --- METRICS CALCULATION ---
+
+    // 1. Volume Calculation (Last 4 weeks)
+    const totalVolumeLast4Weeks = recentHistory.reduce((total, session) => {
         return total + session.exercises.reduce((sessionTotal, ex) => {
             return sessionTotal + ex.sets.reduce((exTotal, set) => exTotal + (set.weight * set.reps), 0);
         }, 0);
     }, 0);
+    const avgWeeklyVolume = totalVolumeLast4Weeks / 4;
 
-    const avgWeeklyVolume = totalVolume / 4;
+    // 2. Duration Analysis
+    const longSessions = recentHistory.filter(s => s.endTime > 0 && (s.endTime - s.startTime) > 80 * 60 * 1000);
+    const isLongDurationUser = longSessions.length > (recentHistory.length * 0.4);
 
-    const hasCreatine = plan.plan.some(item => getExplanationIdForSupplement(item.supplement) === 'creatine');
+    // 3. Late Night & Early Morning Analysis
+    let lateNightWorkouts = 0;
+    let earlyMorningWorkouts = 0;
+    recentHistory.forEach(s => {
+        const hour = new Date(s.startTime).getHours();
+        if (hour >= 20) lateNightWorkouts++;
+        if (hour < 9) earlyMorningWorkouts++;
+    });
+    
+    const isLateNightUser = lateNightWorkouts > (recentHistory.length * 0.3);
+    const isEarlyMorningUser = earlyMorningWorkouts > (recentHistory.length * 0.5);
+
+    // 4. High Impact / Heavy Joint Load
+    let highImpactCount = 0;
+    let totalExercises = 0;
+    
+    recentHistory.forEach(s => {
+        s.exercises.forEach(we => {
+            totalExercises++;
+            const exDef = PREDEFINED_EXERCISES.find(e => e.id === we.exerciseId);
+            if (exDef) {
+                if (['Cardio', 'Plyometrics'].includes(exDef.category)) highImpactCount++;
+                if (exDef.bodyPart === 'Legs' || exDef.bodyPart === 'Back') {
+                    if (exDef.category === 'Barbell') highImpactCount++;
+                }
+            }
+        });
+    });
+    const isHighImpactUser = totalExercises > 0 && (highImpactCount / totalExercises) > 0.3;
+
+    // 5. Stagnation (Volume Trend)
+    const last2WeeksHistory = recentHistory.filter(s => s.startTime > twoWeeksAgo.getTime());
+    const prev2WeeksHistory = recentHistory.filter(s => s.startTime <= twoWeeksAgo.getTime());
+    
+    const volLast2 = last2WeeksHistory.reduce((acc, s) => acc + s.exercises.reduce((t, e) => t + e.sets.reduce((st, set) => st + set.weight * set.reps, 0), 0), 0);
+    const volPrev2 = prev2WeeksHistory.reduce((acc, s) => acc + s.exercises.reduce((t, e) => t + e.sets.reduce((st, set) => st + set.weight * set.reps, 0), 0), 0);
+    
+    const isStagnating = last2WeeksHistory.length >= 2 && prev2WeeksHistory.length >= 2 && volLast2 <= volPrev2 * 1.05;
+
+    // 6. Workout Density (Volume / Minute)
+    let totalDensity = 0;
+    let densityCount = 0;
+    recentHistory.forEach(s => {
+        if (s.endTime > s.startTime) {
+            const durationMinutes = (s.endTime - s.startTime) / 60000;
+            if (durationMinutes > 10) {
+                const volume = s.exercises.reduce((t, ex) => t + ex.sets.reduce((st, set) => st + set.weight * set.reps, 0), 0);
+                totalDensity += volume / durationMinutes;
+                densityCount++;
+            }
+        }
+    });
+    const avgDensity = densityCount > 0 ? totalDensity / densityCount : 0;
+    const isHighDensity = avgDensity > 250; // Heuristic threshold
+
+    // 7. Training Frequency (Consecutive Days)
+    // Sort sessions by date ascending
+    const sortedSessions = [...recentHistory].sort((a, b) => a.startTime - b.startTime);
+    let maxStreak = 0;
+    let currentStreak = 1;
+    let streak3PlusCount = 0;
+
+    for (let i = 1; i < sortedSessions.length; i++) {
+        const prevDate = new Date(sortedSessions[i-1].startTime);
+        const currDate = new Date(sortedSessions[i].startTime);
+        
+        // Reset time to compare dates only
+        prevDate.setHours(0,0,0,0);
+        currDate.setHours(0,0,0,0);
+        
+        const diffTime = currDate.getTime() - prevDate.getTime();
+        const diffDays = diffTime / (1000 * 60 * 60 * 24);
+
+        if (diffDays === 1) {
+            currentStreak++;
+        } else if (diffDays > 1) {
+            if (currentStreak >= 3) streak3PlusCount++;
+            maxStreak = Math.max(maxStreak, currentStreak);
+            currentStreak = 1;
+        }
+    }
+    if (currentStreak >= 3) streak3PlusCount++;
+    const isHighFrequency = streak3PlusCount >= 2;
+
+
+    // --- GENERATING SUGGESTIONS ---
+
     const isStrengthTraining = plan.info.routineType === 'strength' || plan.info.routineType === 'mixed';
+    
+    // Suggestion 1: Add Creatine
+    const hasCreatine = plan.plan.some(item => getExplanationIdForSupplement(item.supplement) === 'creatine');
     const creatineName = t('supplements_name_creatine');
-
-    // Suggestion 1: Add Creatine if volume is high and not taking it
     if (isStrengthTraining && !hasCreatine && avgWeeklyVolume > 15000) {
         const dose = Math.round(Math.min(5, Math.max(3, 0.03 * plan.info.weight)));
         suggestions.push({
@@ -302,13 +399,13 @@ export const reviewSupplementPlan = (
         });
     }
 
-    // Suggestion 2: Increase protein if objective is gain and volume is high
+    // Suggestion 2: Increase Protein
     const proteinItems = plan.plan.filter(item => getExplanationIdForSupplement(item.supplement) === 'protein');
     if (plan.info.objective === 'gain' && avgWeeklyVolume > 20000 && proteinItems.length > 0) {
         const firstProteinItem = proteinItems[0];
         const currentDosage = parseInt(firstProteinItem.dosage.replace(/[^0-9]/g, ''), 10);
-        if (currentDosage > 0 && currentDosage < 40) { // If serving size is small, suggest increasing
-            const newDosage = Math.round(currentDosage * 1.25 / 5) * 5; // Increase by 25%, round to nearest 5g
+        if (currentDosage > 0 && currentDosage < 40) {
+            const newDosage = Math.round(currentDosage * 1.25 / 5) * 5;
             const increaseAmount = newDosage - currentDosage;
             if (increaseAmount > 0) {
               suggestions.push({
@@ -319,29 +416,156 @@ export const reviewSupplementPlan = (
                   action: {
                       type: 'UPDATE',
                       itemId: firstProteinItem.id,
-                      updates: {
-                          dosage: `~${newDosage}g`,
-                      }
+                      updates: { dosage: `~${newDosage}g` }
                   }
               });
             }
         }
     }
 
-    // Suggestion 3: Caution about late-night caffeine
-    const lateNightWorkouts = recentHistory.filter(s => new Date(s.startTime).getHours() >= 20).length;
+    // Suggestion 3: Remove Late Caffeine
     const caffeineItem = plan.plan.find(item => getExplanationIdForSupplement(item.supplement) === 'caffeine');
     const caffeineName = t('supplements_name_caffeine');
-
-    if (caffeineItem && lateNightWorkouts > recentHistory.length / 3) {
+    if (caffeineItem && isLateNightUser) {
         suggestions.push({
             id: 'remove-caffeine-late',
             title: t('suggestion_remove_caffeine_title'),
             reason: t('suggestion_remove_caffeine_reason_late'),
             identifier: `REMOVE:${caffeineName}`,
+            action: { type: 'REMOVE', itemId: caffeineItem.id }
+        });
+    }
+
+    // Suggestion 4: Electrolytes
+    const hasElectrolytes = plan.plan.some(item => item.supplement.toLowerCase().includes('electrolyte') || item.supplement.includes('Intra'));
+    if (isLongDurationUser && !hasElectrolytes) {
+        const electrolytesName = t('supplements_name_electrolytes');
+        suggestions.push({
+            id: 'add-electrolytes-long',
+            title: t('suggestion_add_electrolytes_title'),
+            reason: t('suggestion_add_electrolytes_reason'),
+            identifier: `ADD:${electrolytesName}`,
             action: {
-                type: 'REMOVE',
-                itemId: caffeineItem.id,
+                type: 'ADD',
+                item: {
+                    id: `gen-electrolytes-${Date.now()}`,
+                    supplement: electrolytesName,
+                    dosage: '1 serving',
+                    time: t('supplements_time_intra_workout'),
+                    notes: t('supplements_note_electrolytes'),
+                    trainingDayOnly: true
+                }
+            }
+        });
+    }
+
+    // Suggestion 5: Joint Support
+    const hasJointSupport = plan.plan.some(item => item.supplement.toLowerCase().includes('joint') || item.supplement.includes('Collagen'));
+    if (isHighImpactUser && !hasJointSupport) {
+        const jointName = t('supplements_name_joint_support');
+        suggestions.push({
+            id: 'add-joint-support',
+            title: t('suggestion_add_joint_support_title'),
+            reason: t('suggestion_add_joint_support_reason'),
+            identifier: `ADD:${jointName}`,
+            action: {
+                type: 'ADD',
+                item: {
+                    id: `gen-joint-${Date.now()}`,
+                    supplement: jointName,
+                    dosage: '1 serving',
+                    time: t('supplements_time_with_meal'),
+                    notes: t('supplements_note_joint_support'),
+                }
+            }
+        });
+    }
+
+    // Suggestion 6: Citrulline for Stagnation
+    const hasCitrulline = plan.plan.some(item => item.supplement.toLowerCase().includes('citrulline'));
+    if (isStagnating && !hasCitrulline && isStrengthTraining) {
+        const citrullineName = t('supplements_name_citrulline');
+        suggestions.push({
+            id: 'add-citrulline-plateau',
+            title: t('suggestion_add_citrulline_title'),
+            reason: t('suggestion_add_citrulline_reason'),
+            identifier: `ADD:${citrullineName}`,
+            action: {
+                type: 'ADD',
+                item: {
+                    id: `gen-citrulline-${Date.now()}`,
+                    supplement: citrullineName,
+                    dosage: '6g',
+                    time: t('supplements_time_pre_workout'),
+                    notes: t('supplements_note_citrulline'),
+                    trainingDayOnly: true
+                }
+            }
+        });
+    }
+
+    // Suggestion 7: EAAs for High Density
+    const hasEAA = plan.plan.some(item => getExplanationIdForSupplement(item.supplement) === 'eaa');
+    const eaaName = t('supplements_name_eaa');
+    if (isHighDensity && !hasEAA) {
+        suggestions.push({
+            id: 'add-eaa-density',
+            title: t('suggestion_add_eaa_density_title'),
+            reason: t('suggestion_add_eaa_density_reason'),
+            identifier: `ADD:${eaaName}`,
+            action: {
+                type: 'ADD',
+                item: {
+                    id: `gen-eaa-${Date.now()}`,
+                    supplement: eaaName,
+                    dosage: '1 serving',
+                    time: t('supplements_time_intra_workout'),
+                    notes: t('supplements_note_eaa'),
+                    trainingDayOnly: true
+                }
+            }
+        });
+    }
+
+    // Suggestion 8: ZMA for High Frequency
+    const hasZMA = plan.plan.some(item => getExplanationIdForSupplement(item.supplement) === 'zma');
+    const zmaName = t('supplements_name_zma');
+    if (isHighFrequency && !hasZMA) {
+        suggestions.push({
+            id: 'add-zma-frequency',
+            title: t('suggestion_add_zma_frequency_title'),
+            reason: t('suggestion_add_zma_frequency_reason'),
+            identifier: `ADD:${zmaName}`,
+            action: {
+                type: 'ADD',
+                item: {
+                    id: `gen-zma-${Date.now()}`,
+                    supplement: zmaName,
+                    dosage: '1 serving',
+                    time: t('supplements_time_before_bed'),
+                    notes: t('supplements_note_zma'),
+                }
+            }
+        });
+    }
+
+    // Suggestion 9: BCAAs/EAAs for Early Morning (Fasted) Training
+    if (isEarlyMorningUser && !hasEAA) {
+        suggestions.push({
+            id: 'add-bcaa-morning',
+            title: t('suggestion_add_bcaa_morning_title'),
+            reason: t('suggestion_add_bcaa_morning_reason'),
+            identifier: `ADD:${eaaName}:morning`, // unique identifier distinction
+            action: {
+                type: 'ADD',
+                item: {
+                    id: `gen-bcaa-morning-${Date.now()}`,
+                    supplement: eaaName,
+                    dosage: '1 serving',
+                    time: t('supplements_time_pre_workout'),
+                    notes: t('supplements_note_eaa'),
+                    trainingDayOnly: true
+                }
             }
         });
     }

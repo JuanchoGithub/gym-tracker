@@ -1,4 +1,5 @@
 
+
 export const es_supplements = {
   // Supplements Page
   supplements_title: 'Plan de Suplementos',
@@ -118,6 +119,18 @@ export const es_supplements = {
   suggestion_increase_protein_reason_gain: 'Tu volumen es alto y tu objetivo es ganar músculo. Un poco más de proteína podría ayudar a la recuperación.',
   suggestion_remove_caffeine_title: 'Reconsiderá el Horario de la Cafeína',
   suggestion_remove_caffeine_reason_late: 'Frecuentemente entrenás tarde en la noche. Tomar estimulantes como la cafeína puede afectar negativamente tu sueño, que es crucial para la recuperación.',
+  suggestion_add_electrolytes_title: 'Considerá Electrolitos',
+  suggestion_add_electrolytes_reason: 'Tus entrenamientos duran más de 80 minutos consistentemente. Reponer electrolitos durante el entrenamiento puede ayudar a mantener el rendimiento y prevenir calambres.',
+  suggestion_add_joint_support_title: 'Considerá Soporte Articular',
+  suggestion_add_joint_support_reason: 'Hacés una alta frecuencia de ejercicios de alto impacto o piernas pesadas. Suplementos como Colágeno o Glucosamina podrían ayudar a proteger tus articulaciones.',
+  suggestion_add_citrulline_title: 'Rompe el Estancamiento',
+  suggestion_add_citrulline_reason: 'Tu volumen de entrenamiento se ha estancado recientemente. El Malato de Citrulina puede ayudar a mejorar el flujo sanguíneo y la resistencia para superar este punto.',
+  suggestion_add_eaa_density_title: 'Alta Intensidad Detectada',
+  suggestion_add_eaa_density_reason: 'La densidad de tu entrenamiento (volumen por minuto) es alta. EAAs o carbohidratos durante el entrenamiento pueden ayudar a mantener la energía.',
+  suggestion_add_zma_frequency_title: 'Optimizá la Recuperación',
+  suggestion_add_zma_frequency_reason: 'Frecuentemente entrenás varios días seguidos. ZMA (Zinc y Magnesio) antes de dormir puede mejorar la calidad del sueño y la recuperación.',
+  suggestion_add_bcaa_morning_title: 'Entrenamiento Matutino',
+  suggestion_add_bcaa_morning_reason: 'Como entrenás temprano, probablemente en ayunas, tomar BCAAs o EAAs puede ayudar a prevenir la degradación muscular durante tu sesión.',
 
   // Months
   month_january: 'Enero',
@@ -145,8 +158,13 @@ export const es_supplements = {
   supplements_name_omega_fish: 'Aceite de Pescado (Omega-3)',
   supplements_name_vit_d3: 'Vitamina D3',
   supplements_name_magnesium: 'Magnesio (Glicinato/Citrato)',
-  supplements_name_beta_alanine: 'Beta-Alanina',
+  supplements_name_beta_alanine: 'Beta-Alanine',
   supplements_name_caffeine: 'Cafeína',
+  supplements_name_electrolytes: 'Electrolitos / Carbohidratos Intra-entreno',
+  supplements_name_joint_support: 'Soporte Articular (Colágeno/Cúrcuma)',
+  supplements_name_citrulline: 'Malato de Citrulina',
+  supplements_name_eaa: 'EAAs / BCAAs',
+  supplements_name_zma: 'ZMA (Zinc y Magnesio)',
 
   supplements_note_protein_dose: 'Dosis {doseNum} de {totalDoses} para ayudarte a alcanzar tu meta diaria de proteína de ~{goal}g.',
   supplements_note_protein_post_workout: 'Tomar después de entrenar para iniciar la reparación y crecimiento muscular.',
@@ -160,6 +178,11 @@ export const es_supplements = {
   supplements_note_beta_alanine: 'Aumenta la resistencia muscular en días de entrenamiento. Puede causar una sensación de hormigueo inofensiva (parestesia).',
   supplements_note_beta_alanine_split: ' Dividir en dos dosis de {dose}g para reducir el hormigueo.',
   supplements_note_caffeine: 'Mejora el enfoque, la energía y el rendimiento en días de entrenamiento. Se puede tomar en pastillas o en bebidas pre-entrenamiento.',
+  supplements_note_electrolytes: 'Tomar a sorbos durante el entrenamiento para mantener la hidratación y energía.',
+  supplements_note_joint_support: 'Tomar diariamente para apoyar la salud del tejido conectivo.',
+  supplements_note_citrulline: 'Tomar 30-45 minutos antes de entrenar para mejorar el flujo sanguíneo y la congestión.',
+  supplements_note_eaa: 'Previene la degradación muscular durante entrenamientos en ayunas o muy intensos.',
+  supplements_note_zma: 'Tomar con el estómago vacío antes de dormir para mejorar el sueño y el soporte hormonal.',
 
   supplements_tip_hydration: 'Aumentá la ingesta diaria de agua a por lo menos 2.5-3 litros, especialmente si tomás creatina. La hidratación adecuada es clave para el rendimiento y la salud.',
   supplements_tip_consistency: 'La constancia es clave. Tomá tus suplementos diariamente como se recomienda para ver los mejores resultados.',
@@ -174,10 +197,12 @@ export const es_supplements = {
   supplements_time_lunch: 'Con el Almuerzo',
   supplements_time_before_bed: 'Antes de Dormir',
   supplements_time_pre_workout: 'Pre-entrenamiento',
+  supplements_time_intra_workout: 'Intra-entrenamiento',
   
   // Time groups for daily schedule
   supplements_timegroup_morning: 'Mañana',
   supplements_timegroup_pre_workout: 'Pre-Entreno',
+  supplements_timegroup_intra_workout: 'Intra-Entreno',
   supplements_timegroup_post_workout: 'Post-Entreno',
   supplements_timegroup_lunch: 'Almuerzo',
   supplements_timegroup_with_meal: 'Con Comida',

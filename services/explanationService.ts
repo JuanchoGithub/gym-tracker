@@ -1,4 +1,5 @@
 
+
 import { SupplementPlan } from '../types';
 
 export interface Explanation {
@@ -19,6 +20,8 @@ export const getExplanationIdForSupplement = (supplementName: string): string | 
     if (lowerName.includes('magnesium') || lowerName.includes('magnesio')) return 'magnesium';
     if (lowerName.includes('beta-alanine') || lowerName.includes('beta alanina')) return 'betaalanine';
     if (lowerName.includes('caffeine') || lowerName.includes('cafeína')) return 'caffeine';
+    if (lowerName.includes('eaa') || lowerName.includes('bcaa')) return 'eaa';
+    if (lowerName.includes('zma')) return 'zma';
     return null; // For custom supplements
 };
 
@@ -131,6 +134,16 @@ export const generateSupplementExplanations = (plan: SupplementPlan, t: (key: st
     // Caffeine
     if (plan.plan.some(item => getExplanationIdForSupplement(item.supplement) === 'caffeine')) {
         explanations.push({ id: 'caffeine', title: t('explanation_caffeine_title'), sections: [{ subtitle: t('explanation_caffeine_why'), content: t('explanation_caffeine_why_content') }] });
+    }
+
+    // EAAs
+    if (plan.plan.some(item => getExplanationIdForSupplement(item.supplement) === 'eaa')) {
+        explanations.push({ id: 'eaa', title: t('explanation_eaa_title'), sections: [{ subtitle: t('explanation_eaa_why'), content: t('explanation_eaa_why_content') }] });
+    }
+
+    // ZMA
+    if (plan.plan.some(item => getExplanationIdForSupplement(item.supplement) === 'zma')) {
+        explanations.push({ id: 'zma', title: t('explanation_zma_title'), sections: [{ subtitle: t('explanation_zma_why'), content: t('explanation_zma_why_content') }] });
     }
 
     return explanations;

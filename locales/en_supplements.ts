@@ -1,4 +1,5 @@
 
+
 export const en_supplements = {
   // Supplements Page
   supplements_title: 'Supplement Plan',
@@ -118,6 +119,18 @@ export const en_supplements = {
   suggestion_increase_protein_reason_gain: 'Your volume is high and your goal is to gain muscle. A bit more protein could support recovery.',
   suggestion_remove_caffeine_title: 'Reconsider Caffeine Timing',
   suggestion_remove_caffeine_reason_late: 'You frequently train late at night. Taking stimulants like caffeine can negatively impact your sleep, which is crucial for recovery.',
+  suggestion_add_electrolytes_title: 'Consider Electrolytes',
+  suggestion_add_electrolytes_reason: 'Your workouts are consistently longer than 80 minutes. Replenishing electrolytes during training can help maintain performance and prevent cramping.',
+  suggestion_add_joint_support_title: 'Consider Joint Support',
+  suggestion_add_joint_support_reason: 'You are doing a high frequency of high-impact or heavy leg exercises. Supplements like Collagen or Glucosamine might help protect your joints.',
+  suggestion_add_citrulline_title: 'Plateau Breaker',
+  suggestion_add_citrulline_reason: 'Your training volume has plateaued recently. Citrulline Malate may help improve blood flow and endurance to push past this sticking point.',
+  suggestion_add_eaa_density_title: 'High Intensity Detected',
+  suggestion_add_eaa_density_reason: 'Your workout density (volume per minute) is high. EAAs or Carbs during your workout can help sustain energy and prevent catabolism.',
+  suggestion_add_zma_frequency_title: 'Optimize Recovery',
+  suggestion_add_zma_frequency_reason: 'You frequently train multiple days in a row. ZMA (Zinc & Magnesium) before bed can improve sleep quality and recovery.',
+  suggestion_add_bcaa_morning_title: 'Early Morning Training',
+  suggestion_add_bcaa_morning_reason: 'Since you train early, likely fasted, taking BCAAs or EAAs can help prevent muscle breakdown during your session.',
 
   // Months
   month_january: 'January',
@@ -147,6 +160,11 @@ export const en_supplements = {
   supplements_name_magnesium: 'Magnesium (Glycinate/Citrate)',
   supplements_name_beta_alanine: 'Beta-Alanine',
   supplements_name_caffeine: 'Caffeine',
+  supplements_name_electrolytes: 'Electrolytes / Intra-workout Carbs',
+  supplements_name_joint_support: 'Joint Support (Collagen/Curcumin)',
+  supplements_name_citrulline: 'Citrulline Malate',
+  supplements_name_eaa: 'EAAs / BCAAs',
+  supplements_name_zma: 'ZMA (Zinc & Magnesium)',
 
   supplements_note_protein_dose: 'Dose {doseNum} of {totalDoses} to help reach your daily protein goal of ~{goal}g.',
   supplements_note_protein_post_workout: 'Take after your workout to kickstart muscle repair.',
@@ -160,6 +178,11 @@ export const en_supplements = {
   supplements_note_beta_alanine: 'Increases muscular endurance on training days. May cause a harmless tingling sensation (paresthesia).',
   supplements_note_beta_alanine_split: ' Split into two doses of {dose}g to reduce tingling.',
   supplements_note_caffeine: 'Improves focus, energy, and performance on training days. Can be taken as a pill or in pre-workout drinks.',
+  supplements_note_electrolytes: 'Sip during your workout to maintain hydration and energy levels.',
+  supplements_note_joint_support: 'Take daily to support connective tissue health.',
+  supplements_note_citrulline: 'Take 30-45 minutes before training to improve blood flow and pumps.',
+  supplements_note_eaa: 'Prevents muscle breakdown during fasted or intense training.',
+  supplements_note_zma: 'Take on an empty stomach before bed for better sleep and hormone support.',
 
   supplements_tip_hydration: 'Increase daily water intake to at least 2.5-3 liters, especially if taking creatine. Proper hydration is key for performance and health.',
   supplements_tip_consistency: 'Consistency is key. Take your supplements daily as recommended to see the best results.',
@@ -174,10 +197,12 @@ export const en_supplements = {
   supplements_time_lunch: 'With Lunch',
   supplements_time_before_bed: 'Before Bed',
   supplements_time_pre_workout: 'Pre-workout',
+  supplements_time_intra_workout: 'Intra-workout',
 
   // Time groups for daily schedule
   supplements_timegroup_morning: 'Morning',
   supplements_timegroup_pre_workout: 'Pre-Workout',
+  supplements_timegroup_intra_workout: 'Intra-Workout',
   supplements_timegroup_post_workout: 'Post-Workout',
   supplements_timegroup_lunch: 'Lunch',
   supplements_timegroup_with_meal: 'With a Meal',

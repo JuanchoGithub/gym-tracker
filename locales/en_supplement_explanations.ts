@@ -1,4 +1,5 @@
 
+
 export const en_supplement_explanations = {
   explanation_modal_title: 'About Your Supplement Plan',
   explanation_general_title: 'General Principles',
@@ -46,6 +47,14 @@ export const en_supplement_explanations = {
   explanation_caffeine_title: 'Caffeine',
   explanation_caffeine_why: 'Why was this recommended?',
   explanation_caffeine_why_content: 'As a central nervous system stimulant, caffeine can improve focus, energy, and performance during your workouts. The dose is calculated based on your body weight. Be mindful of your total daily intake from other sources like coffee.',
+
+  explanation_eaa_title: 'EAAs / BCAAs',
+  explanation_eaa_why: 'Why was this recommended?',
+  explanation_eaa_why_content: 'Essential Amino Acids (EAAs) or BCAAs are recommended because your training data indicates high workout density or fasted training. They provide a readily available fuel source for muscles, helping to prevent catabolism (muscle breakdown) during intense sessions.',
+
+  explanation_zma_title: 'ZMA',
+  explanation_zma_why: 'Why was this recommended?',
+  explanation_zma_why_content: 'ZMA is a combination of Zinc Monomethionine Aspartate, Magnesium Aspartate, and Vitamin B6. It is recommended for you because of high training frequency which taxes the central nervous system. ZMA supports deep sleep and hormonal balance, accelerating recovery.',
 
   scoop_fraction_less_half: 'less than half',
   scoop_fraction_half: 'about half',
