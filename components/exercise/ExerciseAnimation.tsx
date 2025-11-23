@@ -18,7 +18,7 @@ const ExerciseAnimation: React.FC<ExerciseAnimationProps> = ({ exerciseId }) => 
   // Construct path: /assets/exercises/animations/svg/{id}_{name_snake_case}.svg
   // Example: ex-1_bench_press.svg
   const snakeCaseName = exerciseDef.name.toLowerCase().replace(/ /g, '_');
-  const fileName = `${exerciseDef.id}_${snakeCaseName}.svg`;
+  const fileName = `${exerciseDef.id}.svg`;
   const src = `/assets/exercises/animations/svg/${fileName}`;
 
   return (
