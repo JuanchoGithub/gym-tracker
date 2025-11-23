@@ -1,37 +1,11 @@
-
 export const exportToCsv = (data: Record<string, any>[], filename: string) => {
-  if (data.length === 0) return;
-  
-  // Get all unique keys from all objects to ensure consistency
-  const allKeys = Array.from(new Set(data.flatMap(Object.keys)));
-  
-  const escape = (val: any) => {
-      if (val === null || val === undefined) return '';
-      const str = String(val);
-      // Escape quotes and wrap in quotes if it contains comma, quote or newline
-      if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-          return `"${str.replace(/"/g, '""')}"`;
-      }
-      return str;
-  };
-
-  const header = allKeys.map(escape).join(',');
-  const rows = data.map(row => {
-      return allKeys.map(key => escape(row[key])).join(',');
-  });
-
-  const csvContent = [header, ...rows].join('\n');
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  
+  const header = Object.keys(data[0]).join(',');
+  const rows = data.map(row => Object.values(row).join(','));
+  const csvContent = `data:text/csv;charset=utf-8,${header}\n${rows.join('\n')}`;
   const link = document.createElement('a');
-  link.href = url;
+  link.href = encodeURI(csvContent);
   link.download = `${filename}.csv`;
-  link.style.visibility = 'hidden';
-  document.body.appendChild(link);
   link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
 };
 
 export const exportToJson = (data: Record<string, any>[], filename: string) => {
