@@ -1,6 +1,14 @@
+
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 500">
   <style>
     
+    @keyframes pulse-red {
+      0%, 100% { fill: #ef4444; opacity: 1; }
+      50% { fill: #991b1b; opacity: 0.8; }
+    }
+    .muscle-pulse {
+      animation: pulse-red 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
 @keyframes anim-bone-ROOT-SIDE {
   0% { transform: translate(200px, 320px) rotate(-90deg); }
   100% { transform: translate(200px, 320px) rotate(-90deg); }
@@ -27,220 +35,875 @@
 }
 #bone-HIPS-SIDE { animation: anim-bone-HIPS-SIDE 2000ms linear infinite; transform-origin: 0px 0px; }
 @keyframes anim-bone-UPPER_ARM_L-SIDE {
-  0% { transform: translate(130px, 320px) rotate(-96.1deg); }
-  2.5% { transform: translate(130px, 320px) rotate(-99.5deg); }
-  5% { transform: translate(130px, 320px) rotate(-102.7deg); }
-  7.5% { transform: translate(130px, 320px) rotate(-105.7deg); }
-  12.5% { transform: translate(130px, 320px) rotate(-111.5deg); }
-  25% { transform: translate(130px, 320px) rotate(-125.6deg); }
-  30% { transform: translate(130px, 320px) rotate(-131.5deg); }
-  32.5% { transform: translate(130px, 320px) rotate(-134.7deg); }
-  35% { transform: translate(130px, 320px) rotate(-138deg); }
-  37.5% { transform: translate(130px, 320px) rotate(-141.5deg); }
-  40% { transform: translate(130px, 320px) rotate(-145.3deg); }
-  42.5% { transform: translate(130px, 320px) rotate(-149.6deg); }
-  45% { transform: translate(130px, 320px) rotate(-154.6deg); }
-  47.5% { transform: translate(130px, 320px) rotate(-161.2deg); }
-  50% { transform: translate(130px, 320px) rotate(-171.9deg); }
-  52.5% { transform: translate(130px, 320px) rotate(-161.2deg); }
-  55% { transform: translate(130px, 320px) rotate(-154.6deg); }
-  57.5% { transform: translate(130px, 320px) rotate(-149.6deg); }
-  60% { transform: translate(130px, 320px) rotate(-145.3deg); }
-  62.5% { transform: translate(130px, 320px) rotate(-141.5deg); }
-  65% { transform: translate(130px, 320px) rotate(-138deg); }
-  67.5% { transform: translate(130px, 320px) rotate(-134.7deg); }
-  70% { transform: translate(130px, 320px) rotate(-131.5deg); }
-  75% { transform: translate(130px, 320px) rotate(-125.6deg); }
-  90% { transform: translate(130px, 320px) rotate(-108.7deg); }
-  92.5% { transform: translate(130px, 320px) rotate(-105.7deg); }
-  95% { transform: translate(130px, 320px) rotate(-102.7deg); }
-  97.5% { transform: translate(130px, 320px) rotate(-99.5deg); }
-  100% { transform: translate(130px, 320px) rotate(-96.1deg); }
+  0% { transform: translate(130px, 320px) rotate(-93.4deg); }
+  2.5% { transform: translate(130px, 320px) rotate(-96.6deg); }
+  7.5% { transform: translate(130px, 320px) rotate(-102.6deg); }
+  25% { transform: translate(130px, 320px) rotate(-122.2deg); }
+  30% { transform: translate(130px, 320px) rotate(-127.9deg); }
+  32.5% { transform: translate(130px, 320px) rotate(-131deg); }
+  35% { transform: translate(130px, 320px) rotate(-134.1deg); }
+  37.5% { transform: translate(130px, 320px) rotate(-137.5deg); }
+  40% { transform: translate(130px, 320px) rotate(-141.1deg); }
+  42.5% { transform: translate(130px, 320px) rotate(-145.1deg); }
+  45% { transform: translate(130px, 320px) rotate(-149.7deg); }
+  47.5% { transform: translate(130px, 320px) rotate(-155.6deg); }
+  50% { transform: translate(130px, 320px) rotate(-166.3deg); }
+  52.5% { transform: translate(130px, 320px) rotate(-155.6deg); }
+  55% { transform: translate(130px, 320px) rotate(-149.7deg); }
+  57.5% { transform: translate(130px, 320px) rotate(-145.1deg); }
+  60% { transform: translate(130px, 320px) rotate(-141.1deg); }
+  62.5% { transform: translate(130px, 320px) rotate(-137.5deg); }
+  65% { transform: translate(130px, 320px) rotate(-134.1deg); }
+  67.5% { transform: translate(130px, 320px) rotate(-131deg); }
+  70% { transform: translate(130px, 320px) rotate(-127.9deg); }
+  75% { transform: translate(130px, 320px) rotate(-122.2deg); }
+  90% { transform: translate(130px, 320px) rotate(-105.5deg); }
+  95% { transform: translate(130px, 320px) rotate(-99.6deg); }
+  97.5% { transform: translate(130px, 320px) rotate(-96.6deg); }
+  100% { transform: translate(130px, 320px) rotate(-93.4deg); }
 }
 #bone-UPPER_ARM_L-SIDE { animation: anim-bone-UPPER_ARM_L-SIDE 2000ms linear infinite; transform-origin: 0px 0px; }
 @keyframes anim-bone-LOWER_ARM_L-SIDE {
-  0% { transform: translate(189.7px, 313.6px) rotate(-241.2deg); }
-  2.5% { transform: translate(189.2px, 310.1px) rotate(-240.6deg); }
-  5% { transform: translate(188.5px, 306.8px) rotate(-239.6deg); }
-  7.5% { transform: translate(187.7px, 303.7px) rotate(-238.4deg); }
-  10% { transform: translate(186.8px, 300.8px) rotate(-237deg); }
-  12.5% { transform: translate(185.8px, 298px) rotate(-235.4deg); }
-  15% { transform: translate(184.7px, 295.3px) rotate(-233.6deg); }
-  17.5% { transform: translate(183.4px, 292.6px) rotate(-231.7deg); }
-  20% { transform: translate(182px, 290.1px) rotate(-229.6deg); }
-  22.5% { transform: translate(180.5px, 287.6px) rotate(-227.3deg); }
-  25% { transform: translate(178.8px, 285.1px) rotate(-224.9deg); }
-  27.5% { transform: translate(176.9px, 282.6px) rotate(-222.4deg); }
-  30% { transform: translate(174.9px, 280.2px) rotate(-219.7deg); }
-  32.5% { transform: translate(172.7px, 277.8px) rotate(-216.7deg); }
-  35% { transform: translate(170.2px, 275.4px) rotate(-213.6deg); }
-  37.5% { transform: translate(167.3px, 273px) rotate(-210.1deg); }
-  40% { transform: translate(164.1px, 270.7px) rotate(-206.2deg); }
-  42.5% { transform: translate(160.4px, 268.2px) rotate(-201.8deg); }
-  45% { transform: translate(155.7px, 265.8px) rotate(-196.4deg); }
-  47.5% { transform: translate(149.3px, 263.2px) rotate(-189.2deg); }
-  50% { transform: translate(138.4px, 260.6px) rotate(-177.1deg); }
-  52.5% { transform: translate(149.3px, 263.2px) rotate(-189.2deg); }
-  55% { transform: translate(155.7px, 265.8px) rotate(-196.4deg); }
-  57.5% { transform: translate(160.4px, 268.2px) rotate(-201.8deg); }
-  60% { transform: translate(164.1px, 270.7px) rotate(-206.2deg); }
-  62.5% { transform: translate(167.3px, 273px) rotate(-210.1deg); }
-  65% { transform: translate(170.2px, 275.4px) rotate(-213.6deg); }
-  67.5% { transform: translate(172.7px, 277.8px) rotate(-216.7deg); }
-  70% { transform: translate(174.9px, 280.2px) rotate(-219.7deg); }
-  72.5% { transform: translate(176.9px, 282.6px) rotate(-222.4deg); }
-  75% { transform: translate(178.8px, 285.1px) rotate(-224.9deg); }
-  77.5% { transform: translate(180.5px, 287.6px) rotate(-227.3deg); }
-  80% { transform: translate(182px, 290.1px) rotate(-229.6deg); }
-  82.5% { transform: translate(183.4px, 292.6px) rotate(-231.7deg); }
-  85% { transform: translate(184.7px, 295.3px) rotate(-233.6deg); }
-  87.5% { transform: translate(185.8px, 298px) rotate(-235.4deg); }
-  90% { transform: translate(186.8px, 300.8px) rotate(-237deg); }
-  92.5% { transform: translate(187.7px, 303.7px) rotate(-238.4deg); }
-  95% { transform: translate(188.5px, 306.8px) rotate(-239.6deg); }
-  97.5% { transform: translate(189.2px, 310.1px) rotate(-240.6deg); }
-  100% { transform: translate(189.7px, 313.6px) rotate(-241.2deg); }
+  0% { transform: translate(189.9px, 316.4px) rotate(-224deg); }
+  2.5% { transform: translate(189.6px, 313.1px) rotate(-223.8deg); }
+  5% { transform: translate(189.2px, 309.9px) rotate(-223.3deg); }
+  7.5% { transform: translate(188.6px, 306.9px) rotate(-222.7deg); }
+  10% { transform: translate(187.8px, 304px) rotate(-221.8deg); }
+  12.5% { transform: translate(187px, 301.2px) rotate(-220.8deg); }
+  15% { transform: translate(186px, 298.4px) rotate(-219.6deg); }
+  17.5% { transform: translate(184.9px, 295.8px) rotate(-218.2deg); }
+  20% { transform: translate(183.7px, 293.2px) rotate(-216.7deg); }
+  22.5% { transform: translate(182.3px, 290.6px) rotate(-215deg); }
+  25% { transform: translate(180.8px, 288.1px) rotate(-213.2deg); }
+  27.5% { transform: translate(179.1px, 285.6px) rotate(-211.2deg); }
+  30% { transform: translate(177.3px, 283.1px) rotate(-209deg); }
+  32.5% { transform: translate(175.3px, 280.7px) rotate(-206.6deg); }
+  35% { transform: translate(173.1px, 278.2px) rotate(-204deg); }
+  37.5% { transform: translate(170.5px, 275.8px) rotate(-201.1deg); }
+  40% { transform: translate(167.7px, 273.3px) rotate(-197.8deg); }
+  42.5% { transform: translate(164.3px, 270.8px) rotate(-194.1deg); }
+  45% { transform: translate(160.2px, 268.2px) rotate(-189.5deg); }
+  47.5% { transform: translate(154.8px, 265.4px) rotate(-183.4deg); }
+  50% { transform: translate(144.2px, 261.7px) rotate(-171.5deg); }
+  52.5% { transform: translate(154.8px, 265.4px) rotate(-183.4deg); }
+  55% { transform: translate(160.2px, 268.2px) rotate(-189.5deg); }
+  57.5% { transform: translate(164.3px, 270.8px) rotate(-194.1deg); }
+  60% { transform: translate(167.7px, 273.3px) rotate(-197.8deg); }
+  62.5% { transform: translate(170.5px, 275.8px) rotate(-201.1deg); }
+  65% { transform: translate(173.1px, 278.2px) rotate(-204deg); }
+  67.5% { transform: translate(175.3px, 280.7px) rotate(-206.6deg); }
+  70% { transform: translate(177.3px, 283.1px) rotate(-209deg); }
+  72.5% { transform: translate(179.1px, 285.6px) rotate(-211.2deg); }
+  75% { transform: translate(180.8px, 288.1px) rotate(-213.2deg); }
+  77.5% { transform: translate(182.3px, 290.6px) rotate(-215deg); }
+  80% { transform: translate(183.7px, 293.2px) rotate(-216.7deg); }
+  82.5% { transform: translate(184.9px, 295.8px) rotate(-218.2deg); }
+  85% { transform: translate(186px, 298.4px) rotate(-219.6deg); }
+  87.5% { transform: translate(187px, 301.2px) rotate(-220.8deg); }
+  90% { transform: translate(187.8px, 304px) rotate(-221.8deg); }
+  92.5% { transform: translate(188.6px, 306.9px) rotate(-222.7deg); }
+  95% { transform: translate(189.2px, 309.9px) rotate(-223.3deg); }
+  97.5% { transform: translate(189.6px, 313.1px) rotate(-223.8deg); }
+  100% { transform: translate(189.9px, 316.4px) rotate(-224deg); }
 }
 #bone-LOWER_ARM_L-SIDE { animation: anim-bone-LOWER_ARM_L-SIDE 2000ms linear infinite; transform-origin: 0px 0px; }
 @keyframes anim-bone-HAND_L-SIDE {
-  0% { transform: translate(145.9px, 289.5px) rotate(-215.2deg); }
-  47.5% { transform: translate(141.3px, 213.9px) rotate(-215.2deg); }
-  50% { transform: translate(141px, 210.7px) rotate(-215.2deg); }
-  52.5% { transform: translate(141.3px, 213.9px) rotate(-215.2deg); }
-  100% { transform: translate(145.9px, 289.5px) rotate(-215.2deg); }
+  0% { transform: translate(155.2px, 280.4px) rotate(-191.4deg); }
+  47.5% { transform: translate(151.8px, 215.4px) rotate(-191.4deg); }
+  50% { transform: translate(151.6px, 212.3px) rotate(-191.4deg); }
+  52.5% { transform: translate(151.8px, 215.4px) rotate(-191.4deg); }
+  100% { transform: translate(155.2px, 280.4px) rotate(-191.4deg); }
 }
 #bone-HAND_L-SIDE { animation: anim-bone-HAND_L-SIDE 2000ms linear infinite; transform-origin: 0px 0px; }
 @keyframes anim-bone-UPPER_ARM_R-SIDE {
-  0% { transform: translate(130px, 320px) rotate(-96.1deg); }
-  2.5% { transform: translate(130px, 320px) rotate(-99.5deg); }
-  5% { transform: translate(130px, 320px) rotate(-102.7deg); }
-  7.5% { transform: translate(130px, 320px) rotate(-105.7deg); }
-  12.5% { transform: translate(130px, 320px) rotate(-111.5deg); }
-  25% { transform: translate(130px, 320px) rotate(-125.6deg); }
-  30% { transform: translate(130px, 320px) rotate(-131.5deg); }
-  32.5% { transform: translate(130px, 320px) rotate(-134.7deg); }
-  35% { transform: translate(130px, 320px) rotate(-138deg); }
-  37.5% { transform: translate(130px, 320px) rotate(-141.5deg); }
-  40% { transform: translate(130px, 320px) rotate(-145.3deg); }
-  42.5% { transform: translate(130px, 320px) rotate(-149.6deg); }
-  45% { transform: translate(130px, 320px) rotate(-154.6deg); }
-  47.5% { transform: translate(130px, 320px) rotate(-161.2deg); }
-  50% { transform: translate(130px, 320px) rotate(-171.9deg); }
-  52.5% { transform: translate(130px, 320px) rotate(-161.2deg); }
-  55% { transform: translate(130px, 320px) rotate(-154.6deg); }
-  57.5% { transform: translate(130px, 320px) rotate(-149.6deg); }
-  60% { transform: translate(130px, 320px) rotate(-145.3deg); }
-  62.5% { transform: translate(130px, 320px) rotate(-141.5deg); }
-  65% { transform: translate(130px, 320px) rotate(-138deg); }
-  67.5% { transform: translate(130px, 320px) rotate(-134.7deg); }
-  70% { transform: translate(130px, 320px) rotate(-131.5deg); }
-  75% { transform: translate(130px, 320px) rotate(-125.6deg); }
-  90% { transform: translate(130px, 320px) rotate(-108.7deg); }
-  92.5% { transform: translate(130px, 320px) rotate(-105.7deg); }
-  95% { transform: translate(130px, 320px) rotate(-102.7deg); }
-  97.5% { transform: translate(130px, 320px) rotate(-99.5deg); }
-  100% { transform: translate(130px, 320px) rotate(-96.1deg); }
+  0% { transform: translate(130px, 320px) rotate(-93.4deg); }
+  2.5% { transform: translate(130px, 320px) rotate(-96.6deg); }
+  7.5% { transform: translate(130px, 320px) rotate(-102.6deg); }
+  25% { transform: translate(130px, 320px) rotate(-122.2deg); }
+  30% { transform: translate(130px, 320px) rotate(-127.9deg); }
+  32.5% { transform: translate(130px, 320px) rotate(-131deg); }
+  35% { transform: translate(130px, 320px) rotate(-134.1deg); }
+  37.5% { transform: translate(130px, 320px) rotate(-137.5deg); }
+  40% { transform: translate(130px, 320px) rotate(-141.1deg); }
+  42.5% { transform: translate(130px, 320px) rotate(-145.1deg); }
+  45% { transform: translate(130px, 320px) rotate(-149.7deg); }
+  47.5% { transform: translate(130px, 320px) rotate(-155.6deg); }
+  50% { transform: translate(130px, 320px) rotate(-166.3deg); }
+  52.5% { transform: translate(130px, 320px) rotate(-155.6deg); }
+  55% { transform: translate(130px, 320px) rotate(-149.7deg); }
+  57.5% { transform: translate(130px, 320px) rotate(-145.1deg); }
+  60% { transform: translate(130px, 320px) rotate(-141.1deg); }
+  62.5% { transform: translate(130px, 320px) rotate(-137.5deg); }
+  65% { transform: translate(130px, 320px) rotate(-134.1deg); }
+  67.5% { transform: translate(130px, 320px) rotate(-131deg); }
+  70% { transform: translate(130px, 320px) rotate(-127.9deg); }
+  75% { transform: translate(130px, 320px) rotate(-122.2deg); }
+  90% { transform: translate(130px, 320px) rotate(-105.5deg); }
+  95% { transform: translate(130px, 320px) rotate(-99.6deg); }
+  97.5% { transform: translate(130px, 320px) rotate(-96.6deg); }
+  100% { transform: translate(130px, 320px) rotate(-93.4deg); }
 }
 #bone-UPPER_ARM_R-SIDE { animation: anim-bone-UPPER_ARM_R-SIDE 2000ms linear infinite; transform-origin: 0px 0px; }
 @keyframes anim-bone-LOWER_ARM_R-SIDE {
-  0% { transform: translate(189.7px, 313.6px) rotate(-241.2deg); }
-  2.5% { transform: translate(189.2px, 310.1px) rotate(-240.6deg); }
-  5% { transform: translate(188.5px, 306.8px) rotate(-239.6deg); }
-  7.5% { transform: translate(187.7px, 303.7px) rotate(-238.4deg); }
-  10% { transform: translate(186.8px, 300.8px) rotate(-237deg); }
-  12.5% { transform: translate(185.8px, 298px) rotate(-235.4deg); }
-  15% { transform: translate(184.7px, 295.3px) rotate(-233.6deg); }
-  17.5% { transform: translate(183.4px, 292.6px) rotate(-231.7deg); }
-  20% { transform: translate(182px, 290.1px) rotate(-229.6deg); }
-  22.5% { transform: translate(180.5px, 287.6px) rotate(-227.3deg); }
-  25% { transform: translate(178.8px, 285.1px) rotate(-224.9deg); }
-  27.5% { transform: translate(176.9px, 282.6px) rotate(-222.4deg); }
-  30% { transform: translate(174.9px, 280.2px) rotate(-219.7deg); }
-  32.5% { transform: translate(172.7px, 277.8px) rotate(-216.7deg); }
-  35% { transform: translate(170.2px, 275.4px) rotate(-213.6deg); }
-  37.5% { transform: translate(167.3px, 273px) rotate(-210.1deg); }
-  40% { transform: translate(164.1px, 270.7px) rotate(-206.2deg); }
-  42.5% { transform: translate(160.4px, 268.2px) rotate(-201.8deg); }
-  45% { transform: translate(155.7px, 265.8px) rotate(-196.4deg); }
-  47.5% { transform: translate(149.3px, 263.2px) rotate(-189.2deg); }
-  50% { transform: translate(138.4px, 260.6px) rotate(-177.1deg); }
-  52.5% { transform: translate(149.3px, 263.2px) rotate(-189.2deg); }
-  55% { transform: translate(155.7px, 265.8px) rotate(-196.4deg); }
-  57.5% { transform: translate(160.4px, 268.2px) rotate(-201.8deg); }
-  60% { transform: translate(164.1px, 270.7px) rotate(-206.2deg); }
-  62.5% { transform: translate(167.3px, 273px) rotate(-210.1deg); }
-  65% { transform: translate(170.2px, 275.4px) rotate(-213.6deg); }
-  67.5% { transform: translate(172.7px, 277.8px) rotate(-216.7deg); }
-  70% { transform: translate(174.9px, 280.2px) rotate(-219.7deg); }
-  72.5% { transform: translate(176.9px, 282.6px) rotate(-222.4deg); }
-  75% { transform: translate(178.8px, 285.1px) rotate(-224.9deg); }
-  77.5% { transform: translate(180.5px, 287.6px) rotate(-227.3deg); }
-  80% { transform: translate(182px, 290.1px) rotate(-229.6deg); }
-  82.5% { transform: translate(183.4px, 292.6px) rotate(-231.7deg); }
-  85% { transform: translate(184.7px, 295.3px) rotate(-233.6deg); }
-  87.5% { transform: translate(185.8px, 298px) rotate(-235.4deg); }
-  90% { transform: translate(186.8px, 300.8px) rotate(-237deg); }
-  92.5% { transform: translate(187.7px, 303.7px) rotate(-238.4deg); }
-  95% { transform: translate(188.5px, 306.8px) rotate(-239.6deg); }
-  97.5% { transform: translate(189.2px, 310.1px) rotate(-240.6deg); }
-  100% { transform: translate(189.7px, 313.6px) rotate(-241.2deg); }
+  0% { transform: translate(189.9px, 316.4px) rotate(-224deg); }
+  2.5% { transform: translate(189.6px, 313.1px) rotate(-223.8deg); }
+  5% { transform: translate(189.2px, 309.9px) rotate(-223.3deg); }
+  7.5% { transform: translate(188.6px, 306.9px) rotate(-222.7deg); }
+  10% { transform: translate(187.8px, 304px) rotate(-221.8deg); }
+  12.5% { transform: translate(187px, 301.2px) rotate(-220.8deg); }
+  15% { transform: translate(186px, 298.4px) rotate(-219.6deg); }
+  17.5% { transform: translate(184.9px, 295.8px) rotate(-218.2deg); }
+  20% { transform: translate(183.7px, 293.2px) rotate(-216.7deg); }
+  22.5% { transform: translate(182.3px, 290.6px) rotate(-215deg); }
+  25% { transform: translate(180.8px, 288.1px) rotate(-213.2deg); }
+  27.5% { transform: translate(179.1px, 285.6px) rotate(-211.2deg); }
+  30% { transform: translate(177.3px, 283.1px) rotate(-209deg); }
+  32.5% { transform: translate(175.3px, 280.7px) rotate(-206.6deg); }
+  35% { transform: translate(173.1px, 278.2px) rotate(-204deg); }
+  37.5% { transform: translate(170.5px, 275.8px) rotate(-201.1deg); }
+  40% { transform: translate(167.7px, 273.3px) rotate(-197.8deg); }
+  42.5% { transform: translate(164.3px, 270.8px) rotate(-194.1deg); }
+  45% { transform: translate(160.2px, 268.2px) rotate(-189.5deg); }
+  47.5% { transform: translate(154.8px, 265.4px) rotate(-183.4deg); }
+  50% { transform: translate(144.2px, 261.7px) rotate(-171.5deg); }
+  52.5% { transform: translate(154.8px, 265.4px) rotate(-183.4deg); }
+  55% { transform: translate(160.2px, 268.2px) rotate(-189.5deg); }
+  57.5% { transform: translate(164.3px, 270.8px) rotate(-194.1deg); }
+  60% { transform: translate(167.7px, 273.3px) rotate(-197.8deg); }
+  62.5% { transform: translate(170.5px, 275.8px) rotate(-201.1deg); }
+  65% { transform: translate(173.1px, 278.2px) rotate(-204deg); }
+  67.5% { transform: translate(175.3px, 280.7px) rotate(-206.6deg); }
+  70% { transform: translate(177.3px, 283.1px) rotate(-209deg); }
+  72.5% { transform: translate(179.1px, 285.6px) rotate(-211.2deg); }
+  75% { transform: translate(180.8px, 288.1px) rotate(-213.2deg); }
+  77.5% { transform: translate(182.3px, 290.6px) rotate(-215deg); }
+  80% { transform: translate(183.7px, 293.2px) rotate(-216.7deg); }
+  82.5% { transform: translate(184.9px, 295.8px) rotate(-218.2deg); }
+  85% { transform: translate(186px, 298.4px) rotate(-219.6deg); }
+  87.5% { transform: translate(187px, 301.2px) rotate(-220.8deg); }
+  90% { transform: translate(187.8px, 304px) rotate(-221.8deg); }
+  92.5% { transform: translate(188.6px, 306.9px) rotate(-222.7deg); }
+  95% { transform: translate(189.2px, 309.9px) rotate(-223.3deg); }
+  97.5% { transform: translate(189.6px, 313.1px) rotate(-223.8deg); }
+  100% { transform: translate(189.9px, 316.4px) rotate(-224deg); }
 }
 #bone-LOWER_ARM_R-SIDE { animation: anim-bone-LOWER_ARM_R-SIDE 2000ms linear infinite; transform-origin: 0px 0px; }
 @keyframes anim-bone-HAND_R-SIDE {
-  0% { transform: translate(145.9px, 289.5px) rotate(-159.5deg); }
-  47.5% { transform: translate(141.3px, 213.9px) rotate(-159.5deg); }
-  50% { transform: translate(141px, 210.7px) rotate(-159.5deg); }
-  52.5% { transform: translate(141.3px, 213.9px) rotate(-159.5deg); }
-  100% { transform: translate(145.9px, 289.5px) rotate(-159.5deg); }
+  0% { transform: translate(155.2px, 280.4px) rotate(-240.2deg); }
+  47.5% { transform: translate(151.8px, 215.4px) rotate(-240.2deg); }
+  50% { transform: translate(151.6px, 212.3px) rotate(-240.2deg); }
+  52.5% { transform: translate(151.8px, 215.4px) rotate(-240.2deg); }
+  100% { transform: translate(155.2px, 280.4px) rotate(-240.2deg); }
 }
 #bone-HAND_R-SIDE { animation: anim-bone-HAND_R-SIDE 2000ms linear infinite; transform-origin: 0px 0px; }
 @keyframes anim-bone-UPPER_LEG_L-SIDE {
-  0% { transform: translate(220px, 320px) rotate(-100deg); }
-  100% { transform: translate(220px, 320px) rotate(-100deg); }
+  0% { transform: translate(220px, 320px) rotate(-100.7deg); }
+  100% { transform: translate(220px, 320px) rotate(-100.7deg); }
 }
 #bone-UPPER_LEG_L-SIDE { animation: anim-bone-UPPER_LEG_L-SIDE 2000ms linear infinite; transform-origin: 0px 0px; }
 @keyframes anim-bone-LOWER_LEG_L-SIDE {
-  0% { transform: translate(288.9px, 307.9px) rotate(-2.7deg); }
-  100% { transform: translate(288.9px, 307.9px) rotate(-2.7deg); }
+  0% { transform: translate(288.8px, 307px) rotate(-12.7deg); }
+  100% { transform: translate(288.8px, 307px) rotate(-12.7deg); }
 }
 #bone-LOWER_LEG_L-SIDE { animation: anim-bone-LOWER_LEG_L-SIDE 2000ms linear infinite; transform-origin: 0px 0px; }
 @keyframes anim-bone-FOOT_L-SIDE {
-  0% { transform: translate(291.8px, 367.8px) rotate(-2.7deg); }
-  100% { transform: translate(291.8px, 367.8px) rotate(-2.7deg); }
+  0% { transform: translate(302px, 365.6px) rotate(-12.7deg); }
+  100% { transform: translate(302px, 365.6px) rotate(-12.7deg); }
 }
 #bone-FOOT_L-SIDE { animation: anim-bone-FOOT_L-SIDE 2000ms linear infinite; transform-origin: 0px 0px; }
 @keyframes anim-bone-UPPER_LEG_R-SIDE {
-  0% { transform: translate(220px, 320px) rotate(-97.2deg); }
-  100% { transform: translate(220px, 320px) rotate(-97.2deg); }
+  0% { transform: translate(220px, 320px) rotate(-90.2deg); }
+  100% { transform: translate(220px, 320px) rotate(-90.2deg); }
 }
 #bone-UPPER_LEG_R-SIDE { animation: anim-bone-UPPER_LEG_R-SIDE 2000ms linear infinite; transform-origin: 0px 0px; }
 @keyframes anim-bone-LOWER_LEG_R-SIDE {
-  0% { transform: translate(289.5px, 311.3px) rotate(-5.3deg); }
-  100% { transform: translate(289.5px, 311.3px) rotate(-5.3deg); }
+  0% { transform: translate(290px, 319.7px) rotate(-0.2deg); }
+  100% { transform: translate(290px, 319.7px) rotate(-0.2deg); }
 }
 #bone-LOWER_LEG_R-SIDE { animation: anim-bone-LOWER_LEG_R-SIDE 2000ms linear infinite; transform-origin: 0px 0px; }
 @keyframes anim-bone-FOOT_R-SIDE {
-  0% { transform: translate(294.9px, 371px) rotate(-5.3deg); }
-  100% { transform: translate(294.9px, 371px) rotate(-5.3deg); }
+  0% { transform: translate(290.2px, 379.7px) rotate(-0.2deg); }
+  100% { transform: translate(290.2px, 379.7px) rotate(-0.2deg); }
 }
 #bone-FOOT_R-SIDE { animation: anim-bone-FOOT_R-SIDE 2000ms linear infinite; transform-origin: 0px 0px; }
-@keyframes anim-prop-a0ec3126-0161-4eaa-8077-0fe453b46b9f-SIDE {
-  0% { transform: translate(145.9px, 289.5px) rotate(0deg) scale(1, 1); }
-  50% { transform: translate(141.1px, 209.9px) rotate(0deg) scale(1, 1); }
-  100% { transform: translate(145.9px, 289.5px) rotate(0deg) scale(1, 1); }
+@keyframes anim-muscle-CHEST-TORSO-SIDE {
+  0% { opacity: 1; }
+  2.5% { opacity: 1; }
+  5% { opacity: 1; }
+  7.5% { opacity: 1; }
+  10% { opacity: 1; }
+  12.5% { opacity: 1; }
+  15% { opacity: 1; }
+  17.5% { opacity: 1; }
+  20% { opacity: 1; }
+  22.5% { opacity: 1; }
+  25% { opacity: 1; }
+  27.5% { opacity: 1; }
+  30% { opacity: 1; }
+  32.5% { opacity: 1; }
+  35% { opacity: 1; }
+  37.5% { opacity: 1; }
+  40% { opacity: 1; }
+  42.5% { opacity: 1; }
+  45% { opacity: 1; }
+  47.5% { opacity: 1; }
+  50% { opacity: 1; }
+  52.5% { opacity: 1; }
+  55% { opacity: 1; }
+  57.5% { opacity: 1; }
+  60% { opacity: 1; }
+  62.5% { opacity: 1; }
+  65% { opacity: 1; }
+  67.5% { opacity: 1; }
+  70% { opacity: 1; }
+  72.5% { opacity: 1; }
+  75% { opacity: 1; }
+  77.5% { opacity: 1; }
+  80% { opacity: 1; }
+  82.5% { opacity: 1; }
+  85% { opacity: 1; }
+  87.5% { opacity: 1; }
+  90% { opacity: 1; }
+  92.5% { opacity: 1; }
+  95% { opacity: 1; }
+  97.5% { opacity: 1; }
+  100% { opacity: 1; }
 }
-#prop-a0ec3126-0161-4eaa-8077-0fe453b46b9f-SIDE { animation: anim-prop-a0ec3126-0161-4eaa-8077-0fe453b46b9f-SIDE 2000ms linear infinite; transform-origin: 0px 0px; }
-@keyframes anim-prop-baca6599-1234-4136-8791-000042f08287-SIDE {
-  0% { transform: translate(171.3px, 350px) rotate(0deg) scale(1.3, 1.4); }
-  100% { transform: translate(171.3px, 350px) rotate(0deg) scale(1.3, 1.4); }
+#muscle-group-CHEST-TORSO-SIDE { animation: anim-muscle-CHEST-TORSO-SIDE 2000ms linear infinite; }
+@keyframes anim-muscle-ABS-TORSO-SIDE {
+  0% { opacity: 0; }
+  2.5% { opacity: 0; }
+  5% { opacity: 0; }
+  7.5% { opacity: 0; }
+  10% { opacity: 0; }
+  12.5% { opacity: 0; }
+  15% { opacity: 0; }
+  17.5% { opacity: 0; }
+  20% { opacity: 0; }
+  22.5% { opacity: 0; }
+  25% { opacity: 0; }
+  27.5% { opacity: 0; }
+  30% { opacity: 0; }
+  32.5% { opacity: 0; }
+  35% { opacity: 0; }
+  37.5% { opacity: 0; }
+  40% { opacity: 0; }
+  42.5% { opacity: 0; }
+  45% { opacity: 0; }
+  47.5% { opacity: 0; }
+  50% { opacity: 0; }
+  52.5% { opacity: 0; }
+  55% { opacity: 0; }
+  57.5% { opacity: 0; }
+  60% { opacity: 0; }
+  62.5% { opacity: 0; }
+  65% { opacity: 0; }
+  67.5% { opacity: 0; }
+  70% { opacity: 0; }
+  72.5% { opacity: 0; }
+  75% { opacity: 0; }
+  77.5% { opacity: 0; }
+  80% { opacity: 0; }
+  82.5% { opacity: 0; }
+  85% { opacity: 0; }
+  87.5% { opacity: 0; }
+  90% { opacity: 0; }
+  92.5% { opacity: 0; }
+  95% { opacity: 0; }
+  97.5% { opacity: 0; }
+  100% { opacity: 0; }
 }
-#prop-baca6599-1234-4136-8791-000042f08287-SIDE { animation: anim-prop-baca6599-1234-4136-8791-000042f08287-SIDE 2000ms linear infinite; transform-origin: 0px 0px; }
+#muscle-group-ABS-TORSO-SIDE { animation: anim-muscle-ABS-TORSO-SIDE 2000ms linear infinite; }
+@keyframes anim-muscle-BACK-TORSO-SIDE {
+  0% { opacity: 0; }
+  2.5% { opacity: 0; }
+  5% { opacity: 0; }
+  7.5% { opacity: 0; }
+  10% { opacity: 0; }
+  12.5% { opacity: 0; }
+  15% { opacity: 0; }
+  17.5% { opacity: 0; }
+  20% { opacity: 0; }
+  22.5% { opacity: 0; }
+  25% { opacity: 0; }
+  27.5% { opacity: 0; }
+  30% { opacity: 0; }
+  32.5% { opacity: 0; }
+  35% { opacity: 0; }
+  37.5% { opacity: 0; }
+  40% { opacity: 0; }
+  42.5% { opacity: 0; }
+  45% { opacity: 0; }
+  47.5% { opacity: 0; }
+  50% { opacity: 0; }
+  52.5% { opacity: 0; }
+  55% { opacity: 0; }
+  57.5% { opacity: 0; }
+  60% { opacity: 0; }
+  62.5% { opacity: 0; }
+  65% { opacity: 0; }
+  67.5% { opacity: 0; }
+  70% { opacity: 0; }
+  72.5% { opacity: 0; }
+  75% { opacity: 0; }
+  77.5% { opacity: 0; }
+  80% { opacity: 0; }
+  82.5% { opacity: 0; }
+  85% { opacity: 0; }
+  87.5% { opacity: 0; }
+  90% { opacity: 0; }
+  92.5% { opacity: 0; }
+  95% { opacity: 0; }
+  97.5% { opacity: 0; }
+  100% { opacity: 0; }
+}
+#muscle-group-BACK-TORSO-SIDE { animation: anim-muscle-BACK-TORSO-SIDE 2000ms linear infinite; }
+@keyframes anim-muscle-BICEPS-UPPER_ARM_L-SIDE {
+  0% { opacity: 1; }
+  2.5% { opacity: 1; }
+  5% { opacity: 1; }
+  7.5% { opacity: 1; }
+  10% { opacity: 1; }
+  12.5% { opacity: 1; }
+  15% { opacity: 1; }
+  17.5% { opacity: 1; }
+  20% { opacity: 1; }
+  22.5% { opacity: 1; }
+  25% { opacity: 1; }
+  27.5% { opacity: 1; }
+  30% { opacity: 1; }
+  32.5% { opacity: 1; }
+  35% { opacity: 1; }
+  37.5% { opacity: 1; }
+  40% { opacity: 1; }
+  42.5% { opacity: 1; }
+  45% { opacity: 1; }
+  47.5% { opacity: 1; }
+  50% { opacity: 1; }
+  52.5% { opacity: 1; }
+  55% { opacity: 1; }
+  57.5% { opacity: 1; }
+  60% { opacity: 1; }
+  62.5% { opacity: 1; }
+  65% { opacity: 1; }
+  67.5% { opacity: 1; }
+  70% { opacity: 1; }
+  72.5% { opacity: 1; }
+  75% { opacity: 1; }
+  77.5% { opacity: 1; }
+  80% { opacity: 1; }
+  82.5% { opacity: 1; }
+  85% { opacity: 1; }
+  87.5% { opacity: 1; }
+  90% { opacity: 1; }
+  92.5% { opacity: 1; }
+  95% { opacity: 1; }
+  97.5% { opacity: 1; }
+  100% { opacity: 1; }
+}
+#muscle-group-BICEPS-UPPER_ARM_L-SIDE { animation: anim-muscle-BICEPS-UPPER_ARM_L-SIDE 2000ms linear infinite; }
+@keyframes anim-muscle-BICEPS-UPPER_ARM_R-SIDE {
+  0% { opacity: 1; }
+  2.5% { opacity: 1; }
+  5% { opacity: 1; }
+  7.5% { opacity: 1; }
+  10% { opacity: 1; }
+  12.5% { opacity: 1; }
+  15% { opacity: 1; }
+  17.5% { opacity: 1; }
+  20% { opacity: 1; }
+  22.5% { opacity: 1; }
+  25% { opacity: 1; }
+  27.5% { opacity: 1; }
+  30% { opacity: 1; }
+  32.5% { opacity: 1; }
+  35% { opacity: 1; }
+  37.5% { opacity: 1; }
+  40% { opacity: 1; }
+  42.5% { opacity: 1; }
+  45% { opacity: 1; }
+  47.5% { opacity: 1; }
+  50% { opacity: 1; }
+  52.5% { opacity: 1; }
+  55% { opacity: 1; }
+  57.5% { opacity: 1; }
+  60% { opacity: 1; }
+  62.5% { opacity: 1; }
+  65% { opacity: 1; }
+  67.5% { opacity: 1; }
+  70% { opacity: 1; }
+  72.5% { opacity: 1; }
+  75% { opacity: 1; }
+  77.5% { opacity: 1; }
+  80% { opacity: 1; }
+  82.5% { opacity: 1; }
+  85% { opacity: 1; }
+  87.5% { opacity: 1; }
+  90% { opacity: 1; }
+  92.5% { opacity: 1; }
+  95% { opacity: 1; }
+  97.5% { opacity: 1; }
+  100% { opacity: 1; }
+}
+#muscle-group-BICEPS-UPPER_ARM_R-SIDE { animation: anim-muscle-BICEPS-UPPER_ARM_R-SIDE 2000ms linear infinite; }
+@keyframes anim-muscle-TRICEPS-UPPER_ARM_L-SIDE {
+  0% { opacity: 1; }
+  2.5% { opacity: 1; }
+  5% { opacity: 1; }
+  7.5% { opacity: 1; }
+  10% { opacity: 1; }
+  12.5% { opacity: 1; }
+  15% { opacity: 1; }
+  17.5% { opacity: 1; }
+  20% { opacity: 1; }
+  22.5% { opacity: 1; }
+  25% { opacity: 1; }
+  27.5% { opacity: 1; }
+  30% { opacity: 1; }
+  32.5% { opacity: 1; }
+  35% { opacity: 1; }
+  37.5% { opacity: 1; }
+  40% { opacity: 1; }
+  42.5% { opacity: 1; }
+  45% { opacity: 1; }
+  47.5% { opacity: 1; }
+  50% { opacity: 1; }
+  52.5% { opacity: 1; }
+  55% { opacity: 1; }
+  57.5% { opacity: 1; }
+  60% { opacity: 1; }
+  62.5% { opacity: 1; }
+  65% { opacity: 1; }
+  67.5% { opacity: 1; }
+  70% { opacity: 1; }
+  72.5% { opacity: 1; }
+  75% { opacity: 1; }
+  77.5% { opacity: 1; }
+  80% { opacity: 1; }
+  82.5% { opacity: 1; }
+  85% { opacity: 1; }
+  87.5% { opacity: 1; }
+  90% { opacity: 1; }
+  92.5% { opacity: 1; }
+  95% { opacity: 1; }
+  97.5% { opacity: 1; }
+  100% { opacity: 1; }
+}
+#muscle-group-TRICEPS-UPPER_ARM_L-SIDE { animation: anim-muscle-TRICEPS-UPPER_ARM_L-SIDE 2000ms linear infinite; }
+@keyframes anim-muscle-TRICEPS-UPPER_ARM_R-SIDE {
+  0% { opacity: 1; }
+  2.5% { opacity: 1; }
+  5% { opacity: 1; }
+  7.5% { opacity: 1; }
+  10% { opacity: 1; }
+  12.5% { opacity: 1; }
+  15% { opacity: 1; }
+  17.5% { opacity: 1; }
+  20% { opacity: 1; }
+  22.5% { opacity: 1; }
+  25% { opacity: 1; }
+  27.5% { opacity: 1; }
+  30% { opacity: 1; }
+  32.5% { opacity: 1; }
+  35% { opacity: 1; }
+  37.5% { opacity: 1; }
+  40% { opacity: 1; }
+  42.5% { opacity: 1; }
+  45% { opacity: 1; }
+  47.5% { opacity: 1; }
+  50% { opacity: 1; }
+  52.5% { opacity: 1; }
+  55% { opacity: 1; }
+  57.5% { opacity: 1; }
+  60% { opacity: 1; }
+  62.5% { opacity: 1; }
+  65% { opacity: 1; }
+  67.5% { opacity: 1; }
+  70% { opacity: 1; }
+  72.5% { opacity: 1; }
+  75% { opacity: 1; }
+  77.5% { opacity: 1; }
+  80% { opacity: 1; }
+  82.5% { opacity: 1; }
+  85% { opacity: 1; }
+  87.5% { opacity: 1; }
+  90% { opacity: 1; }
+  92.5% { opacity: 1; }
+  95% { opacity: 1; }
+  97.5% { opacity: 1; }
+  100% { opacity: 1; }
+}
+#muscle-group-TRICEPS-UPPER_ARM_R-SIDE { animation: anim-muscle-TRICEPS-UPPER_ARM_R-SIDE 2000ms linear infinite; }
+@keyframes anim-muscle-QUADS-UPPER_LEG_L-SIDE {
+  0% { opacity: 0; }
+  2.5% { opacity: 0; }
+  5% { opacity: 0; }
+  7.5% { opacity: 0; }
+  10% { opacity: 0; }
+  12.5% { opacity: 0; }
+  15% { opacity: 0; }
+  17.5% { opacity: 0; }
+  20% { opacity: 0; }
+  22.5% { opacity: 0; }
+  25% { opacity: 0; }
+  27.5% { opacity: 0; }
+  30% { opacity: 0; }
+  32.5% { opacity: 0; }
+  35% { opacity: 0; }
+  37.5% { opacity: 0; }
+  40% { opacity: 0; }
+  42.5% { opacity: 0; }
+  45% { opacity: 0; }
+  47.5% { opacity: 0; }
+  50% { opacity: 0; }
+  52.5% { opacity: 0; }
+  55% { opacity: 0; }
+  57.5% { opacity: 0; }
+  60% { opacity: 0; }
+  62.5% { opacity: 0; }
+  65% { opacity: 0; }
+  67.5% { opacity: 0; }
+  70% { opacity: 0; }
+  72.5% { opacity: 0; }
+  75% { opacity: 0; }
+  77.5% { opacity: 0; }
+  80% { opacity: 0; }
+  82.5% { opacity: 0; }
+  85% { opacity: 0; }
+  87.5% { opacity: 0; }
+  90% { opacity: 0; }
+  92.5% { opacity: 0; }
+  95% { opacity: 0; }
+  97.5% { opacity: 0; }
+  100% { opacity: 0; }
+}
+#muscle-group-QUADS-UPPER_LEG_L-SIDE { animation: anim-muscle-QUADS-UPPER_LEG_L-SIDE 2000ms linear infinite; }
+@keyframes anim-muscle-QUADS-UPPER_LEG_R-SIDE {
+  0% { opacity: 0; }
+  2.5% { opacity: 0; }
+  5% { opacity: 0; }
+  7.5% { opacity: 0; }
+  10% { opacity: 0; }
+  12.5% { opacity: 0; }
+  15% { opacity: 0; }
+  17.5% { opacity: 0; }
+  20% { opacity: 0; }
+  22.5% { opacity: 0; }
+  25% { opacity: 0; }
+  27.5% { opacity: 0; }
+  30% { opacity: 0; }
+  32.5% { opacity: 0; }
+  35% { opacity: 0; }
+  37.5% { opacity: 0; }
+  40% { opacity: 0; }
+  42.5% { opacity: 0; }
+  45% { opacity: 0; }
+  47.5% { opacity: 0; }
+  50% { opacity: 0; }
+  52.5% { opacity: 0; }
+  55% { opacity: 0; }
+  57.5% { opacity: 0; }
+  60% { opacity: 0; }
+  62.5% { opacity: 0; }
+  65% { opacity: 0; }
+  67.5% { opacity: 0; }
+  70% { opacity: 0; }
+  72.5% { opacity: 0; }
+  75% { opacity: 0; }
+  77.5% { opacity: 0; }
+  80% { opacity: 0; }
+  82.5% { opacity: 0; }
+  85% { opacity: 0; }
+  87.5% { opacity: 0; }
+  90% { opacity: 0; }
+  92.5% { opacity: 0; }
+  95% { opacity: 0; }
+  97.5% { opacity: 0; }
+  100% { opacity: 0; }
+}
+#muscle-group-QUADS-UPPER_LEG_R-SIDE { animation: anim-muscle-QUADS-UPPER_LEG_R-SIDE 2000ms linear infinite; }
+@keyframes anim-muscle-HAMSTRINGS-UPPER_LEG_L-SIDE {
+  0% { opacity: 0; }
+  2.5% { opacity: 0; }
+  5% { opacity: 0; }
+  7.5% { opacity: 0; }
+  10% { opacity: 0; }
+  12.5% { opacity: 0; }
+  15% { opacity: 0; }
+  17.5% { opacity: 0; }
+  20% { opacity: 0; }
+  22.5% { opacity: 0; }
+  25% { opacity: 0; }
+  27.5% { opacity: 0; }
+  30% { opacity: 0; }
+  32.5% { opacity: 0; }
+  35% { opacity: 0; }
+  37.5% { opacity: 0; }
+  40% { opacity: 0; }
+  42.5% { opacity: 0; }
+  45% { opacity: 0; }
+  47.5% { opacity: 0; }
+  50% { opacity: 0; }
+  52.5% { opacity: 0; }
+  55% { opacity: 0; }
+  57.5% { opacity: 0; }
+  60% { opacity: 0; }
+  62.5% { opacity: 0; }
+  65% { opacity: 0; }
+  67.5% { opacity: 0; }
+  70% { opacity: 0; }
+  72.5% { opacity: 0; }
+  75% { opacity: 0; }
+  77.5% { opacity: 0; }
+  80% { opacity: 0; }
+  82.5% { opacity: 0; }
+  85% { opacity: 0; }
+  87.5% { opacity: 0; }
+  90% { opacity: 0; }
+  92.5% { opacity: 0; }
+  95% { opacity: 0; }
+  97.5% { opacity: 0; }
+  100% { opacity: 0; }
+}
+#muscle-group-HAMSTRINGS-UPPER_LEG_L-SIDE { animation: anim-muscle-HAMSTRINGS-UPPER_LEG_L-SIDE 2000ms linear infinite; }
+@keyframes anim-muscle-HAMSTRINGS-UPPER_LEG_R-SIDE {
+  0% { opacity: 0; }
+  2.5% { opacity: 0; }
+  5% { opacity: 0; }
+  7.5% { opacity: 0; }
+  10% { opacity: 0; }
+  12.5% { opacity: 0; }
+  15% { opacity: 0; }
+  17.5% { opacity: 0; }
+  20% { opacity: 0; }
+  22.5% { opacity: 0; }
+  25% { opacity: 0; }
+  27.5% { opacity: 0; }
+  30% { opacity: 0; }
+  32.5% { opacity: 0; }
+  35% { opacity: 0; }
+  37.5% { opacity: 0; }
+  40% { opacity: 0; }
+  42.5% { opacity: 0; }
+  45% { opacity: 0; }
+  47.5% { opacity: 0; }
+  50% { opacity: 0; }
+  52.5% { opacity: 0; }
+  55% { opacity: 0; }
+  57.5% { opacity: 0; }
+  60% { opacity: 0; }
+  62.5% { opacity: 0; }
+  65% { opacity: 0; }
+  67.5% { opacity: 0; }
+  70% { opacity: 0; }
+  72.5% { opacity: 0; }
+  75% { opacity: 0; }
+  77.5% { opacity: 0; }
+  80% { opacity: 0; }
+  82.5% { opacity: 0; }
+  85% { opacity: 0; }
+  87.5% { opacity: 0; }
+  90% { opacity: 0; }
+  92.5% { opacity: 0; }
+  95% { opacity: 0; }
+  97.5% { opacity: 0; }
+  100% { opacity: 0; }
+}
+#muscle-group-HAMSTRINGS-UPPER_LEG_R-SIDE { animation: anim-muscle-HAMSTRINGS-UPPER_LEG_R-SIDE 2000ms linear infinite; }
+@keyframes anim-muscle-CALVES-LOWER_LEG_L-SIDE {
+  0% { opacity: 0; }
+  2.5% { opacity: 0; }
+  5% { opacity: 0; }
+  7.5% { opacity: 0; }
+  10% { opacity: 0; }
+  12.5% { opacity: 0; }
+  15% { opacity: 0; }
+  17.5% { opacity: 0; }
+  20% { opacity: 0; }
+  22.5% { opacity: 0; }
+  25% { opacity: 0; }
+  27.5% { opacity: 0; }
+  30% { opacity: 0; }
+  32.5% { opacity: 0; }
+  35% { opacity: 0; }
+  37.5% { opacity: 0; }
+  40% { opacity: 0; }
+  42.5% { opacity: 0; }
+  45% { opacity: 0; }
+  47.5% { opacity: 0; }
+  50% { opacity: 0; }
+  52.5% { opacity: 0; }
+  55% { opacity: 0; }
+  57.5% { opacity: 0; }
+  60% { opacity: 0; }
+  62.5% { opacity: 0; }
+  65% { opacity: 0; }
+  67.5% { opacity: 0; }
+  70% { opacity: 0; }
+  72.5% { opacity: 0; }
+  75% { opacity: 0; }
+  77.5% { opacity: 0; }
+  80% { opacity: 0; }
+  82.5% { opacity: 0; }
+  85% { opacity: 0; }
+  87.5% { opacity: 0; }
+  90% { opacity: 0; }
+  92.5% { opacity: 0; }
+  95% { opacity: 0; }
+  97.5% { opacity: 0; }
+  100% { opacity: 0; }
+}
+#muscle-group-CALVES-LOWER_LEG_L-SIDE { animation: anim-muscle-CALVES-LOWER_LEG_L-SIDE 2000ms linear infinite; }
+@keyframes anim-muscle-CALVES-LOWER_LEG_R-SIDE {
+  0% { opacity: 0; }
+  2.5% { opacity: 0; }
+  5% { opacity: 0; }
+  7.5% { opacity: 0; }
+  10% { opacity: 0; }
+  12.5% { opacity: 0; }
+  15% { opacity: 0; }
+  17.5% { opacity: 0; }
+  20% { opacity: 0; }
+  22.5% { opacity: 0; }
+  25% { opacity: 0; }
+  27.5% { opacity: 0; }
+  30% { opacity: 0; }
+  32.5% { opacity: 0; }
+  35% { opacity: 0; }
+  37.5% { opacity: 0; }
+  40% { opacity: 0; }
+  42.5% { opacity: 0; }
+  45% { opacity: 0; }
+  47.5% { opacity: 0; }
+  50% { opacity: 0; }
+  52.5% { opacity: 0; }
+  55% { opacity: 0; }
+  57.5% { opacity: 0; }
+  60% { opacity: 0; }
+  62.5% { opacity: 0; }
+  65% { opacity: 0; }
+  67.5% { opacity: 0; }
+  70% { opacity: 0; }
+  72.5% { opacity: 0; }
+  75% { opacity: 0; }
+  77.5% { opacity: 0; }
+  80% { opacity: 0; }
+  82.5% { opacity: 0; }
+  85% { opacity: 0; }
+  87.5% { opacity: 0; }
+  90% { opacity: 0; }
+  92.5% { opacity: 0; }
+  95% { opacity: 0; }
+  97.5% { opacity: 0; }
+  100% { opacity: 0; }
+}
+#muscle-group-CALVES-LOWER_LEG_R-SIDE { animation: anim-muscle-CALVES-LOWER_LEG_R-SIDE 2000ms linear infinite; }
+@keyframes anim-joint-SHOULDERS-UPPER_ARM_L-SIDE {
+  0% { opacity: 1; }
+  2.5% { opacity: 1; }
+  5% { opacity: 1; }
+  7.5% { opacity: 1; }
+  10% { opacity: 1; }
+  12.5% { opacity: 1; }
+  15% { opacity: 1; }
+  17.5% { opacity: 1; }
+  20% { opacity: 1; }
+  22.5% { opacity: 1; }
+  25% { opacity: 1; }
+  27.5% { opacity: 1; }
+  30% { opacity: 1; }
+  32.5% { opacity: 1; }
+  35% { opacity: 1; }
+  37.5% { opacity: 1; }
+  40% { opacity: 1; }
+  42.5% { opacity: 1; }
+  45% { opacity: 1; }
+  47.5% { opacity: 1; }
+  50% { opacity: 1; }
+  52.5% { opacity: 1; }
+  55% { opacity: 1; }
+  57.5% { opacity: 1; }
+  60% { opacity: 1; }
+  62.5% { opacity: 1; }
+  65% { opacity: 1; }
+  67.5% { opacity: 1; }
+  70% { opacity: 1; }
+  72.5% { opacity: 1; }
+  75% { opacity: 1; }
+  77.5% { opacity: 1; }
+  80% { opacity: 1; }
+  82.5% { opacity: 1; }
+  85% { opacity: 1; }
+  87.5% { opacity: 1; }
+  90% { opacity: 1; }
+  92.5% { opacity: 1; }
+  95% { opacity: 1; }
+  97.5% { opacity: 1; }
+  100% { opacity: 1; }
+}
+#joint-active-group-UPPER_ARM_L-SIDE { animation: anim-joint-SHOULDERS-UPPER_ARM_L-SIDE 2000ms linear infinite; }
+@keyframes anim-joint-SHOULDERS-UPPER_ARM_R-SIDE {
+  0% { opacity: 1; }
+  2.5% { opacity: 1; }
+  5% { opacity: 1; }
+  7.5% { opacity: 1; }
+  10% { opacity: 1; }
+  12.5% { opacity: 1; }
+  15% { opacity: 1; }
+  17.5% { opacity: 1; }
+  20% { opacity: 1; }
+  22.5% { opacity: 1; }
+  25% { opacity: 1; }
+  27.5% { opacity: 1; }
+  30% { opacity: 1; }
+  32.5% { opacity: 1; }
+  35% { opacity: 1; }
+  37.5% { opacity: 1; }
+  40% { opacity: 1; }
+  42.5% { opacity: 1; }
+  45% { opacity: 1; }
+  47.5% { opacity: 1; }
+  50% { opacity: 1; }
+  52.5% { opacity: 1; }
+  55% { opacity: 1; }
+  57.5% { opacity: 1; }
+  60% { opacity: 1; }
+  62.5% { opacity: 1; }
+  65% { opacity: 1; }
+  67.5% { opacity: 1; }
+  70% { opacity: 1; }
+  72.5% { opacity: 1; }
+  75% { opacity: 1; }
+  77.5% { opacity: 1; }
+  80% { opacity: 1; }
+  82.5% { opacity: 1; }
+  85% { opacity: 1; }
+  87.5% { opacity: 1; }
+  90% { opacity: 1; }
+  92.5% { opacity: 1; }
+  95% { opacity: 1; }
+  97.5% { opacity: 1; }
+  100% { opacity: 1; }
+}
+#joint-active-group-UPPER_ARM_R-SIDE { animation: anim-joint-SHOULDERS-UPPER_ARM_R-SIDE 2000ms linear infinite; }
+@keyframes anim-prop-b213d794-97a5-4bfd-9c42-4ed9023af8d1-SIDE {
+  0% { transform: translate(155.2px, 280.4px) rotate(0deg) scale(1, 1); }
+  50% { transform: translate(151.7px, 212px) rotate(0deg) scale(1, 1); }
+  100% { transform: translate(155.2px, 280.4px) rotate(0deg) scale(1, 1); }
+}
+#prop-b213d794-97a5-4bfd-9c42-4ed9023af8d1-SIDE { animation: anim-prop-b213d794-97a5-4bfd-9c42-4ed9023af8d1-SIDE 2000ms linear infinite; transform-origin: 0px 0px; }
+@keyframes anim-prop-e31c8528-99eb-44c3-861d-ee747a621b5a-SIDE {
+  0% { transform: translate(156.4px, 351.2px) rotate(0deg) scale(1.3, 1.3); }
+  100% { transform: translate(156.4px, 351.2px) rotate(0deg) scale(1.3, 1.3); }
+}
+#prop-e31c8528-99eb-44c3-861d-ee747a621b5a-SIDE { animation: anim-prop-e31c8528-99eb-44c3-861d-ee747a621b5a-SIDE 2000ms linear infinite; transform-origin: 0px 0px; }
   </style>
   <rect width="100%" height="100%" fill="#111827"/>
   <g transform="translate(0, 0) scale(1)">
-<g id="prop-baca6599-1234-4136-8791-000042f08287-SIDE" transform="translate(171.33758544921875, 350.00001525878906) rotate(0) scale(1, 1)"><path d="&#10;                M-117,-10 L117,-10 L117,0 L-117,0 Z&#10;                M-102,0 L-102,58 L-96,58 L-96,0 Z&#10;                M102,0 L102,58 L108,58 L108,0 Z&#10;            " fill="#374151" stroke="#9ca3af" stroke-width="2"/></g>
-<g transform="scale(1)"><g id="bone-HAND_L-SIDE" transform="translate(142.87469378814635, 239.7372403503307) rotate(-215.16060269570895)"><path d="M-7,0 L7,0 L7,5 L6,15 L-6,15 L-7,5 Z" fill="#fca5a5" stroke="none" stroke-width="0"/><circle cx="0" cy="0" r="6" fill="#fca5a5"/></g><g id="bone-LOWER_ARM_L-SIDE" transform="translate(173.81781610764477, 279.012209237913) rotate(-218.23311178705708)"><path d="M-11,0 C-15,15 -13,35 -8,50 L8,50 C13,35 15,15 11,0 Z" fill="#fca5a5" stroke="none" stroke-width="0"/><circle cx="0" cy="0" r="12" fill="#fca5a5"/></g><g id="bone-FOOT_L-SIDE" transform="translate(291.7595520019531, 367.8343811035156) rotate(-2.6873971175771203)"><path d="M-6,0 L6,0 L6,8 L16,22 L-6,22 Z" fill="#ffffff" stroke="none" stroke-width="0"/><circle cx="0" cy="0" r="6" fill="#ffffff"/></g><g id="bone-FOOT_R-SIDE" transform="translate(294.94427490234375, 371.01910400390625) rotate(-5.250556884257165)"><path d="M-6,0 L6,0 L6,8 L16,22 L-6,22 Z" fill="#ffffff" stroke="none" stroke-width="0"/><circle cx="0" cy="0" r="6" fill="#ffffff"/></g><g id="bone-UPPER_ARM_L-SIDE" transform="translate(130, 320) rotate(-133.08870704970204)"><path d="M-13,0 C-20,20 -18,45 -11,60 L11,60 C18,45 20,20 13,0 Z" fill="#fca5a5" stroke="none" stroke-width="0"/><circle cx="0" cy="0" r="12" fill="#fca5a5"/></g><g id="bone-LOWER_LEG_L-SIDE" transform="translate(288.94634808414867, 307.90036835852374) rotate(-2.6873971175771203)"><path d="M-11,0 C-18,20 -14,45 -8,60 L8,60 C11,45 12,15 11,0 Z" fill="#fca5a5" stroke="none" stroke-width="0"/><circle cx="0" cy="0" r="12" fill="#1f2937"/></g><g id="bone-LOWER_LEG_R-SIDE" transform="translate(289.4535970613998, 311.2708617130491) rotate(-5.250556884257165)"><path d="M-11,0 C-18,20 -14,45 -8,60 L8,60 C11,45 12,15 11,0 Z" fill="#fca5a5" stroke="none" stroke-width="0"/><circle cx="0" cy="0" r="12" fill="#1f2937"/></g><g id="bone-UPPER_LEG_L-SIDE" transform="translate(220, 320) rotate(-99.95367500463944)"><path d="M-16,0 C-22,20 -20,50 -12,70 L12,70 C22,50 22,20 16,0 Z" fill="#1f2937" stroke="none" stroke-width="0"/><circle cx="0" cy="0" r="12" fill="#1f2937"/></g><g id="bone-UPPER_LEG_R-SIDE" transform="translate(220, 320) rotate(-97.16354557576173)"><path d="M-16,0 C-22,20 -20,50 -12,70 L12,70 C22,50 22,20 16,0 Z" fill="#1f2937" stroke="none" stroke-width="0"/><circle cx="0" cy="0" r="12" fill="#1f2937"/></g><g id="bone-HIPS-SIDE" transform="translate(200, 320) rotate(-90)"><path d="M-16,0 L16,0 C20,10 20,20 16,25 L-18,25 C-24,15 -22,5 -16,0 Z" fill="#1f2937" stroke="none" stroke-width="0"/><circle cx="0" cy="0" r="16" fill="#1f2937"/></g><g id="bone-NECK-SIDE" transform="translate(125, 316) rotate(-90)"><path d="M-8,0 L8,0 L10,-12 L-4,-12 Z" fill="#fca5a5" stroke="none" stroke-width="0"/><circle cx="0" cy="0" r="8" fill="#fca5a5"/></g><g id="bone-TORSO-SIDE" transform="translate(200, 320) rotate(-90)"><path d="M-15,0 C-15,-10 -18,-40 -20,-75 L28,-75 C34,-45 25,-10 15,0 Z" fill="#3b82f6" stroke="none" stroke-width="0"/><circle cx="0" cy="0" r="15" fill="#3b82f6"/></g><g id="bone-ROOT-SIDE" transform="translate(200, 320) rotate(-90)"><path d="M-16,-6 L16,-6 L16,6 L-16,6 Z" fill="#d97706" stroke="none" stroke-width="0"/></g><g id="bone-HEAD-SIDE" transform="translate(115, 314) rotate(-90)"><path d="M-11,10 L11,10 L15,-5 L15,-25 C15,-45 0,-50 -11,-45 L-11,-25 L-15,-5 Z" fill="#fca5a5" stroke="none" stroke-width="0"/><circle cx="0" cy="0" r="12" fill="#fca5a5"/><g><path d="M14,-38 C15,-55 -5,-60 -18,-45 C-25,-35 -24,-10 -14,-5 L-10,-5 L-10,-20 L8,-38 Z" fill="#2f9352"/><g opacity="0.6" fill="#aa4444"><circle cx="8" cy="-28" r="2"/><path d="M14,-25 L18,-22 L14,-18 Z"/> </g></g></g><g id="bone-UPPER_ARM_R-SIDE" transform="translate(130, 320) rotate(-133.08870704970204)"><path d="M-13,0 C-20,20 -18,45 -11,60 L11,60 C18,45 20,20 13,0 Z" fill="#fca5a5" stroke="none" stroke-width="0"/><circle cx="0" cy="0" r="12" fill="#fca5a5"/></g><g id="bone-LOWER_ARM_R-SIDE" transform="translate(173.81781610764477, 279.012209237913) rotate(-218.23311178705708)"><path d="M-11,0 C-15,15 -13,35 -8,50 L8,50 C13,35 15,15 11,0 Z" fill="#fca5a5" stroke="none" stroke-width="0"/><circle cx="0" cy="0" r="12" fill="#fca5a5"/></g><g id="bone-HAND_R-SIDE" transform="translate(142.87469378814635, 239.7372403503307) rotate(-159.469281100989)"><path d="M-7,0 L7,0 L7,5 L6,15 L-6,15 L-7,5 Z" fill="#fca5a5" stroke="none" stroke-width="0"/><circle cx="0" cy="0" r="6" fill="#fca5a5"/></g></g>
-<g id="prop-a0ec3126-0161-4eaa-8077-0fe453b46b9f-SIDE" transform="translate(142.87469378814632, 239.73724035033067) rotate(0) scale(1, 1)"><path d="M-35,0 A35,35 0 1,0 35,0 A35,35 0 1,0 -35,0 Z M-4,0 A4,4 0 1,0 4,0 A4,4 0 1,0 -4,0 Z" fill="#6b7280" stroke="none" stroke-width="0"/><circle r="3" fill="#facc15" stroke="black" stroke-width="1"/></g>
+<g id="prop-e31c8528-99eb-44c3-861d-ee747a621b5a-SIDE" transform="translate(156.36792755126953, 351.17926025390625) rotate(0) scale(1, 1)"><path d="&#10;                M-112.5,-10 L112.5,-10 L112.5,0 L-112.5,0 Z&#10;                M-97.5,0 L-97.5,52 L-91.5,52 L-91.5,0 Z&#10;                M97.5,0 L97.5,52 L103.5,52 L103.5,0 Z&#10;            " fill="#374151" stroke="#9ca3af" stroke-width="2"/></g>
+<g transform="scale(1)"><g id="bone-HAND_L-SIDE" transform="translate(155.1886749267578, 280.42454528808594) rotate(-191.40218910621496)"><path d="M-7,0 L7,0 L7,5 L6,15 L-6,15 L-7,5 Z" fill="#fca5a5" stroke="none" stroke-width="0"/><circle cx="0" cy="0" r="6" fill="#fca5a5"/></g><g id="bone-LOWER_ARM_L-SIDE" transform="translate(189.89304649468866, 316.4190809021898) rotate(-223.95454182105237)"><path d="M-11,0 C-15,15 -13,35 -8,50 L8,50 C13,35 15,15 11,0 Z" fill="#fca5a5" stroke="none" stroke-width="0"/><circle cx="0" cy="0" r="12" fill="#fca5a5"/></g><g id="bone-FOOT_L-SIDE" transform="translate(302.0047302246094, 365.5660400390625) rotate(-12.723739578139643)"><path d="M-6,0 L6,0 L6,8 L16,22 L-6,22 Z" fill="#ffffff" stroke="none" stroke-width="0"/><circle cx="0" cy="0" r="6" fill="#ffffff"/></g><g id="bone-FOOT_R-SIDE" transform="translate(290.2122497558594, 379.71697998046875) rotate(-0.20322891741439264)"><path d="M-6,0 L6,0 L6,8 L16,22 L-6,22 Z" fill="#ffffff" stroke="none" stroke-width="0"/><circle cx="0" cy="0" r="6" fill="#ffffff"/></g><g id="bone-UPPER_ARM_L-SIDE" transform="translate(130, 320) rotate(-93.42155913609373)"><path d="M-13,0 C-20,20 -18,45 -11,60 L11,60 C18,45 20,20 13,0 Z" fill="#fca5a5" stroke="none" stroke-width="0"/><circle cx="0" cy="0" r="12" fill="#fca5a5"/><g id="joint-active-group-UPPER_ARM_L-SIDE" opacity="0"><circle cx="0" cy="0" r="12" fill="#ef4444" class="muscle-pulse" stroke="none"/></g><g id="muscle-group-BICEPS-UPPER_ARM_L-SIDE" opacity="0"><path d="M0,10 L11,10 C18,30 18,45 10,55 L0,55 Z" fill="#ef4444" class="muscle-pulse"/></g><g id="muscle-group-TRICEPS-UPPER_ARM_L-SIDE" opacity="0"><path d="M0,10 L-11,10 C-18,30 -18,45 -10,55 L0,55 Z" fill="#ef4444" class="muscle-pulse"/></g></g><g id="bone-LOWER_LEG_L-SIDE" transform="translate(288.78970728021, 307.0394378091449) rotate(-12.723739578139643)"><path d="M-11,0 C-18,20 -14,45 -8,60 L8,60 C11,45 12,15 11,0 Z" fill="#fca5a5" stroke="none" stroke-width="0"/><circle cx="0" cy="0" r="12" fill="#1f2937"/><g id="muscle-group-CALVES-LOWER_LEG_L-SIDE" opacity="0"><path d="M0,10 L-8,10 C-14,25 -12,45 -6,55 L0,55 Z" fill="#ef4444" class="muscle-pulse"/></g></g><g id="bone-LOWER_LEG_R-SIDE" transform="translate(289.9994293774711, 319.71735741926807) rotate(-0.20322891741439264)"><path d="M-11,0 C-18,20 -14,45 -8,60 L8,60 C11,45 12,15 11,0 Z" fill="#fca5a5" stroke="none" stroke-width="0"/><circle cx="0" cy="0" r="12" fill="#1f2937"/><g id="muscle-group-CALVES-LOWER_LEG_R-SIDE" opacity="0"><path d="M0,10 L-8,10 C-14,25 -12,45 -6,55 L0,55 Z" fill="#ef4444" class="muscle-pulse"/></g></g><g id="bone-UPPER_LEG_L-SIDE" transform="translate(220, 320) rotate(-100.66992964705071)"><path d="M-16,0 C-22,20 -20,50 -12,70 L12,70 C22,50 22,20 16,0 Z" fill="#1f2937" stroke="none" stroke-width="0"/><circle cx="0" cy="0" r="12" fill="#1f2937"/><g id="joint-active-group-UPPER_LEG_L-SIDE" opacity="0"><circle cx="0" cy="0" r="12" fill="#ef4444" class="muscle-pulse" stroke="none"/></g><g id="muscle-group-QUADS-UPPER_LEG_L-SIDE" opacity="0"><path d="M0,10 L12,10 C18,30 18,50 10,60 L0,60 Z" fill="#ef4444" class="muscle-pulse"/></g><g id="muscle-group-HAMSTRINGS-UPPER_LEG_L-SIDE" opacity="0"><path d="M0,10 L-12,10 C-18,30 -18,50 -10,60 L0,60 Z" fill="#ef4444" class="muscle-pulse"/></g></g><g id="bone-UPPER_LEG_R-SIDE" transform="translate(220, 320) rotate(-90.23134672843621)"><path d="M-16,0 C-22,20 -20,50 -12,70 L12,70 C22,50 22,20 16,0 Z" fill="#1f2937" stroke="none" stroke-width="0"/><circle cx="0" cy="0" r="12" fill="#1f2937"/><g id="joint-active-group-UPPER_LEG_R-SIDE" opacity="0"><circle cx="0" cy="0" r="12" fill="#ef4444" class="muscle-pulse" stroke="none"/></g><g id="muscle-group-QUADS-UPPER_LEG_R-SIDE" opacity="0"><path d="M0,10 L12,10 C18,30 18,50 10,60 L0,60 Z" fill="#ef4444" class="muscle-pulse"/></g><g id="muscle-group-HAMSTRINGS-UPPER_LEG_R-SIDE" opacity="0"><path d="M0,10 L-12,10 C-18,30 -18,50 -10,60 L0,60 Z" fill="#ef4444" class="muscle-pulse"/></g></g><g id="bone-HIPS-SIDE" transform="translate(200, 320) rotate(-90)"><path d="M-16,0 L16,0 C20,10 20,20 16,25 L-18,25 C-24,15 -22,5 -16,0 Z" fill="#1f2937" stroke="none" stroke-width="0"/><circle cx="0" cy="0" r="16" fill="#1f2937"/></g><g id="bone-NECK-SIDE" transform="translate(125, 316) rotate(-90)"><path d="M-8,0 L8,0 L10,-12 L-4,-12 Z" fill="#fca5a5" stroke="none" stroke-width="0"/><circle cx="0" cy="0" r="8" fill="#fca5a5"/></g><g id="bone-TORSO-SIDE" transform="translate(200, 320) rotate(-90)"><path d="M-15,0 C-15,-10 -18,-40 -20,-75 L28,-75 C34,-45 25,-10 15,0 Z" fill="#3b82f6" stroke="none" stroke-width="0"/><circle cx="0" cy="0" r="15" fill="#3b82f6"/><g id="muscle-group-CHEST-TORSO-SIDE" opacity="0"><path d="M0,-75 L28,-75 C32,-55 28,-40 20,-40 L0,-40 Z" fill="#ef4444" class="muscle-pulse"/></g><g id="muscle-group-ABS-TORSO-SIDE" opacity="0"><path d="M0,-40 L20,-40 C20,-10 15,0 15,0 L0,0 Z" fill="#ef4444" class="muscle-pulse"/></g><g id="muscle-group-BACK-TORSO-SIDE" opacity="0"><path d="M0,-75 L-20,-75 C-18,-40 -15,-10 -15,0 L0,0 Z" fill="#ef4444" class="muscle-pulse"/></g></g><g id="bone-ROOT-SIDE" transform="translate(200, 320) rotate(-90)"><path d="M-16,-6 L16,-6 L16,6 L-16,6 Z" fill="#d97706" stroke="none" stroke-width="0"/></g><g id="bone-HEAD-SIDE" transform="translate(115, 314) rotate(-90)"><path d="M-11,10 L11,10 L15,-5 L15,-25 C15,-45 0,-50 -11,-45 L-11,-25 L-15,-5 Z" fill="#fca5a5" stroke="none" stroke-width="0"/><circle cx="0" cy="0" r="12" fill="#fca5a5"/><g><path d="M14,-38 C15,-55 -5,-60 -18,-45 C-25,-35 -24,-10 -14,-5 L-10,-5 L-10,-20 L8,-38 Z" fill="#627193"/><g opacity="0.6" fill="#aa4444"><circle cx="8" cy="-28" r="2"/><path d="M14,-25 L18,-22 L14,-18 Z"/> </g></g></g><g id="bone-UPPER_ARM_R-SIDE" transform="translate(130, 320) rotate(-93.42155913609373)"><path d="M-13,0 C-20,20 -18,45 -11,60 L11,60 C18,45 20,20 13,0 Z" fill="#fca5a5" stroke="none" stroke-width="0"/><circle cx="0" cy="0" r="12" fill="#fca5a5"/><g id="joint-active-group-UPPER_ARM_R-SIDE" opacity="0"><circle cx="0" cy="0" r="12" fill="#ef4444" class="muscle-pulse" stroke="none"/></g><g id="muscle-group-BICEPS-UPPER_ARM_R-SIDE" opacity="0"><path d="M0,10 L11,10 C18,30 18,45 10,55 L0,55 Z" fill="#ef4444" class="muscle-pulse"/></g><g id="muscle-group-TRICEPS-UPPER_ARM_R-SIDE" opacity="0"><path d="M0,10 L-11,10 C-18,30 -18,45 -10,55 L0,55 Z" fill="#ef4444" class="muscle-pulse"/></g></g><g id="bone-LOWER_ARM_R-SIDE" transform="translate(189.89304649468866, 316.4190809021898) rotate(-223.95454182105237)"><path d="M-11,0 C-15,15 -13,35 -8,50 L8,50 C13,35 15,15 11,0 Z" fill="#fca5a5" stroke="none" stroke-width="0"/><circle cx="0" cy="0" r="12" fill="#fca5a5"/></g><g id="bone-HAND_R-SIDE" transform="translate(155.1886749267578, 280.42454528808594) rotate(-240.2106965223216)"><path d="M-7,0 L7,0 L7,5 L6,15 L-6,15 L-7,5 Z" fill="#fca5a5" stroke="none" stroke-width="0"/><circle cx="0" cy="0" r="6" fill="#fca5a5"/></g></g>
+<g id="prop-b213d794-97a5-4bfd-9c42-4ed9023af8d1-SIDE" transform="translate(155.1886749267578, 280.42454528808594) rotate(0) scale(1, 1)"><path d="M-35,0 A35,35 0 1,0 35,0 A35,35 0 1,0 -35,0 Z M-4,0 A4,4 0 1,0 4,0 A4,4 0 1,0 -4,0 Z" fill="#6b7280" stroke="none" stroke-width="0"/></g>
 </g>
 
 </svg>
+    
