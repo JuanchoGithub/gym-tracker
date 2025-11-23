@@ -18,10 +18,17 @@ const DescriptionTab: React.FC<DescriptionTabProps> = ({ exercise }) => {
   const hasStockInstructions = instructions && instructions.steps.length > 0 && instructions.title !== instructionKey;
 
   const renderContent = () => {
+    const header = (
+      <div className="flex items-baseline gap-2 mb-2">
+        <h3 className="text-lg font-semibold text-primary">{t('description_instructions')}</h3>
+        <span className="text-xs text-text-secondary font-mono opacity-50">({exercise.id})</span>
+      </div>
+    );
+
     if (isCustom) {
       return (
         <div>
-          <h3 className="text-lg font-semibold text-primary mb-2">{t('description_instructions')}</h3>
+          {header}
           {exercise.notes ? (
             <p className="text-text-secondary whitespace-pre-wrap">{exercise.notes}</p>
           ) : (
@@ -33,7 +40,7 @@ const DescriptionTab: React.FC<DescriptionTabProps> = ({ exercise }) => {
     
     return (
       <div>
-        <h3 className="text-lg font-semibold text-primary mb-2">{t('description_instructions')}</h3>
+        {header}
         {hasStockInstructions ? (
           <ul className="list-disc list-inside space-y-2 text-text-secondary">
             {instructions.steps.map((step, index) => (

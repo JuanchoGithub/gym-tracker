@@ -12,6 +12,7 @@ import Modal from '../components/common/Modal';
 import HistoryDetailModal from '../components/modals/HistoryDetailModal';
 import HistoryChartsTab from '../components/history/HistoryChartsTab';
 import { TranslationKey } from '../contexts/I18nContext';
+import { exportToCsv } from '../services/dataService';
 
 const HistoryPage: React.FC = () => {
   const { history, getExerciseById, deleteHistorySession, upsertRoutine, startWorkout, startHistoryEdit, routines } = useContext(AppContext);
@@ -66,6 +67,37 @@ const HistoryPage: React.FC = () => {
     startWorkout(routineFromHistory);
   };
 
+  const handleExportHistory = () => {
+    if (history.length === 0) return;
+
+    const data = history.flatMap(session => {
+      const date = new Date(session.startTime).toISOString().split('T')[0]; // YYYY-MM-DD
+      const time = new Date(session.startTime).toLocaleTimeString();
+      
+      return session.exercises.flatMap(ex => {
+        const exerciseDef = getExerciseById(ex.exerciseId);
+        const exerciseName = exerciseDef?.name || t('history_page_unknown_exercise');
+        
+        return ex.sets.map((set, index) => ({
+          Date: date,
+          Time: time,
+          Routine: session.routineName,
+          Exercise: exerciseName,
+          BodyPart: exerciseDef?.bodyPart || '',
+          Category: exerciseDef?.category || '',
+          SetNo: index + 1,
+          Type: set.type,
+          Weight: set.weight,
+          Reps: set.reps,
+          DurationSeconds: set.time || 0,
+          Notes: ex.note || ''
+        }));
+      });
+    });
+
+    exportToCsv(data, `gym_tracker_history_${new Date().toISOString().slice(0, 10)}`);
+  };
+
   if (history.length === 0) {
     return (
       <div className="text-center text-text-secondary">
@@ -88,7 +120,16 @@ const HistoryPage: React.FC = () => {
   return (
     <>
       <div className="space-y-4 sm:space-y-6" onClick={() => { if (menuOpenId) setMenuOpenId(null) }}>
-        <h1 className="text-3xl font-bold text-center">{t('nav_history')}</h1>
+        <div className="relative flex items-center justify-center">
+            <h1 className="text-3xl font-bold text-center">{t('nav_history')}</h1>
+            <button 
+                onClick={handleExportHistory}
+                className="absolute right-0 p-2 text-text-secondary hover:text-primary transition-colors rounded-full hover:bg-white/5"
+                title="Export to CSV"
+            >
+                <Icon name="export" className="w-6 h-6" />
+            </button>
+        </div>
 
         <div className="flex justify-center border-b border-secondary/20">
             <button
