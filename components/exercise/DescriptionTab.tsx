@@ -1,6 +1,8 @@
+
 import React from 'react';
 import { Exercise } from '../../types';
 import { useI18n } from '../../hooks/useI18n';
+import ExerciseAnimation from './ExerciseAnimation';
 
 interface DescriptionTabProps {
   exercise: Exercise;
@@ -45,7 +47,12 @@ const DescriptionTab: React.FC<DescriptionTabProps> = ({ exercise }) => {
     );
   };
 
-  return <div className="space-y-4">{renderContent()}</div>;
+  return (
+    <div className="space-y-4">
+      <ExerciseAnimation exerciseId={exercise.id} />
+      {renderContent()}
+    </div>
+  );
 };
 
 export default DescriptionTab;
