@@ -153,6 +153,7 @@ export const es_supplements = {
   supplements_name_whey: 'Proteína de Suero (Whey)',
   supplements_name_whey_isolate: 'Aislado de Suero (Whey Isolate)',
   supplements_name_plant_protein: 'Mezcla de Proteína Vegetal',
+  supplements_name_protein_with_eaa: 'Proteína + EAAs/BCAAs',
   supplements_name_creatine: 'Creatina Monohidratada',
   supplements_name_omega_algae: 'Aceite de Algas (Omega-3)',
   supplements_name_omega_fish: 'Aceite de Pescado (Omega-3)',
@@ -171,7 +172,7 @@ export const es_supplements = {
   supplements_note_protein_breakfast: 'Tomar con tu primera comida para asegurar un suministro constante de proteína durante el día.',
   supplements_note_protein_lunch: 'Tomar con tu comida del mediodía para mantener los niveles de aminoácidos.',
   supplements_note_protein_bedtime: 'Tomar antes de dormir para ayudar a la recuperación muscular durante la noche.',
-  supplements_note_creatine: 'Mejora la fuerza, la potencia y la masa muscular. Mezclala con agua o tu batido post-entrenamiento.',
+  supplements_note_creatine: 'Mejora la fuerza, la potencia y la masa muscular. Mezclala con agua o tu batido de proteínas.',
   supplements_note_omega: 'Apoya la salud articular, reduce la inflamación y ayuda en la recuperación general.',
   supplements_note_vit_d3: 'Esencial para la salud ósea, la función inmunológica y la regulación hormonal.',
   supplements_note_magnesium: 'Ayuda en la relajación muscular, mejora la calidad del sueño y apoya la producción de energía.',
@@ -211,4 +212,6 @@ export const es_supplements = {
   supplements_workout_day: '💪 Día de Entrenamiento',
   supplements_rest_day: '🧘 Día de Descanso',
   supplements_all_days: 'Todos los Días',
+
+  explanation_action_merge_protein: 'Mi proteína ya incluye esto',
 };

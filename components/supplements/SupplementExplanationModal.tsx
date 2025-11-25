@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import Modal from '../common/Modal';
 import { useI18n } from '../../hooks/useI18n';
@@ -9,6 +10,7 @@ interface SupplementExplanationModalProps {
     onClose: () => void;
     explanations: Explanation[];
     explanationIdToShow?: string;
+    onConsolidateEaa?: () => void;
 }
 
 // A simple parser for **bold** text.
@@ -31,7 +33,7 @@ const SimpleMarkdown: React.FC<{ text: string }> = ({ text }) => {
 };
 
 
-const SupplementExplanationModal: React.FC<SupplementExplanationModalProps> = ({ isOpen, onClose, explanations, explanationIdToShow }) => {
+const SupplementExplanationModal: React.FC<SupplementExplanationModalProps> = ({ isOpen, onClose, explanations, explanationIdToShow, onConsolidateEaa }) => {
     const { t } = useI18n();
 
     const explanationsToRender = useMemo(() => {
@@ -47,6 +49,7 @@ const SupplementExplanationModal: React.FC<SupplementExplanationModalProps> = ({
         ? explanationsToRender[0].title
         : t('explanation_modal_title');
     
+    const showConsolidateButton = onConsolidateEaa && explanationsToRender.some(e => e.id === 'eaa');
 
     return (
         <Modal 
@@ -72,7 +75,12 @@ const SupplementExplanationModal: React.FC<SupplementExplanationModalProps> = ({
                     </div>
                 ))}
             </div>
-            <div className="flex-shrink-0 pt-4 mt-4 border-t border-secondary/20">
+            <div className="flex-shrink-0 pt-4 mt-4 border-t border-secondary/20 flex flex-col sm:flex-row gap-3">
+                {showConsolidateButton && (
+                    <button onClick={() => { onConsolidateEaa?.(); onClose(); }} className="w-full bg-primary/10 text-primary hover:bg-primary/20 border border-primary/30 font-bold py-3 rounded-lg transition-colors">
+                        {t('explanation_action_merge_protein')}
+                    </button>
+                )}
                 <button onClick={onClose} className="w-full bg-secondary text-white font-bold py-3 rounded-lg hover:bg-slate-600 transition-colors">
                     {t('common_close')}
                 </button>

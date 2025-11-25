@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useContext, useCallback } from 'react';
 import { AppContext } from '../../contexts/AppContext';
 import { useI18n } from '../../hooks/useI18n';
@@ -8,7 +9,7 @@ import ConfirmModal from '../modals/ConfirmModal';
 import { SupplementPlanItem } from '../../types';
 import SupplementLog from './SupplementLog';
 import SupplementExplanationModal from './SupplementExplanationModal';
-import { generateSupplementExplanations, Explanation } from '../../services/explanationService';
+import { generateSupplementExplanations, Explanation, getExplanationIdForSupplement } from '../../services/explanationService';
 import { Icon } from '../common/Icon';
 import DeleteSupplementModal from './DeleteSupplementModal';
 
@@ -162,6 +163,49 @@ const SupplementSchedule: React.FC<SupplementScheduleProps> = ({ onEditAnswers }
     setDeletingItemWithOptions(null);
   };
 
+  const handleConsolidateEaaIntoProtein = () => {
+    if (!supplementPlan) return;
+
+    const combinedProteinName = t('supplements_name_protein_with_eaa');
+    
+    // 1. Find all separate EAA items to remove
+    const eaaItems = supplementPlan.plan.filter(item => getExplanationIdForSupplement(item.supplement) === 'eaa');
+    const eaaIds = new Set(eaaItems.map(i => i.id));
+
+    // 2. Find all protein items to update
+    const proteinItems = supplementPlan.plan.filter(item => getExplanationIdForSupplement(item.supplement) === 'protein');
+    
+    if (proteinItems.length === 0) return;
+
+    // Update plan
+    const newPlanItems = supplementPlan.plan
+        .filter(item => !eaaIds.has(item.id)) // Remove EAAs
+        .map(item => {
+            if (getExplanationIdForSupplement(item.supplement) === 'protein') {
+                return { ...item, supplement: combinedProteinName };
+            }
+            return item;
+        });
+
+    setSupplementPlan({ ...supplementPlan, plan: newPlanItems });
+
+    // Update custom supplements if they were custom
+    // If protein was generated but now user overrides, we probably don't need to add to customSupplements unless we want persistence.
+    // However, if EAA was custom, remove it from userSupplements.
+    const proteinIds = new Set(proteinItems.map(i => i.id));
+    
+    const newUserSupplements = userSupplements
+        .filter(item => !eaaIds.has(item.id))
+        .map(item => {
+            if (proteinIds.has(item.id) || getExplanationIdForSupplement(item.supplement) === 'protein') {
+                 return { ...item, supplement: combinedProteinName };
+            }
+            return item;
+        });
+    
+    setUserSupplements(newUserSupplements);
+  };
+
   const handleSetTrainingOnly = () => {
     if (!deletingItemWithOptions) return;
     updateItemDayType(deletingItemWithOptions.id, { trainingDayOnly: true });
@@ -264,6 +308,7 @@ const SupplementSchedule: React.FC<SupplementScheduleProps> = ({ onEditAnswers }
             onClose={() => setIsExplanationOpen(false)}
             explanations={explanations}
             explanationIdToShow={explanationIdToShow}
+            onConsolidateEaa={handleConsolidateEaaIntoProtein}
         />
     </div>
   );

@@ -63,6 +63,11 @@ export const generateSupplementPlan = (info: SupplementInfo, t: (key: string, re
 
     // --- Calculations ---
 
+    // Check if the user already has a combined Protein + EAA item in their custom list
+    const hasCombinedProteinEaa = customSupplements.some(item => 
+        item.supplement === t('supplements_name_protein_with_eaa')
+    );
+
     // 1. Protein
     let prot_total_needed_factor = 1.6;
     if (objetivo === 1) prot_total_needed_factor = 2.0; // Gain
@@ -74,6 +79,18 @@ export const generateSupplementPlan = (info: SupplementInfo, t: (key: string, re
     
     let whey_needed = prot_total_needed - dieta_prot;
 
+    // If custom supplements contain ANY protein (including the combined one), we might not need to add more generated protein.
+    // However, generateSupplementPlan usually generates the base. If the user has customized it, they might not use the generator again 
+    // unless they want to "Reset". 
+    // The prompt implies that if the user chose "My protein has that", it replaced the protein item.
+    // If we are re-generating, we should respect that choice if possible, or rely on the fact that
+    // generating a new plan creates NEW protein items. 
+    // BUT, if "Protein + EAAs" is in customSupplements, we should probably SKIP generating EAAs later.
+
+    // We'll generate standard protein here. If the user later consolidates again, it changes to combined.
+    // If the user *already* has a custom combined item, they likely deleted the standard generated protein previously.
+    // We will assume standard protein generation unless protein needs are met by custom items.
+    
     if ((isVegan && whey_needed > 15) || whey_needed > 15 || info.desiredSupplements.some(s => /protein|whey/i.test(s))) {
         let proteinType = t('supplements_name_whey');
         if (isLactoseIntolerant) proteinType = t('supplements_name_whey_isolate');
@@ -373,6 +390,8 @@ export const reviewSupplementPlan = (
 
 
     // --- GENERATING SUGGESTIONS ---
+    const combinedProteinName = t('supplements_name_protein_with_eaa');
+    const hasCombinedProteinEaa = plan.plan.some(item => item.supplement === combinedProteinName);
 
     const isStrengthTraining = plan.info.routineType === 'strength' || plan.info.routineType === 'mixed';
     
@@ -507,7 +526,7 @@ export const reviewSupplementPlan = (
     // Suggestion 7: EAAs for High Density
     const hasEAA = plan.plan.some(item => getExplanationIdForSupplement(item.supplement) === 'eaa');
     const eaaName = t('supplements_name_eaa');
-    if (isHighDensity && !hasEAA) {
+    if (isHighDensity && !hasEAA && !hasCombinedProteinEaa) {
         suggestions.push({
             id: 'add-eaa-density',
             title: t('suggestion_add_eaa_density_title'),
@@ -550,7 +569,7 @@ export const reviewSupplementPlan = (
     }
 
     // Suggestion 9: BCAAs/EAAs for Early Morning (Fasted) Training
-    if (isEarlyMorningUser && !hasEAA) {
+    if (isEarlyMorningUser && !hasEAA && !hasCombinedProteinEaa) {
         suggestions.push({
             id: 'add-bcaa-morning',
             title: t('suggestion_add_bcaa_morning_title'),

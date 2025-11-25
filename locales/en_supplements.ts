@@ -153,6 +153,7 @@ export const en_supplements = {
   supplements_name_whey: 'Whey Protein',
   supplements_name_whey_isolate: 'Whey Isolate',
   supplements_name_plant_protein: 'Plant-Based Protein Blend',
+  supplements_name_protein_with_eaa: 'Protein + EAAs/BCAAs',
   supplements_name_creatine: 'Creatine Monohydrate',
   supplements_name_omega_algae: 'Algae Oil (Omega-3)',
   supplements_name_omega_fish: 'Fish Oil (Omega-3)',
@@ -211,4 +212,6 @@ export const en_supplements = {
   supplements_workout_day: '💪 Workout Day',
   supplements_rest_day: '🧘 Rest Day',
   supplements_all_days: 'On All Days',
+  
+  explanation_action_merge_protein: 'My protein already includes this',
 };
