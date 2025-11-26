@@ -1,9 +1,11 @@
 
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useState } from 'react';
 import { SupplementPlan, SupplementPlanItem } from '../../types';
 import { useI18n } from '../../hooks/useI18n';
 import { Icon } from '../common/Icon';
 import { getExplanationIdForSupplement } from '../../services/explanationService';
+import Modal from '../common/Modal';
+import { AppContext } from '../../contexts/AppContext';
 
 interface SupplementPlanOverviewProps {
   plan: SupplementPlan;
@@ -43,11 +45,69 @@ const timeOrder: { [key: string]: number } = {
     daily: 6
 };
 
+const StockBadge: React.FC<{ item: SupplementPlanItem }> = ({ item }) => {
+    const { t } = useI18n();
+    const { updateSupplementStock } = React.useContext(AppContext);
+    const [isRestockModalOpen, setIsRestockModalOpen] = useState(false);
+    const [amountToAdd, setAmountToAdd] = useState('');
+
+    if (item.stock === undefined) return null;
+
+    const stock = item.stock;
+    let bgColor = 'bg-green-500/20 text-green-400 border-green-500/30';
+    if (stock <= 5) bgColor = 'bg-red-500/20 text-red-400 border-red-500/30';
+    else if (stock <= 10) bgColor = 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+
+    const handleRestock = (e: React.FormEvent) => {
+        e.preventDefault();
+        const amount = parseInt(amountToAdd, 10);
+        if (!isNaN(amount) && amount > 0) {
+            updateSupplementStock(item.id, amount);
+            setIsRestockModalOpen(false);
+            setAmountToAdd('');
+        }
+    };
+
+    return (
+        <>
+            <button 
+                onClick={(e) => { e.stopPropagation(); setIsRestockModalOpen(true); }}
+                className={`px-2 py-0.5 rounded-full text-xs font-bold border flex items-center gap-1 ${bgColor} hover:brightness-110 transition-all`}
+            >
+                <Icon name="capsule" className="w-3 h-3" />
+                {t('supplements_stock_label')} {stock}
+            </button>
+            {isRestockModalOpen && (
+                <Modal isOpen={isRestockModalOpen} onClose={() => setIsRestockModalOpen(false)} title={t('supplements_stock_update_title')}>
+                    <form onSubmit={handleRestock} className="space-y-4">
+                        <p className="text-text-secondary">{t('supplements_stock_restock_prompt', { supplement: item.supplement })}</p>
+                        <div>
+                            <label className="block text-sm font-medium text-text-secondary">{t('supplements_stock_add_amount')}</label>
+                            <input
+                                type="number"
+                                value={amountToAdd}
+                                onChange={(e) => setAmountToAdd(e.target.value)}
+                                className="w-full bg-slate-900 border border-secondary/50 rounded-lg p-2 mt-1"
+                                placeholder="30"
+                                autoFocus
+                            />
+                        </div>
+                        <div className="flex justify-end gap-2">
+                             <button type="button" onClick={() => setIsRestockModalOpen(false)} className="bg-secondary px-4 py-2 rounded-lg">{t('common_cancel')}</button>
+                             <button type="submit" className="bg-primary px-4 py-2 rounded-lg">{t('common_confirm')}</button>
+                        </div>
+                    </form>
+                </Modal>
+            )}
+        </>
+    );
+};
+
 const SupplementItemCard: React.FC<{ item: SupplementPlanItem; onRemove: () => void; onOpenExplanation: (id: string) => void; }> = ({ item, onRemove, onOpenExplanation }) => {
   return (
     <div key={item.id} className="bg-surface p-4 rounded-lg shadow-md">
       <div className="flex items-start justify-between mb-2">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <h4 className="font-bold text-lg text-primary">{item.supplement}</h4>
           {getExplanationIdForSupplement(item.supplement) && (
             <button 
@@ -60,6 +120,7 @@ const SupplementItemCard: React.FC<{ item: SupplementPlanItem; onRemove: () => v
                 <Icon name="question-mark-circle" className="w-5 h-5" />
             </button>
           )}
+          <StockBadge item={item} />
         </div>
         <button onClick={onRemove} className="ml-2 p-1 text-red-400/70 hover:text-red-400 flex-shrink-0" aria-label={`Remove ${item.supplement}`}>
           <Icon name="trash" className="w-4 h-4" />

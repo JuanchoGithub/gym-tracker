@@ -48,6 +48,13 @@ export const en = {
   train_quick_hiit_desc_short: '30s / 15s x 10',
   train_quick_hiit_name: 'Quick HIIT ({time} min)',
   train_quick_hiit_desc: 'Work: {work}s, Rest: {rest}s, Rounds: {rounds}',
+  
+  // Check-in Card
+  checkin_title: 'Training Check-in',
+  checkin_message: 'We noticed your training volume dropped significantly this week. Is everything okay?',
+  checkin_option_busy: 'Just Busy',
+  checkin_option_deload: 'Planned Deload',
+  checkin_option_injury: 'Minor Injury/Break',
 
   // History Page
   history_no_data: 'No workout history found for this exercise.',
@@ -67,6 +74,20 @@ export const en = {
   history_delete_confirm_title: 'Delete Workout?',
   history_delete_confirm_message: 'Are you sure you want to permanently delete this workout session?',
   history_workout_editor_title: 'Edit Workout',
+  
+  // Insights Tab
+  history_tab_insights: 'Insights',
+  insights_empty_title: 'Not Enough Data',
+  insights_empty_desc: 'Keep logging your workouts and supplements. We need at least 3 sessions with and without a supplement to uncover trends.',
+  insights_volume_impact: 'Volume Impact',
+  insights_pr_impact: 'PR Impact',
+  insights_higher: '{value}% Higher',
+  insights_lower: '{value}% Lower',
+  insights_neutral: 'No Impact',
+  insights_sample_size: 'Based on {on} sessions with vs {off} without.',
+  insights_correlation_explanation: 'Correlation does not imply causation. These insights show how your performance metrics differ on days you logged specific supplements.',
+  insights_pr_chance: '{value}% more PRs',
+  insights_pr_chance_lower: '{value}% fewer PRs',
 
 
   // Exercises Page

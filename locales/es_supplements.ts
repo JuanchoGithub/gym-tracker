@@ -79,6 +79,8 @@ export const es_supplements = {
   supplements_add_name_placeholder: 'Ej: ZMA',
   supplements_add_dosage_label: 'Dosis',
   supplements_add_dosage_placeholder: 'Ej: 1 cápsula',
+  supplements_add_stock_label: 'Stock Inicial (Porciones)',
+  supplements_add_stock_placeholder: 'Ej: 30',
   supplements_add_time_label: 'Horario',
   supplements_add_time_placeholder: 'Ej: Antes de dormir',
   supplements_add_notes_label: 'Notas (opcional)',
@@ -98,6 +100,10 @@ export const es_supplements = {
   supplements_log_no_data_for_date: 'No había suplementos programados para este día.',
   supplements_no_plan: 'No hay items en tu plan para hoy.',
   supplements_about_plan: 'Sobre tu plan',
+  supplements_stock_label: 'Stock:',
+  supplements_stock_restock_prompt: 'Reponer {supplement}',
+  supplements_stock_update_title: 'Actualizar Stock',
+  supplements_stock_add_amount: 'Agregar Cantidad (Porciones)',
 
   supplements_review_modal_title: 'Revisión del Plan de Suplementos',
   supplements_review_analysis_title: 'Basado en tu actividad reciente:',
@@ -143,6 +149,12 @@ export const es_supplements = {
   suggestion_move_protein_lunch_reason: 'Ahora entrenás por la mañana. Para distribuir mejor tu ingesta de proteínas, considerá mover tu dosis de proteína del desayuno al almuerzo.',
   suggestion_move_protein_breakfast_title: 'Ajustar Horario de Proteína',
   suggestion_move_protein_breakfast_reason: 'Ya no entrenás por la mañana. Considerá tomar tu dosis extra de proteína con el desayuno en lugar del almuerzo para comenzar bien el día.',
+  
+  suggestion_caffeine_deload_title: '¿Hora de un Descanso de Estimulantes?',
+  suggestion_caffeine_deload_reason: 'Has estado usando suplementos estimulantes por más de 8 semanas. Un descanso de 1 semana puede ayudar a resetear tu tolerancia y mantener su efectividad.',
+  
+  suggestion_restock_title: 'Alerta de Stock Bajo: {supplement}',
+  suggestion_restock_reason: 'Te quedan {count} porciones. ¡Es hora de comprar más!',
 
   // Months
   month_january: 'Enero',

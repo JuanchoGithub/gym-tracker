@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import Modal from '../common/Modal';
 import { useI18n } from '../../hooks/useI18n';
@@ -15,6 +16,7 @@ const AddSupplementModal: React.FC<AddSupplementModalProps> = ({ isOpen, onClose
     const [dosage, setDosage] = useState('');
     const [time, setTime] = useState('');
     const [notes, setNotes] = useState('');
+    const [stock, setStock] = useState('');
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -22,12 +24,16 @@ const AddSupplementModal: React.FC<AddSupplementModalProps> = ({ isOpen, onClose
             alert(t('supplements_add_name_required'));
             return;
         }
-        onAdd({ supplement, dosage, time, notes });
+        
+        const stockVal = stock ? parseInt(stock, 10) : undefined;
+
+        onAdd({ supplement, dosage, time, notes, stock: stockVal });
         // Reset form
         setSupplement('');
         setDosage('');
         setTime('');
         setNotes('');
+        setStock('');
         onClose();
     };
 
@@ -55,6 +61,18 @@ const AddSupplementModal: React.FC<AddSupplementModalProps> = ({ isOpen, onClose
                         onChange={(e) => setDosage(e.target.value)}
                         className="w-full bg-slate-900 border border-secondary/50 rounded-lg p-2 mt-1"
                         placeholder={t('supplements_add_dosage_placeholder')}
+                    />
+                </div>
+                <div>
+                    <label htmlFor="supplement-stock" className="block text-sm font-medium text-text-secondary">{t('supplements_add_stock_label')}</label>
+                    <input
+                        id="supplement-stock"
+                        type="number"
+                        inputMode="numeric"
+                        value={stock}
+                        onChange={(e) => setStock(e.target.value)}
+                        className="w-full bg-slate-900 border border-secondary/50 rounded-lg p-2 mt-1"
+                        placeholder={t('supplements_add_stock_placeholder')}
                     />
                 </div>
                 <div>

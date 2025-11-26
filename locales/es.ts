@@ -22,7 +22,7 @@ export const es = {
   common_next: 'Siguiente',
   common_back: 'Atrás',
   common_ok: 'Ver Plan',
-  common_view: 'Ver',
+  common_view: 'View',
   common_step: 'Paso',
   
   // Navigation
@@ -48,6 +48,13 @@ export const es = {
   train_quick_hiit_desc_short: '30s / 15s x 10',
   train_quick_hiit_name: 'HIIT Rápido ({time} min)',
   train_quick_hiit_desc: 'Trabajo: {work}s, Descanso: {rest}s, Rondas: {rounds}',
+  
+  // Check-in Card
+  checkin_title: 'Control de Entrenamiento',
+  checkin_message: 'Notamos que tu volumen de entrenamiento bajó significativamente esta semana. ¿Está todo bien?',
+  checkin_option_busy: 'Solo Ocupado',
+  checkin_option_deload: 'Semana de Descarga',
+  checkin_option_injury: 'Lesión Menor/Descanso',
 
   // History Page
   history_no_data: 'No se encontró historial de entrenamiento para este ejercicio.',
@@ -67,6 +74,20 @@ export const es = {
   history_delete_confirm_title: '¿Borrar Entrenamiento?',
   history_delete_confirm_message: '¿Estás seguro de que querés borrar permanentemente esta sesión de entrenamiento?',
   history_workout_editor_title: 'Editar Entrenamiento',
+
+  // Insights Tab
+  history_tab_insights: 'Insights',
+  insights_empty_title: 'Insuficientes Datos',
+  insights_empty_desc: 'Seguí registrando tus entrenamientos y suplementos. Necesitamos al menos 3 sesiones con y sin un suplemento para mostrar correlaciones.',
+  insights_volume_impact: 'Impacto en Volumen',
+  insights_pr_impact: 'Impacto en Récords',
+  insights_higher: '{value}% Mayor',
+  insights_lower: '{value}% Menor',
+  insights_neutral: 'Sin Impacto',
+  insights_sample_size: 'Basado en {on} sesiones con vs {off} sin.',
+  insights_correlation_explanation: 'La correlación no implica causalidad. Estos datos muestran cómo cambia tu rendimiento los días que registraste suplementos específicos.',
+  insights_pr_chance: '{value}% más RPs',
+  insights_pr_chance_lower: '{value}% menos RPs',
 
   // Exercises Page
   search_placeholder: 'Buscar un ejercicio...',

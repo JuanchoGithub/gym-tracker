@@ -52,7 +52,7 @@ const getDateString = (d: Date) => {
 }
 
 const DailySupplementList: React.FC<DailySupplementListProps> = ({ date, readOnly = false, title, onOpenExplanation }) => {
-  const { supplementPlan, takenSupplements, setTakenSupplements } = useContext(AppContext);
+  const { supplementPlan, takenSupplements, toggleSupplementIntake } = useContext(AppContext);
   const { t, locale } = useI18n();
 
   const dateString = getDateString(date);
@@ -70,13 +70,7 @@ const DailySupplementList: React.FC<DailySupplementListProps> = ({ date, readOnl
 
   const handleToggleTaken = (itemId: string) => {
     if (readOnly) return;
-    setTakenSupplements(prev => {
-      const currentDayTaken = prev[dateString] || [];
-      const newDayTaken = currentDayTaken.includes(itemId)
-        ? currentDayTaken.filter(id => id !== itemId)
-        : [...currentDayTaken, itemId];
-      return { ...prev, [dateString]: newDayTaken };
-    });
+    toggleSupplementIntake(dateString, itemId);
   };
 
   const { groupedPlan, orderedGroups, isTrainingDay, scheduledCount } = useMemo(() => {
@@ -173,6 +167,11 @@ const DailySupplementList: React.FC<DailySupplementListProps> = ({ date, readOnl
                                             >
                                                 <Icon name="question-mark-circle" className="w-5 h-5" />
                                             </button>
+                                        )}
+                                        {item.stock !== undefined && item.stock <= 5 && !isTaken && (
+                                            <span className="text-[10px] font-bold bg-red-500/20 text-red-400 border border-red-500/30 px-1.5 py-0.5 rounded">
+                                                Low: {item.stock}
+                                            </span>
                                         )}
                                     </div>
                                     <div className="flex items-center gap-2 my-2 flex-wrap">

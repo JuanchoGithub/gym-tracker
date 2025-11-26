@@ -133,6 +133,7 @@ export interface SupplementPlanItem {
     isCustom?: boolean;
     trainingDayOnly?: boolean;
     restDayOnly?: boolean;
+    stock?: number; // Number of servings remaining
 }
 
 export interface SupplementPlan {

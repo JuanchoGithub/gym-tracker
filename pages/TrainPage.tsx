@@ -8,10 +8,15 @@ import ConfirmNewWorkoutModal from '../components/modals/ConfirmNewWorkoutModal'
 import { Icon } from '../components/common/Icon';
 import RoutineSection from '../components/train/RoutineSection';
 import QuickTrainingSection from '../components/train/QuickTrainingSection';
+import CheckInCard from '../components/train/CheckInCard';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 
 const TrainPage: React.FC = () => {
-  const { routines, startWorkout, activeWorkout, discardActiveWorkout, maximizeWorkout, startTemplateEdit, startHiitSession, startTemplateDuplicate } = useContext(AppContext);
+  const { 
+      routines, startWorkout, activeWorkout, discardActiveWorkout, maximizeWorkout, 
+      startTemplateEdit, startHiitSession, startTemplateDuplicate,
+      checkInState, handleCheckInResponse
+  } = useContext(AppContext);
   const { t } = useI18n();
   const [selectedRoutine, setSelectedRoutine] = useState<Routine | null>(null);
   const [isConfirmingNewWorkout, setIsConfirmingNewWorkout] = useState(false);
@@ -97,6 +102,10 @@ const TrainPage: React.FC = () => {
       </div>
       
       <div className="space-y-8">
+        {checkInState.active && (
+            <CheckInCard onCheckIn={handleCheckInResponse} />
+        )}
+
         <button
           onClick={handleStartEmptyWorkout}
           className="w-full bg-gradient-to-br from-primary via-primary to-sky-600 text-white font-bold py-6 px-6 rounded-2xl shadow-lg shadow-primary/30 flex items-center justify-between group hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 border border-white/10"

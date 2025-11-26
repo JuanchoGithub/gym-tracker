@@ -79,6 +79,8 @@ export const en_supplements = {
   supplements_add_name_placeholder: 'e.g., ZMA',
   supplements_add_dosage_label: 'Dosage',
   supplements_add_dosage_placeholder: 'e.g., 1 capsule',
+  supplements_add_stock_label: 'Initial Stock (Servings)',
+  supplements_add_stock_placeholder: 'e.g., 30',
   supplements_add_time_label: 'Time',
   supplements_add_time_placeholder: 'e.g., Before bed',
   supplements_add_notes_label: 'Notes (optional)',
@@ -98,6 +100,10 @@ export const en_supplements = {
   supplements_log_no_data_for_date: 'No supplements were scheduled for this day.',
   supplements_no_plan: 'No items in your plan for today.',
   supplements_about_plan: 'About your plan',
+  supplements_stock_label: 'Stock:',
+  supplements_stock_restock_prompt: 'Restock {supplement}',
+  supplements_stock_update_title: 'Update Stock',
+  supplements_stock_add_amount: 'Add Amount (Servings)',
 
   supplements_review_modal_title: 'Supplement Plan Review',
   supplements_review_analysis_title: 'Based on your recent activity:',
@@ -143,6 +149,12 @@ export const en_supplements = {
   suggestion_move_protein_lunch_reason: 'You are now training in the morning. To spread your protein intake effectively, consider moving your breakfast protein dose to lunch.',
   suggestion_move_protein_breakfast_title: 'Adjust Protein Timing',
   suggestion_move_protein_breakfast_reason: 'You are no longer training in the morning. Consider taking your extra protein dose with breakfast instead of lunch to start the day right.',
+  
+  suggestion_caffeine_deload_title: 'Time for a Stimulant Break?',
+  suggestion_caffeine_deload_reason: 'You\'ve been using high-stimulant supplements for 8+ weeks. A 1-week break can help reset your tolerance and keep them effective.',
+  
+  suggestion_restock_title: 'Low Stock Alert: {supplement}',
+  suggestion_restock_reason: 'You have {count} servings left. Time to buy more!',
 
   // Months
   month_january: 'January',

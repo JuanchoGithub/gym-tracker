@@ -1,10 +1,8 @@
 
-
-
-
 import { SupplementInfo, SupplementPlan, SupplementPlanItem, WorkoutSession, SupplementSuggestion } from '../types';
 import { getExplanationIdForSupplement } from './explanationService';
 import { PREDEFINED_EXERCISES } from '../constants/exercises';
+import { getDateString } from '../utils/timeUtils';
 
 // Sort helper
 const timeOrder: { [key: string]: number } = {
@@ -276,12 +274,7 @@ export const generateSupplementPlan = (info: SupplementInfo, t: (key: string, re
     };
 };
 
-export const reviewSupplementPlan = (
-  plan: SupplementPlan, 
-  history: WorkoutSession[], 
-  t: (key: string, replacements?: Record<string, string | number>) => string
-): SupplementSuggestion[] => {
-    const suggestions: SupplementSuggestion[] = [];
+export const analyzeVolumeDrop = (history: WorkoutSession[]): boolean => {
     const now = new Date();
     const fourWeeksAgo = new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000);
     const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
@@ -289,7 +282,119 @@ export const reviewSupplementPlan = (
     const recentHistory = history.filter(s => s.startTime > fourWeeksAgo.getTime());
 
     if (recentHistory.length < 3) {
-        return []; // Not enough data to make suggestions
+        return false;
+    }
+
+    const last2WeeksHistory = recentHistory.filter(s => s.startTime > twoWeeksAgo.getTime());
+    const prev2WeeksHistory = recentHistory.filter(s => s.startTime <= twoWeeksAgo.getTime() && s.startTime > fourWeeksAgo.getTime());
+    
+    const volLast2 = last2WeeksHistory.reduce((acc, s) => acc + s.exercises.reduce((t, e) => t + e.sets.reduce((st, set) => st + set.weight * set.reps, 0), 0), 0);
+    const volPrev2 = prev2WeeksHistory.reduce((acc, s) => acc + s.exercises.reduce((t, e) => t + e.sets.reduce((st, set) => st + set.weight * set.reps, 0), 0), 0);
+    
+    const volumeDropRatio = volPrev2 > 0 ? volLast2 / volPrev2 : 1;
+    return volumeDropRatio < 0.5 && prev2WeeksHistory.length > 0;
+}
+
+const checkStimulantTolerance = (
+    takenSupplements: Record<string, string[]>,
+    allSupplements: SupplementPlanItem[],
+    t: (key: string) => string
+): SupplementSuggestion | null => {
+    const now = new Date();
+    const EIGHT_WEEKS_DAYS = 56;
+    const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+    
+    // 1. Identify stimulant supplements (Caffeine or Pre-workout)
+    const stimulantIds = allSupplements
+        .filter(item => {
+            const explanationId = getExplanationIdForSupplement(item.supplement);
+            return explanationId === 'caffeine' || 
+                   item.supplement.toLowerCase().includes('pre-workout') ||
+                   item.supplement.toLowerCase().includes('pre-entreno');
+        })
+        .map(item => item.id);
+
+    if (stimulantIds.length === 0) return null;
+
+    // 2. Check usage history for the last 8 weeks
+    // We analyze consistency. Let's say "Consistent" means taking it at least once every week for 8 weeks straight.
+    let consistentWeeks = 0;
+
+    for (let i = 0; i < 8; i++) {
+        let takenThisWeek = false;
+        // Check each day in the week window
+        for (let j = 0; j < 7; j++) {
+            const dateToCheck = new Date(now.getTime() - ((i * 7) + j) * ONE_DAY_MS);
+            const dateStr = getDateString(dateToCheck);
+            const takenOnDay = takenSupplements[dateStr] || [];
+            
+            if (takenOnDay.some(id => stimulantIds.includes(id))) {
+                takenThisWeek = true;
+                break; 
+            }
+        }
+        if (takenThisWeek) {
+            consistentWeeks++;
+        }
+    }
+
+    if (consistentWeeks >= 8) {
+         const itemToRemove = allSupplements.find(item => stimulantIds.includes(item.id));
+         if (!itemToRemove) return null;
+
+         return {
+            id: 'stimulant-tolerance-break',
+            title: t('suggestion_caffeine_deload_title'),
+            reason: t('suggestion_caffeine_deload_reason'),
+            identifier: `REMOVE:${itemToRemove.supplement}:tolerance`,
+            action: { type: 'REMOVE', itemId: itemToRemove.id }
+        };
+    }
+
+    return null;
+};
+
+const checkStockLevels = (plan: SupplementPlan, t: (key: string, replacements?: Record<string, string | number>) => string): SupplementSuggestion[] => {
+    const suggestions: SupplementSuggestion[] = [];
+    
+    plan.plan.forEach(item => {
+        if (item.stock !== undefined && item.stock <= 5 && item.stock > 0) {
+            suggestions.push({
+                id: `restock-${item.id}`,
+                title: t('suggestion_restock_title', { supplement: item.supplement }),
+                reason: t('suggestion_restock_reason', { count: item.stock }),
+                identifier: `UPDATE:${item.supplement}:restock`,
+                action: {
+                    type: 'UPDATE',
+                    itemId: item.id,
+                    updates: { stock: item.stock + 30 } // Suggest adding standard 30 servings
+                }
+            });
+        }
+    });
+    
+    return suggestions;
+};
+
+export const reviewSupplementPlan = (
+  plan: SupplementPlan, 
+  history: WorkoutSession[], 
+  t: (key: string, replacements?: Record<string, string | number>) => string,
+  volumeDropReason?: 'busy' | 'deload' | 'injury' | null,
+  takenSupplements?: Record<string, string[]>
+): SupplementSuggestion[] => {
+    const suggestions: SupplementSuggestion[] = [];
+    const now = new Date();
+    const fourWeeksAgo = new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000);
+    const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+
+    const recentHistory = history.filter(s => s.startTime > fourWeeksAgo.getTime());
+    
+    // --- STOCK CHECK (Runs regardless of history) ---
+    suggestions.push(...checkStockLevels(plan, t));
+
+    if (recentHistory.length < 3) {
+        return suggestions; 
     }
 
     // --- METRICS CALCULATION ---
@@ -499,7 +604,7 @@ export const reviewSupplementPlan = (
 
     // Suggestion 5: Joint Support (Addition)
     const hasJointSupport = plan.plan.some(item => item.supplement.toLowerCase().includes('joint') || item.supplement.includes('Collagen'));
-    if (isHighImpactUser && !hasJointSupport) {
+    if ((isHighImpactUser && !hasJointSupport) || (volumeDropReason === 'injury' && !hasJointSupport)) {
         const jointName = t('supplements_name_joint_support');
         suggestions.push({
             id: 'add-joint-support',
@@ -611,8 +716,6 @@ export const reviewSupplementPlan = (
     // --- REMOVAL / REDUCTION SUGGESTIONS ---
 
     // Suggestion 10: Reduce Protein (Reduction)
-    // If volume dropped significantly OR user weight dropped significantly, protein need is lower.
-    // Or simply volume is low overall.
     if (avgWeeklyVolume < 5000 || volumeDropRatio < 0.6) {
         const firstProteinItem = proteinItems[0];
         if (firstProteinItem) {
@@ -637,8 +740,7 @@ export const reviewSupplementPlan = (
     }
 
     // Suggestion 11: Remove Pre-workout / Stimulants (Removal on Break/Injury)
-    // If huge volume drop, likely injury or break. Remove expensive stims.
-    if (isSignificantVolumeDrop) {
+    if (isSignificantVolumeDrop && volumeDropRatio < 0.5 && volumeDropReason === 'injury') {
         const preWorkoutItems = plan.plan.filter(item => {
             const id = getExplanationIdForSupplement(item.supplement);
             return id === 'caffeine' || id === 'citrulline' || item.supplement.toLowerCase().includes('pre-workout');
@@ -656,7 +758,6 @@ export const reviewSupplementPlan = (
     }
 
     // Suggestion 12: Remove Beta-Alanine (Low Frequency)
-    // Beta alanine needs daily saturation. If training < 2x week, probably not worth the cost/tingle.
     const betaAlanineItem = plan.plan.find(item => getExplanationIdForSupplement(item.supplement) === 'betaalanine');
     if (betaAlanineItem && avgWeeklySessions < 2) {
         suggestions.push({
@@ -669,7 +770,6 @@ export const reviewSupplementPlan = (
     }
 
     // Suggestion 13: Remove Morning Specific Supplements (Schedule Change)
-    // If user was morning but now isn't (isEarlyMorningUser is false), check for morning BCAA
     if (!isEarlyMorningUser) {
         const morningBcaa = plan.plan.find(item => {
             const isEaa = getExplanationIdForSupplement(item.supplement) === 'eaa';
@@ -689,7 +789,6 @@ export const reviewSupplementPlan = (
     }
     
     // Suggestion 14: Move Protein Timing based on Schedule
-    // If user training time shifted significantly vs generated plan time.
     if (mostFrequentTrainingTime === 'morning') {
         const proteinBreakfast = plan.plan.find(item => {
             const isProtein = getExplanationIdForSupplement(item.supplement) === 'protein';
@@ -714,7 +813,6 @@ export const reviewSupplementPlan = (
             });
         }
     } else {
-        // Not morning training (Afternoon/Night)
          const proteinLunch = plan.plan.find(item => {
             const isProtein = getExplanationIdForSupplement(item.supplement) === 'protein';
             const isLunch = item.time.toLowerCase().includes('lunch') || item.time.toLowerCase().includes('almuerzo');
@@ -736,6 +834,14 @@ export const reviewSupplementPlan = (
                     }
                 }
             });
+        }
+    }
+
+    // Suggestion 15: Stimulant Tolerance Break
+    if (takenSupplements) {
+        const toleranceSuggestion = checkStimulantTolerance(takenSupplements, plan.plan, t);
+        if (toleranceSuggestion) {
+            suggestions.push(toleranceSuggestion);
         }
     }
 
