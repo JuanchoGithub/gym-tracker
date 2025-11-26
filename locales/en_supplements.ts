@@ -1,5 +1,4 @@
 
-
 export const en_supplements = {
   // Supplements Page
   supplements_title: 'Supplement Plan',
@@ -131,6 +130,15 @@ export const en_supplements = {
   suggestion_add_zma_frequency_reason: 'You frequently train multiple days in a row. ZMA (Zinc & Magnesium) before bed can improve sleep quality and recovery.',
   suggestion_add_bcaa_morning_title: 'Early Morning Training',
   suggestion_add_bcaa_morning_reason: 'Since you train early, likely fasted, taking BCAAs or EAAs can help prevent muscle breakdown during your session.',
+  
+  suggestion_reduce_protein_title: 'Reduce Protein Intake',
+  suggestion_reduce_protein_reason: 'Your recent training volume has decreased significantly. You may not need as much supplemental protein to maintain muscle mass.',
+  suggestion_remove_preworkout_title: 'Remove Pre-Workout',
+  suggestion_remove_preworkout_reason: 'We detected a large drop in your training volume or frequency. You might want to save your pre-workout/stimulants for when you return to high-intensity sessions.',
+  suggestion_remove_beta_alanine_title: 'Remove Beta-Alanine',
+  suggestion_remove_beta_alanine_reason: 'You are training less than twice a week recently. Beta-Alanine requires daily saturation to be effective, so it may not be worth taking right now.',
+  suggestion_remove_morning_supp_title: 'Schedule Change Detected',
+  suggestion_remove_morning_supp_reason: 'You are no longer training in the mornings, but your plan includes morning-specific supplements (like BCAAs). Consider removing them.',
 
   // Months
   month_january: 'January',

@@ -1,5 +1,4 @@
 
-
 export const es_supplements = {
   // Supplements Page
   supplements_title: 'Plan de Suplementos',
@@ -131,6 +130,15 @@ export const es_supplements = {
   suggestion_add_zma_frequency_reason: 'Frecuentemente entrenás varios días seguidos. ZMA (Zinc y Magnesio) antes de dormir puede mejorar la calidad del sueño y la recuperación.',
   suggestion_add_bcaa_morning_title: 'Entrenamiento Matutino',
   suggestion_add_bcaa_morning_reason: 'Como entrenás temprano, probablemente en ayunas, tomar BCAAs o EAAs puede ayudar a prevenir la degradación muscular durante tu sesión.',
+
+  suggestion_reduce_protein_title: 'Reducir Ingesta de Proteína',
+  suggestion_reduce_protein_reason: 'Tu volumen de entrenamiento reciente ha disminuido significativamente. Es posible que no necesites tanta proteína suplementaria para mantener la masa muscular.',
+  suggestion_remove_preworkout_title: 'Eliminar Pre-Entreno',
+  suggestion_remove_preworkout_reason: 'Detectamos una gran caída en tu volumen o frecuencia de entrenamiento. Sería bueno guardar tus estimulantes para cuando vuelvas a sesiones de alta intensidad.',
+  suggestion_remove_beta_alanine_title: 'Eliminar Beta-Alanina',
+  suggestion_remove_beta_alanine_reason: 'Estás entrenando menos de dos veces por semana recientemente. La Beta-Alanina requiere saturación diaria para ser efectiva, por lo que puede no valer la pena ahora.',
+  suggestion_remove_morning_supp_title: 'Cambio de Horario Detectado',
+  suggestion_remove_morning_supp_reason: 'Ya no entrenás por las mañanas, pero tu plan incluye suplementos específicos para la mañana (como BCAAs). Considerá eliminarlos.',
 
   // Months
   month_january: 'Enero',

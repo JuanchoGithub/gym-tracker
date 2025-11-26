@@ -1,5 +1,6 @@
 
 
+
 import { SupplementInfo, SupplementPlan, SupplementPlanItem, WorkoutSession, SupplementSuggestion } from '../types';
 import { getExplanationIdForSupplement } from './explanationService';
 import { PREDEFINED_EXERCISES } from '../constants/exercises';
@@ -334,14 +335,23 @@ export const reviewSupplementPlan = (
     });
     const isHighImpactUser = totalExercises > 0 && (highImpactCount / totalExercises) > 0.3;
 
-    // 5. Stagnation (Volume Trend)
+    // 5. Stagnation (Volume Trend) & Drop Detection
     const last2WeeksHistory = recentHistory.filter(s => s.startTime > twoWeeksAgo.getTime());
-    const prev2WeeksHistory = recentHistory.filter(s => s.startTime <= twoWeeksAgo.getTime());
+    const prev2WeeksHistory = recentHistory.filter(s => s.startTime <= twoWeeksAgo.getTime() && s.startTime > fourWeeksAgo.getTime());
     
     const volLast2 = last2WeeksHistory.reduce((acc, s) => acc + s.exercises.reduce((t, e) => t + e.sets.reduce((st, set) => st + set.weight * set.reps, 0), 0), 0);
     const volPrev2 = prev2WeeksHistory.reduce((acc, s) => acc + s.exercises.reduce((t, e) => t + e.sets.reduce((st, set) => st + set.weight * set.reps, 0), 0), 0);
     
-    const isStagnating = last2WeeksHistory.length >= 2 && prev2WeeksHistory.length >= 2 && volLast2 <= volPrev2 * 1.05;
+    // Check if volume dropped by > 50% (Sign of break or injury)
+    // Adjust volumes to be daily average to account for differing number of days
+    const daysLast2 = 14;
+    const daysPrev2 = 14;
+    // Actually, better to use number of sessions to gauge intensity per session, 
+    // OR total volume to gauge overall load. Total load is better for supplement needs.
+    
+    const isStagnating = last2WeeksHistory.length >= 2 && prev2WeeksHistory.length >= 2 && volLast2 <= volPrev2 * 1.05 && volLast2 >= volPrev2 * 0.95;
+    const volumeDropRatio = volPrev2 > 0 ? volLast2 / volPrev2 : 1;
+    const isSignificantVolumeDrop = volumeDropRatio < 0.5 && prev2WeeksHistory.length > 0;
 
     // 6. Workout Density (Volume / Minute)
     let totalDensity = 0;
@@ -360,7 +370,6 @@ export const reviewSupplementPlan = (
     const isHighDensity = avgDensity > 250; // Heuristic threshold
 
     // 7. Training Frequency (Consecutive Days)
-    // Sort sessions by date ascending
     const sortedSessions = [...recentHistory].sort((a, b) => a.startTime - b.startTime);
     let maxStreak = 0;
     let currentStreak = 1;
@@ -388,6 +397,10 @@ export const reviewSupplementPlan = (
     if (currentStreak >= 3) streak3PlusCount++;
     const isHighFrequency = streak3PlusCount >= 2;
 
+    // Average Weekly Sessions (Frequency)
+    const weeksActive = 4; // Analyzing last 4 weeks
+    const avgWeeklySessions = recentHistory.length / weeksActive;
+
 
     // --- GENERATING SUGGESTIONS ---
     const combinedProteinName = t('supplements_name_protein_with_eaa');
@@ -395,7 +408,7 @@ export const reviewSupplementPlan = (
 
     const isStrengthTraining = plan.info.routineType === 'strength' || plan.info.routineType === 'mixed';
     
-    // Suggestion 1: Add Creatine
+    // Suggestion 1: Add Creatine (Addition)
     const hasCreatine = plan.plan.some(item => getExplanationIdForSupplement(item.supplement) === 'creatine');
     const creatineName = t('supplements_name_creatine');
     if (isStrengthTraining && !hasCreatine && avgWeeklyVolume > 15000) {
@@ -418,7 +431,7 @@ export const reviewSupplementPlan = (
         });
     }
 
-    // Suggestion 2: Increase Protein
+    // Suggestion 2: Increase Protein (Addition)
     const proteinItems = plan.plan.filter(item => getExplanationIdForSupplement(item.supplement) === 'protein');
     if (plan.info.objective === 'gain' && avgWeeklyVolume > 20000 && proteinItems.length > 0) {
         const firstProteinItem = proteinItems[0];
@@ -442,7 +455,7 @@ export const reviewSupplementPlan = (
         }
     }
 
-    // Suggestion 3: Remove Late Caffeine
+    // Suggestion 3: Remove Late Caffeine (Behavior Check)
     const caffeineItem = plan.plan.find(item => getExplanationIdForSupplement(item.supplement) === 'caffeine');
     const caffeineName = t('supplements_name_caffeine');
     if (caffeineItem && isLateNightUser) {
@@ -455,7 +468,7 @@ export const reviewSupplementPlan = (
         });
     }
 
-    // Suggestion 4: Electrolytes
+    // Suggestion 4: Electrolytes (Addition)
     const hasElectrolytes = plan.plan.some(item => item.supplement.toLowerCase().includes('electrolyte') || item.supplement.includes('Intra'));
     if (isLongDurationUser && !hasElectrolytes) {
         const electrolytesName = t('supplements_name_electrolytes');
@@ -478,7 +491,7 @@ export const reviewSupplementPlan = (
         });
     }
 
-    // Suggestion 5: Joint Support
+    // Suggestion 5: Joint Support (Addition)
     const hasJointSupport = plan.plan.some(item => item.supplement.toLowerCase().includes('joint') || item.supplement.includes('Collagen'));
     if (isHighImpactUser && !hasJointSupport) {
         const jointName = t('supplements_name_joint_support');
@@ -500,7 +513,7 @@ export const reviewSupplementPlan = (
         });
     }
 
-    // Suggestion 6: Citrulline for Stagnation
+    // Suggestion 6: Citrulline for Stagnation (Addition)
     const hasCitrulline = plan.plan.some(item => item.supplement.toLowerCase().includes('citrulline'));
     if (isStagnating && !hasCitrulline && isStrengthTraining) {
         const citrullineName = t('supplements_name_citrulline');
@@ -523,7 +536,7 @@ export const reviewSupplementPlan = (
         });
     }
 
-    // Suggestion 7: EAAs for High Density
+    // Suggestion 7: EAAs for High Density (Addition)
     const hasEAA = plan.plan.some(item => getExplanationIdForSupplement(item.supplement) === 'eaa');
     const eaaName = t('supplements_name_eaa');
     if (isHighDensity && !hasEAA && !hasCombinedProteinEaa) {
@@ -546,7 +559,7 @@ export const reviewSupplementPlan = (
         });
     }
 
-    // Suggestion 8: ZMA for High Frequency
+    // Suggestion 8: ZMA for High Frequency (Addition)
     const hasZMA = plan.plan.some(item => getExplanationIdForSupplement(item.supplement) === 'zma');
     const zmaName = t('supplements_name_zma');
     if (isHighFrequency && !hasZMA) {
@@ -587,6 +600,86 @@ export const reviewSupplementPlan = (
                 }
             }
         });
+    }
+
+    // --- REMOVAL / REDUCTION SUGGESTIONS ---
+
+    // Suggestion 10: Reduce Protein (Reduction)
+    // If volume dropped significantly OR user weight dropped significantly, protein need is lower.
+    // Or simply volume is low overall.
+    if (avgWeeklyVolume < 5000 || volumeDropRatio < 0.6) {
+        const firstProteinItem = proteinItems[0];
+        if (firstProteinItem) {
+            const currentDosage = parseInt(firstProteinItem.dosage.replace(/[^0-9]/g, ''), 10);
+            if (currentDosage > 20) {
+                 const newDosage = Math.max(20, Math.round(currentDosage * 0.75 / 5) * 5);
+                 if (newDosage < currentDosage) {
+                    suggestions.push({
+                        id: 'reduce-protein-volume-drop',
+                        title: t('suggestion_reduce_protein_title'),
+                        reason: t('suggestion_reduce_protein_reason'),
+                        identifier: `UPDATE:${firstProteinItem.supplement}:dosage:reduce`,
+                        action: {
+                            type: 'UPDATE',
+                            itemId: firstProteinItem.id,
+                            updates: { dosage: `~${newDosage}g` }
+                        }
+                    });
+                 }
+            }
+        }
+    }
+
+    // Suggestion 11: Remove Pre-workout / Stimulants (Removal on Break/Injury)
+    // If huge volume drop, likely injury or break. Remove expensive stims.
+    if (isSignificantVolumeDrop) {
+        const preWorkoutItems = plan.plan.filter(item => {
+            const id = getExplanationIdForSupplement(item.supplement);
+            return id === 'caffeine' || id === 'citrulline' || item.supplement.toLowerCase().includes('pre-workout');
+        });
+
+        preWorkoutItems.forEach(item => {
+            suggestions.push({
+                id: `remove-preworkout-${item.id}`,
+                title: t('suggestion_remove_preworkout_title'),
+                reason: t('suggestion_remove_preworkout_reason'),
+                identifier: `REMOVE:${item.supplement}:break`,
+                action: { type: 'REMOVE', itemId: item.id }
+            });
+        });
+    }
+
+    // Suggestion 12: Remove Beta-Alanine (Low Frequency)
+    // Beta alanine needs daily saturation. If training < 2x week, probably not worth the cost/tingle.
+    const betaAlanineItem = plan.plan.find(item => getExplanationIdForSupplement(item.supplement) === 'betaalanine');
+    if (betaAlanineItem && avgWeeklySessions < 2) {
+        suggestions.push({
+            id: 'remove-beta-alanine-freq',
+            title: t('suggestion_remove_beta_alanine_title'),
+            reason: t('suggestion_remove_beta_alanine_reason'),
+            identifier: `REMOVE:${betaAlanineItem.supplement}:frequency`,
+            action: { type: 'REMOVE', itemId: betaAlanineItem.id }
+        });
+    }
+
+    // Suggestion 13: Remove Morning Specific Supplements (Schedule Change)
+    // If user was morning but now isn't (isEarlyMorningUser is false), check for morning BCAA
+    if (!isEarlyMorningUser) {
+        const morningBcaa = plan.plan.find(item => {
+            const isEaa = getExplanationIdForSupplement(item.supplement) === 'eaa';
+            const isMorning = item.time.toLowerCase().includes('morning') || item.time.toLowerCase().includes('mañana');
+            return isEaa && isMorning;
+        });
+
+        if (morningBcaa) {
+            suggestions.push({
+                id: 'remove-morning-bcaa-schedule',
+                title: t('suggestion_remove_morning_supp_title'),
+                reason: t('suggestion_remove_morning_supp_reason'),
+                identifier: `REMOVE:${morningBcaa.supplement}:schedule`,
+                action: { type: 'REMOVE', itemId: morningBcaa.id }
+            });
+        }
     }
 
     return suggestions;
