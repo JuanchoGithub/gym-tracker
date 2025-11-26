@@ -36,13 +36,14 @@ interface ExerciseCardProps {
   onCreateSuperset?: () => void;
   onJoinSuperset?: (supersetId: string) => void;
   availableSupersets?: { id: string; name: string; exercises: string[] }[];
+  onShowDetails?: () => void;
 }
 
 const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
   const { 
     workoutExercise, exerciseInfo, onUpdate, onStartTimedSet,
     isReorganizeMode, onDragStart, onDragEnter, onDragEnd, onMoveUp, onMoveDown, isMoveUpDisabled, isMoveDownDisabled, onReorganize, isBeingDraggedOver,
-    isCollapsed, onToggleCollapse, onRemove, onCreateSuperset, onJoinSuperset, availableSupersets
+    isCollapsed, onToggleCollapse, onRemove, onCreateSuperset, onJoinSuperset, availableSupersets, onShowDetails
   } = props;
   const { t } = useI18n();
   const { weightUnit } = useMeasureUnit();
@@ -251,6 +252,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
                 onCreateSuperset={onCreateSuperset}
                 onJoinSuperset={onJoinSuperset}
                 availableSupersets={availableSupersets}
+                onShowDetails={onShowDetails}
             />
         </div>
         {!isCollapsed && (

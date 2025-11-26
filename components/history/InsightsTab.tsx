@@ -7,6 +7,7 @@ import { Icon } from '../common/Icon';
 import { calculateMuscleFreshness } from '../../utils/fatigueUtils';
 import { AppContext } from '../../contexts/AppContext';
 import MuscleHeatmap from '../insights/MuscleHeatmap';
+import { getMuscleTKey } from '../../utils/i18nUtils';
 
 interface InsightsTabProps {
   history: WorkoutSession[];
@@ -94,26 +95,26 @@ const InsightsTab: React.FC<InsightsTabProps> = ({ history, takenSupplements, al
       {/* Muscle Recovery Heatmap Section */}
       <div className="space-y-4">
           <div className="flex items-center justify-between">
-              <h3 className="text-xl font-bold text-text-primary">Recovery Heatmap</h3>
+              <h3 className="text-xl font-bold text-text-primary">{t('insights_recovery_heatmap_title')}</h3>
           </div>
           
           {/* Quick Text Summary */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {freshestMuscles.length > 0 && (
                 <div className="bg-green-500/10 border border-green-500/20 p-3 rounded-xl">
-                    <h4 className="text-green-400 font-bold text-xs uppercase tracking-wider mb-1">Ready to Train</h4>
-                    <p className="text-white text-sm">{freshestMuscles.join(', ')}</p>
+                    <h4 className="text-green-400 font-bold text-xs uppercase tracking-wider mb-1">{t('insights_ready_to_train')}</h4>
+                    <p className="text-white text-sm">{freshestMuscles.map(m => t(getMuscleTKey(m))).join(', ')}</p>
                 </div>
               )}
               {fatiguedMuscles.length > 0 && (
                 <div className="bg-red-500/10 border border-red-500/20 p-3 rounded-xl">
-                     <h4 className="text-red-400 font-bold text-xs uppercase tracking-wider mb-1">Needs Recovery</h4>
-                     <p className="text-white text-sm">{fatiguedMuscles.join(', ')}</p>
+                     <h4 className="text-red-400 font-bold text-xs uppercase tracking-wider mb-1">{t('insights_needs_recovery')}</h4>
+                     <p className="text-white text-sm">{fatiguedMuscles.map(m => t(getMuscleTKey(m))).join(', ')}</p>
                 </div>
               )}
               {freshestMuscles.length === 0 && fatiguedMuscles.length === 0 && (
                   <div className="col-span-full bg-surface p-3 rounded-xl border border-white/5 text-center">
-                      <p className="text-text-secondary text-sm">Your muscles are in a balanced state of recovery.</p>
+                      <p className="text-text-secondary text-sm">{t('insights_balanced_recovery')}</p>
                   </div>
               )}
           </div>
@@ -125,7 +126,7 @@ const InsightsTab: React.FC<InsightsTabProps> = ({ history, takenSupplements, al
 
       {/* Supplement Insights Section */}
       <div>
-          <h3 className="text-xl font-bold text-text-primary mb-4">Supplement Analysis</h3>
+          <h3 className="text-xl font-bold text-text-primary mb-4">{t('insights_supplement_analysis')}</h3>
           <div className="bg-indigo-500/10 border border-indigo-500/20 p-3 rounded-lg text-sm text-indigo-200 flex items-start gap-3 mb-4">
             <Icon name="question-mark-circle" className="w-5 h-5 flex-shrink-0 mt-0.5" />
             <p>{t('insights_correlation_explanation')}</p>
@@ -139,7 +140,7 @@ const InsightsTab: React.FC<InsightsTabProps> = ({ history, takenSupplements, al
             </div>
           ) : (
              <div className="text-center py-6 text-text-secondary">
-                 <p className="text-sm">Not enough data to find supplement correlations yet.</p>
+                 <p className="text-sm">{t('insights_no_supplement_data')}</p>
              </div>
           )}
       </div>

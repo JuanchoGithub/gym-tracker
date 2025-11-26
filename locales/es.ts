@@ -88,6 +88,12 @@ export const es = {
   insights_correlation_explanation: 'La correlación no implica causalidad. Estos datos muestran cómo cambia tu rendimiento los días que registraste suplementos específicos.',
   insights_pr_chance: '{value}% más RPs',
   insights_pr_chance_lower: '{value}% menos RPs',
+  insights_recovery_heatmap_title: 'Mapa de Calor de Recuperación',
+  insights_ready_to_train: 'Listo para Entrenar',
+  insights_needs_recovery: 'Necesita Recuperación',
+  insights_balanced_recovery: 'Tus músculos están en un estado de recuperación equilibrado.',
+  insights_supplement_analysis: 'Análisis de Suplementos',
+  insights_no_supplement_data: 'No hay suficientes datos para encontrar correlaciones de suplementos todavía.',
 
   // Exercises Page
   search_placeholder: 'Buscar un ejercicio...',

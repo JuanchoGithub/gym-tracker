@@ -31,6 +31,7 @@ interface ExerciseHeaderProps {
     onCreateSuperset?: () => void;
     onJoinSuperset?: (supersetId: string) => void;
     availableSupersets?: { id: string; name: string; exercises: string[] }[];
+    onShowDetails?: () => void;
 }
 
 type FocusType = 'q_mark' | 'total_volume' | 'volume_increase' | 'total_reps' | 'weight_by_rep';
@@ -39,7 +40,7 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = (props) => {
     const { 
         workoutExercise, exerciseInfo, onUpdate, onAddNote, onOpenTimerModal, onToggleCollapse, 
         onMoveUp, onMoveDown, isMoveUpDisabled, isMoveDownDisabled, onReorganize, onRemove, 
-        onCreateSuperset, onJoinSuperset, availableSupersets = []
+        onCreateSuperset, onJoinSuperset, availableSupersets = [], onShowDetails
     } = props;
     const { history: allHistory } = useContext(AppContext);
     const { t } = useI18n();
@@ -202,9 +203,16 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = (props) => {
     return (
       <>
         <div className="flex justify-between items-center relative">
-            <button onClick={onToggleCollapse} className="flex-grow text-left truncate pr-2">
-                <h3 className="font-bold text-xl text-primary truncate">{exerciseInfo.name}</h3>
-            </button>
+            <div className="flex items-center gap-2 flex-grow min-w-0 pr-2">
+                <button onClick={onToggleCollapse} className="text-left truncate min-w-0">
+                    <h3 className="font-bold text-xl text-primary truncate">{exerciseInfo.name}</h3>
+                </button>
+                {onShowDetails && (
+                     <button onClick={(e) => { e.stopPropagation(); onShowDetails(); }} className="text-text-secondary/50 hover:text-primary transition-colors p-1 flex-shrink-0">
+                         <Icon name="question-mark-circle" className="w-5 h-5" />
+                     </button>
+                )}
+            </div>
             <div className="flex items-center space-x-1">
                 <div className="relative" ref={focusMenuRef}>
                     <button onClick={() => setIsFocusMenuOpen(prev => !prev)} className="bg-secondary/50 text-text-primary px-3 py-1 rounded-full text-sm font-semibold min-w-[60px] text-center">

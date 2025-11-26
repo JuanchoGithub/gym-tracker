@@ -88,6 +88,12 @@ export const en = {
   insights_correlation_explanation: 'Correlation does not imply causation. These insights show how your performance metrics differ on days you logged specific supplements.',
   insights_pr_chance: '{value}% more PRs',
   insights_pr_chance_lower: '{value}% fewer PRs',
+  insights_recovery_heatmap_title: 'Recovery Heatmap',
+  insights_ready_to_train: 'Ready to Train',
+  insights_needs_recovery: 'Needs Recovery',
+  insights_balanced_recovery: 'Your muscles are in a balanced state of recovery.',
+  insights_supplement_analysis: 'Supplement Analysis',
+  insights_no_supplement_data: 'Not enough data to find supplement correlations yet.',
 
   // Exercises Page
   search_placeholder: 'Search for an exercise...',

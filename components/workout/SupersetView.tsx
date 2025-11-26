@@ -22,6 +22,7 @@ interface SupersetViewProps {
   draggedOverIndex: number | null;
   dragItemIndex: number | null;
   indices: number[]; // Global indices for the exercises in this group
+  onShowDetails?: (exerciseId: string) => void;
 }
 
 const SupersetView: React.FC<SupersetViewProps> = ({
@@ -37,6 +38,7 @@ const SupersetView: React.FC<SupersetViewProps> = ({
   draggedOverIndex,
   dragItemIndex,
   indices,
+  onShowDetails
 }) => {
   const { getExerciseById, history: allHistory } = useContext(AppContext);
   const { t } = useI18n();
@@ -219,6 +221,7 @@ const SupersetView: React.FC<SupersetViewProps> = ({
                                 isMoveDownDisabled={false} // Simplification
                                 onReorganize={() => { /* Handled by parent */ }}
                                 onRemove={() => onRemoveExercise(ex.id)}
+                                onShowDetails={() => onShowDetails?.(ex.exerciseId)}
                             />
                         </div>
                         

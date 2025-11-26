@@ -3,7 +3,7 @@ import React, { useContext, useState, useMemo, useRef } from 'react';
 import { AppContext } from '../contexts/AppContext';
 import { useI18n } from '../hooks/useI18n';
 import ExerciseCard from '../components/workout/ExerciseCard';
-import { WorkoutExercise, WorkoutSession, PerformedSet, SupersetDefinition } from '../types';
+import { WorkoutExercise, WorkoutSession, PerformedSet, SupersetDefinition, Exercise } from '../types';
 import { useWorkoutTimer } from '../hooks/useWorkoutTimer';
 import { Icon } from '../components/common/Icon';
 import WorkoutDetailsModal from '../components/modals/WorkoutDetailsModal';
@@ -17,6 +17,7 @@ import WeightInputModal from '../components/modals/WeightInputModal';
 import SupersetCard from '../components/workout/SupersetCard';
 import SupersetView from '../components/workout/SupersetView';
 import SupersetPlayer from '../components/workout/SupersetPlayer';
+import ExerciseDetailModal from '../components/exercise/ExerciseDetailModal';
 
 const ActiveWorkoutPage: React.FC = () => {
   const { activeWorkout, updateActiveWorkout, endWorkout, discardActiveWorkout, getExerciseById, minimizeWorkout, keepScreenAwake, activeTimerInfo, setActiveTimerInfo, startAddExercisesToWorkout, collapsedExerciseIds, setCollapsedExerciseIds, collapsedSupersetIds, setCollapsedSupersetIds, currentWeight, logWeight, activeTimedSet, setActiveTimedSet } = useContext(AppContext);
@@ -24,6 +25,7 @@ const ActiveWorkoutPage: React.FC = () => {
   const elapsedTime = useWorkoutTimer(activeWorkout?.startTime);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isConfirmingFinish, setIsConfirmingFinish] = useState(false);
+  const [viewingExercise, setViewingExercise] = useState<Exercise | null>(null);
   
   const [isReorganizeMode, setIsReorganizeMode] = useState(false);
   const [tempExercises, setTempExercises] = useState<WorkoutExercise[]>([]);
@@ -78,6 +80,11 @@ const ActiveWorkoutPage: React.FC = () => {
             .map(ex => getExerciseById(ex.exerciseId)?.name || 'Unknown')
       }));
   }, [activeWorkout, getExerciseById]);
+
+  const handleShowExerciseDetails = (exerciseId: string) => {
+    const ex = getExerciseById(exerciseId);
+    if (ex) setViewingExercise(ex);
+  };
 
   // --- Reorganization Logic ---
   const handleEnterReorganizeMode = () => {
@@ -336,6 +343,29 @@ const ActiveWorkoutPage: React.FC = () => {
                 isPaused: false,
                 timeLeftWhenPaused: 0,
             });
+
+            // Check for auto-collapse
+            if (!updatedExercise.supersetId) {
+                if (updatedExercise.sets.every(s => s.isComplete)) {
+                    setCollapsedExerciseIds(prev => {
+                        if(prev.includes(updatedExercise.id)) return prev;
+                        return [...prev, updatedExercise.id];
+                    });
+                }
+            } else {
+                // For supersets, check if all exercises in the superset are complete
+                const supersetId = updatedExercise.supersetId;
+                const allSupersetExercises = workoutToUpdate.exercises.filter(ex => ex.supersetId === supersetId);
+                const allComplete = allSupersetExercises.every(ex => ex.sets.every(s => s.isComplete));
+                
+                if (allComplete) {
+                    setCollapsedSupersetIds(prev => {
+                        if(prev.includes(supersetId)) return prev;
+                        return [...prev, supersetId];
+                    });
+                }
+            }
+
         } else if (justUncompletedSet && activeTimerInfo && activeTimerInfo.setId === justUncompletedSet.id) {
             setActiveTimerInfo(null);
             cancelTimerNotification('rest-timer-finished');
@@ -542,6 +572,7 @@ const ActiveWorkoutPage: React.FC = () => {
               onCreateSuperset={!exercise.supersetId ? () => handleCreateSuperset(exercise.id) : undefined}
               onJoinSuperset={!exercise.supersetId ? (supersetId) => handleJoinSuperset(exercise.id, supersetId) : undefined}
               availableSupersets={availableSupersets}
+              onShowDetails={() => handleShowExerciseDetails(exercise.exerciseId)}
           />
       ) : null;
   };
@@ -643,6 +674,7 @@ const ActiveWorkoutPage: React.FC = () => {
                             onDragEnd={handleDrop}
                             draggedOverIndex={draggedOverIndices ? draggedOverIndices[0] : null}
                             dragItemIndex={dragInfo.current ? dragInfo.current.indices[0] : null}
+                            onShowDetails={handleShowExerciseDetails}
                         />
                     </SupersetCard>
                 );
@@ -730,6 +762,14 @@ const ActiveWorkoutPage: React.FC = () => {
         onClose={() => setIsWeightInputModalOpen(false)}
         onSave={handleWeightModalSave}
       />
+      
+      {viewingExercise && (
+        <ExerciseDetailModal
+          isOpen={!!viewingExercise}
+          onClose={() => setViewingExercise(null)}
+          exercise={viewingExercise}
+        />
+      )}
     </div>
   );
 };
