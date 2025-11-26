@@ -1,5 +1,5 @@
 
-import React, { useContext, useState, useMemo, useRef } from 'react';
+import React, { useContext, useState, useMemo, useRef, useEffect } from 'react';
 import { AppContext } from '../contexts/AppContext';
 import { useI18n } from '../hooks/useI18n';
 import ExerciseCard from '../components/workout/ExerciseCard';
@@ -30,6 +30,17 @@ const ActiveWorkoutPage: React.FC = () => {
   const [isReorganizeMode, setIsReorganizeMode] = useState(false);
   const [tempExercises, setTempExercises] = useState<WorkoutExercise[]>([]);
   
+  // Refs for scrolling
+  const headerRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+
+  useEffect(() => {
+    const scroller = document.querySelector('main');
+    if (scroller) {
+      scroller.scrollTo(0, 0);
+    }
+  }, []);
+
   // Drag state
   const dragInfo = useRef<{ type: 'item' | 'superset', indices: number[] } | null>(null);
   const dragOverInfo = useRef<{ type: 'item' | 'superset', indices: number[] } | null>(null);
@@ -84,6 +95,30 @@ const ActiveWorkoutPage: React.FC = () => {
   const handleShowExerciseDetails = (exerciseId: string) => {
     const ex = getExerciseById(exerciseId);
     if (ex) setViewingExercise(ex);
+  };
+
+  const scrollToItem = (id: string) => {
+    // Delay slightly to ensure DOM updates (collapse animation start)
+    setTimeout(() => {
+        const headerHeight = headerRef.current?.offsetHeight || 0;
+        const element = itemRefs.current.get(id);
+        const scroller = document.querySelector('main');
+
+        if (element && scroller) {
+            const scrollerRect = scroller.getBoundingClientRect();
+            const elementRect = element.getBoundingClientRect();
+            const currentScrollTop = scroller.scrollTop;
+            
+            // Calculate position relative to the top of the scroller content
+            const relativeTop = elementRect.top - scrollerRect.top + currentScrollTop;
+
+            // Scroll so the element is just below the sticky header (plus a little padding)
+            scroller.scrollTo({
+                top: relativeTop - headerHeight - 10, 
+                behavior: 'smooth'
+            });
+        }
+    }, 50);
   };
 
   // --- Reorganization Logic ---
@@ -236,6 +271,7 @@ const ActiveWorkoutPage: React.FC = () => {
         newSet.delete(exerciseId);
       } else {
         newSet.add(exerciseId);
+        scrollToItem(exerciseId);
       }
       return Array.from(newSet);
     });
@@ -248,6 +284,7 @@ const ActiveWorkoutPage: React.FC = () => {
         newSet.delete(supersetId);
       } else {
         newSet.add(supersetId);
+        scrollToItem(supersetId);
       }
       return Array.from(newSet);
     });
@@ -347,10 +384,10 @@ const ActiveWorkoutPage: React.FC = () => {
             // Check for auto-collapse
             if (!updatedExercise.supersetId) {
                 if (updatedExercise.sets.every(s => s.isComplete)) {
-                    setCollapsedExerciseIds(prev => {
-                        if(prev.includes(updatedExercise.id)) return prev;
-                        return [...prev, updatedExercise.id];
-                    });
+                    if (!collapsedExerciseIds.includes(updatedExercise.id)) {
+                        setCollapsedExerciseIds(prev => [...prev, updatedExercise.id]);
+                        scrollToItem(updatedExercise.id);
+                    }
                 }
             } else {
                 // For supersets, check if all exercises in the superset are complete
@@ -359,10 +396,10 @@ const ActiveWorkoutPage: React.FC = () => {
                 const allComplete = allSupersetExercises.every(ex => ex.sets.every(s => s.isComplete));
                 
                 if (allComplete) {
-                    setCollapsedSupersetIds(prev => {
-                        if(prev.includes(supersetId)) return prev;
-                        return [...prev, supersetId];
-                    });
+                    if (!collapsedSupersetIds.includes(supersetId)) {
+                        setCollapsedSupersetIds(prev => [...prev, supersetId]);
+                        scrollToItem(supersetId);
+                    }
                 }
             }
 
@@ -550,36 +587,43 @@ const ActiveWorkoutPage: React.FC = () => {
       const isBeingDraggedOver = draggedOverIndices?.includes(index) && dragInfo.current?.indices[0] !== index;
 
       return exerciseInfo ? (
-          <ExerciseCard
-              key={exercise.id}
-              workoutExercise={exercise}
-              exerciseInfo={exerciseInfo}
-              onUpdate={handleUpdateExercise}
-              onStartTimedSet={handleStartTimedSet}
-              isReorganizeMode={isReorganizeMode}
-              onDragStart={(e) => handleDragStart(e, 'item', [index])}
-              onDragEnter={(e) => handleDragEnter(e, 'item', [index])}
-              onDragEnd={handleDrop}
-              onMoveUp={() => handleMoveExercise(index, index - 1)}
-              onMoveDown={() => handleMoveExercise(index, index + 1)}
-              isMoveUpDisabled={index === 0}
-              isMoveDownDisabled={index === exercisesToShow.length - 1}
-              onReorganize={handleEnterReorganizeMode}
-              isBeingDraggedOver={isBeingDraggedOver}
-              isCollapsed={collapsedSet.has(exercise.id)}
-              onToggleCollapse={() => handleToggleCollapse(exercise.id)}
-              onRemove={handleRemoveExercise}
-              onCreateSuperset={!exercise.supersetId ? () => handleCreateSuperset(exercise.id) : undefined}
-              onJoinSuperset={!exercise.supersetId ? (supersetId) => handleJoinSuperset(exercise.id, supersetId) : undefined}
-              availableSupersets={availableSupersets}
-              onShowDetails={() => handleShowExerciseDetails(exercise.exerciseId)}
-          />
+          <div 
+            key={exercise.id} 
+            ref={el => {
+                if(el) itemRefs.current.set(exercise.id, el); 
+                else itemRefs.current.delete(exercise.id);
+            }}
+          >
+            <ExerciseCard
+                workoutExercise={exercise}
+                exerciseInfo={exerciseInfo}
+                onUpdate={handleUpdateExercise}
+                onStartTimedSet={handleStartTimedSet}
+                isReorganizeMode={isReorganizeMode}
+                onDragStart={(e) => handleDragStart(e, 'item', [index])}
+                onDragEnter={(e) => handleDragEnter(e, 'item', [index])}
+                onDragEnd={handleDrop}
+                onMoveUp={() => handleMoveExercise(index, index - 1)}
+                onMoveDown={() => handleMoveExercise(index, index + 1)}
+                isMoveUpDisabled={index === 0}
+                isMoveDownDisabled={index === exercisesToShow.length - 1}
+                onReorganize={handleEnterReorganizeMode}
+                isBeingDraggedOver={isBeingDraggedOver}
+                isCollapsed={collapsedSet.has(exercise.id)}
+                onToggleCollapse={() => handleToggleCollapse(exercise.id)}
+                onRemove={handleRemoveExercise}
+                onCreateSuperset={!exercise.supersetId ? () => handleCreateSuperset(exercise.id) : undefined}
+                onJoinSuperset={!exercise.supersetId ? (supersetId) => handleJoinSuperset(exercise.id, supersetId) : undefined}
+                availableSupersets={availableSupersets}
+                onShowDetails={() => handleShowExerciseDetails(exercise.exerciseId)}
+            />
+          </div>
       ) : null;
   };
 
   return (
     <div className="space-y-4">
-      <div className="sticky top-0 bg-background/80 backdrop-blur-sm z-20 -mx-2 sm:-mx-4 px-2 sm:px-4 py-2 border-b border-secondary/20">
+      <div ref={headerRef} className="sticky top-0 bg-background/80 backdrop-blur-sm z-20 -mx-2 sm:-mx-4 px-2 sm:px-4 py-2 border-b border-secondary/20">
           <div className="container mx-auto flex items-center justify-between">
               {!isReorganizeMode ? (
                 <>
@@ -643,40 +687,47 @@ const ActiveWorkoutPage: React.FC = () => {
                 const isBeingDraggedOver = draggedOverIndices?.length === group.indices.length && draggedOverIndices.every((val, i) => val === group.indices[i]) && dragInfo.current?.indices[0] !== group.indices[0];
 
                 return (
-                    <SupersetCard 
-                        key={group.supersetId} 
-                        definition={definition}
-                        onRename={(name) => handleRenameSuperset(group.supersetId, name)}
-                        onUngroup={() => handleUngroupSuperset(group.supersetId)}
-                        onAddExercise={() => startAddExercisesToWorkout(group.supersetId)}
-                        onPlay={() => handlePlaySuperset(group.supersetId)}
-                        exercises={group.exercises}
-                        isCollapsed={collapsedSupersetSet.has(group.supersetId)}
-                        onToggleCollapse={() => handleToggleSupersetCollapse(group.supersetId)}
-                        onMoveUp={() => handleMoveSuperset(group.indices, 'up')}
-                        onMoveDown={() => handleMoveSuperset(group.indices, 'down')}
-                        isReorganizeMode={isReorganizeMode}
-                        onDragStart={(e) => handleDragStart(e, 'superset', group.indices)}
-                        onDragEnter={(e) => handleDragEnter(e, 'superset', group.indices)}
-                        onDragEnd={handleDrop}
-                        isBeingDraggedOver={isBeingDraggedOver}
+                    <div 
+                        key={group.supersetId}
+                        ref={el => {
+                            if(el) itemRefs.current.set(group.supersetId, el); 
+                            else itemRefs.current.delete(group.supersetId);
+                        }}
                     >
-                        <SupersetView 
+                        <SupersetCard 
+                            definition={definition}
+                            onRename={(name) => handleRenameSuperset(group.supersetId, name)}
+                            onUngroup={() => handleUngroupSuperset(group.supersetId)}
+                            onAddExercise={() => startAddExercisesToWorkout(group.supersetId)}
+                            onPlay={() => handlePlaySuperset(group.supersetId)}
                             exercises={group.exercises}
-                            indices={group.indices}
+                            isCollapsed={collapsedSupersetSet.has(group.supersetId)}
+                            onToggleCollapse={() => handleToggleSupersetCollapse(group.supersetId)}
+                            onMoveUp={() => handleMoveSuperset(group.indices, 'up')}
+                            onMoveDown={() => handleMoveSuperset(group.indices, 'down')}
                             isReorganizeMode={isReorganizeMode}
-                            onUpdateExercise={handleUpdateExercise}
-                            onRemoveExercise={handleRemoveExercise}
-                            onMoveExercise={handleMoveExercise}
-                            onStartTimedSet={handleStartTimedSet}
-                            onDragStart={(e, index) => handleDragStart(e, 'item', [index])}
-                            onDragEnter={(e, index) => handleDragEnter(e, 'item', [index])}
+                            onDragStart={(e) => handleDragStart(e, 'superset', group.indices)}
+                            onDragEnter={(e) => handleDragEnter(e, 'superset', group.indices)}
                             onDragEnd={handleDrop}
-                            draggedOverIndex={draggedOverIndices ? draggedOverIndices[0] : null}
-                            dragItemIndex={dragInfo.current ? dragInfo.current.indices[0] : null}
-                            onShowDetails={handleShowExerciseDetails}
-                        />
-                    </SupersetCard>
+                            isBeingDraggedOver={isBeingDraggedOver}
+                        >
+                            <SupersetView 
+                                exercises={group.exercises}
+                                indices={group.indices}
+                                isReorganizeMode={isReorganizeMode}
+                                onUpdateExercise={handleUpdateExercise}
+                                onRemoveExercise={handleRemoveExercise}
+                                onMoveExercise={handleMoveExercise}
+                                onStartTimedSet={handleStartTimedSet}
+                                onDragStart={(e, index) => handleDragStart(e, 'item', [index])}
+                                onDragEnter={(e, index) => handleDragEnter(e, 'item', [index])}
+                                onDragEnd={handleDrop}
+                                draggedOverIndex={draggedOverIndices ? draggedOverIndices[0] : null}
+                                dragItemIndex={dragInfo.current ? dragInfo.current.indices[0] : null}
+                                onShowDetails={handleShowExerciseDetails}
+                            />
+                        </SupersetCard>
+                    </div>
                 );
             }
         }) : (
