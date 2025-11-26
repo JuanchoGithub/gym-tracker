@@ -1,15 +1,16 @@
 
 import React, { useContext, useState, useMemo } from 'react';
 import { AppContext } from '../contexts/AppContext';
-import { Exercise } from '../types';
+import { Exercise, MuscleGroup } from '../types';
 import { Icon } from '../components/common/Icon';
 import ConfirmModal from '../components/modals/ConfirmModal';
 import TagCloud from '../components/common/TagCloud';
 import { useI18n } from '../hooks/useI18n';
-import { BODY_PART_OPTIONS, CATEGORY_OPTIONS } from '../constants/filters';
+import { BODY_PART_OPTIONS, CATEGORY_OPTIONS, MUSCLE_GROUP_OPTIONS } from '../constants/filters';
 import { getBodyPartTKey, getCategoryTKey } from '../utils/i18nUtils';
 import Modal from '../components/common/Modal';
 import ToggleSwitch from '../components/common/ToggleSwitch';
+import { MultiSelectDropdown } from '../components/common/MultiSelectDropdown';
 
 const ExerciseEditorPage: React.FC = () => {
     const { exercises, editingExercise, endExerciseEdit } = useContext(AppContext);
@@ -45,6 +46,11 @@ const ExerciseEditorPage: React.FC = () => {
         label: t(getCategoryTKey(cat))
     })), [t]);
 
+    const muscleOptions = useMemo(() => MUSCLE_GROUP_OPTIONS.map(m => ({
+        value: m,
+        label: m // Currently using raw English names for muscles, can be localized later
+    })).sort((a, b) => a.label.localeCompare(b.label)), []);
+
 
     const handleBack = () => {
         const hasChanged = JSON.stringify(exercise) !== JSON.stringify(editingExercise);
@@ -68,7 +74,7 @@ const ExerciseEditorPage: React.FC = () => {
         endExerciseEdit(exercise);
     };
     
-    const handleFieldChange = (field: keyof Exercise, value: string | boolean) => {
+    const handleFieldChange = (field: keyof Exercise, value: any) => {
         setExercise(prev => ({...prev, [field]: value }));
     }
 
@@ -119,6 +125,24 @@ const ExerciseEditorPage: React.FC = () => {
                                     onSelect={(val) => handleFieldChange('bodyPart', val)}
                                 />
                             </div>
+                        </div>
+
+                         {/* Specific Muscles */}
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <MultiSelectDropdown
+                                label={t('exercise_primary_targets')}
+                                options={muscleOptions}
+                                selected={exercise.primaryMuscles || []}
+                                onChange={(val) => handleFieldChange('primaryMuscles', val)}
+                                placeholder="Select primary muscles..."
+                            />
+                            <MultiSelectDropdown
+                                label={t('exercise_secondary_targets')}
+                                options={muscleOptions}
+                                selected={exercise.secondaryMuscles || []}
+                                onChange={(val) => handleFieldChange('secondaryMuscles', val)}
+                                placeholder="Select secondary muscles..."
+                            />
                         </div>
                         
                         {/* Category */}

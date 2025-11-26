@@ -95,6 +95,8 @@ export const en = {
   filter_body_part: 'Body Part',
   filter_category: 'Category',
   exercises_no_match: 'No exercises match your criteria.',
+  exercise_primary_targets: 'Primary Targets',
+  exercise_secondary_targets: 'Secondary Targets',
 
   // Profile Page
   profile_title: 'Profile & Settings',

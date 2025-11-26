@@ -94,6 +94,8 @@ export const es = {
   filter_body_part: 'Parte del Cuerpo',
   filter_category: 'Categoría',
   exercises_no_match: 'Ningún ejercicio coincide con tus criterios.',
+  exercise_primary_targets: 'Músculos Principales',
+  exercise_secondary_targets: 'Músculos Secundarios',
 
   // Profile Page
   profile_title: 'Perfil y Configuración',

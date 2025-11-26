@@ -1,6 +1,22 @@
 
 export type BodyPart = 'Chest' | 'Back' | 'Legs' | 'Glutes' | 'Shoulders' | 'Biceps' | 'Triceps' | 'Core' | 'Full Body' | 'Calves' | 'Forearms' | 'Mobility' | 'Cardio';
 
+export type MuscleGroup = 
+  // Chest
+  | 'Pectorals' | 'Upper Chest' | 'Lower Chest' | 'Serratus Anterior'
+  // Back
+  | 'Lats' | 'Traps' | 'Rhomboids' | 'Lower Back' | 'Teres Major' | 'Spinal Erectors'
+  // Shoulders
+  | 'Front Delts' | 'Side Delts' | 'Rear Delts' | 'Rotator Cuff'
+  // Arms
+  | 'Biceps' | 'Triceps' | 'Brachialis' | 'Forearms' | 'Wrist Flexors' | 'Wrist Extensors'
+  // Legs
+  | 'Quads' | 'Hamstrings' | 'Glutes' | 'Adductors' | 'Abductors' | 'Calves' | 'Soleus' | 'Gastrocnemius' | 'Tibialis Anterior' | 'Hip Flexors'
+  // Core
+  | 'Abs' | 'Obliques' | 'Transverse Abdominis'
+  // Cardio
+  | 'Cardiovascular System';
+
 // FIX: Added 'Duration' to the ExerciseCategory type to match its usage in the application.
 export type ExerciseCategory = 'Barbell' | 'Dumbbell' | 'Machine' | 'Cable' | 'Bodyweight' | 'Assisted Bodyweight' | 'Kettlebell' | 'Plyometrics' | 'Reps Only' | 'Cardio' | 'Duration';
 
@@ -11,6 +27,8 @@ export interface Exercise {
   category: ExerciseCategory;
   notes?: string;
   isTimed?: boolean;
+  primaryMuscles?: MuscleGroup[];
+  secondaryMuscles?: MuscleGroup[];
 }
 
 export type SetType = 'normal' | 'warmup' | 'drop' | 'failure' | 'timed';

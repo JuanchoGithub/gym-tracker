@@ -1,6 +1,8 @@
 
 
 
+
+
 import React, { createContext, useState, ReactNode, useMemo, useEffect, useCallback } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { Routine, WorkoutSession, Exercise, WorkoutExercise, PerformedSet, ActiveHiitSession, SupplementPlan, SupplementPlanItem, SupplementSuggestion, RejectedSuggestion, Profile, SupersetDefinition } from '../types';
@@ -187,6 +189,33 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
     }
   }, [setMeasureUnit]);
+  
+  // Migration for Exercise Muscle Groups
+  useEffect(() => {
+    setRawExercises(currentExercises => {
+        let hasChanges = false;
+        const updated = currentExercises.map(ex => {
+            if (ex.id.startsWith('ex-')) {
+                const predefined = PREDEFINED_EXERCISES.find(p => p.id === ex.id);
+                if (predefined) {
+                    const missingPrimary = predefined.primaryMuscles && !ex.primaryMuscles;
+                    const missingSecondary = predefined.secondaryMuscles && !ex.secondaryMuscles;
+                    
+                    if (missingPrimary || missingSecondary) {
+                        hasChanges = true;
+                        return {
+                            ...ex,
+                            primaryMuscles: predefined.primaryMuscles,
+                            secondaryMuscles: predefined.secondaryMuscles
+                        };
+                    }
+                }
+            }
+            return ex;
+        });
+        return hasChanges ? updated : currentExercises;
+    });
+  }, [setRawExercises]);
 
   const currentWeight = useMemo(() => {
     if (profile.weightHistory.length === 0) return undefined;
