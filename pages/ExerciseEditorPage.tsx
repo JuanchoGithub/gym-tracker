@@ -1,4 +1,6 @@
 
+
+
 import React, { useContext, useState, useMemo } from 'react';
 import { AppContext } from '../contexts/AppContext';
 import { Exercise, MuscleGroup } from '../types';
@@ -7,7 +9,7 @@ import ConfirmModal from '../components/modals/ConfirmModal';
 import TagCloud from '../components/common/TagCloud';
 import { useI18n } from '../hooks/useI18n';
 import { BODY_PART_OPTIONS, CATEGORY_OPTIONS, MUSCLE_GROUP_OPTIONS } from '../constants/filters';
-import { getBodyPartTKey, getCategoryTKey } from '../utils/i18nUtils';
+import { getBodyPartTKey, getCategoryTKey, getMuscleTKey } from '../utils/i18nUtils';
 import Modal from '../components/common/Modal';
 import ToggleSwitch from '../components/common/ToggleSwitch';
 import { MultiSelectDropdown } from '../components/common/MultiSelectDropdown';
@@ -48,8 +50,8 @@ const ExerciseEditorPage: React.FC = () => {
 
     const muscleOptions = useMemo(() => MUSCLE_GROUP_OPTIONS.map(m => ({
         value: m,
-        label: m // Currently using raw English names for muscles, can be localized later
-    })).sort((a, b) => a.label.localeCompare(b.label)), []);
+        label: t(getMuscleTKey(m))
+    })).sort((a, b) => a.label.localeCompare(b.label)), [t]);
 
 
     const handleBack = () => {

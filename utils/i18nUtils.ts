@@ -7,3 +7,7 @@ export const getBodyPartTKey = (bodyPart: string): TranslationKey => {
 export const getCategoryTKey = (category: string): TranslationKey => {
     return `category_${category.toLowerCase().replace(/ /g, '_')}` as TranslationKey;
 }
+
+export const getMuscleTKey = (muscle: string): TranslationKey => {
+    return `muscle_${muscle.toLowerCase().replace(/ /g, '_')}` as TranslationKey;
+}

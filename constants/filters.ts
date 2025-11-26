@@ -1,16 +1,17 @@
 
 import { BodyPart, ExerciseCategory, MuscleGroup } from '../types';
+import { MUSCLES } from './muscles';
 
 export const BODY_PART_OPTIONS: ReadonlyArray<BodyPart> = ['Chest', 'Back', 'Legs', 'Glutes', 'Shoulders', 'Biceps', 'Triceps', 'Core', 'Full Body', 'Calves', 'Forearms', 'Mobility', 'Cardio'];
 
 export const CATEGORY_OPTIONS: ReadonlyArray<ExerciseCategory> = ['Barbell', 'Dumbbell', 'Machine', 'Cable', 'Bodyweight', 'Assisted Bodyweight', 'Kettlebell', 'Plyometrics', 'Reps Only', 'Cardio', 'Duration'];
 
 export const MUSCLE_GROUP_OPTIONS: ReadonlyArray<MuscleGroup> = [
-  'Pectorals', 'Upper Chest', 'Lower Chest', 'Serratus Anterior',
-  'Lats', 'Traps', 'Rhomboids', 'Lower Back', 'Teres Major', 'Spinal Erectors',
-  'Front Delts', 'Side Delts', 'Rear Delts', 'Rotator Cuff',
-  'Biceps', 'Triceps', 'Brachialis', 'Forearms', 'Wrist Flexors', 'Wrist Extensors',
-  'Quads', 'Hamstrings', 'Glutes', 'Adductors', 'Abductors', 'Calves', 'Soleus', 'Gastrocnemius', 'Tibialis Anterior', 'Hip Flexors',
-  'Abs', 'Obliques', 'Transverse Abdominis',
-  'Cardiovascular System'
+  MUSCLES.PECTORALS, MUSCLES.UPPER_CHEST, MUSCLES.LOWER_CHEST, MUSCLES.SERRATUS_ANTERIOR,
+  MUSCLES.LATS, MUSCLES.TRAPS, MUSCLES.RHOMBOIDS, MUSCLES.LOWER_BACK, MUSCLES.TERES_MAJOR, MUSCLES.SPINAL_ERECTORS,
+  MUSCLES.FRONT_DELTS, MUSCLES.SIDE_DELTS, MUSCLES.REAR_DELTS, MUSCLES.ROTATOR_CUFF,
+  MUSCLES.BICEPS, MUSCLES.TRICEPS, MUSCLES.BRACHIALIS, MUSCLES.FOREARMS, MUSCLES.WRIST_FLEXORS, MUSCLES.WRIST_EXTENSORS,
+  MUSCLES.QUADS, MUSCLES.HAMSTRINGS, MUSCLES.GLUTES, MUSCLES.ADDUCTORS, MUSCLES.ABDUCTORS, MUSCLES.CALVES, MUSCLES.SOLEUS, MUSCLES.GASTROCNEMIUS, MUSCLES.TIBIALIS_ANTERIOR, MUSCLES.HIP_FLEXORS,
+  MUSCLES.ABS, MUSCLES.OBLIQUES, MUSCLES.TRANSVERSE_ABDOMINIS,
+  MUSCLES.CARDIOVASCULAR_SYSTEM
 ];

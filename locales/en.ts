@@ -15,7 +15,7 @@ export const en = {
   common_no: 'No',
   common_save_changes: 'Save Changes',
   common_select: 'Select',
-  common_add_and_close: 'Add and Close',
+  common_add_and_close: 'Add & Close',
   common_close: 'Close',
   common_create: 'Create',
   common_duplicate: 'Duplicate',
@@ -24,7 +24,7 @@ export const en = {
   common_ok: 'View Plan',
   common_view: 'View',
   common_step: 'Step',
-
+  
   // Navigation
   nav_train: 'Train',
   nav_history: 'History',
@@ -40,7 +40,7 @@ export const en = {
   train_sample_workouts: 'Sample Workouts',
   train_sample_hiit: 'Sample HIIT',
   train_empty_workout_name: 'Empty Workout',
-  train_empty_workout_desc: 'An empty workout to build on the fly.',
+  train_empty_workout_desc: 'A blank canvas for your workout.',
   train_new_custom_template_name: 'New Custom Template',
   train_new_hiit_template_name: 'New HIIT Template',
   train_quick_training: 'Quick Training',
@@ -50,11 +50,11 @@ export const en = {
   train_quick_hiit_desc: 'Work: {work}s, Rest: {rest}s, Rounds: {rounds}',
   
   // Check-in Card
-  checkin_title: 'Training Check-in',
+  checkin_title: 'Workout Check-In',
   checkin_message: 'We noticed your training volume dropped significantly this week. Is everything okay?',
   checkin_option_busy: 'Just Busy',
-  checkin_option_deload: 'Planned Deload',
-  checkin_option_injury: 'Minor Injury/Break',
+  checkin_option_deload: 'Deload Week',
+  checkin_option_injury: 'Minor Injury/Rest',
 
   // History Page
   history_no_data: 'No workout history found for this exercise.',
@@ -70,15 +70,15 @@ export const en = {
   history_menu_delete: 'Delete Workout',
   history_save_template_title: 'Save as Template',
   history_template_name_label: 'Template Name',
-  history_template_name_placeholder: 'e.g., My Awesome Workout',
+  history_template_name_placeholder: 'e.g., My Awesome Routine',
   history_delete_confirm_title: 'Delete Workout?',
-  history_delete_confirm_message: 'Are you sure you want to permanently delete this workout session?',
-  history_workout_editor_title: 'Edit Workout',
-  
+  history_delete_confirm_message: 'Are you sure you want to permanently delete this workout record?',
+  history_workout_editor_title: 'Edit History Workout',
+
   // Insights Tab
   history_tab_insights: 'Insights',
   insights_empty_title: 'Not Enough Data',
-  insights_empty_desc: 'Keep logging your workouts and supplements. We need at least 3 sessions with and without a supplement to uncover trends.',
+  insights_empty_desc: 'Keep logging your workouts and supplement intake. We need at least 3 sessions with and without a supplement to show correlations.',
   insights_volume_impact: 'Volume Impact',
   insights_pr_impact: 'PR Impact',
   insights_higher: '{value}% Higher',
@@ -89,7 +89,6 @@ export const en = {
   insights_pr_chance: '{value}% more PRs',
   insights_pr_chance_lower: '{value}% fewer PRs',
 
-
   // Exercises Page
   search_placeholder: 'Search for an exercise...',
   filter_body_part: 'Body Part',
@@ -97,10 +96,22 @@ export const en = {
   exercises_no_match: 'No exercises match your criteria.',
   exercise_primary_targets: 'Primary Targets',
   exercise_secondary_targets: 'Secondary Targets',
+  exercise_view_motion: 'Motion',
+  exercise_view_muscles: 'Muscles',
+  exercise_anatomy_toggle_targets: 'Targets',
+  exercise_anatomy_toggle_primary: 'Primary',
+  exercise_anatomy_toggle_secondary: 'Secondary',
+  exercise_anatomy_whole: 'Whole {part}',
+  heatmap_front: 'FRONT',
+  heatmap_back: 'BACK',
+  heatmap_fresh: 'Fresh',
+  heatmap_fatigued: 'Fatigued',
+  heatmap_hover_hint: 'Hover over muscles for details',
+  heatmap_recovery: 'Recovery',
 
   // Profile Page
   profile_title: 'Profile & Settings',
-  profile_personal_info: 'Personal Info',
+  profile_personal_info: 'Personal Information',
   profile_gender: 'Gender',
   profile_gender_male: 'Male',
   profile_gender_female: 'Female',
@@ -113,23 +124,23 @@ export const en = {
   profile_weight_history_chart_title: 'Weight Over Time',
   profile_settings: 'Settings',
   profile_language: 'Language',
-  profile_measure_unit: 'Measure Unit',
+  profile_measure_unit: 'Measurement Unit',
   profile_unit_metric: 'Metric',
   profile_unit_imperial: 'Imperial',
   profile_default_timers: 'Default Rest Timers',
   profile_default_timers_desc: 'Set the default rest time when adding new exercises.',
   profile_localized_names: 'Localized Exercise Names',
-  profile_localized_names_desc: 'Display exercise names in the selected language.',
+  profile_localized_names_desc: 'Show exercise names in the selected language.',
   profile_app_behaviour: 'App Behaviour',
   profile_keep_screen_awake: 'Keep Screen Awake',
-  profile_keep_screen_awake_desc: 'Prevents the screen from locking during a workout.',
+  profile_keep_screen_awake_desc: 'Prevents the screen from sleeping during a workout.',
   profile_enable_notifications: 'Enable Notifications',
-  profile_enable_notifications_desc: 'Get an alert when your rest timer is complete.',
-  profile_notifications_blocked: 'Notifications blocked. Please enable them in your browser settings.',
+  profile_enable_notifications_desc: 'Get alerted when your rest timer finishes.',
+  profile_notifications_blocked: 'Notifications blocked. Please enable them in browser settings.',
   profile_voice_settings: 'Voice Settings',
   profile_voice: 'Voice',
   profile_voice_desc: 'Select a voice for workout announcements.',
-  profile_voice_sample: 'Hi, I am {voiceName}. I will be helping you train!',
+  profile_voice_sample: 'Hello, I am {voiceName}. I will help you train!',
 
   // Active Workout
   workout_set: 'Set',
@@ -148,14 +159,14 @@ export const en = {
   active_workout_edit_details_aria: 'Edit workout details',
   active_workout_minimize_aria: 'Minimize workout',
   workout_reorganize_save_order: 'Save Order',
-  workout_previous: 'Previous',
+  workout_previous: 'Prev',
   workout_weight: 'Weight',
   workout_actions: 'Actions',
   workout_add_set: 'Add Set',
   
   // Weight Input Modal
-  weight_input_modal_title: 'Enter Your Weight',
-  weight_input_modal_message: 'To accurately track this bodyweight exercise, please enter your current body weight. This will be saved to your profile.',
+  weight_input_modal_title: 'Enter Bodyweight',
+  weight_input_modal_message: 'To track this bodyweight exercise accurately, please enter your current weight. This will be saved to your profile.',
   weight_input_save: 'Save Weight',
 
   // Set Type Modal
@@ -166,13 +177,13 @@ export const en = {
   set_type_failure: 'Failure',
   set_type_timed: 'Timed',
   set_type_warmup_desc_title: 'What is a Warmup Set?',
-  set_type_warmup_desc: 'A lighter set performed before your main working sets to prepare muscles and joints for heavier loads, reducing injury risk.',
+  set_type_warmup_desc: 'A lighter set performed before your main working sets to prepare your muscles and joints for heavier loads, reducing injury risk.',
   set_type_drop_desc_title: 'What is a Drop Set?',
   set_type_drop_desc: 'An advanced technique where you perform a set to failure, then immediately reduce the weight and continue for more reps without rest to maximize muscle fatigue.',
   set_type_failure_desc_title: 'What is a Failure Set?',
-  set_type_failure_desc: 'A set where you perform as many repetitions as possible with good form until you can no longer complete another rep on your own.',
+  set_type_failure_desc: 'A set where you perform as many reps as possible with good form until you physically cannot complete another repetition on your own.',
   set_type_timed_desc_title: 'What is a Timed Set?',
-  set_type_timed_desc: 'A set where you perform an exercise for a specific duration. The weight input is replaced by a time duration.',
+  set_type_timed_desc: 'A set where you perform an exercise for a specific duration (e.g., Plank) rather than a target number of repetitions. The weight input is replaced by time.',
 
   // Exercise Details Modal
   tab_description: 'Description',
@@ -201,11 +212,11 @@ export const en = {
 
   // Finish Workout Confirmation
   finish_workout_confirm_title: 'Finish Workout?',
-  finish_workout_confirm_message: 'You can finish and save your progress, or discard this session entirely. Any incomplete sets will not be saved.',
-  finish_workout_confirm_cancel: 'Continue Workout',
+  finish_workout_confirm_message: 'You can finish and save your progress, or discard this session entirely. Incomplete sets will not be saved.',
+  finish_workout_confirm_cancel: 'Continue',
   finish_workout_confirm_finish: 'Finish & Save',
   finish_workout_confirm_discard: 'Discard Workout',
-  finish_workout_disabled_tooltip: 'Cannot save workout with incomplete data in completed sets (e.g., 0 weight, reps, or time).',
+  finish_workout_disabled_tooltip: 'Cannot save workout with incomplete data in finished sets (e.g. 0 weight/reps/time).',
 
   // Confirm New Workout Modal
   confirm_new_workout_title: 'Workout in Progress',
@@ -220,28 +231,28 @@ export const en = {
 
   // Exercise Header Menu
   bar_type: 'Bar Type',
-  timer_normal: 'Work Set',
-  timer_warmup: 'Warm-up Set',
+  timer_normal: 'Working Set',
+  timer_warmup: 'Warmup Set',
   timer_drop: 'Drop Set',
   timer_timed: 'Timed Set',
   timer_effort: 'Effort',
   timer_failure: 'Failure',
-  timer_normal_desc_title: 'What is a Work Set Timer?',
+  timer_normal_desc_title: 'What is Working Set Time?',
   timer_normal_desc: 'The standard rest period between your main, challenging sets. This is your primary recovery time to prepare for the next heavy lift.',
-  timer_warmup_desc_title: 'What is a Warm-up Set Timer?',
-  timer_warmup_desc: 'A shorter rest period after lighter, preparatory sets. This keeps your muscles warm and ready for the main working sets without allowing full recovery.',
-  timer_drop_desc_title: 'What is a Drop Set Timer?',
-  timer_drop_desc: 'A very short rest period, often just the time it takes to reduce the weight before starting the next phase of the drop set. The goal is to maximize muscle fatigue with minimal recovery.',
-  timer_timed_desc_title: 'What is a Timed Set Timer?',
-  timer_timed_desc: 'The rest period following a set where you performed an exercise for a specific duration (e.g., plank for 60 seconds) instead of a target number of reps.',
+  timer_warmup_desc_title: 'What is Warmup Set Time?',
+  timer_warmup_desc: 'A shorter rest period after lighter, preparatory sets. This keeps your muscles warm and ready for the main work without allowing full recovery.',
+  timer_drop_desc_title: 'What is Drop Set Time?',
+  timer_drop_desc: 'A very short rest period, often just the time it takes to reduce the weight before starting the next phase of the drop set. The goal is maximum fatigue with minimal recovery.',
+  timer_timed_desc_title: 'What is Timed Set Time?',
+  timer_timed_desc: 'The rest period after a set where you performed an exercise for a specific duration (e.g., plank for 60s) rather than a target rep count.',
   timer_effort_desc_title: 'What is Effort Time?',
-  timer_effort_desc: 'Wait this long if you had a tough time finishing a set. It\'s usually double your normal rest time.',
+  timer_effort_desc: 'Wait this long if you struggled to finish a set. Usually double your normal rest time.',
   timer_failure_desc_title: 'What is Failure Time?',
-  timer_failure_desc: 'Wait this long after you FAILED to complete a set. This gives your nervous system time to recover to try again.',
+  timer_failure_desc: 'Wait this long after FAILING to complete a set. This gives your nervous system time to recover to try again.',
   exercise_header_focus_total_volume: 'Total volume',
   exercise_header_focus_volume_increase: 'Volume increase',
   exercise_header_focus_total_reps: 'Total reps',
-  exercise_header_focus_weight_by_rep: 'Weight by rep',
+  exercise_header_focus_weight_by_rep: 'Weight/rep',
   exercise_header_menu_add_note: 'Add Note',
   exercise_header_menu_add_warmup: 'Add Warmup Sets',
   exercise_header_menu_change_timer: 'Change Timer',
@@ -252,18 +263,18 @@ export const en = {
   exercise_header_menu_remove: 'Remove Exercise',
 
   // Timer Modal
-  timer_modal_title: 'Add rest timers',
-  timer_modal_subtitle_1: 'Completed timers will not be affected.',
+  timer_modal_title: 'Add rest times',
+  timer_modal_subtitle_1: 'Completed times will not be affected.',
   timer_modal_subtitle_2: 'Durations will be saved for next time.',
   timer_modal_none: 'None',
-  timer_modal_update_button: 'Add rest timers',
-  
+  timer_modal_update_button: 'Add times',
+
   // Edit Set Timer Modal
   edit_set_timer_modal_title: 'Edit Rest Timer',
-  edit_set_timer_modal_desc: 'Set a custom rest time for this set or reset to the default ({time}).',
+  edit_set_timer_modal_desc: 'Set a custom rest time for this specific set, or reset to the default ({time}).',
   edit_set_timer_modal_save_button: 'Save Custom Timer',
   edit_set_timer_modal_reset_button: 'Reset to Default',
-
+  
   // Timer Controls
   timer_resume: 'RESUME',
   timer_pause: 'PAUSE',
@@ -273,7 +284,7 @@ export const en = {
   
   // Set Row
   set_row_delete_button: 'Delete',
-  
+
   // Routine Panel
   routine_panel_delete_confirm: 'Are you sure you want to delete "{name}"?',
   routine_panel_delete_confirm_title: 'Delete Template?',
@@ -294,9 +305,9 @@ export const en = {
   template_editor_edit_title: 'Edit Template',
   template_editor_create_title: 'Create Template',
   template_editor_name_label: 'Template Name',
-  template_editor_name_placeholder: 'e.g., Push Day',
+  template_editor_name_placeholder: 'e.g. Push Day',
   template_editor_description_label: 'Description',
-  template_editor_description_placeholder: 'Add some notes about this template...',
+  template_editor_description_placeholder: 'Add notes about this template...',
   template_editor_exercises_title: 'Exercises',
   template_editor_empty: 'This template is empty.',
   template_editor_add_exercises: 'Add Exercises',
@@ -304,7 +315,6 @@ export const en = {
   template_editor_routine_type: 'Routine Type',
   template_editor_type_strength: 'Strength',
   template_editor_type_hiit: 'HIIT',
-  // FIX: Added missing translations to complete the file and fix the syntax error.
   template_editor_hiit_config: 'HIIT Configuration',
   template_editor_work_time: 'Work Time (s)',
   template_editor_rest_time: 'Rest Time (s)',
@@ -323,11 +333,11 @@ export const en = {
   exercise_editor_name_label: 'Name',
   exercise_editor_notes_label: 'Description / Notes',
   exercise_editor_category_locked: '(cannot be changed)',
-  exercise_editor_notes_placeholder: 'Add instructions or personal notes...',
+  exercise_editor_notes_placeholder: 'Add instructions or personal cues...',
   exercise_editor_no_instructions: 'No instructions available for this exercise.',
   exercise_editor_name_empty_alert: 'Exercise name cannot be empty.',
-  exercise_editor_is_timed_label: 'Timed By Default',
-  exercise_editor_is_timed_desc: 'When added to a workout, this exercise will default to a timed set instead of reps and weight.',
+  exercise_editor_is_timed_label: 'Default to Timed',
+  exercise_editor_is_timed_desc: 'When added to a workout, this exercise will default to a timed set instead of reps & weight.',
 
   // Add/Replace Exercise Modal
   add_exercises_modal_title: 'Add Exercises',
@@ -338,16 +348,16 @@ export const en = {
   replace_exercise_modal_button: 'Replace',
   replace_exercise_modal_no_match: 'No exercises found.',
   replace_exercise_modal_confirm_title: 'Replace Exercise?',
-  replace_exercise_modal_confirm_message: 'Are you sure you want to replace this exercise? Current sets will be maintained.',
-  
+  replace_exercise_modal_confirm_message: 'Are you sure you want to replace this exercise? Current sets will be kept.',
+
   remove_exercise_confirm_title: 'Remove Exercise?',
-  remove_exercise_confirm_message: 'Are you sure you want to remove this exercise from the workout? All sets data will be lost.',
+  remove_exercise_confirm_message: 'Are you sure you want to remove this exercise from the workout? Set data will be lost.',
 
   // Workout Details Modal
   workout_details_modal_title: 'Edit Details',
   workout_details_modal_name_label: 'Workout Name',
-  workout_details_modal_auto_timer_label: 'Automatic Timer',
-  workout_details_modal_auto_timer_desc: 'Log duration automatically.',
+  workout_details_modal_auto_timer_label: 'Auto Timer',
+  workout_details_modal_auto_timer_desc: 'Track duration automatically.',
   workout_details_modal_duration_label: 'Duration',
   workout_details_modal_end_date_label: 'End Date',
   workout_details_modal_active_now: 'Active Now',
@@ -370,16 +380,16 @@ export const en = {
   timers_resume_button: 'Resume',
   timers_round: 'Round',
   timers_of: 'of',
-  timers_complete: 'Complete!',
-  timers_prepare: 'Prepare',
+  timers_complete: 'Completed!',
+  timers_prepare: 'Get Ready',
   timers_minute_abbreviation: 'm',
   timers_second_abbreviation: 's',
-  timers_announce_prepare: 'Get ready. Next up: {exercise}',
-  timers_announce_rest: 'Rest. Next up: {exercise}',
-  timers_announce_finish: 'Workout finished. Congratulations! You worked for {minutes} minutes.',
+  timers_announce_prepare: 'Get Ready. Next: {exercise}',
+  timers_announce_rest: 'Rest. Next: {exercise}',
+  timers_announce_finish: 'Workout complete. Congratulations! You worked out for {minutes} minutes.',
 
   // Body Parts
-  body_part_all: 'Body Parts',
+  body_part_all: 'All Muscles',
   body_part_chest: 'Chest',
   body_part_back: 'Back',
   body_part_legs: 'Legs',
@@ -394,8 +404,44 @@ export const en = {
   body_part_mobility: 'Mobility',
   body_part_cardio: 'Cardio',
 
+  // Muscle Groups
+  muscle_pectorals: 'Pectorals',
+  muscle_upper_chest: 'Upper Chest',
+  muscle_lower_chest: 'Lower Chest',
+  muscle_serratus_anterior: 'Serratus Anterior',
+  muscle_lats: 'Lats',
+  muscle_traps: 'Traps',
+  muscle_rhomboids: 'Rhomboids',
+  muscle_lower_back: 'Lower Back',
+  muscle_teres_major: 'Teres Major',
+  muscle_spinal_erectors: 'Spinal Erectors',
+  muscle_front_delts: 'Front Delts',
+  muscle_side_delts: 'Side Delts',
+  muscle_rear_delts: 'Rear Delts',
+  muscle_rotator_cuff: 'Rotator Cuff',
+  muscle_biceps: 'Biceps',
+  muscle_triceps: 'Triceps',
+  muscle_brachialis: 'Brachialis',
+  muscle_forearms: 'Forearms',
+  muscle_wrist_flexors: 'Wrist Flexors',
+  muscle_wrist_extensors: 'Wrist Extensors',
+  muscle_quads: 'Quads',
+  muscle_hamstrings: 'Hamstrings',
+  muscle_glutes: 'Glutes',
+  muscle_adductors: 'Adductors',
+  muscle_abductors: 'Abductors',
+  muscle_calves: 'Calves',
+  muscle_soleus: 'Soleus',
+  muscle_gastrocnemius: 'Gastrocnemius',
+  muscle_tibialis_anterior: 'Tibialis Anterior',
+  muscle_hip_flexors: 'Hip Flexors',
+  muscle_abs: 'Abs',
+  muscle_obliques: 'Obliques',
+  muscle_transverse_abdominis: 'Transverse Abdominis',
+  muscle_cardiovascular_system: 'Cardiovascular System',
+
   // Categories
-  category_all: 'Categories',
+  category_all: 'All Categories',
   category_barbell: 'Barbell',
   category_dumbbell: 'Dumbbell',
   category_machine: 'Machine',
@@ -406,6 +452,7 @@ export const en = {
   category_plyometrics: 'Plyometrics',
   category_reps_only: 'Reps Only',
   category_cardio: 'Cardio',
+  // FIX: Added translation for 'Duration' category.
   category_duration: 'Duration',
 
   // Notifications
