@@ -143,6 +143,8 @@ export const es = {
   profile_enable_notifications: 'Habilitar Notificaciones',
   profile_enable_notifications_desc: 'Recibir una alerta cuando el temporizador de descanso termine.',
   profile_notifications_blocked: 'Notificaciones bloqueadas. Por favor, actívelas en la configuración de su navegador.',
+  profile_wake_lock_blocked: 'Bloqueo de pantalla impedido por la configuración del navegador/sistema.',
+  profile_wake_lock_unsupported: 'Bloqueo de pantalla no soportado por este navegador.',
   profile_voice_settings: 'Configuración de Voz',
   profile_voice: 'Voz',
   profile_voice_desc: 'Seleccioná una voz para los anuncios del entrenamiento.',

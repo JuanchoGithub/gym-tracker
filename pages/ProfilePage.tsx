@@ -55,6 +55,43 @@ const ProfilePage: React.FC = () => {
   const [feet, setFeet] = useState('');
   const [inches, setInches] = useState('');
 
+  const [wakeLockPermission, setWakeLockPermission] = useState<'granted' | 'denied' | 'unsupported'>('granted');
+
+  useEffect(() => {
+    if (!('wakeLock' in navigator)) {
+        setWakeLockPermission('unsupported');
+        return;
+    }
+    
+    const checkPermission = async () => {
+        try {
+             if ('permissions' in navigator) {
+                // @ts-ignore
+                const result = await navigator.permissions.query({ name: 'screen-wake-lock' });
+                if (result.state === 'denied') {
+                    setWakeLockPermission('denied');
+                    if (keepScreenAwake) setKeepScreenAwake(false);
+                } else {
+                    setWakeLockPermission('granted');
+                }
+                
+                result.onchange = () => {
+                     if (result.state === 'denied') {
+                        setWakeLockPermission('denied');
+                        if (keepScreenAwake) setKeepScreenAwake(false);
+                     } else {
+                        setWakeLockPermission('granted');
+                     }
+                };
+             }
+        } catch (e) {
+            // Fallback if query fails or not supported
+        }
+    };
+    checkPermission();
+  }, [keepScreenAwake, setKeepScreenAwake]);
+
+
   useEffect(() => {
     setLocalWeight(currentWeight ? displayWeight(currentWeight) : '');
   }, [currentWeight, displayWeight]);
@@ -336,8 +373,14 @@ const ProfilePage: React.FC = () => {
               <div className="flex flex-col">
                   <span className="text-text-primary font-medium">{t('profile_keep_screen_awake')}</span>
                   <span className="text-xs text-text-secondary">{t('profile_keep_screen_awake_desc')}</span>
+                  {wakeLockPermission === 'denied' && (
+                      <span className="text-xs text-warning mt-1">{t('profile_wake_lock_blocked')}</span>
+                  )}
+                  {wakeLockPermission === 'unsupported' && (
+                      <span className="text-xs text-warning mt-1">{t('profile_wake_lock_unsupported')}</span>
+                  )}
               </div>
-              <ToggleSwitch checked={keepScreenAwake} onChange={setKeepScreenAwake} />
+              <ToggleSwitch checked={keepScreenAwake && wakeLockPermission === 'granted'} onChange={setKeepScreenAwake} />
           </SettingsItem>
           <SettingsItem>
               <div className="flex flex-col">

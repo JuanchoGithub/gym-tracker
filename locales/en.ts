@@ -143,6 +143,8 @@ export const en = {
   profile_enable_notifications: 'Enable Notifications',
   profile_enable_notifications_desc: 'Get alerted when your rest timer finishes.',
   profile_notifications_blocked: 'Notifications blocked. Please enable them in browser settings.',
+  profile_wake_lock_blocked: 'Screen wake lock blocked by browser/system settings.',
+  profile_wake_lock_unsupported: 'Screen wake lock not supported by this browser.',
   profile_voice_settings: 'Voice Settings',
   profile_voice: 'Voice',
   profile_voice_desc: 'Select a voice for workout announcements.',
