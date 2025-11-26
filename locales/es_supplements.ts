@@ -139,6 +139,10 @@ export const es_supplements = {
   suggestion_remove_beta_alanine_reason: 'Estás entrenando menos de dos veces por semana recientemente. La Beta-Alanina requiere saturación diaria para ser efectiva, por lo que puede no valer la pena ahora.',
   suggestion_remove_morning_supp_title: 'Cambio de Horario Detectado',
   suggestion_remove_morning_supp_reason: 'Ya no entrenás por las mañanas, pero tu plan incluye suplementos específicos para la mañana (como BCAAs). Considerá eliminarlos.',
+  suggestion_move_protein_lunch_title: 'Ajustar Horario de Proteína',
+  suggestion_move_protein_lunch_reason: 'Ahora entrenás por la mañana. Para distribuir mejor tu ingesta de proteínas, considerá mover tu dosis de proteína del desayuno al almuerzo.',
+  suggestion_move_protein_breakfast_title: 'Ajustar Horario de Proteína',
+  suggestion_move_protein_breakfast_reason: 'Ya no entrenás por la mañana. Considerá tomar tu dosis extra de proteína con el desayuno en lugar del almuerzo para comenzar bien el día.',
 
   // Months
   month_january: 'Enero',

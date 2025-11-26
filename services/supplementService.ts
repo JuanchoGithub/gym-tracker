@@ -1,6 +1,7 @@
 
 
 
+
 import { SupplementInfo, SupplementPlan, SupplementPlanItem, WorkoutSession, SupplementSuggestion } from '../types';
 import { getExplanationIdForSupplement } from './explanationService';
 import { PREDEFINED_EXERCISES } from '../constants/exercises';
@@ -305,17 +306,29 @@ export const reviewSupplementPlan = (
     const longSessions = recentHistory.filter(s => s.endTime > 0 && (s.endTime - s.startTime) > 80 * 60 * 1000);
     const isLongDurationUser = longSessions.length > (recentHistory.length * 0.4);
 
-    // 3. Late Night & Early Morning Analysis
+    // 3. Time of Day Analysis
     let lateNightWorkouts = 0;
     let earlyMorningWorkouts = 0;
+    let morningCount = 0;
+    let afternoonCount = 0;
+    let nightCount = 0;
+    
     recentHistory.forEach(s => {
         const hour = new Date(s.startTime).getHours();
         if (hour >= 20) lateNightWorkouts++;
         if (hour < 9) earlyMorningWorkouts++;
+        
+        if (hour >= 4 && hour < 11) morningCount++;
+        else if (hour >= 11 && hour < 18) afternoonCount++;
+        else nightCount++;
     });
     
     const isLateNightUser = lateNightWorkouts > (recentHistory.length * 0.3);
     const isEarlyMorningUser = earlyMorningWorkouts > (recentHistory.length * 0.5);
+
+    let mostFrequentTrainingTime: 'morning' | 'afternoon' | 'night' = 'afternoon';
+    if (morningCount > afternoonCount && morningCount > nightCount) mostFrequentTrainingTime = 'morning';
+    else if (nightCount > afternoonCount && nightCount > morningCount) mostFrequentTrainingTime = 'night';
 
     // 4. High Impact / Heavy Joint Load
     let highImpactCount = 0;
@@ -341,13 +354,6 @@ export const reviewSupplementPlan = (
     
     const volLast2 = last2WeeksHistory.reduce((acc, s) => acc + s.exercises.reduce((t, e) => t + e.sets.reduce((st, set) => st + set.weight * set.reps, 0), 0), 0);
     const volPrev2 = prev2WeeksHistory.reduce((acc, s) => acc + s.exercises.reduce((t, e) => t + e.sets.reduce((st, set) => st + set.weight * set.reps, 0), 0), 0);
-    
-    // Check if volume dropped by > 50% (Sign of break or injury)
-    // Adjust volumes to be daily average to account for differing number of days
-    const daysLast2 = 14;
-    const daysPrev2 = 14;
-    // Actually, better to use number of sessions to gauge intensity per session, 
-    // OR total volume to gauge overall load. Total load is better for supplement needs.
     
     const isStagnating = last2WeeksHistory.length >= 2 && prev2WeeksHistory.length >= 2 && volLast2 <= volPrev2 * 1.05 && volLast2 >= volPrev2 * 0.95;
     const volumeDropRatio = volPrev2 > 0 ? volLast2 / volPrev2 : 1;
@@ -678,6 +684,57 @@ export const reviewSupplementPlan = (
                 reason: t('suggestion_remove_morning_supp_reason'),
                 identifier: `REMOVE:${morningBcaa.supplement}:schedule`,
                 action: { type: 'REMOVE', itemId: morningBcaa.id }
+            });
+        }
+    }
+    
+    // Suggestion 14: Move Protein Timing based on Schedule
+    // If user training time shifted significantly vs generated plan time.
+    if (mostFrequentTrainingTime === 'morning') {
+        const proteinBreakfast = plan.plan.find(item => {
+            const isProtein = getExplanationIdForSupplement(item.supplement) === 'protein';
+            const isBreakfast = item.time.toLowerCase().includes('breakfast') || item.time.toLowerCase().includes('desayuno');
+            return isProtein && isBreakfast;
+        });
+        
+        if (proteinBreakfast) {
+            suggestions.push({
+                id: 'move-protein-lunch',
+                title: t('suggestion_move_protein_lunch_title'),
+                reason: t('suggestion_move_protein_lunch_reason'),
+                identifier: `UPDATE:${proteinBreakfast.supplement}:time:lunch`,
+                action: {
+                    type: 'UPDATE',
+                    itemId: proteinBreakfast.id,
+                    updates: { 
+                        time: t('supplements_time_lunch'),
+                        notes: t('supplements_note_protein_lunch')
+                    }
+                }
+            });
+        }
+    } else {
+        // Not morning training (Afternoon/Night)
+         const proteinLunch = plan.plan.find(item => {
+            const isProtein = getExplanationIdForSupplement(item.supplement) === 'protein';
+            const isLunch = item.time.toLowerCase().includes('lunch') || item.time.toLowerCase().includes('almuerzo');
+            return isProtein && isLunch;
+        });
+        
+        if (proteinLunch) {
+            suggestions.push({
+                id: 'move-protein-breakfast',
+                title: t('suggestion_move_protein_breakfast_title'),
+                reason: t('suggestion_move_protein_breakfast_reason'),
+                identifier: `UPDATE:${proteinLunch.supplement}:time:breakfast`,
+                action: {
+                    type: 'UPDATE',
+                    itemId: proteinLunch.id,
+                    updates: { 
+                        time: t('supplements_time_with_breakfast'),
+                        notes: t('supplements_note_protein_breakfast')
+                    }
+                }
             });
         }
     }

@@ -139,6 +139,10 @@ export const en_supplements = {
   suggestion_remove_beta_alanine_reason: 'You are training less than twice a week recently. Beta-Alanine requires daily saturation to be effective, so it may not be worth taking right now.',
   suggestion_remove_morning_supp_title: 'Schedule Change Detected',
   suggestion_remove_morning_supp_reason: 'You are no longer training in the mornings, but your plan includes morning-specific supplements (like BCAAs). Consider removing them.',
+  suggestion_move_protein_lunch_title: 'Adjust Protein Timing',
+  suggestion_move_protein_lunch_reason: 'You are now training in the morning. To spread your protein intake effectively, consider moving your breakfast protein dose to lunch.',
+  suggestion_move_protein_breakfast_title: 'Adjust Protein Timing',
+  suggestion_move_protein_breakfast_reason: 'You are no longer training in the morning. Consider taking your extra protein dose with breakfast instead of lunch to start the day right.',
 
   // Months
   month_january: 'January',
