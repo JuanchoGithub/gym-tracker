@@ -1,4 +1,5 @@
 
+
 export const es_supplements = {
   // Supplements Page
   supplements_title: 'Plan de Suplementos',
@@ -76,17 +77,19 @@ export const es_supplements = {
   supplements_age_warning: 'Debés tener al menos 18 años. Por favor, consultá a un médico.',
   supplements_add_custom: 'Agregar Suplemento Personalizado',
   supplements_add_modal_title: 'Agregar Suplemento Personalizado',
+  supplements_edit_modal_title: 'Editar Suplemento',
   supplements_add_name_label: 'Nombre del Suplemento',
   supplements_add_name_placeholder: 'Ej: ZMA',
   supplements_add_dosage_label: 'Dosis',
   supplements_add_dosage_placeholder: 'Ej: 1 cápsula',
-  supplements_add_stock_label: 'Stock Inicial (Porciones)',
+  supplements_add_stock_label: 'Stock (Porciones)',
   supplements_add_stock_placeholder: 'Ej: 30',
   supplements_add_time_label: 'Horario',
   supplements_add_time_placeholder: 'Ej: Antes de dormir',
   supplements_add_notes_label: 'Notas (opcional)',
   supplements_add_notes_placeholder: 'Ej: Para recuperación y sueño',
   supplements_add_name_required: 'El nombre del suplemento es obligatorio.',
+  supplements_edit_save: 'Guardar Cambios',
   supplements_delete_confirm_title: '¿Eliminar Suplemento?',
   supplements_delete_confirm_message: '¿Estás seguro de que quieres eliminar "{supplementName}" de tu plan?',
   supplements_delete_complex_message: '"{supplementName}" está programado para todos los días. ¿Cómo te gustaría eliminarlo?',

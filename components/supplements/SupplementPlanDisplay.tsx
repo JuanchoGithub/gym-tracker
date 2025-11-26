@@ -1,11 +1,14 @@
 
-import React, { useMemo, useCallback, useState } from 'react';
+
+
+import React, { useMemo, useCallback, useState, useContext } from 'react';
 import { SupplementPlan, SupplementPlanItem } from '../../types';
 import { useI18n } from '../../hooks/useI18n';
 import { Icon } from '../common/Icon';
 import { getExplanationIdForSupplement } from '../../services/explanationService';
 import Modal from '../common/Modal';
 import { AppContext } from '../../contexts/AppContext';
+import EditSupplementModal from './EditSupplementModal';
 
 interface SupplementPlanOverviewProps {
   plan: SupplementPlan;
@@ -48,7 +51,7 @@ const timeOrder: { [key: string]: number } = {
 
 const StockBadge: React.FC<{ item: SupplementPlanItem }> = ({ item }) => {
     const { t } = useI18n();
-    const { updateSupplementStock } = React.useContext(AppContext);
+    const { updateSupplementStock } = useContext(AppContext);
     const [isRestockModalOpen, setIsRestockModalOpen] = useState(false);
     const [amountToAdd, setAmountToAdd] = useState('');
 
@@ -104,28 +107,39 @@ const StockBadge: React.FC<{ item: SupplementPlanItem }> = ({ item }) => {
     );
 };
 
-const SupplementItemCard: React.FC<{ item: SupplementPlanItem; onRemove: () => void; onOpenExplanation: (id: string) => void; }> = ({ item, onRemove, onOpenExplanation }) => {
+const SupplementItemCard: React.FC<{ 
+    item: SupplementPlanItem; 
+    onRemove: () => void; 
+    onOpenExplanation: (id: string) => void;
+    onEdit: () => void;
+}> = ({ item, onRemove, onOpenExplanation, onEdit }) => {
   return (
-    <div key={item.id} className="bg-surface p-4 rounded-lg shadow-md">
+    <div key={item.id} className="bg-surface p-4 rounded-lg shadow-md cursor-pointer hover:bg-surface-highlight/30 transition-colors group" onClick={onEdit}>
       <div className="flex items-start justify-between mb-2">
         <div className="flex items-center gap-2 flex-wrap">
           <h4 className="font-bold text-lg text-primary">{item.supplement}</h4>
           {getExplanationIdForSupplement(item.supplement) && (
             <button 
-                onClick={() => {
+                onClick={(e) => {
+                    e.stopPropagation();
                     const id = getExplanationIdForSupplement(item.supplement);
                     if (id) onOpenExplanation(id);
                 }}
-                className="text-text-secondary/60 hover:text-primary"
+                className="text-text-secondary/60 hover:text-primary p-1"
             >
                 <Icon name="question-mark-circle" className="w-5 h-5" />
             </button>
           )}
           <StockBadge item={item} />
         </div>
-        <button onClick={onRemove} className="ml-2 p-1 text-red-400/70 hover:text-red-400 flex-shrink-0" aria-label={`Remove ${item.supplement}`}>
-          <Icon name="trash" className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-1">
+            <button onClick={(e) => { e.stopPropagation(); onEdit(); }} className="p-1 text-text-secondary hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity" aria-label={`Edit ${item.supplement}`}>
+                 <Icon name="edit" className="w-4 h-4" />
+            </button>
+            <button onClick={(e) => { e.stopPropagation(); onRemove(); }} className="p-1 text-red-400/70 hover:text-red-400 flex-shrink-0" aria-label={`Remove ${item.supplement}`}>
+                <Icon name="trash" className="w-4 h-4" />
+            </button>
+        </div>
       </div>
       <div className="flex items-center gap-2 mb-2 flex-wrap">
           <span className="font-mono text-base bg-secondary/50 px-3 py-1 rounded-full">{item.dosage}</span>
@@ -138,6 +152,8 @@ const SupplementItemCard: React.FC<{ item: SupplementPlanItem; onRemove: () => v
 
 const SupplementPlanOverview: React.FC<SupplementPlanOverviewProps> = ({ plan, onRemoveItemRequest, onComplexRemoveRequest, onAddItemClick, onEditAnswers, onOpenExplanation, onReviewPlan }) => {
   const { t, locale } = useI18n();
+  const { updateSupplementPlanItem } = useContext(AppContext);
+  const [itemToEdit, setItemToEdit] = useState<SupplementPlanItem | null>(null);
 
   const handleRemoveClick = (item: SupplementPlanItem) => {
     if (item.trainingDayOnly || item.restDayOnly) {
@@ -184,6 +200,17 @@ const SupplementPlanOverview: React.FC<SupplementPlanOverviewProps> = ({ plan, o
     return { groupedPlan: finalGrouped, orderedGroups };
   }, [plan, getTimeKey]);
 
+  const handleEdit = (item: SupplementPlanItem) => {
+      setItemToEdit(item);
+  };
+
+  const handleSaveEdit = (updates: Partial<SupplementPlanItem>) => {
+      if (itemToEdit) {
+          updateSupplementPlanItem(itemToEdit.id, updates);
+          setItemToEdit(null);
+      }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-end gap-2 flex-wrap">
@@ -228,7 +255,13 @@ const SupplementPlanOverview: React.FC<SupplementPlanOverviewProps> = ({ plan, o
                 <div className="space-y-3">
                   {(hasWorkoutOnlyItems || hasRestOnlyItems) && <h4 className="font-bold text-text-secondary">{t('supplements_all_days')}</h4>}
                   {group.allDays.map(item => (
-                    <SupplementItemCard item={item} onRemove={() => handleRemoveClick(item)} key={item.id} onOpenExplanation={onOpenExplanation} />
+                    <SupplementItemCard 
+                        item={item} 
+                        onRemove={() => handleRemoveClick(item)} 
+                        key={item.id} 
+                        onOpenExplanation={onOpenExplanation}
+                        onEdit={() => handleEdit(item)} 
+                    />
                   ))}
                 </div>
               )}
@@ -236,7 +269,13 @@ const SupplementPlanOverview: React.FC<SupplementPlanOverviewProps> = ({ plan, o
                 <div className="space-y-3">
                   <h4 className="font-bold text-primary">{t('supplements_workout_day')}</h4>
                   {group.workoutOnly.map(item => (
-                    <SupplementItemCard item={item} onRemove={() => handleRemoveClick(item)} key={item.id} onOpenExplanation={onOpenExplanation} />
+                    <SupplementItemCard 
+                        item={item} 
+                        onRemove={() => handleRemoveClick(item)} 
+                        key={item.id} 
+                        onOpenExplanation={onOpenExplanation} 
+                        onEdit={() => handleEdit(item)}
+                    />
                   ))}
                 </div>
               )}
@@ -244,7 +283,13 @@ const SupplementPlanOverview: React.FC<SupplementPlanOverviewProps> = ({ plan, o
                 <div className="space-y-3">
                   <h4 className="font-bold text-sky-400">{t('supplements_rest_day')}</h4>
                   {group.restOnly.map(item => (
-                    <SupplementItemCard item={item} onRemove={() => handleRemoveClick(item)} key={item.id} onOpenExplanation={onOpenExplanation} />
+                    <SupplementItemCard 
+                        item={item} 
+                        onRemove={() => handleRemoveClick(item)} 
+                        key={item.id} 
+                        onOpenExplanation={onOpenExplanation} 
+                        onEdit={() => handleEdit(item)}
+                    />
                   ))}
                 </div>
               )}
@@ -273,6 +318,15 @@ const SupplementPlanOverview: React.FC<SupplementPlanOverviewProps> = ({ plan, o
       <div className="text-center text-xs text-text-secondary/70 p-4 border-t border-secondary/20 mt-4">
         <p>{t('supplements_disclaimer')}</p>
       </div>
+
+      {itemToEdit && (
+        <EditSupplementModal
+            isOpen={!!itemToEdit}
+            onClose={() => setItemToEdit(null)}
+            item={itemToEdit}
+            onSave={handleSaveEdit}
+        />
+      )}
     </div>
   );
 };

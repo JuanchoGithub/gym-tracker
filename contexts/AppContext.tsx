@@ -1,4 +1,6 @@
 
+
+
 import React, { createContext, useState, ReactNode, useMemo, useEffect, useCallback } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { Routine, WorkoutSession, Exercise, WorkoutExercise, PerformedSet, ActiveHiitSession, SupplementPlan, SupplementPlanItem, SupplementSuggestion, RejectedSuggestion, Profile, SupersetDefinition } from '../types';
@@ -95,6 +97,7 @@ interface AppContextType {
   setTakenSupplements: React.Dispatch<React.SetStateAction<Record<string, string[]>>>;
   toggleSupplementIntake: (date: string, itemId: string) => void;
   updateSupplementStock: (itemId: string, delta: number) => void;
+  updateSupplementPlanItem: (itemId: string, updates: Partial<SupplementPlanItem>) => void;
   newSuggestions: SupplementSuggestion[];
   applyPlanSuggestion: (suggestionId: string) => void;
   applyAllPlanSuggestions: () => void;
@@ -237,6 +240,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             return { ...item, stock: Math.max(0, item.stock + delta) };
         }
         return item;
+      }));
+  }, [supplementPlan, setSupplementPlan, setUserSupplements]);
+  
+  const updateSupplementPlanItem = useCallback((itemId: string, updates: Partial<SupplementPlanItem>) => {
+      if (supplementPlan) {
+          const newPlanItems = supplementPlan.plan.map(item => 
+              item.id === itemId ? { ...item, ...updates } : item
+          );
+          setSupplementPlan({ ...supplementPlan, plan: newPlanItems });
+      }
+      
+      setUserSupplements(prev => prev.map(item => {
+          if (item.id === itemId) {
+              return { ...item, ...updates };
+          }
+          return item;
       }));
   }, [supplementPlan, setSupplementPlan, setUserSupplements]);
 
@@ -1054,6 +1073,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setTakenSupplements,
     toggleSupplementIntake,
     updateSupplementStock,
+    updateSupplementPlanItem,
     newSuggestions,
     applyPlanSuggestion,
     applyAllPlanSuggestions,
