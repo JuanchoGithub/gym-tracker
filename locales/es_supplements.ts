@@ -10,6 +10,7 @@ export const es_supplements = {
   supplements_plan_ready_desc: 'Tu plan de suplementos personalizado ha sido creado. Ya podés ver tus tareas diarias.',
   supplements_plan_subtitle: 'Tu Plan Personalizado',
   supplements_edit_plan: 'Editar Respuestas y Recalcular',
+  supplements_review_plan: 'Revisar Plan',
   supplements_disclaimer: 'Este plan es informativo y no sustituye el consejo médico profesional. Consultá con un profesional de la salud antes de comenzar cualquier nuevo régimen de suplementos.',
   supplements_warnings: 'Consideraciones Importantes',
   supplements_general_tips: 'Consejos Generales',

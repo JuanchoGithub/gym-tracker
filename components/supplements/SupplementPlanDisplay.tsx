@@ -14,6 +14,7 @@ interface SupplementPlanOverviewProps {
   onAddItemClick: () => void;
   onEditAnswers: () => void;
   onOpenExplanation: (id: string) => void;
+  onReviewPlan?: () => void;
 }
 
 const timeKeywords = {
@@ -135,7 +136,7 @@ const SupplementItemCard: React.FC<{ item: SupplementPlanItem; onRemove: () => v
   );
 };
 
-const SupplementPlanOverview: React.FC<SupplementPlanOverviewProps> = ({ plan, onRemoveItemRequest, onComplexRemoveRequest, onAddItemClick, onEditAnswers, onOpenExplanation }) => {
+const SupplementPlanOverview: React.FC<SupplementPlanOverviewProps> = ({ plan, onRemoveItemRequest, onComplexRemoveRequest, onAddItemClick, onEditAnswers, onOpenExplanation, onReviewPlan }) => {
   const { t, locale } = useI18n();
 
   const handleRemoveClick = (item: SupplementPlanItem) => {
@@ -185,7 +186,13 @@ const SupplementPlanOverview: React.FC<SupplementPlanOverviewProps> = ({ plan, o
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end gap-2">
+      <div className="flex justify-end gap-2 flex-wrap">
+        {onReviewPlan && (
+            <button onClick={onReviewPlan} className="bg-surface-highlight/80 hover:bg-surface-highlight text-text-primary font-bold py-2 px-3 rounded-lg transition-colors flex items-center justify-center space-x-2 text-sm border border-white/10">
+                <Icon name="sparkles" className="w-4 h-4 text-yellow-400" />
+                <span>{t('supplements_review_plan')}</span>
+            </button>
+        )}
         <button onClick={onEditAnswers} className="bg-secondary hover:bg-slate-500 text-white font-bold py-2 px-3 rounded-lg transition-colors flex items-center justify-center space-x-2 text-sm">
             <Icon name="edit" className="w-4 h-4" />
             <span>{t('supplements_edit_plan')}</span>

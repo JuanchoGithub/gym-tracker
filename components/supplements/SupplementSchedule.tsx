@@ -41,9 +41,10 @@ const timeOrder: { [key: string]: number } = {
 
 interface SupplementScheduleProps {
   onEditAnswers: () => void;
+  onReviewPlan?: () => void;
 }
 
-const SupplementSchedule: React.FC<SupplementScheduleProps> = ({ onEditAnswers }) => {
+const SupplementSchedule: React.FC<SupplementScheduleProps> = ({ onEditAnswers, onReviewPlan }) => {
   const { supplementPlan, setSupplementPlan, userSupplements, setUserSupplements } = useContext(AppContext);
   const { t, locale } = useI18n();
   const [currentView, setCurrentView] = useState<'today' | 'tomorrow' | 'week' | 'log'>('today');
@@ -237,6 +238,7 @@ const SupplementSchedule: React.FC<SupplementScheduleProps> = ({ onEditAnswers }
           onAddItemClick={() => setIsAddModalOpen(true)}
           onEditAnswers={onEditAnswers}
           onOpenExplanation={handleOpenExplanation}
+          onReviewPlan={onReviewPlan}
         />;
       case 'log':
         return <SupplementLog />;

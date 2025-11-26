@@ -10,6 +10,7 @@ export const en_supplements = {
   supplements_plan_ready_desc: 'Your personalized supplement schedule has been created. You can view your daily tasks now.',
   supplements_plan_subtitle: 'Your Personalized Plan',
   supplements_edit_plan: 'Edit Answers & Recalculate',
+  supplements_review_plan: 'Review Plan',
   supplements_disclaimer: 'This plan is for informational purposes and not a substitute for professional medical advice. Consult with a healthcare provider before starting any new supplement regimen.',
   supplements_warnings: 'Important Considerations',
   supplements_general_tips: 'General Tips',

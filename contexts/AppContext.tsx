@@ -101,6 +101,7 @@ interface AppContextType {
   dismissSuggestion: (suggestionId: string) => void;
   dismissAllSuggestions: () => void;
   clearNewSuggestions: () => void;
+  triggerManualPlanReview: () => void;
   profile: Profile;
   updateProfileInfo: (updates: Partial<Omit<Profile, 'weightHistory'>>) => void;
   currentWeight?: number; // in kg
@@ -256,46 +257,27 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     });
   }, [setTakenSupplements, updateSupplementStock]);
 
-  // Daily supplement plan analysis and check-in
-  useEffect(() => {
-    const runDailyAnalysis = () => {
-        if (!supplementPlan) return;
-
+  // Shared Analysis Logic
+  const runPlanAnalysis = useCallback((
+      planToAnalyze: SupplementPlan,
+      checkInReason: CheckInReason | null,
+      filterRejected: boolean = true
+  ) => {
         // Clean up old rejections
         const now = Date.now();
-        const validRejections = rejectedSuggestions.filter(r => (now - r.rejectedAt) < THIRTY_DAYS_MS);
-        if (validRejections.length !== rejectedSuggestions.length) {
-            setRejectedSuggestions(validRejections);
-        }
-        const rejectedIdentifiers = new Set(validRejections.map(r => r.identifier));
+        let currentRejected = rejectedSuggestions;
 
-        const isSignificantVolumeDrop = analyzeVolumeDrop(history);
-        
-        let currentCheckInReason: CheckInReason | null = null;
-
-        if (isSignificantVolumeDrop) {
-             // If we haven't checked in recently (e.g., last 7 days) OR checkInState is not active but reason is old
-             const isCheckInFresh = checkInState.lastChecked && (now - checkInState.lastChecked) < SEVEN_DAYS_MS;
-             
-             if (!isCheckInFresh) {
-                 // Trigger check-in UI
-                 setCheckInState({ active: true });
-                 // Don't run full analysis yet, wait for user response
-                 // But we can run analysis assuming NULL reason to populate other suggestions
-                 currentCheckInReason = null;
-             } else {
-                 currentCheckInReason = checkInState.reason || null;
-             }
-        } else {
-             // No volume drop, so clear any active check-in state related to volume drop
-             if (checkInState.active) {
-                 setCheckInState({ active: false });
-             }
-             currentCheckInReason = null;
+        if (filterRejected) {
+            const validRejections = rejectedSuggestions.filter(r => (now - r.rejectedAt) < THIRTY_DAYS_MS);
+            if (validRejections.length !== rejectedSuggestions.length) {
+                setRejectedSuggestions(validRejections);
+                currentRejected = validRejections;
+            }
         }
         
-        // Pass reason to review logic
-        const allSuggestions = reviewSupplementPlan(supplementPlan, history, t, currentCheckInReason, takenSupplements);
+        const rejectedIdentifiers = new Set(filterRejected ? currentRejected.map(r => r.identifier) : []);
+
+        const allSuggestions = reviewSupplementPlan(planToAnalyze, history, t, checkInReason, takenSupplements);
         
         const finalSuggestions = allSuggestions.filter(suggestion => {
             if (rejectedIdentifiers.has(suggestion.identifier)) {
@@ -305,11 +287,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             const action = suggestion.action;
             switch(action.type) {
                 case 'ADD':
-                    return !supplementPlan.plan.some(item => item.supplement === action.item.supplement);
+                    return !planToAnalyze.plan.some(item => item.supplement === action.item.supplement);
                 case 'REMOVE':
-                    return new Set(supplementPlan.plan.map(p => p.id)).has(action.itemId);
+                    return new Set(planToAnalyze.plan.map(p => p.id)).has(action.itemId);
                 case 'UPDATE':
-                    const itemToUpdate = supplementPlan.plan.find(item => item.id === action.itemId);
+                    const itemToUpdate = planToAnalyze.plan.find(item => item.id === action.itemId);
                     if (!itemToUpdate) return false;
                     // Special check for stock updates
                     if ('stock' in action.updates) {
@@ -325,8 +307,42 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             }
         });
 
-        if (finalSuggestions.length > 0) {
-            setNewSuggestions(finalSuggestions);
+        return finalSuggestions;
+  }, [history, rejectedSuggestions, setRejectedSuggestions, t, takenSupplements]);
+
+  // Daily supplement plan analysis and check-in
+  useEffect(() => {
+    const runDailyAnalysis = () => {
+        if (!supplementPlan) return;
+
+        const isSignificantVolumeDrop = analyzeVolumeDrop(history);
+        let currentCheckInReason: CheckInReason | null = null;
+
+        if (isSignificantVolumeDrop) {
+             const now = Date.now();
+             // If we haven't checked in recently (e.g., last 7 days) OR checkInState is not active but reason is old
+             const isCheckInFresh = checkInState.lastChecked && (now - checkInState.lastChecked) < SEVEN_DAYS_MS;
+             
+             if (!isCheckInFresh) {
+                 // Trigger check-in UI
+                 setCheckInState({ active: true });
+                 // Don't run full analysis yet, wait for user response
+                 currentCheckInReason = null;
+             } else {
+                 currentCheckInReason = checkInState.reason || null;
+             }
+        } else {
+             // No volume drop, so clear any active check-in state related to volume drop
+             if (checkInState.active) {
+                 setCheckInState({ active: false });
+             }
+             currentCheckInReason = null;
+        }
+        
+        const suggestions = runPlanAnalysis(supplementPlan, currentCheckInReason, true);
+
+        if (suggestions.length > 0) {
+            setNewSuggestions(suggestions);
             // Only notify if not waiting for check-in interaction
             if (enableNotifications && !checkInState.active) {
               sendSupplementUpdateNotification(t('notification_supplement_title'), {
@@ -339,13 +355,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             // Clear suggestions if none apply anymore
              setNewSuggestions([]);
         }
-        setLastAnalysisTimestamp(now);
+        setLastAnalysisTimestamp(Date.now());
     };
 
     const now = Date.now();
-    // Run if 24h passed OR if check-in state just changed to active (triggered by something else? no)
-    // OR if manual re-trigger needed. 
-    // Let's stick to the 24h rule but also run if checkInState.active just became false (user responded) - handled in handleCheckInResponse
     if (now - lastAnalysisTimestamp > TWENTY_FOUR_HOURS_MS) {
         runDailyAnalysis();
     }
@@ -361,33 +374,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       
       // Re-run analysis immediately with new reason
       if (supplementPlan) {
-        const allSuggestions = reviewSupplementPlan(supplementPlan, history, t, reason, takenSupplements);
-        // Apply filtering same as above (duplicated logic, ideally extracted)
-        const validRejections = rejectedSuggestions.filter(r => (Date.now() - r.rejectedAt) < THIRTY_DAYS_MS);
-        const rejectedIdentifiers = new Set(validRejections.map(r => r.identifier));
-        
-        const finalSuggestions = allSuggestions.filter(suggestion => {
-            if (rejectedIdentifiers.has(suggestion.identifier)) return false;
-            const action = suggestion.action;
-             switch(action.type) {
-                case 'ADD': return !supplementPlan.plan.some(item => item.supplement === action.item.supplement);
-                case 'REMOVE': return new Set(supplementPlan.plan.map(p => p.id)).has(action.itemId);
-                case 'UPDATE':
-                    const itemToUpdate = supplementPlan.plan.find(item => item.id === action.itemId);
-                    if (!itemToUpdate) return false;
-                    // Special check for stock updates
-                    if ('stock' in action.updates) return true;
-                    return Object.keys(action.updates).some(key => {
-                        const K = key as keyof typeof action.updates;
-                        // @ts-ignore
-                        return itemToUpdate[K] !== action.updates[K];
-                    });
-                default: return true;
-            }
-        });
-        setNewSuggestions(finalSuggestions);
+        const suggestions = runPlanAnalysis(supplementPlan, reason, true);
+        setNewSuggestions(suggestions);
       }
-  }, [supplementPlan, history, t, rejectedSuggestions, setCheckInState, setRejectedSuggestions, takenSupplements]);
+  }, [supplementPlan, runPlanAnalysis, setCheckInState]);
+
+  const triggerManualPlanReview = useCallback(() => {
+      if (!supplementPlan) return;
+      // For manual review, we might want to see all relevant suggestions again or filter strictly
+      // Let's stick to filtering rejected ones to avoid annoyance, but maybe we check regardless of time
+      const suggestions = runPlanAnalysis(supplementPlan, checkInState.reason || null, true);
+      setNewSuggestions(suggestions);
+  }, [supplementPlan, runPlanAnalysis, checkInState.reason]);
 
   const clearNewSuggestions = useCallback(() => {
     setNewSuggestions([]);
@@ -433,17 +431,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           case 'UPDATE':
               newPlanItems = newPlanItems.map(p => {
                   if (p.id === action.itemId) {
-                      // If stock update involves adding to existing stock (e.g. Restock)
-                      if ('stock' in action.updates && typeof action.updates.stock === 'number') {
-                           // If it's a restock action, we might want to ADD to current stock, 
-                           // but UPDATE action replaces value. 
-                           // For simplicity, the suggestion generator calculates the NEW total.
-                           // OR we handle a specific logic here. 
-                           // Let's assume the suggestion provides the NEW TOTAL value or a special key.
-                           // Actually, for RESTOCK, let's check if it's a relative update.
-                           // But standard UPDATE replaces. So suggestion must provide absolute value.
-                           // Since the suggestion is generated based on current state, it's safer if the action payload has the new absolute value.
-                      }
                       return { ...p, ...action.updates };
                   }
                   return p;
@@ -1073,6 +1060,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     dismissSuggestion,
     dismissAllSuggestions,
     clearNewSuggestions,
+    triggerManualPlanReview,
     profile,
     updateProfileInfo,
     currentWeight,

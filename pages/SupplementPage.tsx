@@ -16,7 +16,7 @@ const daysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'sat
 const SupplementPage: React.FC = () => {
   const { 
     supplementPlan, setSupplementPlan, userSupplements,
-    newSuggestions, applyPlanSuggestion, applyAllPlanSuggestions, dismissSuggestion, dismissAllSuggestions, clearNewSuggestions,
+    newSuggestions, applyPlanSuggestion, applyAllPlanSuggestions, dismissSuggestion, dismissAllSuggestions, clearNewSuggestions, triggerManualPlanReview,
     profile, currentWeight, activeWorkout, isWorkoutMinimized
   } = useContext(AppContext);
   const { t } = useI18n();
@@ -158,6 +158,11 @@ const SupplementPage: React.FC = () => {
       setSupplementPlan(null);
       setWizardActive(true);
       setCurrentStep(1);
+  };
+
+  const handleManualReview = () => {
+      triggerManualPlanReview();
+      setIsReviewModalOpen(true);
   };
 
   const handleDismissAll = () => {
@@ -424,7 +429,7 @@ const SupplementPage: React.FC = () => {
       )}
 
       {!wizardActive && supplementPlan && (
-          <SupplementSchedule onEditAnswers={handleEditAnswers} />
+          <SupplementSchedule onEditAnswers={handleEditAnswers} onReviewPlan={handleManualReview} />
       )}
 
         {!wizardActive && newSuggestions.length > 0 && (
