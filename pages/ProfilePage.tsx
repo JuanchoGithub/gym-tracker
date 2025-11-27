@@ -107,7 +107,7 @@ const ProfilePage: React.FC = () => {
 
   const [wakeLockPermission, setWakeLockPermission] = useState<'granted' | 'denied' | 'unsupported'>('granted');
 
-  const lifterStats = useMemo(() => calculateLifterDNA(history), [history]);
+  const lifterStats = useMemo(() => calculateLifterDNA(history, currentWeight || 70), [history, currentWeight]);
 
   useEffect(() => {
     if (!('wakeLock' in navigator)) {

@@ -100,7 +100,7 @@ export interface LifterStats {
     favMuscle: string;
 }
 
-export const calculateLifterDNA = (history: WorkoutSession[]): LifterStats => {
+export const calculateLifterDNA = (history: WorkoutSession[], currentBodyWeight: number = 70): LifterStats => {
     if (history.length < 5) {
         return {
             consistencyScore: 0,
@@ -120,9 +120,10 @@ export const calculateLifterDNA = (history: WorkoutSession[]): LifterStats => {
     const consistencyScore = Math.min(100, Math.round((monthlyCount / 12) * 100));
 
     // 2. Volume & Rep Analysis for Archetype
-    let totalReps = 0;
-    let totalSets = 0;
-    let totalVolume = 0;
+    let weightedRepSum = 0;
+    let totalVolumeForWeightedAvg = 0;
+    let totalRawVolume = 0;
+    
     const muscleCounts: Record<string, number> = {};
 
     history.slice(0, 20).forEach(s => { // Analyze last 20 sessions for archetype
@@ -134,29 +135,49 @@ export const calculateLifterDNA = (history: WorkoutSession[]): LifterStats => {
 
             ex.sets.forEach(set => {
                 if (set.type === 'normal' && set.isComplete) {
-                    totalReps += set.reps;
-                    totalSets++;
-                    totalVolume += set.weight * set.reps;
+                    // Raw volume for Volume Score (keeps historical consistency)
+                    totalRawVolume += set.weight * set.reps;
+
+                    // Weighted calculation for Archetype
+                    // This ensures high-rep light weight sets don't skew the average reps up too much
+                    // if the user is mostly doing heavy work.
+                    let effectiveWeight = set.weight;
+                    // Fallback to passed currentBodyWeight if set weight is 0 (bodyweight exercises)
+                    if (effectiveWeight <= 0) {
+                        effectiveWeight = currentBodyWeight > 0 ? currentBodyWeight : 70;
+                    }
+                    
+                    const setVolume = effectiveWeight * set.reps;
+                    
+                    // Weight the rep count by the volume of the set
+                    // Heavy Sets (High Volume/Low Reps) contribute heavily to lowering the average
+                    // Light Sets (Low Volume/High Reps) contribute lightly to raising the average
+                    weightedRepSum += set.reps * setVolume;
+                    totalVolumeForWeightedAvg += setVolume;
                 }
             });
         });
     });
 
-    const avgReps = totalSets > 0 ? totalReps / totalSets : 0;
+    // Calculate the Volume-Weighted Average Reps
+    const avgReps = totalVolumeForWeightedAvg > 0 ? weightedRepSum / totalVolumeForWeightedAvg : 0;
+    
     let archetype: LifterArchetype = 'hybrid';
     
-    if (avgReps > 0 && avgReps <= 6) archetype = 'powerbuilder';
-    else if (avgReps > 6 && avgReps <= 12) archetype = 'bodybuilder';
-    else if (avgReps > 12) archetype = 'endurance';
+    // Thresholds adjusted for volume-weighted averages. 
+    // Since heavy sets dominate volume, a "Strength" lifter doing 5x5 (25 reps) 
+    // plus accessories will still average low. 
+    // We moved the threshold from 6.5 to 7.5 to better capture powerbuilders who do accessory work.
+    if (avgReps > 0 && avgReps <= 7.5) archetype = 'powerbuilder';
+    else if (avgReps > 7.5 && avgReps <= 13) archetype = 'bodybuilder';
+    else if (avgReps > 13) archetype = 'endurance';
 
     // 3. Volume Score (Average session volume. 10,000kg/session = 100)
-    const avgSessionVolume = history.length > 0 ? totalVolume / history.length : 0;
+    const avgSessionVolume = history.length > 0 ? totalRawVolume / history.length : 0;
     const volumeScore = Math.min(100, Math.round((avgSessionVolume / 10000) * 100));
 
     // 4. Intensity Score (Heuristic based on avg reps)
     // Lower reps = higher relative intensity (% of 1RM)
-    // 5 reps => 90% 1RM, 10 reps => 75% 1RM, 15 reps => 60% 1RM
-    // Scale: 1-5 reps = 100-90, 6-12 reps = 80-60, 15+ = <50
     let intensityScore = 50;
     if (avgReps > 0) {
         if (avgReps <= 5) intensityScore = 95;
