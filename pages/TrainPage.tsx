@@ -1,5 +1,5 @@
 
-import React, { useContext, useState, useMemo } from 'react';
+import React, { useContext, useState, useMemo, useEffect } from 'react';
 import { AppContext } from '../contexts/AppContext';
 import { useI18n } from '../hooks/useI18n';
 import { Routine } from '../types';
@@ -10,32 +10,53 @@ import RoutineSection from '../components/train/RoutineSection';
 import QuickTrainingSection from '../components/train/QuickTrainingSection';
 import CheckInCard from '../components/train/CheckInCard';
 import { useLocalStorage } from '../hooks/useLocalStorage';
+import { getWorkoutRecommendation, Recommendation } from '../utils/recommendationUtils';
+import SmartRecommendationCard from '../components/train/SmartRecommendationCard';
 
 const TrainPage: React.FC = () => {
   const { 
       routines, startWorkout, activeWorkout, discardActiveWorkout, maximizeWorkout, 
       startTemplateEdit, startHiitSession, startTemplateDuplicate,
-      checkInState, handleCheckInResponse
+      checkInState, handleCheckInResponse, history, exercises
   } = useContext(AppContext);
   const { t } = useI18n();
   const [selectedRoutine, setSelectedRoutine] = useState<Routine | null>(null);
   const [isConfirmingNewWorkout, setIsConfirmingNewWorkout] = useState(false);
   const [routineToStart, setRoutineToStart] = useState<Routine | null>(null);
   const [isQuickTrainingOpen, setIsQuickTrainingOpen] = useLocalStorage('isQuickTrainingOpen', true);
+  
+  // Recommendation State
+  const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
+  // We use session storage effectively by just using state that resets on reload, or we could use useLocalStorage for persistence across refresh
+  // For now, let's re-calculate on mount.
+  const [isRecDismissed, setIsRecDismissed] = useState(false);
+  const [filterByRec, setFilterByRec] = useState(false);
+
+  useEffect(() => {
+      // Calculate recommendation on mount or history change
+      const rec = getWorkoutRecommendation(history, routines, exercises);
+      setRecommendation(rec);
+  }, [history, routines, exercises]);
 
   const { latestWorkouts, customTemplates, sampleWorkouts, sampleHiit } = useMemo(() => {
-    const latest = routines
+    let filteredRoutines = routines;
+
+    if (filterByRec && recommendation && recommendation.relevantRoutineIds.length > 0) {
+        filteredRoutines = routines.filter(r => recommendation.relevantRoutineIds.includes(r.id));
+    }
+
+    const latest = filteredRoutines
       .filter(r => !r.isTemplate)
       .sort((a, b) => (b.lastUsed || 0) - (a.lastUsed || 0))
       .slice(0, 7);
 
-    const templates = routines.filter(r => r.isTemplate);
+    const templates = filteredRoutines.filter(r => r.isTemplate);
     const custom = templates.filter(r => !r.id.startsWith('rt-'));
     const samples = templates.filter(r => r.id.startsWith('rt-') && r.routineType !== 'hiit');
     const hiit = templates.filter(r => r.routineType === 'hiit');
     
     return { latestWorkouts: latest, customTemplates: custom, sampleWorkouts: samples, sampleHiit: hiit };
-  }, [routines]);
+  }, [routines, filterByRec, recommendation]);
 
   const handleRoutineSelect = (routine: Routine) => {
     if (routine.routineType === 'hiit') {
@@ -102,8 +123,26 @@ const TrainPage: React.FC = () => {
       </div>
       
       <div className="space-y-8">
+        {recommendation && !isRecDismissed && (
+            <SmartRecommendationCard 
+                recommendation={recommendation}
+                onFilter={() => setFilterByRec(!filterByRec)}
+                onDismiss={() => { setIsRecDismissed(true); setFilterByRec(false); }}
+                isFiltered={filterByRec}
+            />
+        )}
+
         {checkInState.active && (
             <CheckInCard onCheckIn={handleCheckInResponse} />
+        )}
+
+        {filterByRec && (
+             <div className="flex items-center gap-2 text-primary animate-fadeIn">
+                 <Icon name="filter" className="w-4 h-4" />
+                 <span className="font-medium text-sm">
+                     {t('rec_filtered_view', { focus: recommendation?.titleParams?.focus || 'Recommendation' })}
+                 </span>
+             </div>
         )}
 
         <button

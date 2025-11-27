@@ -56,6 +56,20 @@ export const es = {
   checkin_option_deload: 'Semana de Descarga',
   checkin_option_injury: 'Lesión Menor/Descanso',
 
+  // Smart Recommendations
+  rec_title_push: "Es día de Empuje",
+  rec_title_pull: "Es día de Tirón",
+  rec_title_legs: "Es día de Piernas",
+  rec_title_rest: "Descanso y Recuperación",
+  rec_title_generic: "Recomendado: {focus}",
+  rec_reason_fresh: "Tus {muscles} están frescos y recuperados.",
+  rec_reason_neglected: "No has entrenado {muscles} en {days} días.",
+  rec_reason_fatigued: "Tu fatiga sistémica general es alta.",
+  rec_action_filter: "Ver Rutinas de {focus}",
+  rec_action_dismiss: "Descartar",
+  rec_filtered_view: "Mostrando rutinas recomendadas para {focus}",
+  rec_clear_filter: "Borrar Filtro",
+
   // History Page
   history_no_data: 'No se encontró historial de entrenamiento para este ejercicio.',
   history_page_no_workouts: 'No se encontró historial de entrenamientos. ¡Completá un entrenamiento para verlo acá!',

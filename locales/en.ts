@@ -56,6 +56,20 @@ export const en = {
   checkin_option_deload: 'Deload Week',
   checkin_option_injury: 'Minor Injury/Rest',
 
+  // Smart Recommendations
+  rec_title_push: "It's a Push Day",
+  rec_title_pull: "It's a Pull Day",
+  rec_title_legs: "It's a Leg Day",
+  rec_title_rest: "Rest & Recover",
+  rec_title_generic: "Recommended: {focus}",
+  rec_reason_fresh: "Your {muscles} are fresh and recovered.",
+  rec_reason_neglected: "You haven't trained {muscles} in {days} days.",
+  rec_reason_fatigued: "Your overall systemic fatigue is high.",
+  rec_action_filter: "Show {focus} Workouts",
+  rec_action_dismiss: "Dismiss",
+  rec_filtered_view: "Showing recommended workouts for {focus}",
+  rec_clear_filter: "Clear Filter",
+
   // History Page
   history_no_data: 'No workout history found for this exercise.',
   history_page_no_workouts: 'No workout history found. Complete a workout to see it here!',

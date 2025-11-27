@@ -75,7 +75,7 @@ const MuscleHeatmap: React.FC<MuscleHeatmapProps> = ({ freshnessData, highlightM
     };
 
     return (
-        <div className="flex flex-col items-center">
+        <div className="flex flex-col items-center w-full">
             {/* Legend: Only show if using Freshness Data mode */}
             {!highlightMap && (
                 <div className="bg-surface p-3 rounded-lg border border-white/10 mb-4 w-full flex justify-between items-center">
@@ -105,7 +105,7 @@ const MuscleHeatmap: React.FC<MuscleHeatmapProps> = ({ freshnessData, highlightM
                 </div>
             )}
 
-            <svg viewBox="0 0 600 700" className="w-full max-w-md h-auto drop-shadow-xl">
+            <svg viewBox="0 0 600 460" className="w-full h-auto drop-shadow-xl">
                 <defs>
                     <style>
                         {`

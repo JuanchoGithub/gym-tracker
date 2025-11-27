@@ -1,5 +1,5 @@
 
-import React, { useContext, useMemo, useCallback } from 'react';
+import React, { useContext, useMemo, useCallback, useState, useEffect } from 'react';
 import { AppContext } from '../../contexts/AppContext';
 import { useI18n } from '../../hooks/useI18n';
 import { Icon } from '../common/Icon';
@@ -8,20 +8,20 @@ import { getExplanationIdForSupplement } from '../../services/explanationService
 
 const timeKeywords = {
     en: {
-        morning: /morning|breakfast/i,
-        pre_workout: /pre-workout/i,
-        post_workout: /post-workout/i,
-        lunch: /lunch/i,
-        with_meal: /meal/i,
-        evening: /evening|bed/i,
+        morning: /morning|breakfast|am/i,
+        pre_workout: /pre-workout|pre-entreno/i,
+        post_workout: /post-workout|post-entreno/i,
+        lunch: /lunch|noon|midday/i,
+        with_meal: /meal|food/i,
+        evening: /evening|bed|night|sleep|pm/i,
     },
     es: {
-        morning: /mañana|desayuno/i,
-        pre_workout: /pre-entreno/i,
+        morning: /mañana|desayuno|am/i,
+        pre_workout: /pre-entreno|pre-workout/i,
         post_workout: /post-entreno|post-entrenamiento/i,
-        lunch: /almuerzo/i,
-        with_meal: /comida/i,
-        evening: /noche|dormir/i,
+        lunch: /almuerzo|mediodía/i,
+        with_meal: /comida|alimento/i,
+        evening: /noche|dormir|cama|sueño|pm/i,
     }
 };
 
@@ -54,12 +54,17 @@ const getDateString = (d: Date) => {
 const DailySupplementList: React.FC<DailySupplementListProps> = ({ date, readOnly = false, title, onOpenExplanation }) => {
   const { supplementPlan, takenSupplements, toggleSupplementIntake } = useContext(AppContext);
   const { t, locale } = useI18n();
+  const [isSmartSortEnabled, setIsSmartSortEnabled] = useState(true);
+  const [hasSmartSortChanges, setHasSmartSortChanges] = useState(false);
 
   const dateString = getDateString(date);
   const takenIds = takenSupplements[dateString] || [];
+  const trainingTime = supplementPlan?.info?.trainingTime || 'afternoon';
   
   const getTimeKey = useCallback((time: string): string => {
-    const keywords = timeKeywords[locale as keyof typeof timeKeywords];
+    // Handle ZMA/Magnesium explicit check if regex fails, though updated regex should catch 'bed'
+    const keywords = timeKeywords[locale as keyof typeof timeKeywords] || timeKeywords.en;
+    
     for (const key in keywords) {
         if (keywords[key as keyof typeof keywords].test(time)) {
             return key;
@@ -81,24 +86,44 @@ const DailySupplementList: React.FC<DailySupplementListProps> = ({ date, readOnl
       return { groupedPlan: {}, orderedGroups: [], isTrainingDay, scheduledCount: 0 };
     }
     
+    // 1. Filter items for today
     const itemsForDay = supplementPlan.plan.filter(item => {
-        if (item.restDayOnly) {
-            return !isTrainingDay;
-        }
-        if (item.trainingDayOnly) {
-            return isTrainingDay;
-        }
-        return true; // all days
+        if (item.restDayOnly) return !isTrainingDay;
+        if (item.trainingDayOnly) return isTrainingDay;
+        return true;
     }).map(item => {
-        // Special logic for creatine on rest days: change its time for display and grouping
+        // Special logic for creatine on rest days
         if (getExplanationIdForSupplement(item.supplement) === 'creatine' && !isTrainingDay) {
             return { ...item, time: t('supplements_time_with_breakfast') };
         }
         return item;
     });
 
+    // 2. Grouping Logic with Smart Sort detection
+    let changesDetected = false;
+
     const grouped = itemsForDay.reduce((acc, item) => {
-        const key = getTimeKey(item.time);
+        let key = getTimeKey(item.time);
+        const originalKey = key;
+
+        // --- SMART SORTING LOGIC ---
+        if (isSmartSortEnabled && isTrainingDay) {
+             // Move Pre/Post workout items into the Morning/Lunch/Evening buckets based on user profile
+             if (key === 'pre_workout' || key === 'post_workout' || key === 'intra_workout') {
+                 if (trainingTime === 'morning') {
+                     key = 'morning';
+                 } else if (trainingTime === 'night') {
+                     key = 'evening';
+                 }
+                 // For afternoon, we keep them separate or map to lunch if strictly needed, 
+                 // but usually pre/post indicates afternoon implicitly in standard sort order.
+             }
+        }
+
+        if (key !== originalKey) {
+            changesDetected = true;
+        }
+
         if (!acc[key]) {
             acc[key] = [];
         }
@@ -108,13 +133,85 @@ const DailySupplementList: React.FC<DailySupplementListProps> = ({ date, readOnl
     
     const ordered = Object.keys(grouped).sort((a, b) => (timeOrder[a] || 99) - (timeOrder[b] || 99));
 
-    return { groupedPlan: grouped, orderedGroups: ordered, isTrainingDay, scheduledCount: itemsForDay.length };
-  }, [supplementPlan, getTimeKey, date, t]);
+    // Update state for notification only if it changed to prevent render loops
+    // We use a ref-like pattern by checking if state needs update
+    // Note: Setting state during render is okay if conditional, but safer in useEffect
+    
+    return { groupedPlan: grouped, orderedGroups: ordered, isTrainingDay, scheduledCount: itemsForDay.length, changesDetected };
+  }, [supplementPlan, getTimeKey, date, t, isSmartSortEnabled, trainingTime]);
+
+  // Effect to update the notification state without causing render loops
+  useEffect(() => {
+      // We only care if changes are detected on a training day
+      const dayOfWeek = daysOfWeek[date.getDay()];
+      const isDay = !!supplementPlan?.info?.trainingDays?.includes(dayOfWeek);
+      
+      if (isDay) {
+          // Calculate if changes WOULD happen
+          // We re-run a tiny logic check here to avoid passing `changesDetected` directly from render
+          // causing a cycle if we set state based on it directly.
+          // Actually, simply setting it if different is safe in React 18+ usually, but let's be safe.
+          
+          const fakeItems = [{time: 'Pre-workout'}, {time: 'Post-workout'}];
+          const hasPotentialChange = fakeItems.some(i => {
+              const k = getTimeKey(i.time);
+              let smartK = k;
+              if (trainingTime === 'morning') smartK = 'morning';
+              if (trainingTime === 'night') smartK = 'evening';
+              return k !== smartK;
+          });
+          
+          // Only show if enabled AND there are actually items in the schedule that moved
+          // Accessing the computed `changesDetected` from useMemo is tricky if we want to set state.
+          // Instead, we trust the user interaction (Undo) to toggle it.
+          // We simply set HasSmartSortChanges based on the result of the memo.
+      }
+  }, [date, supplementPlan, trainingTime, getTimeKey]);
+  
+  // Use the memoized result to set the flag for rendering the banner
+  useEffect(() => {
+      setHasSmartSortChanges(groupedPlan && isTrainingDay && (trainingTime === 'morning' || trainingTime === 'night'));
+  }, [groupedPlan, isTrainingDay, trainingTime]);
 
 
   return (
     <div className="space-y-6">
       {title}
+      
+      {/* Smart Schedule Notification */}
+      {isSmartSortEnabled && hasSmartSortChanges && (
+          <div className="bg-indigo-500/10 border border-indigo-500/20 p-3 rounded-lg flex items-start justify-between gap-3 animate-fadeIn">
+              <div className="flex items-start gap-3">
+                  <Icon name="sparkles" className="w-5 h-5 text-indigo-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                      <p className="text-sm font-bold text-indigo-200">Smart Schedule Active</p>
+                      <p className="text-xs text-indigo-200/70">
+                          We moved your workout supplements to the <span className="font-bold text-indigo-100 capitalize">{trainingTime}</span> to match your training profile.
+                      </p>
+                  </div>
+              </div>
+              <button 
+                  onClick={() => setIsSmartSortEnabled(false)}
+                  className="text-xs font-bold text-indigo-400 hover:text-indigo-300 whitespace-nowrap mt-1 underline"
+              >
+                  Undo
+              </button>
+          </div>
+      )}
+
+      {/* Restore Banner */}
+      {!isSmartSortEnabled && hasSmartSortChanges && (
+           <div className="bg-surface/50 border border-white/5 p-2 rounded-lg flex justify-center">
+               <button 
+                  onClick={() => setIsSmartSortEnabled(true)}
+                  className="text-xs font-bold text-text-secondary hover:text-primary flex items-center gap-1"
+              >
+                  <Icon name="sparkles" className="w-3 h-3" />
+                  Enable Smart Scheduling
+              </button>
+           </div>
+      )}
+
       {supplementPlan && (
         <div className="text-center p-3 bg-surface rounded-lg">
             <p className={`font-bold text-lg ${isTrainingDay ? 'text-primary' : 'text-text-secondary'}`}>
@@ -131,8 +228,12 @@ const DailySupplementList: React.FC<DailySupplementListProps> = ({ date, readOnl
       ) : (
         orderedGroups.map(groupName => (
             <div key={groupName}>
-                <h3 className="text-lg font-semibold text-text-secondary mb-3 border-b border-secondary/20 pb-2">
-                    {t(`supplements_timegroup_${groupName}` as any, {})}
+                <h3 className="text-lg font-semibold text-text-secondary mb-3 border-b border-secondary/20 pb-2 capitalize">
+                    {/* Handle translation for standard keys, or fallback to capitalized key for re-mapped groups */}
+                    {['morning', 'lunch', 'evening', 'pre_workout', 'post_workout'].includes(groupName) 
+                        ? t(`supplements_timegroup_${groupName}` as any) 
+                        : t(`supplements_timegroup_${groupName}` as any) || groupName
+                    }
                 </h3>
                 <div className="space-y-3">
                     {groupedPlan[groupName].map(item => {

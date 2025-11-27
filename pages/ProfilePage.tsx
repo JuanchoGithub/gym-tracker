@@ -28,6 +28,52 @@ const SettingsItem: React.FC<{ children: React.ReactNode, className?: string }> 
   </div>
 );
 
+const USFlag = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" className="w-7 h-5 rounded-sm shadow-sm object-cover block">
+    <rect width="60" height="40" fill="#b22234"/>
+    <rect y="3.08" width="60" height="3.08" fill="#fff"/>
+    <rect y="9.24" width="60" height="3.08" fill="#fff"/>
+    <rect y="15.4" width="60" height="3.08" fill="#fff"/>
+    <rect y="21.56" width="60" height="3.08" fill="#fff"/>
+    <rect y="27.72" width="60" height="3.08" fill="#fff"/>
+    <rect y="33.88" width="60" height="3.08" fill="#fff"/>
+    <rect width="26" height="22" fill="#3c3b6e"/>
+    <g fill="#fff">
+      <path transform="translate(3,3) scale(0.8)" d="M2.5,0L3.2,2.5L6,2.5L3.8,4L4.5,6.5L2.5,5L0.5,6.5L1.2,4L-1,2.5L1.8,2.5Z" />
+      <path transform="translate(8,3) scale(0.8)" d="M2.5,0L3.2,2.5L6,2.5L3.8,4L4.5,6.5L2.5,5L0.5,6.5L1.2,4L-1,2.5L1.8,2.5Z" />
+      <path transform="translate(13,3) scale(0.8)" d="M2.5,0L3.2,2.5L6,2.5L3.8,4L4.5,6.5L2.5,5L0.5,6.5L1.2,4L-1,2.5L1.8,2.5Z" />
+      <path transform="translate(18,3) scale(0.8)" d="M2.5,0L3.2,2.5L6,2.5L3.8,4L4.5,6.5L2.5,5L0.5,6.5L1.2,4L-1,2.5L1.8,2.5Z" />
+       <path transform="translate(23,3) scale(0.8)" d="M2.5,0L3.2,2.5L6,2.5L3.8,4L4.5,6.5L2.5,5L0.5,6.5L1.2,4L-1,2.5L1.8,2.5Z" />
+      <path transform="translate(5.5,7) scale(0.8)" d="M2.5,0L3.2,2.5L6,2.5L3.8,4L4.5,6.5L2.5,5L0.5,6.5L1.2,4L-1,2.5L1.8,2.5Z" />
+      <path transform="translate(10.5,7) scale(0.8)" d="M2.5,0L3.2,2.5L6,2.5L3.8,4L4.5,6.5L2.5,5L0.5,6.5L1.2,4L-1,2.5L1.8,2.5Z" />
+       <path transform="translate(15.5,7) scale(0.8)" d="M2.5,0L3.2,2.5L6,2.5L3.8,4L4.5,6.5L2.5,5L0.5,6.5L1.2,4L-1,2.5L1.8,2.5Z" />
+      <path transform="translate(20.5,7) scale(0.8)" d="M2.5,0L3.2,2.5L6,2.5L3.8,4L4.5,6.5L2.5,5L0.5,6.5L1.2,4L-1,2.5L1.8,2.5Z" />
+      
+      <path transform="translate(3,11) scale(0.8)" d="M2.5,0L3.2,2.5L6,2.5L3.8,4L4.5,6.5L2.5,5L0.5,6.5L1.2,4L-1,2.5L1.8,2.5Z" />
+      <path transform="translate(8,11) scale(0.8)" d="M2.5,0L3.2,2.5L6,2.5L3.8,4L4.5,6.5L2.5,5L0.5,6.5L1.2,4L-1,2.5L1.8,2.5Z" />
+      <path transform="translate(13,11) scale(0.8)" d="M2.5,0L3.2,2.5L6,2.5L3.8,4L4.5,6.5L2.5,5L0.5,6.5L1.2,4L-1,2.5L1.8,2.5Z" />
+      <path transform="translate(18,11) scale(0.8)" d="M2.5,0L3.2,2.5L6,2.5L3.8,4L4.5,6.5L2.5,5L0.5,6.5L1.2,4L-1,2.5L1.8,2.5Z" />
+       <path transform="translate(23,11) scale(0.8)" d="M2.5,0L3.2,2.5L6,2.5L3.8,4L4.5,6.5L2.5,5L0.5,6.5L1.2,4L-1,2.5L1.8,2.5Z" />
+    </g>
+  </svg>
+);
+
+const ArgentinaFlag = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" className="w-7 h-5 rounded-sm shadow-sm object-cover block">
+    <rect width="60" height="40" fill="#74acdf"/>
+    <rect y="13.33" width="60" height="13.34" fill="#fff"/>
+    <g transform="translate(30, 20) scale(0.4)">
+      <circle r="8" fill="#f6b40e" />
+      <g stroke="#f6b40e" strokeWidth="2">
+         <line x1="0" y1="-12" x2="0" y2="12" />
+         <line x1="-12" y1="0" x2="12" y2="0" />
+         <line x1="-8" y1="-8" x2="8" y2="8" />
+         <line x1="8" y1="-8" x2="-8" y2="8" />
+      </g>
+    </g>
+  </svg>
+);
+
 const ProfilePage: React.FC = () => {
   const { locale, setLocale } = useContext(I18nContext);
   const { t } = useI18n();
@@ -118,6 +164,11 @@ const ProfilePage: React.FC = () => {
     const inchesNum = parseInt(inc) || 0;
     const totalCm = convertFtInToCm(feetNum, inchesNum);
     updateProfileInfo({ height: totalCm > 0 ? totalCm : undefined });
+  };
+  
+  const handleLanguageChange = (newLocale: 'en' | 'es') => {
+    setLocale(newLocale);
+    setMeasureUnit(newLocale === 'es' ? 'metric' : 'imperial');
   };
 
   const [editingTimerKey, setEditingTimerKey] = useState<keyof typeof defaultRestTimes | null>(null);
@@ -293,16 +344,23 @@ const ProfilePage: React.FC = () => {
 
       <SettingsGroup title={t('profile_settings')}>
         <SettingsItem>
-            <label htmlFor="language-select" className="text-text-primary font-medium">{t('profile_language')}</label>
-             <select
-                id="language-select"
-                value={locale}
-                onChange={(e) => setLocale(e.target.value as 'en' | 'es')}
-                className={selectClass}
-            >
-                <option value="en">English</option>
-                <option value="es">Español</option>
-            </select>
+            <label className="text-text-primary font-medium">{t('profile_language')}</label>
+            <div className="flex gap-3">
+                <button 
+                    onClick={() => handleLanguageChange('en')}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all duration-200 ${locale === 'en' ? 'bg-primary/10 border-primary shadow-[0_0_15px_rgba(56,189,248,0.1)]' : 'bg-transparent border-white/10 hover:bg-white/5 opacity-60 hover:opacity-100'}`}
+                >
+                    <USFlag />
+                    <span className={`text-sm font-bold ${locale === 'en' ? 'text-primary' : 'text-text-secondary'}`}>English</span>
+                </button>
+                <button 
+                    onClick={() => handleLanguageChange('es')}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all duration-200 ${locale === 'es' ? 'bg-primary/10 border-primary shadow-[0_0_15px_rgba(56,189,248,0.1)]' : 'bg-transparent border-white/10 hover:bg-white/5 opacity-60 hover:opacity-100'}`}
+                >
+                    <ArgentinaFlag />
+                    <span className={`text-sm font-bold ${locale === 'es' ? 'text-primary' : 'text-text-secondary'}`}>Español</span>
+                </button>
+            </div>
         </SettingsItem>
         
         {locale !== 'en' && (

@@ -124,7 +124,9 @@ const DescriptionTab: React.FC<DescriptionTabProps> = ({ exercise }) => {
         </div>
 
       {viewMode === 'motion' ? (
-          <ExerciseAnimation exerciseId={exercise.id} />
+          <div className="-mx-5 mb-6 w-[calc(100%+2.5rem)] bg-black/20 sm:rounded-xl overflow-hidden border-y sm:border border-white/5">
+              <ExerciseAnimation exerciseId={exercise.id} />
+          </div>
       ) : (
           <div className="flex flex-col items-center mb-6">
               <div className="flex flex-wrap justify-center gap-2 mb-4">
@@ -155,7 +157,7 @@ const DescriptionTab: React.FC<DescriptionTabProps> = ({ exercise }) => {
                       {t('exercise_anatomy_whole', { part: t(getBodyPartTKey(exercise.bodyPart)) })}
                   </button>
               </div>
-              <div className="w-full bg-black/20 rounded-xl overflow-hidden border border-white/5 p-4">
+              <div className="-mx-5 w-[calc(100%+2.5rem)] bg-black/20 sm:rounded-xl overflow-hidden border-y sm:border border-white/5">
                   <MuscleHeatmap highlightMap={highlightMap} />
               </div>
           </div>

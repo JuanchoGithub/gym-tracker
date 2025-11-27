@@ -1,25 +1,25 @@
 
-import React, { useMemo, useContext } from 'react';
+import React, { useMemo, useContext, useState } from 'react';
 import { AppContext } from '../../contexts/AppContext';
 import { WorkoutSession, ChartDataPoint } from '../../types';
-import Chart from '../common/Chart';
 import { useI18n } from '../../hooks/useI18n';
+import ChartBlock from '../common/ChartBlock';
+import FullScreenChartModal from '../common/FullScreenChartModal';
 
 interface HistoryChartsTabProps {
     history: WorkoutSession[];
 }
 
-const ChartContainer: React.FC<{ title: string; data: ChartDataPoint[]; color?: string; }> = ({ title, data, color }) => (
-    <div className="bg-surface p-3 rounded-lg shadow">
-        <h3 className="font-bold text-text-primary mb-2">{title}</h3>
-        <Chart data={data} color={color} />
-    </div>
-);
-
+interface FullScreenChartData {
+    title: string;
+    data: ChartDataPoint[];
+    color?: string;
+}
 
 const HistoryChartsTab: React.FC<HistoryChartsTabProps> = ({ history }) => {
     const { getExerciseById } = useContext(AppContext);
     const { t } = useI18n();
+    const [fullScreenChart, setFullScreenChart] = useState<FullScreenChartData | null>(null);
 
     const chartData = useMemo(() => {
         if (history.length === 0) {
@@ -94,17 +94,27 @@ const HistoryChartsTab: React.FC<HistoryChartsTabProps> = ({ history }) => {
     
     return (
         <div className="space-y-4">
-            <ChartContainer title={t('graphs_total_volume')} data={chartData.totalVolume} color="#38bdf8" />
+            <ChartBlock 
+                title={t('graphs_total_volume')} 
+                data={chartData.totalVolume} 
+                color="#38bdf8" 
+                filenamePrefix="History"
+                onFullScreen={() => setFullScreenChart({ title: t('graphs_total_volume'), data: chartData.totalVolume, color: '#38bdf8' })}
+            />
 
             {chartData.topExercises.map(({ exerciseInfo, data }, index) => {
                 const colors = ["#818cf8", "#f87171", "#4ade80"];
                 if (!exerciseInfo) return null;
+                const title = `${exerciseInfo.name} - Volume`;
+                const color = colors[index % colors.length];
                 return (
-                    <ChartContainer 
+                    <ChartBlock 
                         key={exerciseInfo.id}
-                        title={`${exerciseInfo.name} - Volume`}
+                        title={title}
                         data={data}
-                        color={colors[index % colors.length]}
+                        color={color}
+                        filenamePrefix={exerciseInfo.name}
+                        onFullScreen={() => setFullScreenChart({ title, data, color })}
                     />
                 );
             })}
@@ -113,6 +123,16 @@ const HistoryChartsTab: React.FC<HistoryChartsTabProps> = ({ history }) => {
                 <div className="text-center text-text-secondary py-4">
                     <p>Not enough individual exercise data to generate more charts.</p>
                 </div>
+            )}
+            
+            {fullScreenChart && (
+                <FullScreenChartModal
+                    isOpen={!!fullScreenChart}
+                    onClose={() => setFullScreenChart(null)}
+                    title={fullScreenChart.title}
+                    data={fullScreenChart.data}
+                    color={fullScreenChart.color}
+                />
             )}
         </div>
     );

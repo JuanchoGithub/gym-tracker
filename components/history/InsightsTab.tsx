@@ -119,7 +119,9 @@ const InsightsTab: React.FC<InsightsTabProps> = ({ history, takenSupplements, al
               )}
           </div>
 
-          <MuscleHeatmap freshnessData={muscleFreshness} />
+          <div className="max-w-md mx-auto w-full">
+             <MuscleHeatmap freshnessData={muscleFreshness} />
+          </div>
       </div>
 
       <div className="w-full h-px bg-white/10"></div>
