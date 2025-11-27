@@ -1,9 +1,8 @@
-
 import { Exercise } from '../types';
 import { getBodyPartTKey, getCategoryTKey } from './i18nUtils';
 
-// Use a loose type for t to avoid complex type imports
-type Translator = (key: string) => string;
+// Use a loose type for t to avoid complex type imports and symbol errors
+type Translator = (key: any) => string;
 
 export const searchExercises = (
   exercises: Exercise[],

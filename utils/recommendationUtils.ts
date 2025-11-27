@@ -5,10 +5,10 @@ import { MUSCLES } from '../constants/muscles';
 import { generateSmartRoutine, RoutineFocus, RoutineLevel, SurveyAnswers } from './routineGenerator';
 import { PREDEFINED_EXERCISES } from '../constants/exercises';
 import { PROGRESSION_PATHS } from '../constants/progression';
-import { getExerciseHistory } from './workoutUtils';
+import { getExerciseHistory, calculate1RM } from './workoutUtils';
 
 export interface Recommendation {
-  type: 'rest' | 'workout' | 'promotion' | 'active_recovery';
+  type: 'rest' | 'workout' | 'promotion' | 'active_recovery' | 'imbalance';
   titleKey: string;
   titleParams?: Record<string, string | number>;
   reasonKey: string;
@@ -39,6 +39,60 @@ const ROUTINE_LEVELS: Record<string, RoutineLevel> = {
     'rt-full-body': 'beginner', // Full Body
     'rt-hiit-7min': 'beginner',
     'rt-hiit-beginner': 'beginner',
+};
+
+// Exercise IDs grouped by pattern for 1RM aggregation
+export const MOVEMENT_PATTERNS = {
+    SQUAT: ['ex-2', 'ex-101', 'ex-108', 'ex-109', 'ex-113', 'ex-160'],
+    DEADLIFT: ['ex-3', 'ex-98', 'ex-43'],
+    BENCH: ['ex-1', 'ex-11', 'ex-12', 'ex-22', 'ex-25', 'ex-28', 'ex-31', 'ex-34', 'ex-37'],
+    OHP: ['ex-4', 'ex-60', 'ex-67', 'ex-68', 'ex-70'],
+    ROW: ['ex-5', 'ex-38', 'ex-39', 'ex-40', 'ex-48'], // Horizontal Pull
+    VERTICAL_PULL: ['ex-10', 'ex-50', 'ex-52', 'ex-6', 'ex-44'] // Vertical Pull (Pull Up, Lat Pulldown)
+};
+
+// Strength Standards (Multipliers of Bodyweight)
+type ProficiencyLevel = 'Untrained' | 'Novice' | 'Intermediate' | 'Advanced' | 'Elite';
+
+const LEVEL_SCORES: Record<ProficiencyLevel, number> = {
+    'Untrained': 0,
+    'Novice': 1,
+    'Intermediate': 2,
+    'Advanced': 3,
+    'Elite': 4
+};
+
+const STRENGTH_STANDARDS = {
+    male: {
+        SQUAT: { nov: 1.1, int: 1.5, adv: 2.1, elite: 2.6 },
+        BENCH: { nov: 0.8, int: 1.1, adv: 1.45, elite: 1.9 },
+        DEADLIFT: { nov: 1.3, int: 1.7, adv: 2.3, elite: 2.9 },
+        OHP: { nov: 0.55, int: 0.75, adv: 0.95, elite: 1.2 },
+    },
+    female: {
+        SQUAT: { nov: 0.8, int: 1.1, adv: 1.5, elite: 1.9 },
+        BENCH: { nov: 0.5, int: 0.7, adv: 0.95, elite: 1.25 },
+        DEADLIFT: { nov: 1.0, int: 1.3, adv: 1.8, elite: 2.3 },
+        OHP: { nov: 0.35, int: 0.5, adv: 0.7, elite: 0.9 },
+    }
+};
+
+const getProficiency = (lift: 'SQUAT' | 'BENCH' | 'DEADLIFT' | 'OHP', weight: number, bw: number, gender: 'male' | 'female'): ProficiencyLevel => {
+    const standards = STRENGTH_STANDARDS[gender][lift];
+    const ratio = weight / bw;
+    
+    if (ratio >= standards.elite) return 'Elite';
+    if (ratio >= standards.adv) return 'Advanced';
+    if (ratio >= standards.int) return 'Intermediate';
+    if (ratio >= standards.nov) return 'Novice';
+    return 'Untrained';
+};
+
+// Ratios based on 2:3:4:5 rule (OHP:Bench:Squat:Deadlift)
+const RATIOS = {
+    SQ_DL: 1.25, // Deadlift (5) / Squat (4) = 1.25
+    BN_SQ: 1.33, // Squat (4) / Bench (3) = 1.33
+    OH_BN: 0.66, // OHP (2) / Bench (3) = 0.66
 };
 
 export const inferUserProfile = (history: WorkoutSession[]): SurveyAnswers => {
@@ -120,6 +174,212 @@ export const inferUserProfile = (history: WorkoutSession[]): SurveyAnswers => {
     return defaultProfile;
 };
 
+const calculateMaxStrengthProfile = (history: WorkoutSession[]) => {
+    const profile: Record<string, number> = {
+        SQUAT: 0,
+        DEADLIFT: 0,
+        BENCH: 0,
+        OHP: 0,
+        ROW: 0,
+        VERTICAL_PULL: 0
+    };
+    
+    // Look at last 6 months only to ensure relevance
+    const sixMonthsAgo = Date.now() - (180 * 24 * 60 * 60 * 1000);
+    
+    Object.entries(MOVEMENT_PATTERNS).forEach(([patternName, ids]) => {
+        let maxE1RM = 0;
+        
+        ids.forEach(id => {
+            const exHistory = getExerciseHistory(history, id);
+            exHistory.forEach(entry => {
+                if (entry.session.startTime < sixMonthsAgo) return;
+                
+                entry.exerciseData.sets.forEach(set => {
+                    if (set.type === 'normal' && set.isComplete) {
+                         const e1rm = calculate1RM(set.weight, set.reps);
+                         if (e1rm > maxE1RM) maxE1RM = e1rm;
+                    }
+                });
+            });
+        });
+        
+        profile[patternName] = maxE1RM;
+    });
+
+    return profile;
+}
+
+export const detectImbalances = (history: WorkoutSession[], routines: Routine[], currentBodyWeight?: number, gender?: 'male' | 'female'): Recommendation | null => {
+    const s = calculateMaxStrengthProfile(history);
+    const MIN_STRENGTH_THRESHOLD = 40; // kg, ignore very beginners for ratios
+    const max1RM = Math.max(s.SQUAT, s.DEADLIFT, s.BENCH);
+
+    // Need at least one significant lift to perform analysis
+    if (max1RM < MIN_STRENGTH_THRESHOLD) {
+        return null;
+    }
+
+    let worstImbalance: Recommendation | null = null;
+    let maxDeviation = 0.15; // Threshold: 15% deviation initiates a warning
+
+    // --- CHECK 1: RATIOS (SYMMETRY & STRUCTURAL) ---
+
+    // 1a: Squat vs Deadlift (4:5 Ratio)
+    if (s.SQUAT > MIN_STRENGTH_THRESHOLD && s.DEADLIFT > 0) {
+        const targetDL = s.SQUAT * RATIOS.SQ_DL;
+        if (s.DEADLIFT < targetDL) {
+            const deviation = (targetDL - s.DEADLIFT) / targetDL;
+            if (deviation > maxDeviation) {
+                maxDeviation = deviation;
+                worstImbalance = {
+                    type: 'imbalance',
+                    titleKey: 'imbalance_squat_deadlift_title',
+                    reasonKey: 'imbalance_squat_deadlift_desc',
+                    reasonParams: { squat: Math.round(s.SQUAT), deadlift: Math.round(s.DEADLIFT) },
+                    suggestedBodyParts: ['Back', 'Legs'], // Focus on posterior chain
+                    relevantRoutineIds: routines.filter(r => 
+                        r.exercises.some(e => MOVEMENT_PATTERNS.DEADLIFT.includes(e.exerciseId))
+                    ).map(r => r.id)
+                };
+            }
+        }
+    }
+
+    // 1b: Bench vs Squat (3:4 Ratio)
+    if (s.BENCH > MIN_STRENGTH_THRESHOLD && s.SQUAT > 0) {
+        const targetSquat = s.BENCH * RATIOS.BN_SQ;
+        if (s.SQUAT < targetSquat) {
+            const deviation = (targetSquat - s.SQUAT) / targetSquat;
+            if (deviation > maxDeviation) {
+                maxDeviation = deviation;
+                worstImbalance = {
+                    type: 'imbalance',
+                    titleKey: 'imbalance_bench_squat_title',
+                    reasonKey: 'imbalance_bench_squat_desc',
+                    reasonParams: { bench: Math.round(s.BENCH), squat: Math.round(s.SQUAT) },
+                    suggestedBodyParts: ['Legs'],
+                    relevantRoutineIds: routines.filter(r => 
+                        r.exercises.some(e => MOVEMENT_PATTERNS.SQUAT.includes(e.exerciseId))
+                    ).map(r => r.id)
+                };
+            }
+        }
+    }
+
+    // 1c: OHP vs Bench (2:3 Ratio)
+    if (s.BENCH > MIN_STRENGTH_THRESHOLD && s.OHP > 0) {
+        const targetOHP = s.BENCH * RATIOS.OH_BN;
+        if (s.OHP < targetOHP) {
+            const deviation = (targetOHP - s.OHP) / targetOHP;
+            if (deviation > maxDeviation) {
+                maxDeviation = deviation;
+                worstImbalance = {
+                    type: 'imbalance',
+                    titleKey: 'imbalance_ohp_bench_title',
+                    reasonKey: 'imbalance_ohp_bench_desc',
+                    reasonParams: { bench: Math.round(s.BENCH), ohp: Math.round(s.OHP) },
+                    suggestedBodyParts: ['Shoulders'],
+                    relevantRoutineIds: routines.filter(r => 
+                        r.exercises.some(e => MOVEMENT_PATTERNS.OHP.includes(e.exerciseId))
+                    ).map(r => r.id)
+                };
+            }
+        }
+    }
+
+    // 1d: Horizontal Push (Bench) vs Pull (Row) (~1:1 Ratio)
+    if (s.BENCH > MIN_STRENGTH_THRESHOLD && s.ROW > 0) {
+        const targetRow = s.BENCH;
+        if (s.ROW < targetRow * 0.85) { // Allow 15% variance
+             const deviation = (targetRow - s.ROW) / targetRow;
+             if (deviation > maxDeviation) {
+                 maxDeviation = deviation;
+                 worstImbalance = {
+                     type: 'imbalance',
+                     titleKey: 'imbalance_push_pull_title',
+                     reasonKey: 'imbalance_push_pull_desc',
+                     reasonParams: { push: Math.round(s.BENCH), pull: Math.round(s.ROW) },
+                     suggestedBodyParts: ['Back', 'Shoulders'],
+                     relevantRoutineIds: routines.filter(r => 
+                        r.exercises.some(e => MOVEMENT_PATTERNS.ROW.includes(e.exerciseId))
+                    ).map(r => r.id)
+                 };
+             }
+        }
+    }
+
+    // 1e: Vertical Push (OHP) vs Vertical Pull (~1:1 Ratio)
+    if (s.OHP > MIN_STRENGTH_THRESHOLD && s.VERTICAL_PULL > 0) {
+        const targetPull = s.OHP;
+        if (s.VERTICAL_PULL < targetPull * 0.85) {
+            const deviation = (targetPull - s.VERTICAL_PULL) / targetPull;
+             if (deviation > maxDeviation) {
+                 maxDeviation = deviation;
+                 worstImbalance = {
+                     type: 'imbalance',
+                     titleKey: 'imbalance_vertical_balance_title',
+                     reasonKey: 'imbalance_vertical_balance_desc',
+                     reasonParams: { push: Math.round(s.OHP), pull: Math.round(s.VERTICAL_PULL) },
+                     suggestedBodyParts: ['Back'],
+                     relevantRoutineIds: routines.filter(r => 
+                        r.exercises.some(e => MOVEMENT_PATTERNS.VERTICAL_PULL.includes(e.exerciseId))
+                    ).map(r => r.id)
+                 };
+             }
+        }
+    }
+    
+    // --- CHECK 2: PROFICIENCY GAPS (STANDARDIZATION) ---
+    if (currentBodyWeight && currentBodyWeight > 0 && gender && worstImbalance === null) {
+        // Only calculate if we haven't found a critical ratio imbalance yet (or maybe treat this as lower priority)
+        // We assume 'male' as default for physiology if not specified, but typically gender is required for this.
+        const profGender = gender;
+
+        const levelSquat = getProficiency('SQUAT', s.SQUAT, currentBodyWeight, profGender);
+        const levelBench = getProficiency('BENCH', s.BENCH, currentBodyWeight, profGender);
+        const levelDeadlift = getProficiency('DEADLIFT', s.DEADLIFT, currentBodyWeight, profGender);
+        const levelOhp = getProficiency('OHP', s.OHP, currentBodyWeight, profGender);
+
+        const scoreUpper = Math.max(LEVEL_SCORES[levelBench], LEVEL_SCORES[levelOhp]);
+        const scoreLower = Math.max(LEVEL_SCORES[levelSquat], LEVEL_SCORES[levelDeadlift]);
+
+        // Gap Threshold: 2 levels difference is worth a notification (e.g. Advanced vs Novice)
+        // 1.5 allows for "High Intermediate" vs "Low Novice" effectively.
+        
+        if (scoreUpper >= scoreLower + 2) {
+             worstImbalance = {
+                type: 'imbalance',
+                titleKey: 'imbalance_upper_dominant_title',
+                reasonKey: 'imbalance_upper_dominant_desc',
+                reasonParams: { 
+                    upper_level: t(levelBench === 'Untrained' ? levelOhp : levelBench), // Use the localized string key
+                    lower_level: t(levelSquat === 'Untrained' ? levelDeadlift : levelSquat) 
+                },
+                suggestedBodyParts: ['Legs'],
+                relevantRoutineIds: routines.filter(r => r.exercises.some(e => MOVEMENT_PATTERNS.SQUAT.includes(e.exerciseId) || MOVEMENT_PATTERNS.DEADLIFT.includes(e.exerciseId))).map(r => r.id)
+            };
+        } else if (scoreLower >= scoreUpper + 2) {
+             worstImbalance = {
+                type: 'imbalance',
+                titleKey: 'imbalance_lower_dominant_title',
+                reasonKey: 'imbalance_lower_dominant_desc',
+                reasonParams: { 
+                    lower_level: t(levelSquat === 'Untrained' ? levelDeadlift : levelSquat),
+                    upper_level: t(levelBench === 'Untrained' ? levelOhp : levelBench)
+                },
+                suggestedBodyParts: ['Chest', 'Shoulders', 'Back'],
+                relevantRoutineIds: routines.filter(r => r.exercises.some(e => MOVEMENT_PATTERNS.BENCH.includes(e.exerciseId) || MOVEMENT_PATTERNS.OHP.includes(e.exerciseId))).map(r => r.id)
+            };
+        }
+    }
+    
+    // Helper function to make TS happy with key access in reasonParams
+    function t(key: string) { return key; } // Dummy, the actual translation happens in the UI component
+
+    return worstImbalance;
+}
+
 export const getWorkoutRecommendation = (
   history: WorkoutSession[],
   routines: Routine[],
@@ -189,7 +449,6 @@ export const getWorkoutRecommendation = (
       };
   }
 
-
   // --- CHECK FOR PROMOTIONS (Runs for everyone) ---
   for (const path of PROGRESSION_PATHS) {
       const exHistory = getExerciseHistory(history, path.baseExerciseId);
@@ -238,7 +497,6 @@ export const getWorkoutRecommendation = (
           }
       }
   }
-
 
   // --- PHASE 2: SMART COACH (Advanced / No Custom Plan) ---
   

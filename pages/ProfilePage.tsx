@@ -15,6 +15,7 @@ import { convertCmToFtIn, convertFtInToCm } from '../utils/weightUtils';
 import { calculateLifterDNA } from '../services/analyticsService';
 import LifterDNA from '../components/profile/LifterDNA';
 import UnlockHistory from '../components/profile/UnlockHistory';
+import StrengthProfile from '../components/profile/StrengthProfile';
 
 const SettingsGroup: React.FC<{ title?: string, children: React.ReactNode }> = ({ title, children }) => (
   <div className="mb-8">
@@ -281,6 +282,9 @@ const ProfilePage: React.FC = () => {
       
       {/* Lifter DNA Visualization */}
       <LifterDNA stats={lifterStats} />
+
+      {/* Strength Profile Radar Chart */}
+      <StrengthProfile />
       
       {/* Unlock History */}
       <UnlockHistory unlocks={profile.unlocks || []} />

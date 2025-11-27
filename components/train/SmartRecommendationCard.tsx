@@ -1,10 +1,11 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Icon } from '../common/Icon';
 import { useI18n } from '../../hooks/useI18n';
 import { Recommendation } from '../../utils/recommendationUtils';
 import { TranslationKey } from '../../contexts/I18nContext';
 import { Routine } from '../../types';
+import { useMeasureUnit } from '../../hooks/useWeight';
 
 interface SmartRecommendationCardProps {
   recommendation: Recommendation;
@@ -24,6 +25,7 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
   onUpgrade 
 }) => {
   const { t } = useI18n();
+  const { displayWeight, weightUnit } = useMeasureUnit();
 
   let gradientClass = 'from-violet-600/90 to-indigo-700/90 border-indigo-500/30';
   let iconName = 'dumbbell';
@@ -37,7 +39,32 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
       gradientClass = 'from-amber-500/90 to-orange-600/90 border-yellow-400/30';
       iconName = 'trophy';
       cardTitle = 'Level Up!';
+  } else if (recommendation.type === 'imbalance') {
+      gradientClass = 'from-amber-600 to-orange-700 border-orange-500/30';
+      iconName = 'scale';
+      cardTitle = t('rec_type_imbalance');
   }
+
+  // Format parameters if this is an imbalance check (assuming keys map to weight values)
+  const formattedParams = useMemo(() => {
+      if (!recommendation.reasonParams) return undefined;
+      if (recommendation.type !== 'imbalance') return recommendation.reasonParams;
+
+      const newParams = { ...recommendation.reasonParams };
+      const weightKeys = ['squat', 'deadlift', 'bench', 'ohp'];
+      
+      weightKeys.forEach(key => {
+          if (newParams[key] !== undefined) {
+               const val = Number(newParams[key]);
+               if (!isNaN(val)) {
+                   // Translate unit if possible
+                   const unitLabel = t(`workout_${weightUnit}` as TranslationKey) || weightUnit;
+                   newParams[key] = `${displayWeight(val)} ${unitLabel}`; 
+               }
+          }
+      });
+      return newParams;
+  }, [recommendation, displayWeight, weightUnit, t]);
 
   return (
     <div className={`relative overflow-hidden rounded-2xl p-5 shadow-lg border bg-gradient-to-br ${gradientClass} mb-6 animate-fadeIn transition-all`}>
@@ -61,7 +88,7 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
           </h3>
           
           <p className="text-white/90 text-sm leading-relaxed max-w-lg">
-            {t(recommendation.reasonKey as TranslationKey, recommendation.reasonParams)}
+            {t(recommendation.reasonKey as TranslationKey, formattedParams || recommendation.reasonParams)}
           </p>
         </div>
 

@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useContext, useRef } from 'react';
 import { Exercise, WorkoutExercise, PerformedSet, SupersetDefinition } from '../../types';
 import { getExerciseHistory } from '../../utils/workoutUtils';
@@ -221,7 +220,7 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = (props) => {
                     {isFocusMenuOpen && (
                         <div className="absolute right-0 mt-2 w-40 bg-slate-700 rounded-md shadow-lg z-30">
                             {focusOptions.map(({ labelKey, focusType }) => (
-                                <button key={labelKey} onClick={() => handleSetFocus(focusType)} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">
+                                <button key={labelKey as string} onClick={() => handleSetFocus(focusType)} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">
                                     {t(labelKey)}
                                 </button>
                             ))}

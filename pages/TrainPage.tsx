@@ -10,7 +10,7 @@ import RoutineSection from '../components/train/RoutineSection';
 import QuickTrainingSection from '../components/train/QuickTrainingSection';
 import CheckInCard from '../components/train/CheckInCard';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import { getWorkoutRecommendation, Recommendation } from '../utils/recommendationUtils';
+import { getWorkoutRecommendation, Recommendation, detectImbalances } from '../utils/recommendationUtils';
 import SmartRecommendationCard from '../components/train/SmartRecommendationCard';
 import OnboardingWizard from '../components/onboarding/OnboardingWizard';
 import ConfirmModal from '../components/modals/ConfirmModal';
@@ -29,7 +29,8 @@ const TrainPage: React.FC = () => {
       routines, startWorkout, activeWorkout, discardActiveWorkout, maximizeWorkout, 
       startTemplateEdit, startHiitSession, startTemplateDuplicate,
       checkInState, handleCheckInResponse, history, exercises, upsertRoutine, upsertRoutines,
-      currentWeight, logUnlock, supplementPlan, takenSupplements, toggleSupplementIntake, snoozedSupplements, snoozeSupplement
+      currentWeight, logUnlock, supplementPlan, takenSupplements, toggleSupplementIntake, snoozedSupplements, snoozeSupplement,
+      profile
   } = useContext(AppContext);
   const { t } = useI18n();
   const [selectedRoutine, setSelectedRoutine] = useState<Routine | null>(null);
@@ -42,6 +43,7 @@ const TrainPage: React.FC = () => {
   const [isRecDismissed, setIsRecDismissed] = useState(false);
   const [isUpgradeConfirmOpen, setIsUpgradeConfirmOpen] = useState(false);
   const [onboardingRoutines, setOnboardingRoutines] = useState<Routine[]>([]);
+  const [imbalanceSnoozedUntil, setImbalanceSnoozedUntil] = useLocalStorage('imbalanceSnooze', 0);
 
   // Onboarding State
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
@@ -62,10 +64,18 @@ const TrainPage: React.FC = () => {
             relevantRoutineIds: onboardingRoutines.map(r => r.id),
           });
       } else {
-          const rec = getWorkoutRecommendation(history, routines, exercises, t, currentWeight);
-          setRecommendation(rec);
+          // Check for imbalances first
+          const imbalanceRec = detectImbalances(history, routines, currentWeight, profile.gender);
+          const now = Date.now();
+          
+          if (imbalanceRec && now > imbalanceSnoozedUntil) {
+              setRecommendation(imbalanceRec);
+          } else {
+              const rec = getWorkoutRecommendation(history, routines, exercises, t, currentWeight);
+              setRecommendation(rec);
+          }
       }
-  }, [history, routines, exercises, t, currentWeight, onboardingRoutines]);
+  }, [history, routines, exercises, t, currentWeight, onboardingRoutines, imbalanceSnoozedUntil, profile.gender]);
 
   const { latestWorkouts, customTemplates, sampleWorkouts, sampleHiit } = useMemo(() => {
     const latest = routines
@@ -215,6 +225,19 @@ const TrainPage: React.FC = () => {
       setIsRecDismissed(true); // Hide card after upgrading
   };
   
+  const handleDismissRecommendation = () => {
+      if (recommendation?.type === 'imbalance') {
+          // Snooze imbalance warnings for 7 days
+          setImbalanceSnoozedUntil(Date.now() + 7 * 24 * 60 * 60 * 1000);
+          
+          // After snoozing, try to get a new standard workout recommendation
+          const nextRec = getWorkoutRecommendation(history, routines, exercises, t, currentWeight);
+          setRecommendation(nextRec);
+      } else {
+          setIsRecDismissed(true);
+      }
+  };
+  
   const handleTakeSupplement = (id: string) => {
       const todayString = getDateString(new Date());
       toggleSupplementIntake(todayString, id);
@@ -255,7 +278,7 @@ const TrainPage: React.FC = () => {
             <SmartRecommendationCard 
                 recommendation={recommendation}
                 recommendedRoutines={recommendedRoutines}
-                onDismiss={() => setIsRecDismissed(true)}
+                onDismiss={handleDismissRecommendation}
                 onRoutineSelect={setSelectedRoutine}
                 onViewSmartRoutine={() => {
                     if(recommendation.generatedRoutine) setSelectedRoutine(recommendation.generatedRoutine);
