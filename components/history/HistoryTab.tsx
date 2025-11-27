@@ -24,9 +24,9 @@ const HistoryTab: React.FC<HistoryTabProps> = ({ history }) => {
     if (Math.abs(diff) < 0.01) return null; // No significant change
 
     if (diff > 0) {
-        return <Icon name="arrow-up" className="w-4 h-4 text-green-400 ml-1"/>;
+        return <Icon name="arrow-up" className="!w-3 !h-3 text-green-400 ml-1"/>;
     }
-    return <Icon name="arrow-down" className="w-4 h-4 text-red-400 ml-1"/>;
+    return <Icon name="arrow-down" className="!w-3 !h-3 text-red-400 ml-1"/>;
   };
 
   return (
