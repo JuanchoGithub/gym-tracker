@@ -3,7 +3,7 @@ import React, { useContext, useState, useMemo, useRef, useEffect } from 'react';
 import { AppContext } from '../contexts/AppContext';
 import { useI18n } from '../hooks/useI18n';
 import ExerciseCard from '../components/workout/ExerciseCard';
-import { WorkoutExercise, WorkoutSession, PerformedSet, SupersetDefinition, Exercise } from '../types';
+import { WorkoutExercise, WorkoutSession, PerformedSet, SupersetDefinition, Exercise, Routine, BodyPart } from '../types';
 import { useWorkoutTimer } from '../hooks/useWorkoutTimer';
 import { Icon } from '../components/common/Icon';
 import WorkoutDetailsModal from '../components/modals/WorkoutDetailsModal';
@@ -18,14 +18,32 @@ import SupersetCard from '../components/workout/SupersetCard';
 import SupersetView from '../components/workout/SupersetView';
 import SupersetPlayer from '../components/workout/SupersetPlayer';
 import ExerciseDetailModal from '../components/exercise/ExerciseDetailModal';
+import { generateSmartRoutine, RoutineFocus } from '../utils/routineGenerator';
+import { inferUserProfile } from '../utils/recommendationUtils';
+import { calculateMuscleFreshness } from '../utils/fatigueUtils';
+import { MUSCLES } from '../constants/muscles';
+import ConfirmModal from '../components/modals/ConfirmModal';
+import { TranslationKey } from '../contexts/I18nContext';
+import OnboardingWizard from '../components/onboarding/OnboardingWizard';
+
+const PUSH_MUSCLES = [MUSCLES.PECTORALS, MUSCLES.FRONT_DELTS, MUSCLES.TRICEPS];
+const PULL_MUSCLES = [MUSCLES.LATS, MUSCLES.TRAPS, MUSCLES.BICEPS];
+const LEG_MUSCLES = [MUSCLES.QUADS, MUSCLES.HAMSTRINGS, MUSCLES.GLUTES];
+
+interface SuggestionState {
+    routine: Routine;
+    focus: string;
+    isFallback?: boolean;
+}
 
 const ActiveWorkoutPage: React.FC = () => {
-  const { activeWorkout, updateActiveWorkout, endWorkout, discardActiveWorkout, getExerciseById, minimizeWorkout, keepScreenAwake, activeTimerInfo, setActiveTimerInfo, startAddExercisesToWorkout, collapsedExerciseIds, setCollapsedExerciseIds, collapsedSupersetIds, setCollapsedSupersetIds, currentWeight, logWeight, activeTimedSet, setActiveTimedSet } = useContext(AppContext);
+  const { activeWorkout, updateActiveWorkout, endWorkout, discardActiveWorkout, getExerciseById, minimizeWorkout, keepScreenAwake, activeTimerInfo, setActiveTimerInfo, startAddExercisesToWorkout, collapsedExerciseIds, setCollapsedExerciseIds, collapsedSupersetIds, setCollapsedSupersetIds, currentWeight, logWeight, activeTimedSet, setActiveTimedSet, history, exercises, routines, upsertRoutines } = useContext(AppContext);
   const { t } = useI18n();
   const elapsedTime = useWorkoutTimer(activeWorkout?.startTime);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isConfirmingFinish, setIsConfirmingFinish] = useState(false);
   const [viewingExercise, setViewingExercise] = useState<Exercise | null>(null);
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   
   const [isReorganizeMode, setIsReorganizeMode] = useState(false);
   const [tempExercises, setTempExercises] = useState<WorkoutExercise[]>([]);
@@ -50,6 +68,9 @@ const ActiveWorkoutPage: React.FC = () => {
   const [pendingExerciseUpdate, setPendingExerciseUpdate] = useState<WorkoutExercise | null>(null);
   
   const [activeSupersetPlayerId, setActiveSupersetPlayerId] = useState<string | null>(null);
+  
+  // Suggestion State
+  const [suggestedRoutine, setSuggestedRoutine] = useState<SuggestionState | null>(null);
 
   const collapsedSet = useMemo(() => new Set(collapsedExerciseIds), [collapsedExerciseIds]);
   const collapsedSupersetSet = useMemo(() => new Set(collapsedSupersetIds), [collapsedSupersetIds]);
@@ -574,6 +595,94 @@ const ActiveWorkoutPage: React.FC = () => {
     setActiveTimedSet(null);
   };
 
+  // --- Smart Suggestion Logic ---
+  const handleSmartSuggest = () => {
+      const customRoutines = routines.filter(r => !r.id.startsWith('rt-'));
+      
+      // Case 1: Absolute beginner (No history, no custom routines)
+      if (history.length === 0 && customRoutines.length === 0) {
+          setIsOnboardingOpen(true);
+          return;
+      }
+
+      // Case 2: Has routines but no history (Wizard done, or manual create, but no workout yet)
+      if (history.length === 0 && customRoutines.length > 0) {
+          const firstRoutine = customRoutines[0];
+          setSuggestedRoutine({ 
+              routine: firstRoutine, 
+              focus: t('rec_title_generic', { focus: 'Starting Plan' }),
+              isFallback: true
+          });
+          return;
+      }
+      
+      // Case 3: Has history -> Standard Smart Suggestion
+      const profile = inferUserProfile(history);
+      const freshness = calculateMuscleFreshness(history, exercises);
+      
+      // Helper to get freshness score for a group of muscles
+      const getGroupScore = (muscleNames: string[]) => {
+          const groupScores = muscleNames.map(m => freshness[m] !== undefined ? freshness[m] : 100);
+          return groupScores.reduce((a, b) => a + b, 0) / groupScores.length;
+      };
+      
+      const pushScore = getGroupScore(PUSH_MUSCLES);
+      const pullScore = getGroupScore(PULL_MUSCLES);
+      const legsScore = getGroupScore(LEG_MUSCLES);
+      const upperScore = (pushScore + pullScore) / 2;
+      const lowerScore = legsScore;
+
+      const groups: { focus: RoutineFocus, score: number, label: string }[] = [
+          { focus: 'push', score: pushScore, label: 'Push' },
+          { focus: 'pull', score: pullScore, label: 'Pull' },
+          { focus: 'legs', score: legsScore, label: 'Legs' },
+          { focus: 'upper', score: upperScore, label: 'Upper Body' },
+          { focus: 'lower', score: lowerScore, label: 'Lower Body' },
+      ];
+      
+      // Sort by freshness descending
+      groups.sort((a, b) => b.score - a.score);
+      
+      const winner = groups[0];
+      const generatedRoutine = generateSmartRoutine(winner.focus, profile, t);
+      
+      setSuggestedRoutine({ routine: generatedRoutine, focus: winner.label });
+  };
+  
+  const handleOnboardingComplete = (newRoutines: Routine[]) => {
+      upsertRoutines(newRoutines);
+      setIsOnboardingOpen(false);
+      if (newRoutines.length > 0) {
+          setSuggestedRoutine({ 
+              routine: newRoutines[0], 
+              focus: 'Starting Plan',
+              isFallback: true
+          });
+      }
+  };
+
+  const handleAcceptSuggestion = () => {
+      if (!activeWorkout || !suggestedRoutine) return;
+      
+      // The generateSmartRoutine returns unique IDs, so we can use them directly.
+      // However, we need to ensure they have unique IDs specific to this session if we want to be pedantic, 
+      // but the generator uses random strings so collisions are unlikely.
+      
+      const newExercises = suggestedRoutine.routine.exercises.map(ex => ({
+          ...ex,
+          id: `we-${Date.now()}-${Math.random()}`,
+          sets: ex.sets.map(s => ({ ...s, id: `set-${Date.now()}-${Math.random()}` }))
+      }));
+      
+      updateActiveWorkout({ 
+          ...activeWorkout, 
+          exercises: newExercises, 
+          routineName: suggestedRoutine.routine.name 
+      });
+      
+      setSuggestedRoutine(null);
+  };
+
   if (!activeWorkout) {
     return <div>{t('active_workout_no_active')}</div>;
   }
@@ -731,9 +840,17 @@ const ActiveWorkoutPage: React.FC = () => {
                 );
             }
         }) : (
-          <div className="mx-2 rounded-lg bg-surface px-4 py-10 text-center sm:mx-4">
+          <div className="mx-2 rounded-lg bg-surface px-4 py-10 text-center sm:mx-4 border border-white/5 flex flex-col items-center">
               <p className="text-lg font-semibold text-text-primary">{t('active_workout_empty_title')}</p>
-              <p className="mt-1 text-text-secondary">{t('active_workout_empty_desc')}</p>
+              <p className="mt-1 text-text-secondary mb-6">{t('active_workout_empty_desc')}</p>
+              
+              <button 
+                  onClick={handleSmartSuggest}
+                  className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg flex items-center gap-2 transition-all transform hover:scale-105 active:scale-95"
+              >
+                  <Icon name="sparkles" className="w-5 h-5 text-yellow-300" />
+                  <span>{t('active_workout_suggest_button')}</span>
+              </button>
           </div>
         )}
       </div>
@@ -820,6 +937,29 @@ const ActiveWorkoutPage: React.FC = () => {
           onClose={() => setViewingExercise(null)}
           exercise={viewingExercise}
         />
+      )}
+
+      {/* Suggestion Confirm Modal */}
+      {suggestedRoutine && (
+          <ConfirmModal 
+            isOpen={!!suggestedRoutine}
+            onClose={() => setSuggestedRoutine(null)}
+            onConfirm={handleAcceptSuggestion}
+            title={t('active_workout_suggestion_title', { name: suggestedRoutine.routine.name })}
+            message={suggestedRoutine.isFallback 
+                ? t('active_workout_suggestion_reason_start') 
+                : t('active_workout_suggestion_reason', { focus: suggestedRoutine.focus })
+            }
+            confirmText={t('active_workout_accept_suggestion')}
+            confirmButtonClass="bg-indigo-600 hover:bg-indigo-500"
+          />
+      )}
+
+      {isOnboardingOpen && (
+          <OnboardingWizard 
+             onClose={() => setIsOnboardingOpen(false)}
+             onComplete={handleOnboardingComplete}
+          />
       )}
     </div>
   );

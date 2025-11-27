@@ -41,7 +41,7 @@ const ROUTINE_LEVELS: Record<string, RoutineLevel> = {
     'rt-hiit-beginner': 'beginner',
 };
 
-const inferUserProfile = (history: WorkoutSession[]): SurveyAnswers => {
+export const inferUserProfile = (history: WorkoutSession[]): SurveyAnswers => {
     const defaultProfile: SurveyAnswers = {
         experience: 'intermediate',
         goal: 'muscle',
