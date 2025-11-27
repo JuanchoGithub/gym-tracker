@@ -51,7 +51,7 @@ export const en = {
   train_quick_hiit_desc: 'Work: {work}s, Rest: {rest}s, Rounds: {rounds}',
   
   // Onboarding Wizard
-  train_onboarding_card_title: 'New to Gym Tracker Pro?',
+  train_onboarding_card_title: 'New to Fortachon?',
   train_onboarding_card_desc: 'Take a 30-second quiz to find your perfect starting point.',
   train_onboarding_card_button: 'Find My Routine',
   wizard_title: 'Routine Finder',
