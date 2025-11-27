@@ -1,20 +1,183 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
 
-# Run and deploy your AI Studio app
+# Fortachon 🏋️‍♂️
 
-This contains everything you need to run your app locally.
+**Fortachon** is a comprehensive, privacy-focused Progressive Web App (PWA) designed for serious strength training. It combines advanced workout tracking, biomechanical analytics, and intelligent supplement planning into a single, offline-capable application.
 
-View your app in AI Studio: https://ai.studio/apps/drive/1fGmcbBC6rS7Pq62TMa-gkdtPqGHSQofd
+Built with **React**, **TypeScript**, and **Tailwind CSS**.
 
-## Run Locally
+## ✨ Key Features
 
-**Prerequisites:**  Node.js
+### 🏋️‍♂️ Training & Tracking
+*   **Active Workout Mode:** Real-time tracking with support for **Supersets**, Drop Sets, Warmups, and Timed Sets.
+*   **Smart Timers:** Auto-calculating rest timers based on set intensity (Warmup vs. Failure) with background notification support.
+*   **Routine Management:** Create custom templates or use built-in programs (StrongLifts, PPL, PHUL).
+*   **Superset Player:** A dedicated UI for managing complex superset transitions and rest periods.
 
+### 📊 Analytics & Insights
+*   **Muscle Heatmap:** Visualizes muscle freshness/fatigue based on your last 4 days of training volume.
+*   **Lifter DNA:** Analyzes your training history to categorize your archetype (Powerbuilder, Bodybuilder, Hybrid) and score your Consistency, Volume, and Intensity.
+*   **Progression Tracking:** Automatic calculation of **e1RM** (Estimated 1-Rep Max) and volume trends per exercise.
+*   **Smart Recommendations:** Suggests the optimal workout for the day based on muscle recovery status.
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+### 💊 Nutrition & Health
+*   **Supplement Wizard:** Generates a personalized supplement schedule based on weight, gender, goals (cut/bulk), and medical conditions.
+*   **Smart Correlations:** Analyzes workout history against supplement logs to find correlations (e.g., "You lift 5% more volume when taking Creatine").
+*   **Inventory Management:** Tracks stock levels and sends reminders.
+
+---
+
+## 🧠 Technical Deep Dive: The Math Behind the App
+
+Fortachon runs entirely client-side using `localStorage`. Below are the core algorithms driving the analytics.
+
+### 1. Estimated 1-Rep Max (e1RM)
+We use the **Epley Formula** to estimate strength potential from sub-maximal sets. This allows for normalization of performance across different rep ranges.
+
+$$
+1RM = w \cdot (1 + \frac{r}{30})
+$$
+
+*   $w$ = Weight lifted
+*   $r$ = Repetitions performed
+
+### 2. Muscle Freshness & Recovery Algorithm
+The app calculates a "Freshness Score" (0-100%) for every muscle group.
+*   **Fatigue Induction:** A set creates fatigue units based on muscle role (Primary vs. Secondary mover).
+    *   Primary: 12 units
+    *   Secondary: 6 units
+*   **Recovery Profile:** Each muscle has a recovery window (e.g., Quads = 72h, Abs = 24h).
+*   **Linear Recovery:**
+
+$$
+\text{Fatigue}_{current} = \text{Fatigue}_{initial} \times (1 - \frac{\text{HoursSinceWorkout}}{\text{RecoveryDuration}})
+$$
+
+$$
+\text{Freshness} = \max(0, 100 - \text{Fatigue}_{current})
+$$
+
+### 3. Lifter DNA Scoring
+We classify users based on their training history (last 20 sessions).
+
+*   **Archetype:** Determined by average repetitions per set ($R_{avg}$).
+    *   $R_{avg} \le 6$: **Powerbuilder**
+    *   $6 < R_{avg} \le 12$: **Bodybuilder**
+    *   $R_{avg} > 12$: **Endurance**
+*   **Volume Score:** Normalized against a heuristic baseline (e.g., 10,000kg total volume = 100 points).
+*   **Intensity Score:** Heuristic based on rep ranges (lower reps imply higher % of 1RM).
+
+---
+
+## 🌊 System Architecture & Flows
+
+### 1. Workout Session Lifecycle
+The core loop of the application.
+
+```mermaid
+graph TD
+    A[Start] --> B{Select Routine}
+    B -->|Existing| C[Load Template]
+    B -->|New| D[Empty Workout]
+    C --> E[Active Workout View]
+    D --> E
+    
+    subgraph Active Session
+    E --> F{Interact}
+    F -->|Log Set| G[Update State & Timer]
+    F -->|Superset| H[Superset Player UI]
+    F -->|Minimize| I[Background Mode]
+    end
+    
+    E --> J[Finish Workout]
+    J --> K[Calculate PRs]
+    K --> L[Save to History]
+    L --> M[Update Muscle Heatmap]
+    L --> N[Update Lifter DNA]
+```
+
+### 2. Smart Recommendation Engine
+How the app decides what you should train today (`rec_reason_fresh` vs `rec_reason_neglected`).
+
+```mermaid
+sequenceDiagram
+    participant UI as Dashboard
+    participant Heuristic as Recommendation Engine
+    participant History as Workout History
+    participant Fatigue as Fatigue Algo
+
+    UI->>Heuristic: Request Suggestion
+    Heuristic->>History: Get Recent Sessions
+    Heuristic->>Fatigue: Calculate Muscle Freshness
+    Fatigue-->>Heuristic: Returns { Chest: 100%, Legs: 40% }
+    
+    alt Systemic Fatigue High
+        Heuristic-->>UI: Suggest Active Recovery / Mobility
+    else Specific Muscle Fresh
+        Heuristic->>Heuristic: Sort Routines by Focus (Push/Pull/Legs)
+        Heuristic-->>UI: Suggest "Push Day" (Chest Fresh)
+    end
+```
+
+### 3. Supplement Plan Generation
+Logic flow for the `SupplementService`.
+
+```mermaid
+graph LR
+    Input[User Inputs] --> Logic{Analysis Engine}
+    
+    Input -->|Goal: Gain| Logic
+    Input -->|Time: Night| Logic
+    Input -->|Diet: Vegan| Logic
+    
+    Logic -->|Check Volume| Creatine[Add Creatine]
+    Logic -->|Check Sleep| ZMA[Add ZMA]
+    Logic -->|Check Diet| Protein[Add Plant Protein]
+    
+    Creatine --> Output[Final Plan]
+    ZMA --> Output
+    Protein --> Output
+    
+    Output --> Schedule[Daily Tasks]
+```
+
+---
+
+## 📂 Project Structure
+
+```
+/
+├── src/
+│   ├── components/      # UI Components (Cards, Modals, Graphs)
+│   ├── constants/       # Static data (Muscles, Predefined Routines)
+│   ├── contexts/        # React Context (App State, I18n)
+│   ├── hooks/           # Custom Hooks (useWeight, useWakeLock)
+│   ├── locales/         # i18n translations (EN/ES)
+│   ├── pages/           # Main Route Views
+│   ├── services/        # Logic (Analytics, Audio, Speech, Supplements)
+│   ├── utils/           # Helper functions (Math, Time, Colors)
+│   ├── App.tsx          # Main Router
+│   └── index.tsx        # Entry Point
+└── public/              # Static Assets & Icons
+```
+
+## 🚀 Getting Started
+
+1.  **Install Dependencies:**
+    ```bash
+    npm install
+    ```
+
+2.  **Run Development Server:**
+    ```bash
+    npm run dev
+    ```
+
+3.  **Build for Production:**
+    ```bash
+    npm run build
+    ```
+
+## 🌍 Localization
+
+Fortachon currently supports **English** and **Spanish**. 
+The `I18nContext` handles hot-swapping languages, including complex exercise descriptions and TTS (Text-to-Speech) announcements.
