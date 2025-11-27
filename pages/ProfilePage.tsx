@@ -1,5 +1,5 @@
 
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useContext, useState, useEffect, useMemo } from 'react';
 import { I18nContext, TranslationKey } from '../contexts/I18nContext';
 import { useI18n } from '../hooks/useI18n';
 import { AppContext } from '../contexts/AppContext';
@@ -12,6 +12,9 @@ import Modal from '../components/common/Modal';
 import WeightChartModal from '../components/profile/WeightChartModal';
 import { useMeasureUnit } from '../hooks/useWeight';
 import { convertCmToFtIn, convertFtInToCm } from '../utils/weightUtils';
+import { calculateLifterDNA } from '../services/analyticsService';
+import LifterDNA from '../components/profile/LifterDNA';
+import UnlockHistory from '../components/profile/UnlockHistory';
 
 const SettingsGroup: React.FC<{ title?: string, children: React.ReactNode }> = ({ title, children }) => (
   <div className="mb-8">
@@ -92,6 +95,7 @@ const ProfilePage: React.FC = () => {
     updateProfileInfo,
     currentWeight,
     logWeight,
+    history
   } = useContext(AppContext);
 
   const { displayWeight, getStoredWeight, weightUnit, measureUnit, setMeasureUnit } = useMeasureUnit();
@@ -102,6 +106,8 @@ const ProfilePage: React.FC = () => {
   const [inches, setInches] = useState('');
 
   const [wakeLockPermission, setWakeLockPermission] = useState<'granted' | 'denied' | 'unsupported'>('granted');
+
+  const lifterStats = useMemo(() => calculateLifterDNA(history), [history]);
 
   useEffect(() => {
     if (!('wakeLock' in navigator)) {
@@ -272,6 +278,12 @@ const ProfilePage: React.FC = () => {
   return (
     <div className="space-y-6 pb-8">
       <h1 className="text-3xl font-bold text-center mb-6">{t('profile_title')}</h1>
+      
+      {/* Lifter DNA Visualization */}
+      <LifterDNA stats={lifterStats} />
+      
+      {/* Unlock History */}
+      <UnlockHistory unlocks={profile.unlocks || []} />
 
       <SettingsGroup title={t('profile_personal_info')}>
         <SettingsItem>

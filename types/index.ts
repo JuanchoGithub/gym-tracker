@@ -105,10 +105,17 @@ export interface WeightEntry {
   weight: number; // in kg
 }
 
+export interface UnlockEvent {
+  date: number;
+  fromExercise: string;
+  toExercise: string;
+}
+
 export interface Profile {
   gender?: 'male' | 'female';
   height?: number; // in cm
   weightHistory: WeightEntry[];
+  unlocks?: UnlockEvent[];
 }
 
 export interface SupplementInfo {

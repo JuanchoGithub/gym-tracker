@@ -1,8 +1,4 @@
 
-
-
-
-
 import React, { createContext, useState, ReactNode, useMemo, useEffect, useCallback } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { Routine, WorkoutSession, Exercise, WorkoutExercise, PerformedSet, ActiveHiitSession, SupplementPlan, SupplementPlanItem, SupplementSuggestion, RejectedSuggestion, Profile, SupersetDefinition } from '../types';
@@ -39,6 +35,7 @@ export interface ActiveTimerInfo {
 interface AppContextType {
   routines: Routine[];
   upsertRoutine: (routine: Routine) => void;
+  upsertRoutines: (routines: Routine[]) => void;
   deleteRoutine: (routineId: string) => void;
   history: WorkoutSession[];
   deleteHistorySession: (sessionId: string) => void;
@@ -100,6 +97,8 @@ interface AppContextType {
   toggleSupplementIntake: (date: string, itemId: string) => void;
   updateSupplementStock: (itemId: string, delta: number) => void;
   updateSupplementPlanItem: (itemId: string, updates: Partial<SupplementPlanItem>) => void;
+  snoozedSupplements: Record<string, number>;
+  snoozeSupplement: (itemId: string) => void;
   newSuggestions: SupplementSuggestion[];
   applyPlanSuggestion: (suggestionId: string) => void;
   applyAllPlanSuggestions: () => void;
@@ -108,9 +107,10 @@ interface AppContextType {
   clearNewSuggestions: () => void;
   triggerManualPlanReview: () => void;
   profile: Profile;
-  updateProfileInfo: (updates: Partial<Omit<Profile, 'weightHistory'>>) => void;
+  updateProfileInfo: (updates: Partial<Omit<Profile, 'weightHistory' | 'unlocks'>>) => void;
   currentWeight?: number; // in kg
   logWeight: (weightInKg: number) => void;
+  logUnlock: (fromExercise: string, toExercise: string) => void;
   activeTimerInfo: ActiveTimerInfo | null;
   setActiveTimerInfo: React.Dispatch<React.SetStateAction<ActiveTimerInfo | null>>;
   collapsedExerciseIds: string[];
@@ -149,7 +149,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [activeQuickTimer, setActiveQuickTimer] = useLocalStorage<number | null>('activeQuickTimer', null);
   const [selectedVoiceURI, setSelectedVoiceURI] = useLocalStorage<string | null>('selectedVoiceURI', null);
   
-  // Add Exercise state now includes an optional targetSupersetId
   const [isAddingExercisesToWorkout, setIsAddingExercisesToWorkout] = useState(false);
   const [isAddingExercisesToTemplate, setIsAddingExercisesToTemplate] = useState(false);
   const [targetSupersetId, setTargetSupersetId] = useState<string | undefined>(undefined);
@@ -157,20 +156,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [supplementPlan, setSupplementPlan] = useLocalStorage<SupplementPlan | null>('supplementPlan', null);
   const [userSupplements, setUserSupplements] = useLocalStorage<SupplementPlanItem[]>('userSupplements', []);
   const [takenSupplements, setTakenSupplements] = useLocalStorage<Record<string, string[]>>('takenSupplements', {});
-  const [profile, setProfile] = useLocalStorage<Profile>('profile', { weightHistory: [] });
+  const [snoozedSupplements, setSnoozedSupplements] = useLocalStorage<Record<string, number>>('snoozedSupplements', {});
+
+  const [profile, setProfile] = useLocalStorage<Profile>('profile', { weightHistory: [], unlocks: [] });
   const [activeTimerInfo, setActiveTimerInfo] = useLocalStorage<ActiveTimerInfo | null>('activeRestTimer', null);
   const [collapsedExerciseIds, setCollapsedExerciseIds] = useLocalStorage<string[]>('collapsedExerciseIds', []);
   const [collapsedSupersetIds, setCollapsedSupersetIds] = useLocalStorage<string[]>('collapsedSupersetIds', []);
   const [activeTimedSet, setActiveTimedSet] = useState<{ exercise: WorkoutExercise; set: PerformedSet } | null>(null);
 
-  
-  // New state for automated supplement review
   const [lastAnalysisTimestamp, setLastAnalysisTimestamp] = useLocalStorage<number>('lastAnalysisTimestamp', 0);
   const [rejectedSuggestions, setRejectedSuggestions] = useLocalStorage<RejectedSuggestion[]>('rejectedSuggestions', []);
   const [newSuggestions, setNewSuggestions] = useState<SupplementSuggestion[]>([]);
   const [checkInState, setCheckInState] = useLocalStorage<CheckInState>('checkInState', { active: false });
 
-  // One-time migration from old 'weightUnit' to 'measureUnit'
   useEffect(() => {
     const oldWeightUnitRaw = window.localStorage.getItem('weightUnit');
     if (oldWeightUnitRaw) {
@@ -190,7 +188,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   }, [setMeasureUnit]);
   
-  // Migration for Exercise Muscle Groups
   useEffect(() => {
     setRawExercises(currentExercises => {
         let hasChanges = false;
@@ -223,7 +220,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return sortedHistory[0].weight;
   }, [profile.weightHistory]);
 
-  const updateProfileInfo = useCallback((updates: Partial<Omit<Profile, 'weightHistory'>>) => {
+  const updateProfileInfo = useCallback((updates: Partial<Omit<Profile, 'weightHistory' | 'unlocks'>>) => {
       setProfile(prev => ({ ...prev, ...updates }));
   }, [setProfile]);
 
@@ -249,6 +246,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           return { ...prev, weightHistory: newHistory };
       });
   }, [setProfile]);
+  
+  const logUnlock = useCallback((fromExercise: string, toExercise: string) => {
+      setProfile(prev => {
+          const newUnlocks = prev.unlocks ? [...prev.unlocks] : [];
+          newUnlocks.unshift({
+              date: Date.now(),
+              fromExercise,
+              toExercise
+          });
+          return { ...prev, unlocks: newUnlocks };
+      });
+  }, [setProfile]);
 
   const updateSupplementStock = useCallback((itemId: string, delta: number) => {
       if (!supplementPlan) return;
@@ -263,13 +272,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       
       setSupplementPlan({ ...supplementPlan, plan: newPlanItems });
 
-      // Also update custom supplements state if needed
       setUserSupplements(prev => prev.map(item => {
         if (item.id === itemId && item.stock !== undefined) {
             return { ...item, stock: Math.max(0, item.stock + delta) };
         }
         return item;
-      }));
+    }));
   }, [supplementPlan, setSupplementPlan, setUserSupplements]);
   
   const updateSupplementPlanItem = useCallback((itemId: string, updates: Partial<SupplementPlanItem>) => {
@@ -293,9 +301,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const currentDayTaken = prev[date] || [];
       const wasTaken = currentDayTaken.includes(itemId);
       
-      // Update stock logic
-      // If marking as taken (wasTaken = false), decrement stock
-      // If unmarking (wasTaken = true), increment stock
       updateSupplementStock(itemId, wasTaken ? 1 : -1);
 
       const newDayTaken = wasTaken
@@ -305,13 +310,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     });
   }, [setTakenSupplements, updateSupplementStock]);
 
-  // Shared Analysis Logic
+  const snoozeSupplement = useCallback((itemId: string) => {
+    setSnoozedSupplements(prev => ({
+        ...prev,
+        [itemId]: Date.now() + 60 * 60 * 1000 // 1 hour
+    }));
+  }, [setSnoozedSupplements]);
+
   const runPlanAnalysis = useCallback((
       planToAnalyze: SupplementPlan,
       checkInReason: CheckInReason | null,
       filterRejected: boolean = true
   ) => {
-        // Clean up old rejections
         const now = Date.now();
         let currentRejected = rejectedSuggestions;
 
@@ -341,9 +351,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 case 'UPDATE':
                     const itemToUpdate = planToAnalyze.plan.find(item => item.id === action.itemId);
                     if (!itemToUpdate) return false;
-                    // Special check for stock updates
                     if ('stock' in action.updates) {
-                        return true; // Always allow stock updates if suggested
+                        return true; 
                     }
                     return Object.keys(action.updates).some(key => {
                         const K = key as keyof typeof action.updates;
@@ -358,7 +367,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return finalSuggestions;
   }, [history, rejectedSuggestions, setRejectedSuggestions, t, takenSupplements]);
 
-  // Daily supplement plan analysis and check-in
   useEffect(() => {
     const runDailyAnalysis = () => {
         if (!supplementPlan) return;
@@ -368,19 +376,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
         if (isSignificantVolumeDrop) {
              const now = Date.now();
-             // If we haven't checked in recently (e.g., last 7 days) OR checkInState is not active but reason is old
              const isCheckInFresh = checkInState.lastChecked && (now - checkInState.lastChecked) < SEVEN_DAYS_MS;
              
              if (!isCheckInFresh) {
-                 // Trigger check-in UI
                  setCheckInState({ active: true });
-                 // Don't run full analysis yet, wait for user response
                  currentCheckInReason = null;
              } else {
                  currentCheckInReason = checkInState.reason || null;
              }
         } else {
-             // No volume drop, so clear any active check-in state related to volume drop
              if (checkInState.active) {
                  setCheckInState({ active: false });
              }
@@ -391,7 +395,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
         if (suggestions.length > 0) {
             setNewSuggestions(suggestions);
-            // Only notify if not waiting for check-in interaction
             if (enableNotifications && !checkInState.active) {
               sendSupplementUpdateNotification(t('notification_supplement_title'), {
                 body: t('notification_supplement_body'),
@@ -400,7 +403,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               });
             }
         } else {
-            // Clear suggestions if none apply anymore
              setNewSuggestions([]);
         }
         setLastAnalysisTimestamp(Date.now());
@@ -420,7 +422,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           reason: reason
       });
       
-      // Re-run analysis immediately with new reason
       if (supplementPlan) {
         const suggestions = runPlanAnalysis(supplementPlan, reason, true);
         setNewSuggestions(suggestions);
@@ -429,8 +430,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const triggerManualPlanReview = useCallback(() => {
       if (!supplementPlan) return;
-      // For manual review, we might want to see all relevant suggestions again or filter strictly
-      // Let's stick to filtering rejected ones to avoid annoyance, but maybe we check regardless of time
       const suggestions = runPlanAnalysis(supplementPlan, checkInState.reason || null, true);
       setNewSuggestions(suggestions);
   }, [supplementPlan, runPlanAnalysis, checkInState.reason]);
@@ -667,6 +666,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     });
   }, [setUserRoutines]);
 
+  const upsertRoutines = useCallback((routinesToUpsert: Routine[]) => {
+    setUserRoutines(prev => {
+        const newRoutines = [...prev];
+        routinesToUpsert.forEach(routine => {
+             if (routine.id.startsWith('rt-')) return;
+             const existingIndex = newRoutines.findIndex(r => r.id === routine.id);
+             if (existingIndex > -1) {
+                 newRoutines[existingIndex] = routine;
+             } else {
+                 newRoutines.push(routine);
+             }
+        });
+        return newRoutines;
+    });
+  }, [setUserRoutines]);
+
   const upsertExercise = useCallback((exercise: Exercise) => {
     setRawExercises(prev => {
         const existingIndex = prev.findIndex(e => e.id === exercise.id);
@@ -794,7 +809,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (activeWorkout) {
       const completedWorkout = { ...activeWorkout, endTime: Date.now() };
       
-      // Calculate PRs
       let prCount = 0;
       completedWorkout.exercises.forEach(ex => {
           const exerciseHistory = getExerciseHistory(history, ex.exerciseId);
@@ -807,10 +821,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       });
       completedWorkout.prCount = prCount;
 
-      // Save sorted history (Newest First)
       setHistory(prev => [completedWorkout, ...prev].sort((a, b) => b.startTime - a.startTime));
       
-      // Update lastUsed for the routine template
       setUserRoutines(prev => prev.map(r => r.id === activeWorkout.routineId ? { ...r, lastUsed: Date.now() } : r));
       
       setActiveWorkout(null);
@@ -842,7 +854,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   
   const startTemplateDuplicate = useCallback((template: Routine) => {
     const copy = JSON.parse(JSON.stringify(template));
-    copy.id = `custom-${Date.now()}`;
+    copy.id = `custom-${Date.now()}`,
     copy.name = `${template.name} (Copy)`;
     copy.originId = template.id;
     delete copy.lastUsed;
@@ -901,7 +913,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [setHistory]);
   
   const updateHistorySession = useCallback((session: WorkoutSession) => {
-      // Update and sort immediately
       setHistory(prev => 
         prev.map(s => s.id === session.id ? session : s)
             .sort((a, b) => b.startTime - a.startTime)
@@ -950,10 +961,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               supersetId: targetSupersetId
           }));
 
-          // Insert logic: if targetSupersetId is present, find the last exercise in that superset and insert after it
           let updatedExercises = [...activeWorkout.exercises];
           if (targetSupersetId) {
-             // Find the index of the last exercise in this superset
              let insertIndex = -1;
              for (let i = updatedExercises.length - 1; i >= 0; i--) {
                  if (updatedExercises[i].supersetId === targetSupersetId) {
@@ -965,7 +974,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
              if (insertIndex !== -1) {
                  updatedExercises.splice(insertIndex + 1, 0, ...newWorkoutExercises);
              } else {
-                 // Should not happen if targetSupersetId is valid, but fallback to append
                  updatedExercises = [...updatedExercises, ...newWorkoutExercises];
              }
           } else {
@@ -1042,6 +1050,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const value = {
     routines,
     upsertRoutine,
+    upsertRoutines,
     deleteRoutine,
     history,
     deleteHistorySession,
@@ -1103,6 +1112,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     toggleSupplementIntake,
     updateSupplementStock,
     updateSupplementPlanItem,
+    snoozedSupplements,
+    snoozeSupplement,
     newSuggestions,
     applyPlanSuggestion,
     applyAllPlanSuggestions,
@@ -1114,6 +1125,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     updateProfileInfo,
     currentWeight,
     logWeight,
+    logUnlock,
     activeTimerInfo,
     setActiveTimerInfo,
     collapsedExerciseIds,

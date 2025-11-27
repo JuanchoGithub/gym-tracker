@@ -4,76 +4,103 @@ import { Icon } from '../common/Icon';
 import { useI18n } from '../../hooks/useI18n';
 import { Recommendation } from '../../utils/recommendationUtils';
 import { TranslationKey } from '../../contexts/I18nContext';
+import { Routine } from '../../types';
 
 interface SmartRecommendationCardProps {
   recommendation: Recommendation;
-  onFilter: () => void;
+  recommendedRoutines: Routine[];
   onDismiss: () => void;
-  isFiltered: boolean;
+  onRoutineSelect: (routine: Routine) => void;
+  onViewSmartRoutine?: () => void;
+  onUpgrade?: () => void;
 }
 
-const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({ recommendation, onFilter, onDismiss, isFiltered }) => {
+const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({ 
+  recommendation, 
+  recommendedRoutines,
+  onDismiss, 
+  onRoutineSelect,
+  onViewSmartRoutine, 
+  onUpgrade 
+}) => {
   const { t } = useI18n();
 
-  const gradientClass = recommendation.type === 'rest' 
-    ? 'from-emerald-600/90 to-teal-700/90 border-emerald-500/30'
-    : 'from-violet-600/90 to-indigo-700/90 border-indigo-500/30';
-
-  const iconName = recommendation.type === 'rest' ? 'sparkles' : 'dumbbell'; // Or a brain/chart icon if available
+  let gradientClass = 'from-violet-600/90 to-indigo-700/90 border-indigo-500/30';
+  let iconName = 'dumbbell';
+  let cardTitle = 'Smart Coach';
+  
+  if (recommendation.type === 'rest' || recommendation.type === 'active_recovery') {
+      gradientClass = 'from-emerald-600/90 to-teal-700/90 border-emerald-500/30';
+      iconName = 'sparkles';
+      cardTitle = recommendation.type === 'active_recovery' ? 'Recovery Mode' : 'Rest Day';
+  } else if (recommendation.type === 'promotion') {
+      gradientClass = 'from-amber-500/90 to-orange-600/90 border-yellow-400/30';
+      iconName = 'trophy';
+      cardTitle = 'Level Up!';
+  }
 
   return (
     <div className={`relative overflow-hidden rounded-2xl p-5 shadow-lg border bg-gradient-to-br ${gradientClass} mb-6 animate-fadeIn transition-all`}>
       {/* Decorative background element */}
       <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
 
-      <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex-1">
+      <div className="relative z-10 flex flex-col gap-4">
+        <div>
           <div className="flex items-center gap-2 mb-2">
             <div className="bg-white/20 p-1.5 rounded-lg">
-               <Icon name={iconName} className="w-5 h-5 text-white" />
+               <Icon name={iconName as any} className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xs font-bold uppercase tracking-wider text-white/80">Smart Coach</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-white/80">
+                {cardTitle}
+            </span>
+            <button onClick={onDismiss} className="ml-auto text-white/70 hover:text-white"><Icon name="x" className="w-5 h-5"/></button>
           </div>
           
           <h3 className="text-xl sm:text-2xl font-bold text-white mb-1">
             {t(recommendation.titleKey as TranslationKey, recommendation.titleParams)}
           </h3>
           
-          <p className="text-indigo-100 text-sm leading-relaxed max-w-lg">
+          <p className="text-white/90 text-sm leading-relaxed max-w-lg">
             {t(recommendation.reasonKey as TranslationKey, recommendation.reasonParams)}
           </p>
         </div>
 
-        <div className="flex items-center gap-3 mt-2 sm:mt-0">
-            <button 
-                onClick={onFilter}
-                className={`flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm flex items-center justify-center gap-2
-                    ${isFiltered 
-                        ? 'bg-white text-indigo-600 shadow-white/10' 
-                        : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-md border border-white/10'
-                    }`}
-            >
-                {isFiltered ? (
-                    <>
-                         <Icon name="x" className="w-4 h-4" />
-                         <span>{t('rec_clear_filter')}</span>
-                    </>
-                ) : (
-                    <>
-                         <Icon name="filter" className="w-4 h-4" />
-                         <span>{t('rec_action_filter', { focus: recommendation.titleParams?.focus || 'Workouts' })}</span>
-                    </>
-                )}
-            </button>
-            
-            {!isFiltered && (
-                <button 
-                    onClick={onDismiss}
-                    className="p-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-                    aria-label={t('rec_action_dismiss')}
+        {/* Action Buttons & Inline Routines */}
+        <div className="flex flex-col gap-2 mt-1">
+            {recommendation.type === 'promotion' && onUpgrade && (
+                 <button
+                    onClick={onUpgrade}
+                    className="w-full bg-white text-amber-600 font-bold py-3 px-4 rounded-xl shadow-md hover:bg-amber-50 transition-colors flex items-center justify-center gap-2 mb-2"
                 >
-                    <Icon name="x" className="w-5 h-5" />
+                    <Icon name="arrow-up" className="w-4 h-4" />
+                    <span>Upgrade Routines</span>
                 </button>
+            )}
+
+            {recommendation.generatedRoutine && (
+                <button
+                    onClick={onViewSmartRoutine}
+                    className="w-full bg-white text-indigo-600 font-bold py-3 px-4 rounded-xl shadow-md hover:bg-indigo-50 transition-colors flex items-center justify-center gap-2 mb-2"
+                >
+                    <Icon name="sparkles" className="w-4 h-4" />
+                    <span>Smart Workout</span>
+                </button>
+            )}
+            
+            {/* List Recommended Routines Inline */}
+            {recommendedRoutines.length > 0 && (
+              <div className="flex flex-col gap-2 mt-2">
+                 {recommendedRoutines.map(routine => (
+                   <button 
+                      key={routine.id}
+                      onClick={() => onRoutineSelect(routine)}
+                      className="flex items-center justify-between w-full text-left bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/10 p-3 rounded-xl transition-colors group"
+                   >
+                      <span className="font-bold text-white text-sm truncate">{routine.name}</span>
+                      <Icon name="arrow-right" className="w-4 h-4 text-white/70 group-hover:text-white group-hover:translate-x-1 transition-transform" />
+                   </button>
+                 ))}
+              </div>
             )}
         </div>
       </div>

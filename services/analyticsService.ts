@@ -1,12 +1,14 @@
 
-import { WorkoutSession, SupplementPlanItem } from '../types';
+import { WorkoutSession, SupplementPlanItem, PerformedSet } from '../types';
 import { getDateString } from '../utils/timeUtils';
+import { PREDEFINED_EXERCISES } from '../constants/exercises';
 
+// ... existing SupplementCorrelation code ...
 export interface SupplementCorrelation {
     supplementId: string;
     supplementName: string;
     metric: 'volume' | 'prs';
-    differencePercentage: number; // e.g., 15 for +15%, -5 for -5%
+    differencePercentage: number;
     sampleSizeOn: number;
     sampleSizeOff: number;
 }
@@ -17,40 +19,24 @@ export const analyzeCorrelations = (
     allSupplements: SupplementPlanItem[]
 ): SupplementCorrelation[] => {
     const insights: SupplementCorrelation[] = [];
-
-    // We need a minimum number of samples to be statistically somewhat relevant (or at least interesting)
     const MIN_SAMPLES = 3;
-
-    // 1. Identify unique supplement IDs present in history or plan
     const relevantSupplements = new Set<string>();
     Object.values(takenSupplements).forEach(ids => ids.forEach(id => relevantSupplements.add(id)));
 
-    // 2. Iterate through each supplement
     relevantSupplements.forEach(suppId => {
         const supplementInfo = allSupplements.find(s => s.id === suppId);
-        // Fallback name if not found in current plan (e.g. deleted item)
         const supplementName = supplementInfo ? supplementInfo.supplement : 'Unknown Supplement';
-
         const onSessions: WorkoutSession[] = [];
         const offSessions: WorkoutSession[] = [];
 
         history.forEach(session => {
             const sessionDateStr = getDateString(new Date(session.startTime));
             const takenOnDay = takenSupplements[sessionDateStr]?.includes(suppId);
-
-            // Basic correlation: Taken on the same day
-            // Ideally we'd check time (pre-workout vs post), but date matching is a good start.
-            if (takenOnDay) {
-                onSessions.push(session);
-            } else {
-                offSessions.push(session);
-            }
+            if (takenOnDay) onSessions.push(session);
+            else offSessions.push(session);
         });
 
         if (onSessions.length >= MIN_SAMPLES && offSessions.length >= MIN_SAMPLES) {
-            // Calculate Metrics
-            
-            // A. Volume
             const getAvgVolume = (sessions: WorkoutSession[]) => {
                 const totalVol = sessions.reduce((acc, s) => 
                     acc + s.exercises.reduce((t, e) => t + e.sets.reduce((st, set) => st + (set.weight * set.reps), 0), 0), 0
@@ -63,7 +49,7 @@ export const analyzeCorrelations = (
             
             if (avgVolOff > 0) {
                 const volDiff = ((avgVolOn - avgVolOff) / avgVolOff) * 100;
-                if (Math.abs(volDiff) >= 5) { // Only interesting if > 5% difference
+                if (Math.abs(volDiff) >= 5) {
                     insights.push({
                         supplementId: suppId,
                         supplementName: supplementName,
@@ -75,7 +61,6 @@ export const analyzeCorrelations = (
                 }
             }
 
-            // B. PRs
             const getAvgPRs = (sessions: WorkoutSession[]) => {
                 const totalPRs = sessions.reduce((acc, s) => acc + (s.prCount || 0), 0);
                 return totalPRs / sessions.length;
@@ -86,7 +71,7 @@ export const analyzeCorrelations = (
 
              if (avgPrOff > 0) {
                 const prDiff = ((avgPrOn - avgPrOff) / avgPrOff) * 100;
-                if (Math.abs(prDiff) >= 10) { // PRs vary more, higher threshold
+                if (Math.abs(prDiff) >= 10) {
                      insights.push({
                         supplementId: suppId,
                         supplementName: supplementName,
@@ -99,7 +84,104 @@ export const analyzeCorrelations = (
             }
         }
     });
-
-    // Sort by absolute impact to show most significant first
     return insights.sort((a, b) => Math.abs(b.differencePercentage) - Math.abs(a.differencePercentage));
+};
+
+// --- LIFTER DNA LOGIC ---
+
+export type LifterArchetype = 'powerbuilder' | 'bodybuilder' | 'endurance' | 'hybrid' | 'beginner';
+
+export interface LifterStats {
+    consistencyScore: number; // 0-100
+    volumeScore: number; // 0-100 (Normalized)
+    intensityScore: number; // Based on set failure proximity or heavy weight usage (0-100)
+    experienceLevel: number; // Based on total workouts
+    archetype: LifterArchetype;
+    favMuscle: string;
+}
+
+export const calculateLifterDNA = (history: WorkoutSession[]): LifterStats => {
+    if (history.length < 5) {
+        return {
+            consistencyScore: 0,
+            volumeScore: 0,
+            intensityScore: 0,
+            experienceLevel: history.length,
+            archetype: 'beginner',
+            favMuscle: 'N/A'
+        };
+    }
+
+    const now = Date.now();
+    const last30Days = history.filter(s => (now - s.startTime) < 30 * 24 * 60 * 60 * 1000);
+    
+    // 1. Consistency: Target 3 workouts/week = 12/month for 100%
+    const monthlyCount = last30Days.length;
+    const consistencyScore = Math.min(100, Math.round((monthlyCount / 12) * 100));
+
+    // 2. Volume & Rep Analysis for Archetype
+    let totalReps = 0;
+    let totalSets = 0;
+    let totalVolume = 0;
+    const muscleCounts: Record<string, number> = {};
+
+    history.slice(0, 20).forEach(s => { // Analyze last 20 sessions for archetype
+        s.exercises.forEach(ex => {
+            const def = PREDEFINED_EXERCISES.find(p => p.id === ex.exerciseId);
+            if (def) {
+                muscleCounts[def.bodyPart] = (muscleCounts[def.bodyPart] || 0) + 1;
+            }
+
+            ex.sets.forEach(set => {
+                if (set.type === 'normal' && set.isComplete) {
+                    totalReps += set.reps;
+                    totalSets++;
+                    totalVolume += set.weight * set.reps;
+                }
+            });
+        });
+    });
+
+    const avgReps = totalSets > 0 ? totalReps / totalSets : 0;
+    let archetype: LifterArchetype = 'hybrid';
+    
+    if (avgReps > 0 && avgReps <= 6) archetype = 'powerbuilder';
+    else if (avgReps > 6 && avgReps <= 12) archetype = 'bodybuilder';
+    else if (avgReps > 12) archetype = 'endurance';
+
+    // 3. Volume Score (Average session volume. 10,000kg/session = 100)
+    const avgSessionVolume = history.length > 0 ? totalVolume / history.length : 0;
+    const volumeScore = Math.min(100, Math.round((avgSessionVolume / 10000) * 100));
+
+    // 4. Intensity Score (Heuristic based on avg reps)
+    // Lower reps = higher relative intensity (% of 1RM)
+    // 5 reps => 90% 1RM, 10 reps => 75% 1RM, 15 reps => 60% 1RM
+    // Scale: 1-5 reps = 100-90, 6-12 reps = 80-60, 15+ = <50
+    let intensityScore = 50;
+    if (avgReps > 0) {
+        if (avgReps <= 5) intensityScore = 95;
+        else if (avgReps <= 8) intensityScore = 85;
+        else if (avgReps <= 12) intensityScore = 75;
+        else if (avgReps <= 15) intensityScore = 60;
+        else intensityScore = 40;
+    }
+
+    // 5. Fav Muscle
+    let favMuscle = 'Full Body';
+    let maxCount = 0;
+    Object.entries(muscleCounts).forEach(([muscle, count]) => {
+        if (count > maxCount) {
+            maxCount = count;
+            favMuscle = muscle;
+        }
+    });
+
+    return {
+        consistencyScore,
+        volumeScore,
+        intensityScore,
+        experienceLevel: history.length,
+        archetype,
+        favMuscle
+    };
 };
