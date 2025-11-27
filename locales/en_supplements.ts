@@ -108,6 +108,10 @@ export const en_supplements = {
   supplements_stock_restock_prompt: 'Restock {supplement}',
   supplements_stock_update_title: 'Update Stock',
   supplements_stock_add_amount: 'Add Amount (Servings)',
+  supplements_smart_schedule_active: 'Smart Schedule Active',
+  supplements_smart_schedule_desc: 'We moved your workout supplements to the {time} to match your training profile.',
+  supplements_smart_schedule_undo: 'Undo',
+  supplements_smart_schedule_enable: 'Enable Smart Scheduling',
 
   supplements_review_modal_title: 'Supplement Plan Review',
   supplements_review_analysis_title: 'Based on your recent activity:',

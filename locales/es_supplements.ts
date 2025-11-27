@@ -108,6 +108,10 @@ export const es_supplements = {
   supplements_stock_restock_prompt: 'Reponer {supplement}',
   supplements_stock_update_title: 'Actualizar Stock',
   supplements_stock_add_amount: 'Agregar Cantidad (Porciones)',
+  supplements_smart_schedule_active: 'Horario Inteligente Activo',
+  supplements_smart_schedule_desc: 'Movimos tus suplementos de entrenamiento a la {time} para coincidir con tu perfil.',
+  supplements_smart_schedule_undo: 'Deshacer',
+  supplements_smart_schedule_enable: 'Activar Horario Inteligente',
 
   supplements_review_modal_title: 'Revisión del Plan de Suplementos',
   supplements_review_analysis_title: 'Basado en tu actividad reciente:',

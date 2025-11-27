@@ -1,4 +1,5 @@
 
+
 import React, { useContext, useMemo, useCallback, useState, useEffect } from 'react';
 import { AppContext } from '../../contexts/AppContext';
 import { useI18n } from '../../hooks/useI18n';
@@ -184,9 +185,9 @@ const DailySupplementList: React.FC<DailySupplementListProps> = ({ date, readOnl
               <div className="flex items-start gap-3">
                   <Icon name="sparkles" className="w-5 h-5 text-indigo-400 mt-0.5 flex-shrink-0" />
                   <div>
-                      <p className="text-sm font-bold text-indigo-200">Smart Schedule Active</p>
+                      <p className="text-sm font-bold text-indigo-200">{t('supplements_smart_schedule_active')}</p>
                       <p className="text-xs text-indigo-200/70">
-                          We moved your workout supplements to the <span className="font-bold text-indigo-100 capitalize">{trainingTime}</span> to match your training profile.
+                          {t('supplements_smart_schedule_desc', { time: t(`supplements_training_time_${trainingTime}` as any).toLowerCase() })}
                       </p>
                   </div>
               </div>
@@ -194,7 +195,7 @@ const DailySupplementList: React.FC<DailySupplementListProps> = ({ date, readOnl
                   onClick={() => setIsSmartSortEnabled(false)}
                   className="text-xs font-bold text-indigo-400 hover:text-indigo-300 whitespace-nowrap mt-1 underline"
               >
-                  Undo
+                  {t('supplements_smart_schedule_undo')}
               </button>
           </div>
       )}
@@ -207,7 +208,7 @@ const DailySupplementList: React.FC<DailySupplementListProps> = ({ date, readOnl
                   className="text-xs font-bold text-text-secondary hover:text-primary flex items-center gap-1"
               >
                   <Icon name="sparkles" className="w-3 h-3" />
-                  Enable Smart Scheduling
+                  {t('supplements_smart_schedule_enable')}
               </button>
            </div>
       )}
