@@ -1,5 +1,5 @@
 
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect, useRef } from 'react';
 import BottomNavBar from './components/common/BottomNavBar';
 import TrainPage from './pages/TrainPage';
 import HistoryPage from './pages/HistoryPage';
@@ -14,12 +14,37 @@ import ExerciseEditorPage from './pages/ExerciseEditorPage';
 import HistoryWorkoutEditorPage from './pages/HistoryWorkoutEditorPage';
 import AddExercisePage from './pages/AddExercisePage';
 import SupplementPage from './pages/SupplementPage';
+import ConfirmModal from './components/modals/ConfirmModal';
+import { useI18n } from './hooks/useI18n';
 
 export type Page = 'TRAIN' | 'HISTORY' | 'EXERCISES' | 'SUPPLEMENTS' | 'PROFILE' | 'ACTIVE_WORKOUT';
 
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>('TRAIN');
-  const { activeWorkout, isWorkoutMinimized, editingTemplate, editingExercise, editingHistorySession, activeHiitSession, isAddingExercisesToWorkout, isAddingExercisesToTemplate, activeQuickTimer } = useContext(AppContext);
+  const { activeWorkout, isWorkoutMinimized, editingTemplate, editingExercise, editingHistorySession, activeHiitSession, isAddingExercisesToWorkout, isAddingExercisesToTemplate, activeQuickTimer, endWorkout } = useContext(AppContext);
+  const { t } = useI18n();
+  const [isStaleModalOpen, setIsStaleModalOpen] = useState(false);
+  const checkedStaleRef = useRef(false);
+
+  useEffect(() => {
+    if (activeWorkout && !checkedStaleRef.current) {
+      const duration = Date.now() - activeWorkout.startTime;
+      // 3 hours in milliseconds
+      if (duration > 3 * 60 * 60 * 1000) {
+        setIsStaleModalOpen(true);
+      }
+      checkedStaleRef.current = true;
+    }
+  }, [activeWorkout]);
+
+  const handleCloseStale = () => {
+    endWorkout();
+    setIsStaleModalOpen(false);
+  };
+
+  const handleContinueStale = () => {
+    setIsStaleModalOpen(false);
+  };
 
   const renderPage = () => {
     if (activeHiitSession || activeQuickTimer) {
@@ -82,6 +107,17 @@ const App: React.FC = () => {
         {activeWorkout && isWorkoutMinimized && <MinimizedWorkoutBar withBottomNav={showBottomNav} />}
         {showBottomNav && <BottomNavBar currentPage={currentPage} onNavigate={handleNavigate} />}
       </div>
+
+      <ConfirmModal 
+        isOpen={isStaleModalOpen}
+        onClose={handleContinueStale}
+        onConfirm={handleCloseStale}
+        title={t('stale_workout_title')}
+        message={t('stale_workout_message')}
+        confirmText={t('stale_workout_confirm')}
+        cancelText={t('stale_workout_cancel')}
+        confirmButtonClass="bg-primary hover:bg-sky-600"
+      />
     </div>
   );
 };

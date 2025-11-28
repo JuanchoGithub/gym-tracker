@@ -316,6 +316,12 @@ export const en = {
   weight_input_modal_message: "Enter your bodyweight for this exercise.",
   weight_input_save: "Save",
 
+  // Stale Workout
+  stale_workout_title: "Active Workout Detected",
+  stale_workout_message: "You have had an active workout for over 3 hours. Did you forget to end it?",
+  stale_workout_confirm: "Yes, close it for me",
+  stale_workout_cancel: "No, I want to continue",
+
   // Template Editor
   template_editor_edit_title: "Edit Template",
   template_editor_create_title: "Create Template",

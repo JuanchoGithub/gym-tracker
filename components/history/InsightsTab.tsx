@@ -71,7 +71,7 @@ const InsightsTab: React.FC<InsightsTabProps> = ({ history, takenSupplements, al
   
   // Identify Freshest and Most Fatigued muscles
   const sortedMuscles = useMemo(() => {
-      return Object.entries(muscleFreshness).sort(([, scoreA], [, scoreB]) => scoreA - scoreB);
+      return Object.entries(muscleFreshness).sort(([, scoreA], [, scoreB]) => (scoreA as number) - (scoreB as number));
   }, [muscleFreshness]);
 
   const freshestMuscles = sortedMuscles.filter(([, score]) => score >= 90).map(([muscle]) => muscle).slice(0, 3);

@@ -316,6 +316,12 @@ export const es = {
   weight_input_modal_message: "Ingresá tu peso corporal para este ejercicio.",
   weight_input_save: "Guardar",
 
+  // Stale Workout
+  stale_workout_title: "Entrenamiento Activo",
+  stale_workout_message: "Tenés un entrenamiento activo por más de 3 horas. ¿Te olvidaste de terminarlo?",
+  stale_workout_confirm: "Sí, terminarlo",
+  stale_workout_cancel: "No, continuar",
+
   // Template Editor
   template_editor_edit_title: "Editar Plantilla",
   template_editor_create_title: "Crear Plantilla",
