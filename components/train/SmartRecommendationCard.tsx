@@ -34,7 +34,17 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
   if (recommendation.type === 'rest' || recommendation.type === 'active_recovery') {
       gradientClass = 'from-emerald-600/90 to-teal-700/90 border-emerald-500/30';
       iconName = 'sparkles';
-      cardTitle = recommendation.type === 'active_recovery' ? 'Recovery Mode' : 'Rest Day';
+      
+      // Distinguish between general rest and specific gap workouts
+      if (recommendation.generatedRoutine?.tags?.includes('gap_session')) {
+         cardTitle = 'Gap Session';
+         // Maybe a slightly different green or teal for active recovery
+         gradientClass = 'from-teal-600/90 to-cyan-700/90 border-teal-500/30';
+      } else if (recommendation.type === 'active_recovery') {
+         cardTitle = 'Recovery Mode';
+      } else {
+         cardTitle = 'Rest Day';
+      }
 
       // Specific check for post-workout celebration
       if (recommendation.reasonKey === "rec_reason_workout_complete") {
@@ -51,27 +61,34 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
       gradientClass = 'from-amber-600 to-orange-700 border-orange-500/30';
       iconName = 'scale';
       cardTitle = t('rec_type_imbalance');
+  } else if (recommendation.type === 'deload') {
+      gradientClass = 'from-rose-600/90 to-pink-700/90 border-rose-500/30';
+      iconName = 'warning';
+      cardTitle = 'CNS Overload';
   }
 
   // Format parameters if this is an imbalance check (assuming keys map to weight values)
   const formattedParams = useMemo(() => {
       if (!recommendation.reasonParams) return undefined;
-      if (recommendation.type !== 'imbalance') return recommendation.reasonParams;
-
-      const newParams = { ...recommendation.reasonParams };
-      const weightKeys = ['squat', 'deadlift', 'bench', 'ohp'];
       
-      weightKeys.forEach(key => {
-          if (newParams[key] !== undefined) {
-               const val = Number(newParams[key]);
-               if (!isNaN(val)) {
-                   // Translate unit if possible
-                   const unitLabel = t(`workout_${weightUnit}` as TranslationKey) || weightUnit;
-                   newParams[key] = `${displayWeight(val)} ${unitLabel}`; 
-               }
-          }
-      });
-      return newParams;
+      // Special handling for weight values in imbalance checks
+      if (recommendation.type === 'imbalance') {
+          const newParams = { ...recommendation.reasonParams };
+          const weightKeys = ['squat', 'deadlift', 'bench', 'ohp'];
+          
+          weightKeys.forEach(key => {
+              if (newParams[key] !== undefined) {
+                   const val = Number(newParams[key]);
+                   if (!isNaN(val)) {
+                       const unitLabel = t(`workout_${weightUnit}` as TranslationKey) || weightUnit;
+                       newParams[key] = `${displayWeight(val)} ${unitLabel}`; 
+                   }
+              }
+          });
+          return newParams;
+      }
+
+      return recommendation.reasonParams;
   }, [recommendation, displayWeight, weightUnit, t]);
 
   return (
@@ -88,11 +105,28 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
             <span className="text-xs font-bold uppercase tracking-wider text-white/80">
                 {cardTitle}
             </span>
-            <button onClick={onDismiss} className="ml-auto text-white/70 hover:text-white"><Icon name="x" className="w-5 h-5"/></button>
+            
+            {/* CNS Load Indicator */}
+            {recommendation.systemicFatigue && (
+                <div className="ml-auto flex items-center gap-1.5 bg-black/20 px-2 py-0.5 rounded-md border border-white/10">
+                    <span className="text-[10px] font-semibold text-white/70 uppercase">{t('cns_load_label')}:</span>
+                    <span className={`text-[10px] font-bold ${
+                        recommendation.systemicFatigue.level === 'High' ? 'text-red-300' :
+                        recommendation.systemicFatigue.level === 'Medium' ? 'text-yellow-300' :
+                        'text-green-300'
+                    }`}>
+                        {t(`cns_level_${recommendation.systemicFatigue.level.toLowerCase()}` as TranslationKey)}
+                    </span>
+                </div>
+            )}
+
+            {!recommendation.systemicFatigue && (
+                <button onClick={onDismiss} className="ml-auto text-white/70 hover:text-white"><Icon name="x" className="w-5 h-5"/></button>
+            )}
           </div>
           
           <h3 className="text-xl sm:text-2xl font-bold text-white mb-1">
-            {t(recommendation.titleKey as TranslationKey, recommendation.titleParams)}
+            {t(recommendation.titleKey as TranslationKey, formattedParams || recommendation.titleParams)}
           </h3>
           
           <p className="text-white/90 text-sm leading-relaxed max-w-lg">
@@ -115,10 +149,14 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
             {recommendation.generatedRoutine && (
                 <button
                     onClick={onViewSmartRoutine}
-                    className="w-full bg-white text-indigo-600 font-bold py-3 px-4 rounded-xl shadow-md hover:bg-indigo-50 transition-colors flex items-center justify-center gap-2 mb-2"
+                    className={`w-full bg-white font-bold py-3 px-4 rounded-xl shadow-md transition-colors flex items-center justify-center gap-2 mb-2 ${
+                        recommendation.type === 'deload' 
+                            ? 'text-rose-600 hover:bg-rose-50' 
+                            : 'text-indigo-600 hover:bg-indigo-50'
+                    }`}
                 >
-                    <Icon name="sparkles" className="w-4 h-4" />
-                    <span>Smart Workout</span>
+                    <Icon name={recommendation.type === 'deload' ? 'sparkles' : 'sparkles'} className="w-4 h-4" />
+                    <span>{recommendation.generatedRoutine.tags?.includes('gap_session') ? 'Start Recovery Session' : 'Smart Workout'}</span>
                 </button>
             )}
             

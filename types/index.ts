@@ -76,6 +76,7 @@ export interface Routine {
     restTime: number;
     prepareTime?: number;
   };
+  tags?: string[]; // e.g., ['recovery', 'generated', 'gap_session']
 }
 
 export interface WorkoutSession {

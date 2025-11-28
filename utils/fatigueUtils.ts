@@ -53,6 +53,34 @@ const FATIGUE_PER_SET_PRIMARY = 12;
 const FATIGUE_PER_SET_SECONDARY = 6;
 const MAX_FATIGUE_CAP = 150; // Cap accumulated fatigue so one crazy workout doesn't ruin you for weeks
 
+// CNS Cost per set based on exercise category and body part
+// Heaviest compounds tax CNS the most
+const getCnsCost = (exercise: Exercise): number => {
+    if (exercise.category === 'Plyometrics') return 4; // High impact
+    
+    if (exercise.category === 'Barbell') {
+        if (['Legs', 'Back', 'Full Body'].includes(exercise.bodyPart)) return 4; // Squat/Deadlift
+        return 3; // Bench/OHP
+    }
+    
+    if (exercise.category === 'Dumbbell' || exercise.category === 'Kettlebell') {
+        if (['Legs', 'Back', 'Full Body'].includes(exercise.bodyPart)) return 2.5;
+        return 2;
+    }
+    
+    if (exercise.category === 'Bodyweight') {
+        if (['Legs', 'Full Body'].includes(exercise.bodyPart)) return 2;
+        return 1.5;
+    }
+    
+    if (exercise.category === 'Machine' || exercise.category === 'Cable') {
+        if (['Legs', 'Back'].includes(exercise.bodyPart)) return 1.5; // Leg Press etc
+        return 1;
+    }
+    
+    return 0.5; // Cardio, Abs, Isolation
+};
+
 export const calculateMuscleFreshness = (history: WorkoutSession[], exercises: Exercise[]): Record<string, number> => {
   const now = Date.now();
   const fatigueMap: Record<string, number> = {};
@@ -131,6 +159,46 @@ export const calculateMuscleFreshness = (history: WorkoutSession[], exercises: E
   });
 
   return freshnessMap;
+};
+
+export const calculateSystemicFatigue = (history: WorkoutSession[], exercises: Exercise[]): { score: number; level: 'Low' | 'Medium' | 'High' } => {
+    const now = Date.now();
+    const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+    const recentHistory = history.filter(s => (now - s.startTime) < SEVEN_DAYS);
+    
+    const getExerciseDef = (id: string) => exercises.find(e => e.id === id) || PREDEFINED_EXERCISES.find(e => e.id === id);
+
+    let totalAccumulatedLoad = 0;
+
+    recentHistory.forEach(session => {
+        const daysAgo = (now - session.startTime) / (24 * 60 * 60 * 1000);
+        
+        // Decay factor: Fatigue reduces by roughly 50% every 24 hours
+        // Day 0: 1.0, Day 1: 0.5, Day 2: 0.25...
+        const decayFactor = Math.pow(0.6, daysAgo); // slightly slower decay than 50% to be conservative
+        
+        let sessionLoad = 0;
+        
+        session.exercises.forEach(ex => {
+            const def = getExerciseDef(ex.exerciseId);
+            if (!def) return;
+            
+            const sets = ex.sets.filter(s => s.type === 'normal' && s.isComplete).length;
+            const pointsPerSet = getCnsCost(def);
+            
+            sessionLoad += sets * pointsPerSet;
+        });
+        
+        totalAccumulatedLoad += sessionLoad * decayFactor;
+    });
+
+    const score = Math.round(totalAccumulatedLoad);
+    
+    let level: 'Low' | 'Medium' | 'High' = 'Low';
+    if (score > 110) level = 'High';
+    else if (score > 60) level = 'Medium';
+
+    return { score, level };
 };
 
 export const getFreshnessColor = (score: number): string => {

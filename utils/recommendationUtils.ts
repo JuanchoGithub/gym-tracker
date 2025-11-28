@@ -1,15 +1,17 @@
 
 import { WorkoutSession, Routine, Exercise, BodyPart } from '../types';
-import { calculateMuscleFreshness } from './fatigueUtils';
+import { calculateMuscleFreshness, calculateSystemicFatigue } from './fatigueUtils';
 import { MUSCLES } from '../constants/muscles';
-import { generateSmartRoutine, RoutineFocus, RoutineLevel, SurveyAnswers } from './routineGenerator';
+import { generateSmartRoutine, RoutineFocus, RoutineLevel } from './routineGenerator';
 import { PREDEFINED_EXERCISES } from '../constants/exercises';
 import { PROGRESSION_PATHS } from '../constants/progression';
 import { getExerciseHistory, calculate1RM } from './workoutUtils';
 import { formatWeightDisplay } from './weightUtils';
+import { predictNextRoutine, getProtectedMuscles, generateGapSession } from './smartCoachUtils';
+import { inferUserProfile, MOVEMENT_PATTERNS, calculateMaxStrengthProfile, calculateMedianWorkoutDuration } from '../services/analyticsService';
 
 export interface Recommendation {
-  type: 'rest' | 'workout' | 'promotion' | 'active_recovery' | 'imbalance';
+  type: 'rest' | 'workout' | 'promotion' | 'active_recovery' | 'imbalance' | 'deload';
   titleKey: string;
   titleParams?: Record<string, string | number>;
   reasonKey: string;
@@ -22,6 +24,10 @@ export interface Recommendation {
       toId: string;
       fromName: string;
       toName: string;
+  };
+  systemicFatigue?: {
+      score: number;
+      level: 'Low' | 'Medium' | 'High';
   };
 }
 
@@ -40,16 +46,6 @@ const ROUTINE_LEVELS: Record<string, RoutineLevel> = {
     'rt-full-body': 'beginner', // Full Body
     'rt-hiit-7min': 'beginner',
     'rt-hiit-beginner': 'beginner',
-};
-
-// Exercise IDs grouped by pattern for 1RM aggregation
-export const MOVEMENT_PATTERNS = {
-    SQUAT: ['ex-2', 'ex-101', 'ex-108', 'ex-109', 'ex-113', 'ex-160'],
-    DEADLIFT: ['ex-3', 'ex-98', 'ex-43'],
-    BENCH: ['ex-1', 'ex-11', 'ex-12', 'ex-22', 'ex-25', 'ex-28', 'ex-31', 'ex-34', 'ex-37'],
-    OHP: ['ex-4', 'ex-60', 'ex-67', 'ex-68', 'ex-70'],
-    ROW: ['ex-5', 'ex-38', 'ex-39', 'ex-40', 'ex-48'], // Horizontal Pull
-    VERTICAL_PULL: ['ex-10', 'ex-50', 'ex-52', 'ex-6', 'ex-44'] // Vertical Pull (Pull Up, Lat Pulldown)
 };
 
 // Strength Standards (Multipliers of Bodyweight)
@@ -95,121 +91,6 @@ const RATIOS = {
     BN_SQ: 1.33, // Squat (4) / Bench (3) = 1.33
     OH_BN: 0.66, // OHP (2) / Bench (3) = 0.66
 };
-
-export const inferUserProfile = (history: WorkoutSession[]): SurveyAnswers => {
-    const defaultProfile: SurveyAnswers = {
-        experience: 'intermediate',
-        goal: 'muscle',
-        equipment: 'gym',
-        time: 'medium'
-    };
-
-    if (history.length === 0) return defaultProfile;
-
-    const recentSessions = history.slice(0, 10); 
-    let barbellCount = 0;
-    let dumbbellCount = 0;
-    let machineCount = 0;
-    let bodyweightCount = 0;
-    let totalExercises = 0;
-
-    recentSessions.forEach(s => {
-        s.exercises.forEach(we => {
-            const def = PREDEFINED_EXERCISES.find(e => e.id === we.exerciseId);
-            if (def) {
-                totalExercises++;
-                if (def.category === 'Barbell') barbellCount++;
-                else if (def.category === 'Dumbbell') dumbbellCount++;
-                else if (def.category === 'Machine' || def.category === 'Cable') machineCount++;
-                else if (def.category === 'Bodyweight' || def.category === 'Assisted Bodyweight') bodyweightCount++;
-            }
-        });
-    });
-
-    if (totalExercises > 0) {
-        if (barbellCount > totalExercises * 0.3 || machineCount > totalExercises * 0.3) {
-            defaultProfile.equipment = 'gym';
-        } else if (dumbbellCount > totalExercises * 0.4) {
-            defaultProfile.equipment = 'dumbbell';
-        } else if (bodyweightCount > totalExercises * 0.5) {
-            defaultProfile.equipment = 'bodyweight';
-        }
-    }
-
-    let totalReps = 0;
-    let setCount = 0;
-    recentSessions.forEach(s => {
-        s.exercises.forEach(we => {
-            we.sets.forEach(set => {
-                if (set.type === 'normal' && set.isComplete) {
-                    totalReps += set.reps;
-                    setCount++;
-                }
-            });
-        });
-    });
-    
-    const avgReps = setCount > 0 ? totalReps / setCount : 10;
-    if (avgReps < 6) defaultProfile.goal = 'strength';
-    else if (avgReps > 12) defaultProfile.goal = 'endurance';
-    else defaultProfile.goal = 'muscle';
-
-    let totalDuration = 0;
-    let timedSessions = 0;
-    recentSessions.forEach(s => {
-        if (s.endTime > s.startTime) {
-            totalDuration += (s.endTime - s.startTime);
-            timedSessions++;
-        }
-    });
-    const avgDurationMinutes = timedSessions > 0 ? (totalDuration / timedSessions) / 60000 : 45;
-    if (avgDurationMinutes < 30) defaultProfile.time = 'short';
-    else if (avgDurationMinutes > 70) defaultProfile.time = 'long';
-    else defaultProfile.time = 'medium';
-
-    // Infer experience based on workout count and consistency
-    if (history.length < 20) defaultProfile.experience = 'beginner';
-    else if (history.length < 100) defaultProfile.experience = 'intermediate';
-    else defaultProfile.experience = 'advanced';
-
-    return defaultProfile;
-};
-
-const calculateMaxStrengthProfile = (history: WorkoutSession[]) => {
-    const profile: Record<string, number> = {
-        SQUAT: 0,
-        DEADLIFT: 0,
-        BENCH: 0,
-        OHP: 0,
-        ROW: 0,
-        VERTICAL_PULL: 0
-    };
-    
-    // Look at last 6 months only to ensure relevance
-    const sixMonthsAgo = Date.now() - (180 * 24 * 60 * 60 * 1000);
-    
-    Object.entries(MOVEMENT_PATTERNS).forEach(([patternName, ids]) => {
-        let maxE1RM = 0;
-        
-        ids.forEach(id => {
-            const exHistory = getExerciseHistory(history, id);
-            exHistory.forEach(entry => {
-                if (entry.session.startTime < sixMonthsAgo) return;
-                
-                entry.exerciseData.sets.forEach(set => {
-                    if (set.type === 'normal' && set.isComplete) {
-                         const e1rm = calculate1RM(set.weight, set.reps);
-                         if (e1rm > maxE1RM) maxE1RM = e1rm;
-                    }
-                });
-            });
-        });
-        
-        profile[patternName] = maxE1RM;
-    });
-
-    return profile;
-}
 
 export const detectImbalances = (history: WorkoutSession[], routines: Routine[], currentBodyWeight?: number, gender?: 'male' | 'female'): Recommendation | null => {
     const s = calculateMaxStrengthProfile(history);
@@ -393,6 +274,9 @@ export const getWorkoutRecommendation = (
   const isOnboardingPhase = history.length < 10;
   const lastSession = history.length > 0 ? history[0] : null;
   
+  // Calculate Systemic Fatigue
+  const systemicFatigue = calculateSystemicFatigue(history, exercises);
+
   // --- PHASE 0: CHECK ALREADY TRAINED TODAY ---
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
@@ -418,8 +302,26 @@ export const getWorkoutRecommendation = (
          relevantRoutineIds: routines.filter(r => r.name.includes('Mobility') || r.exercises.some(ex => {
              const def = exercises.find(e => e.id === ex.exerciseId);
              return def?.bodyPart === 'Mobility';
-         })).map(r => r.id)
+         })).map(r => r.id),
+         systemicFatigue
      };
+  }
+  
+  // Calculate median duration to tune recommendations
+  const durationProfile = calculateMedianWorkoutDuration(history);
+  
+  // --- PHASE 0.5: SYSTEMIC FATIGUE OVERRIDE ---
+  if (systemicFatigue.level === 'High') {
+      return {
+          type: 'deload',
+          titleKey: 'rec_title_deload',
+          reasonKey: 'rec_reason_cns_fatigue',
+          reasonParams: { score: systemicFatigue.score.toString() },
+          suggestedBodyParts: ['Mobility', 'Cardio'],
+          relevantRoutineIds: [],
+          generatedRoutine: generateGapSession([], exercises, history, t, userProfile.equipment, durationProfile), // Unconstrained gap session
+          systemicFatigue
+      };
   }
 
   // Check if user is a "Rookie" (Very low history or explicitly beginner profile)
@@ -436,6 +338,7 @@ export const getWorkoutRecommendation = (
               reasonKey: "rec_reason_onboarding_complete",
               suggestedBodyParts: [],
               relevantRoutineIds: [customRoutines[0].id], // Suggest the first one
+              systemicFatigue
           };
       }
       
@@ -451,7 +354,8 @@ export const getWorkoutRecommendation = (
           reasonKey: "rec_reason_next_up",
           reasonParams: { routine: nextRoutine.name },
           suggestedBodyParts: [],
-          relevantRoutineIds: [nextRoutine.id]
+          relevantRoutineIds: [nextRoutine.id],
+          systemicFatigue
       };
   }
 
@@ -497,7 +401,8 @@ export const getWorkoutRecommendation = (
                           toId: toEx.id,
                           fromName: fromEx.name,
                           toName: toEx.name
-                      }
+                      },
+                      systemicFatigue
                   };
               }
           }
@@ -509,26 +414,48 @@ export const getWorkoutRecommendation = (
   const freshness = calculateMuscleFreshness(history, exercises);
   const scores = Object.values(freshness);
   const avgFreshness = scores.reduce((a, b) => a + b, 0) / (scores.length || 1);
-  const hasFullyFreshMuscle = scores.some(s => s > 90);
+  
+  // Check if any muscle is notably fresh (>90%) which usually indicates ready for a specific workout
+  // If everything is fatigued (<60%), we should consider active recovery
+  const hasFreshMuscles = scores.some(s => s > 80);
 
-  if (avgFreshness < 50 && !hasFullyFreshMuscle) {
-     // Check if trained yesterday (either started or ended yesterday, but NOT today)
-     const trainedYesterday = lastSession && (
-         lastSession.startTime >= yesterdayStart ||
-         (lastSession.endTime > 0 && lastSession.endTime >= yesterdayStart)
-     );
+  // Predict next routine to see if we should protect muscles for it
+  const predictedNextRoutine = predictNextRoutine(history, routines);
+  
+  // Check if we need a Gap Session (Active Recovery)
+  // Trigger if: 
+  // 1. Local fatigue is high (avg < 60) AND no specific muscle group is super fresh
+  // 2. OR if user explicitly trained yesterday and we want to ensure recovery for a predicted heavy day tomorrow
+  
+  const trainedYesterday = lastSession && (
+     lastSession.startTime >= yesterdayStart ||
+     (lastSession.endTime > 0 && lastSession.endTime >= yesterdayStart)
+  );
 
+  if ((avgFreshness < 60 && !hasFreshMuscles) || (trainedYesterday && predictedNextRoutine)) {
+     
+     let protectedMuscles: any[] = [];
+     if (predictedNextRoutine) {
+         // If we know what's coming next, protect those muscles
+         protectedMuscles = getProtectedMuscles(predictedNextRoutine, exercises);
+     } else {
+         // If we don't know, protect whatever is currently most fatigued
+         protectedMuscles = Object.entries(freshness)
+            .filter(([_, score]) => score < 50)
+            .map(([muscle]) => muscle);
+     }
+     
+     const gapSession = generateGapSession(protectedMuscles, exercises, history, t, userProfile.equipment, durationProfile);
+     
      return {
-         type: 'rest',
-         titleKey: "rec_title_rest",
-         reasonKey: trainedYesterday ? "rec_reason_rest_growth" : "rec_reason_fatigued",
-         suggestedBodyParts: ['Cardio', 'Mobility'],
-         relevantRoutineIds: routines.filter(r => 
-             r.exercises.some(e => {
-                 const exDef = exercises.find(ed => ed.id === e.exerciseId);
-                 return exDef?.category === 'Cardio' || exDef?.bodyPart === 'Mobility';
-             })
-         ).map(r => r.id)
+         type: 'active_recovery',
+         titleKey: "rec_title_gap_workout",
+         reasonKey: predictedNextRoutine ? "rec_reason_gap_predict" : "rec_reason_fatigued",
+         reasonParams: { next_routine: predictedNextRoutine?.name || "Next Session" },
+         suggestedBodyParts: ['Cardio', 'Mobility', 'Core'],
+         relevantRoutineIds: [],
+         generatedRoutine: gapSession,
+         systemicFatigue
      };
   }
 
@@ -560,9 +487,30 @@ export const getWorkoutRecommendation = (
   const legsGroup = getGroupData('Legs', LEG_MUSCLES, ['Legs', 'Glutes', 'Calves'], 'legs');
 
   const groups = [pushGroup, pullGroup, legsGroup];
-  const readyGroups = groups.filter(g => g.score > 85);
+  // Find groups that are "ready" (High freshness)
+  const readyGroups = groups.filter(g => g.score > 80);
   
+  // If we have a prediction, prioritize it if it's ready
+  if (predictedNextRoutine) {
+      const predictedFocus = predictedNextRoutine.name.toLowerCase();
+      const matchingGroup = readyGroups.find(g => predictedFocus.includes(g.id.toLowerCase()));
+      if (matchingGroup) {
+          // The predicted routine is ready to go!
+           return {
+              type: 'workout',
+              titleKey: "rec_title_next_up", // "Next Up: {routine}"
+              titleParams: { routine: predictedNextRoutine.name },
+              reasonKey: "rec_reason_fresh",
+              reasonParams: { muscles: matchingGroup.bodyParts[0], days: matchingGroup.daysSince.toString() },
+              suggestedBodyParts: matchingGroup.bodyParts,
+              relevantRoutineIds: [predictedNextRoutine.id],
+              systemicFatigue
+          };
+      }
+  }
+
   if (readyGroups.length > 0) {
+      // Standard fallback: Suggest most rested group
       readyGroups.sort((a, b) => b.daysSince - a.daysSince);
       const winner = readyGroups[0];
       
@@ -611,16 +559,19 @@ export const getWorkoutRecommendation = (
           reasonParams: { muscles: winner.bodyParts[0], days: daysText },
           suggestedBodyParts: winner.bodyParts,
           relevantRoutineIds,
-          generatedRoutine
+          generatedRoutine,
+          systemicFatigue
       };
   }
 
+  // Fallback if everything is somewhat fatigued but no specific prediction
   return {
       type: 'workout',
       titleKey: "rec_title_generic",
       titleParams: { focus: 'Cardio / Mobility' },
       reasonKey: "rec_reason_fatigued",
       suggestedBodyParts: ['Cardio', 'Mobility'],
-      relevantRoutineIds: routines.filter(r => r.routineType === 'hiit' || r.name.includes('Cardio')).map(r => r.id)
+      relevantRoutineIds: routines.filter(r => r.routineType === 'hiit' || r.name.includes('Cardio')).map(r => r.id),
+      systemicFatigue
   };
 };

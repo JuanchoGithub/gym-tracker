@@ -2,6 +2,78 @@
 import { WorkoutSession, SupplementPlanItem, PerformedSet } from '../types';
 import { getDateString } from '../utils/timeUtils';
 import { PREDEFINED_EXERCISES } from '../constants/exercises';
+import { SurveyAnswers } from '../utils/routineGenerator';
+import { calculate1RM, getExerciseHistory } from '../utils/workoutUtils';
+
+// Exercise IDs grouped by pattern for 1RM aggregation
+export const MOVEMENT_PATTERNS = {
+    SQUAT: ['ex-2', 'ex-101', 'ex-108', 'ex-109', 'ex-113', 'ex-160'],
+    DEADLIFT: ['ex-3', 'ex-98', 'ex-43'],
+    BENCH: ['ex-1', 'ex-11', 'ex-12', 'ex-22', 'ex-25', 'ex-28', 'ex-31', 'ex-34', 'ex-37'],
+    OHP: ['ex-4', 'ex-60', 'ex-67', 'ex-68', 'ex-70'],
+    ROW: ['ex-5', 'ex-38', 'ex-39', 'ex-40', 'ex-48'], // Horizontal Pull
+    VERTICAL_PULL: ['ex-10', 'ex-50', 'ex-52', 'ex-6', 'ex-44'] // Vertical Pull (Pull Up, Lat Pulldown)
+};
+
+export const calculateMaxStrengthProfile = (history: WorkoutSession[]) => {
+    const profile: Record<string, number> = {
+        SQUAT: 0,
+        DEADLIFT: 0,
+        BENCH: 0,
+        OHP: 0,
+        ROW: 0,
+        VERTICAL_PULL: 0
+    };
+    
+    // Look at last 6 months only to ensure relevance
+    const sixMonthsAgo = Date.now() - (180 * 24 * 60 * 60 * 1000);
+    
+    Object.entries(MOVEMENT_PATTERNS).forEach(([patternName, ids]) => {
+        let maxE1RM = 0;
+        
+        ids.forEach(id => {
+            const exHistory = getExerciseHistory(history, id);
+            exHistory.forEach(entry => {
+                if (entry.session.startTime < sixMonthsAgo) return;
+                
+                entry.exerciseData.sets.forEach(set => {
+                    if (set.type === 'normal' && set.isComplete) {
+                         const e1rm = calculate1RM(set.weight, set.reps);
+                         if (e1rm > maxE1RM) maxE1RM = e1rm;
+                    }
+                });
+            });
+        });
+        
+        profile[patternName] = maxE1RM;
+    });
+
+    return profile;
+}
+
+export const calculateNormalizedStrengthScores = (history: WorkoutSession[]) => {
+    const maxLifts = calculateMaxStrengthProfile(history);
+    
+    // Ratios: OHP (2) : Bench (3) : Row (3) : Squat (4) : Deadlift (5)
+    const scores = {
+        SQUAT: maxLifts.SQUAT / 4,
+        DEADLIFT: maxLifts.DEADLIFT / 5,
+        BENCH: maxLifts.BENCH / 3,
+        OHP: maxLifts.OHP / 2,
+        ROW: maxLifts.ROW / 3
+    };
+    
+    const maxScore = Math.max(...Object.values(scores));
+    const scale = maxScore > 0 ? (100 / maxScore) : 0;
+    
+    return {
+        SQUAT: scores.SQUAT * scale,
+        DEADLIFT: scores.DEADLIFT * scale,
+        BENCH: scores.BENCH * scale,
+        OHP: scores.OHP * scale,
+        ROW: scores.ROW * scale
+    };
+};
 
 // ... existing SupplementCorrelation code ...
 export interface SupplementCorrelation {
@@ -205,4 +277,100 @@ export const calculateLifterDNA = (history: WorkoutSession[], currentBodyWeight:
         archetype,
         favMuscle
     };
+};
+
+export const inferUserProfile = (history: WorkoutSession[]): SurveyAnswers => {
+    const defaultProfile: SurveyAnswers = {
+        experience: 'intermediate',
+        goal: 'muscle',
+        equipment: 'gym',
+        time: 'medium'
+    };
+
+    if (history.length === 0) return defaultProfile;
+
+    const recentSessions = history.slice(0, 10); 
+    let barbellCount = 0;
+    let dumbbellCount = 0;
+    let machineCount = 0;
+    let bodyweightCount = 0;
+    let totalExercises = 0;
+
+    recentSessions.forEach(s => {
+        s.exercises.forEach(we => {
+            const def = PREDEFINED_EXERCISES.find(e => e.id === we.exerciseId);
+            if (def) {
+                totalExercises++;
+                if (def.category === 'Barbell') barbellCount++;
+                else if (def.category === 'Dumbbell') dumbbellCount++;
+                else if (def.category === 'Machine' || def.category === 'Cable') machineCount++;
+                else if (def.category === 'Bodyweight' || def.category === 'Assisted Bodyweight') bodyweightCount++;
+            }
+        });
+    });
+
+    if (totalExercises > 0) {
+        if (barbellCount > totalExercises * 0.3 || machineCount > totalExercises * 0.3) {
+            defaultProfile.equipment = 'gym';
+        } else if (dumbbellCount > totalExercises * 0.4) {
+            defaultProfile.equipment = 'dumbbell';
+        } else if (bodyweightCount > totalExercises * 0.5) {
+            defaultProfile.equipment = 'bodyweight';
+        }
+    }
+
+    let totalReps = 0;
+    let setCount = 0;
+    recentSessions.forEach(s => {
+        s.exercises.forEach(we => {
+            we.sets.forEach(set => {
+                if (set.type === 'normal' && set.isComplete) {
+                    totalReps += set.reps;
+                    setCount++;
+                }
+            });
+        });
+    });
+    
+    const avgReps = setCount > 0 ? totalReps / setCount : 10;
+    if (avgReps < 6) defaultProfile.goal = 'strength';
+    else if (avgReps > 12) defaultProfile.goal = 'endurance';
+    else defaultProfile.goal = 'muscle';
+
+    // Time preference is better handled by the specific duration function, but we keep this for the basic profile
+    const durationProfile = calculateMedianWorkoutDuration(history);
+    defaultProfile.time = durationProfile;
+
+    // Infer experience based on workout count and consistency
+    if (history.length < 20) defaultProfile.experience = 'beginner';
+    else if (history.length < 100) defaultProfile.experience = 'intermediate';
+    else defaultProfile.experience = 'advanced';
+
+    return defaultProfile;
+};
+
+export const calculateMedianWorkoutDuration = (history: WorkoutSession[]): 'short' | 'medium' | 'long' => {
+    if (history.length < 5) return 'medium'; // Not enough data
+
+    const durations: number[] = [];
+    
+    history.slice(0, 20).forEach(s => {
+        if (s.endTime > s.startTime) {
+            const durationMinutes = (s.endTime - s.startTime) / 60000;
+            // Filter out unreasonable durations (e.g., accidental < 5m or left open > 3h)
+            if (durationMinutes > 10 && durationMinutes < 180) {
+                durations.push(durationMinutes);
+            }
+        }
+    });
+    
+    if (durations.length === 0) return 'medium';
+
+    durations.sort((a, b) => a - b);
+    const mid = Math.floor(durations.length / 2);
+    const median = durations.length % 2 !== 0 ? durations[mid] : (durations[mid - 1] + durations[mid]) / 2;
+
+    if (median < 35) return 'short';
+    if (median > 65) return 'long';
+    return 'medium';
 };

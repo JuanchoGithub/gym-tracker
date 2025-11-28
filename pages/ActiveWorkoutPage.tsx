@@ -19,7 +19,7 @@ import SupersetView from '../components/workout/SupersetView';
 import SupersetPlayer from '../components/workout/SupersetPlayer';
 import ExerciseDetailModal from '../components/exercise/ExerciseDetailModal';
 import { generateSmartRoutine, RoutineFocus } from '../utils/routineGenerator';
-import { inferUserProfile } from '../utils/recommendationUtils';
+import { inferUserProfile } from '../services/analyticsService';
 import { calculateMuscleFreshness } from '../utils/fatigueUtils';
 import { MUSCLES } from '../constants/muscles';
 import ConfirmModal from '../components/modals/ConfirmModal';
