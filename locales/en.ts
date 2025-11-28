@@ -191,6 +191,8 @@ export const en = {
 
   // Profile Page
   profile_title: "Profile & Settings",
+  profile_tab_you: "You",
+  profile_tab_options: "Options",
   profile_personal_info: "Personal Info",
   profile_gender: "Gender",
   profile_gender_male: "Male",
@@ -583,4 +585,7 @@ export const en = {
   rt_hiit_7min_desc: "12 bodyweight exercises performed for 30 seconds with 10 seconds of rest in between.",
   rt_hiit_beginner_name: "Beginner HIIT Circuit",
   rt_hiit_beginner_desc: "A 15-minute workout with 30s work and 30s rest. Complete 3 rounds.",
+
+  supplements_tab_suggestions: "Suggestions",
+  supplements_tab_analysis: "Insights",
 };

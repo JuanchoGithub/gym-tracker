@@ -6,7 +6,7 @@ import { SupplementInfo } from '../types';
 import { generateSupplementPlan } from '../services/supplementService';
 import { Icon } from '../components/common/Icon';
 import SupplementSchedule from '../components/supplements/SupplementSchedule';
-import SupplementReviewModal from '../components/supplements/SupplementReviewModal';
+import SupplementReviewView from '../components/supplements/SupplementReviewView';
 import { useMeasureUnit } from '../hooks/useWeight';
 import { convertCmToFtIn, convertFtInToCm } from '../utils/weightUtils';
 import { TranslationKey } from '../contexts/I18nContext';
@@ -17,7 +17,7 @@ const SupplementPage: React.FC = () => {
   const { 
     supplementPlan, setSupplementPlan, userSupplements,
     newSuggestions, applyPlanSuggestion, applyAllPlanSuggestions, dismissSuggestion, dismissAllSuggestions, clearNewSuggestions, triggerManualPlanReview,
-    profile, currentWeight, activeWorkout, isWorkoutMinimized
+    profile, currentWeight, activeWorkout, isWorkoutMinimized, history, takenSupplements
   } = useContext(AppContext);
   const { t } = useI18n();
   const { measureUnit, weightUnit } = useMeasureUnit();
@@ -42,7 +42,7 @@ const SupplementPage: React.FC = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [isReviewViewOpen, setIsReviewViewOpen] = useState(false);
   
   // State for imperial height inputs in wizard
   const [feet, setFeet] = useState('');
@@ -162,17 +162,17 @@ const SupplementPage: React.FC = () => {
 
   const handleManualReview = () => {
       triggerManualPlanReview();
-      setIsReviewModalOpen(true);
+      setIsReviewViewOpen(true);
   };
 
   const handleDismissAll = () => {
     dismissAllSuggestions();
-    setIsReviewModalOpen(false);
+    setIsReviewViewOpen(false);
   };
 
   const handleApplyAll = () => {
     applyAllPlanSuggestions();
-    setIsReviewModalOpen(false);
+    setIsReviewViewOpen(false);
   };
 
   const renderStep = () => {
@@ -373,6 +373,22 @@ const SupplementPage: React.FC = () => {
     }
   };
 
+  if (isReviewViewOpen) {
+      return (
+          <SupplementReviewView 
+            onBack={() => setIsReviewViewOpen(false)}
+            suggestions={newSuggestions}
+            history={history}
+            takenSupplements={takenSupplements}
+            allSupplements={[...(supplementPlan?.plan || []), ...userSupplements]}
+            onApply={applyPlanSuggestion}
+            onApplyAll={handleApplyAll}
+            onDismiss={dismissSuggestion}
+            onDismissAll={handleDismissAll}
+          />
+      );
+  }
+
   return (
     <div className="space-y-4">
       {!wizardActive && !supplementPlan && !planJustGenerated && (
@@ -432,9 +448,9 @@ const SupplementPage: React.FC = () => {
           <SupplementSchedule onEditAnswers={handleEditAnswers} onReviewPlan={handleManualReview} />
       )}
 
-        {!wizardActive && newSuggestions.length > 0 && (
+        {!wizardActive && newSuggestions.length > 0 && !isReviewViewOpen && (
             <div className={`fixed left-4 right-4 z-30 transition-all duration-300 ${activeWorkout && isWorkoutMinimized ? 'bottom-[calc(16rem+env(safe-area-inset-bottom))]' : 'bottom-[calc(7.5rem+env(safe-area-inset-bottom))]'}`}>
-                <div className="bg-primary text-white p-4 rounded-lg shadow-xl flex items-center justify-between cursor-pointer" onClick={() => setIsReviewModalOpen(true)}>
+                <div className="bg-primary text-white p-4 rounded-lg shadow-xl flex items-center justify-between cursor-pointer" onClick={() => setIsReviewViewOpen(true)}>
                     <div className="flex items-center gap-3">
                         <Icon name="sparkles" className="w-6 h-6 text-yellow-300" />
                         <div>
@@ -445,16 +461,6 @@ const SupplementPage: React.FC = () => {
                 </div>
             </div>
         )}
-
-        <SupplementReviewModal 
-            isOpen={isReviewModalOpen}
-            onClose={() => setIsReviewModalOpen(false)}
-            suggestions={newSuggestions}
-            onApply={applyPlanSuggestion}
-            onApplyAll={handleApplyAll}
-            onDismiss={dismissSuggestion}
-            onDismissAll={handleDismissAll}
-        />
     </div>
   );
 };

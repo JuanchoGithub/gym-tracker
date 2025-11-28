@@ -192,6 +192,8 @@ export const es = {
 
   // Profile Page
   profile_title: "Perfil y Configuración",
+  profile_tab_you: "Vos",
+  profile_tab_options: "Opciones",
   profile_personal_info: "Información Personal",
   profile_gender: "Género",
   profile_gender_male: "Masculino",
@@ -584,4 +586,7 @@ export const es = {
   rt_hiit_7min_desc: "12 ejercicios de peso corporal realizados por 30 segundos con 10 segundos de descanso.",
   rt_hiit_beginner_name: "Circuito HIIT Principiante",
   rt_hiit_beginner_desc: "Entrenamiento de 15 minutos con 30s de trabajo y 30s de descanso. Completá 3 rondas.",
+
+  supplements_tab_suggestions: "Sugerencias",
+  supplements_tab_analysis: "Estadísticas",
 };

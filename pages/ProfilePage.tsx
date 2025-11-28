@@ -16,6 +16,8 @@ import { calculateLifterDNA } from '../services/analyticsService';
 import LifterDNA from '../components/profile/LifterDNA';
 import UnlockHistory from '../components/profile/UnlockHistory';
 import StrengthProfile from '../components/profile/StrengthProfile';
+import MuscleHeatmap from '../components/insights/MuscleHeatmap';
+import { calculateMuscleFreshness } from '../utils/fatigueUtils';
 
 const SettingsGroup: React.FC<{ title?: string, children: React.ReactNode }> = ({ title, children }) => (
   <div className="mb-8">
@@ -96,12 +98,14 @@ const ProfilePage: React.FC = () => {
     updateProfileInfo,
     currentWeight,
     logWeight,
-    history
+    history,
+    exercises
   } = useContext(AppContext);
 
   const { displayWeight, getStoredWeight, weightUnit, measureUnit, setMeasureUnit } = useMeasureUnit();
   const [localWeight, setLocalWeight] = useState(() => currentWeight ? displayWeight(currentWeight) : '');
   const [isWeightChartOpen, setIsWeightChartOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'you' | 'options'>('you');
 
   const [feet, setFeet] = useState('');
   const [inches, setInches] = useState('');
@@ -109,6 +113,10 @@ const ProfilePage: React.FC = () => {
   const [wakeLockPermission, setWakeLockPermission] = useState<'granted' | 'denied' | 'unsupported'>('granted');
 
   const lifterStats = useMemo(() => calculateLifterDNA(history, currentWeight || 70), [history, currentWeight]);
+
+  const muscleFreshness = useMemo(() => {
+      return calculateMuscleFreshness(history, exercises);
+  }, [history, exercises]);
 
   useEffect(() => {
     if (!('wakeLock' in navigator)) {
@@ -279,227 +287,259 @@ const ProfilePage: React.FC = () => {
   return (
     <div className="space-y-6 pb-8">
       <h1 className="text-3xl font-bold text-center mb-6">{t('profile_title')}</h1>
+
+      {/* Tab Switcher */}
+      <div className="flex justify-center border-b border-secondary/20 mb-6">
+          <button
+              onClick={() => setActiveTab('you')}
+              className={`px-6 py-2 font-medium transition-colors ${activeTab === 'you' ? 'border-b-2 border-primary text-primary' : 'text-text-secondary'}`}
+          >
+              {t('profile_tab_you')}
+          </button>
+          <button
+              onClick={() => setActiveTab('options')}
+              className={`px-6 py-2 font-medium transition-colors ${activeTab === 'options' ? 'border-b-2 border-primary text-primary' : 'text-text-secondary'}`}
+          >
+              {t('profile_tab_options')}
+          </button>
+      </div>
       
-      {/* Lifter DNA Visualization */}
-      <LifterDNA stats={lifterStats} />
+      {activeTab === 'you' && (
+        <div className="animate-fadeIn space-y-8">
+            {/* Lifter DNA Visualization */}
+            <LifterDNA stats={lifterStats} />
 
-      {/* Strength Profile Radar Chart */}
-      <StrengthProfile />
-      
-      {/* Unlock History */}
-      <UnlockHistory unlocks={profile.unlocks || []} />
+            {/* Strength Profile Radar Chart */}
+            <StrengthProfile />
 
-      <SettingsGroup title={t('profile_personal_info')}>
-        <SettingsItem>
-            <label htmlFor="gender-select" className="text-text-primary font-medium">{t('profile_gender')}</label>
-            <select
-            id="gender-select"
-            value={profile.gender || ''}
-            onChange={(e) => updateProfileInfo({ gender: e.target.value as 'male' | 'female' })}
-            className={selectClass}
-            >
-            <option value="" disabled>{t('common_select')}</option>
-            <option value="male">{t('profile_gender_male')}</option>
-            <option value="female">{t('profile_gender_female')}</option>
-            </select>
-        </SettingsItem>
-
-        <SettingsItem>
-             <label htmlFor="height-input" className="text-text-primary font-medium">{t('profile_height')}</label>
-             {measureUnit === 'metric' ? (
-                <div className="flex items-center relative w-32">
-                  <input
-                    id="height-input-cm"
-                    type="number"
-                    value={profile.height || ''}
-                    onChange={(e) => updateProfileInfo({ height: parseInt(e.target.value) || undefined })}
-                    className={`${inputClass} pr-10 w-full`}
-                    placeholder="175"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary text-xs pointer-events-none">{t('profile_height_unit_cm')}</span>
+            {/* Recovery Heatmap */}
+            <div>
+                <h3 className="text-xl font-bold text-text-primary mb-4 px-4">{t('insights_recovery_heatmap_title')}</h3>
+                <div className="max-w-md mx-auto w-full px-2">
+                    <MuscleHeatmap freshnessData={muscleFreshness} />
                 </div>
-              ) : (
-                <div className="flex gap-2 items-center">
-                    <div className="relative">
-                        <input id="height-input-ft" type="number" value={feet} onChange={(e) => { setFeet(e.target.value); handleHeightChangeImperial(e.target.value, inches); }} placeholder="5" className="bg-background border border-white/10 rounded-lg p-2 w-16 text-center focus:border-primary outline-none" />
-                        <span className="absolute right-2 top-2 text-text-secondary text-xs pointer-events-none">{t('profile_height_unit_ft')}</span>
-                    </div>
-                    <div className="relative">
-                        <input id="height-input-in" type="number" value={inches} onChange={(e) => { setInches(e.target.value); handleHeightChangeImperial(feet, e.target.value); }} placeholder="9" className="bg-background border border-white/10 rounded-lg p-2 w-16 text-center focus:border-primary outline-none" />
-                        <span className="absolute right-2 top-2 text-text-secondary text-xs pointer-events-none">{t('profile_height_unit_in')}</span>
-                    </div>
-                </div>
-              )}
-        </SettingsItem>
+            </div>
+            
+            {/* Unlock History */}
+            <UnlockHistory unlocks={profile.unlocks || []} />
+        </div>
+      )}
 
-        <SettingsItem>
-            <label htmlFor="weight-input" className="text-text-primary font-medium">{t('profile_weight')}</label>
-            <div className="flex items-center gap-2">
-                <div className="relative w-32">
-                    <input
-                        id="weight-input"
-                        type="number"
-                        value={localWeight}
-                        onChange={(e) => setLocalWeight(e.target.value)}
-                        onBlur={handleWeightBlur}
-                        className={`${inputClass} pr-10 w-full`}
-                        placeholder="70.5"
-                    />
-                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary text-xs pointer-events-none">{t(`workout_${weightUnit}` as TranslationKey)}</span>
-                </div>
-                <button 
-                  onClick={() => setIsWeightChartOpen(true)} 
-                  className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                  disabled={!profile.weightHistory || profile.weightHistory.length === 0}
-                >
-                    <Icon name="chart-line" className="w-5 h-5" />
-                </button>
-            </div>
-        </SettingsItem>
-      </SettingsGroup>
+      {activeTab === 'options' && (
+        <div className="animate-fadeIn">
+            <SettingsGroup title={t('profile_personal_info')}>
+                <SettingsItem>
+                    <label htmlFor="gender-select" className="text-text-primary font-medium">{t('profile_gender')}</label>
+                    <select
+                    id="gender-select"
+                    value={profile.gender || ''}
+                    onChange={(e) => updateProfileInfo({ gender: e.target.value as 'male' | 'female' })}
+                    className={selectClass}
+                    >
+                    <option value="" disabled>{t('common_select')}</option>
+                    <option value="male">{t('profile_gender_male')}</option>
+                    <option value="female">{t('profile_gender_female')}</option>
+                    </select>
+                </SettingsItem>
 
-      <SettingsGroup title={t('profile_settings')}>
-        <SettingsItem>
-            <label className="text-text-primary font-medium">{t('profile_language')}</label>
-            <div className="flex gap-3">
-                <button 
-                    onClick={() => handleLanguageChange('en')}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all duration-200 ${locale === 'en' ? 'bg-primary/10 border-primary shadow-[0_0_15px_rgba(56,189,248,0.1)]' : 'bg-transparent border-white/10 hover:bg-white/5 opacity-60 hover:opacity-100'}`}
-                >
-                    <USFlag />
-                    <span className={`text-sm font-bold ${locale === 'en' ? 'text-primary' : 'text-text-secondary'}`}>English</span>
-                </button>
-                <button 
-                    onClick={() => handleLanguageChange('es')}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all duration-200 ${locale === 'es' ? 'bg-primary/10 border-primary shadow-[0_0_15px_rgba(56,189,248,0.1)]' : 'bg-transparent border-white/10 hover:bg-white/5 opacity-60 hover:opacity-100'}`}
-                >
-                    <ArgentinaFlag />
-                    <span className={`text-sm font-bold ${locale === 'es' ? 'text-primary' : 'text-text-secondary'}`}>Español</span>
-                </button>
-            </div>
-        </SettingsItem>
-        
-        {locale !== 'en' && (
-             <SettingsItem>
-                 <div className="flex flex-col">
-                    <span className="text-text-primary font-medium">{t('profile_localized_names')}</span>
-                    <span className="text-xs text-text-secondary">{t('profile_localized_names_desc')}</span>
-                 </div>
-                 <ToggleSwitch checked={useLocalizedExerciseNames} onChange={setUseLocalizedExerciseNames} />
-             </SettingsItem>
-        )}
-        
-        <SettingsItem>
-             <label className="text-text-primary font-medium">{t('profile_measure_unit')}</label>
-             <div className="flex bg-background rounded-lg p-1 border border-white/10">
-              <button 
-                onClick={() => setMeasureUnit('metric')}
-                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${measureUnit === 'metric' ? 'bg-primary text-white shadow-md' : 'text-text-secondary hover:text-text-primary'}`}
-              >{t('profile_unit_metric')}</button>
-              <button
-                onClick={() => setMeasureUnit('imperial')}
-                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${measureUnit === 'imperial' ? 'bg-primary text-white shadow-md' : 'text-text-secondary hover:text-text-primary'}`}
-              >{t('profile_unit_imperial')}</button>
-            </div>
-        </SettingsItem>
-      </SettingsGroup>
-      
-      <SettingsGroup title={t('profile_default_timers')}>
-          <div className="p-0">
-              {timerSettings.map(({ key, labelKey, infoKey }) => (
-                <SettingsItem key={key}>
-                    <div className="flex items-center gap-2">
-                        <span className="text-text-primary font-medium">{t(labelKey)}</span>
-                        {infoKey && (
-                            <button onClick={() => setInfoModalContent({title: t(infoKey.title), message: t(infoKey.message)})}>
-                                <Icon name="question-mark-circle" className="w-4 h-4 text-text-secondary hover:text-primary" />
-                            </button>
-                        )}
-                    </div>
-                    {editingTimerKey === key ? (
+                <SettingsItem>
+                    <label htmlFor="height-input" className="text-text-primary font-medium">{t('profile_height')}</label>
+                    {measureUnit === 'metric' ? (
+                        <div className="flex items-center relative w-32">
                         <input
-                            type="text"
-                            inputMode="numeric"
-                            pattern="[0-9]*"
-                            value={tempTimerValue}
-                            onChange={handleTimerInputChange}
-                            onBlur={handleTimerBlur}
-                            onKeyDown={handleTimerKeyDown}
-                            autoFocus
-                            className="bg-background border border-primary rounded-lg p-1.5 w-24 text-center text-sm outline-none"
-                            placeholder="m:ss"
+                            id="height-input-cm"
+                            type="number"
+                            value={profile.height || ''}
+                            onChange={(e) => updateProfileInfo({ height: parseInt(e.target.value) || undefined })}
+                            className={`${inputClass} pr-10 w-full`}
+                            placeholder="175"
                         />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary text-xs pointer-events-none">{t('profile_height_unit_cm')}</span>
+                        </div>
                     ) : (
-                        <button 
-                            onClick={() => handleTimerEdit(key)}
-                            className="text-primary font-mono text-sm font-bold hover:bg-primary/10 px-3 py-1.5 rounded-lg transition-colors"
-                        >
-                            {defaultRestTimes[key] > 0 ? formatSecondsToMMSS(defaultRestTimes[key]) : t('timer_modal_none')}
-                        </button>
+                        <div className="flex gap-2 items-center">
+                            <div className="relative">
+                                <input id="height-input-ft" type="number" value={feet} onChange={(e) => { setFeet(e.target.value); handleHeightChangeImperial(e.target.value, inches); }} placeholder="5" className="bg-background border border-white/10 rounded-lg p-2 w-16 text-center focus:border-primary outline-none" />
+                                <span className="absolute right-2 top-2 text-text-secondary text-xs pointer-events-none">{t('profile_height_unit_ft')}</span>
+                            </div>
+                            <div className="relative">
+                                <input id="height-input-in" type="number" value={inches} onChange={(e) => { setInches(e.target.value); handleHeightChangeImperial(feet, e.target.value); }} placeholder="9" className="bg-background border border-white/10 rounded-lg p-2 w-16 text-center focus:border-primary outline-none" />
+                                <span className="absolute right-2 top-2 text-text-secondary text-xs pointer-events-none">{t('profile_height_unit_in')}</span>
+                            </div>
+                        </div>
                     )}
                 </SettingsItem>
-            ))}
-          </div>
-      </SettingsGroup>
 
-      <SettingsGroup title={t('profile_app_behaviour')}>
-          <SettingsItem>
-              <div className="flex flex-col">
-                  <span className="text-text-primary font-medium">{t('profile_keep_screen_awake')}</span>
-                  <span className="text-xs text-text-secondary">{t('profile_keep_screen_awake_desc')}</span>
-                  {wakeLockPermission === 'denied' && (
-                      <span className="text-xs text-warning mt-1">{t('profile_wake_lock_blocked')}</span>
-                  )}
-                  {wakeLockPermission === 'unsupported' && (
-                      <span className="text-xs text-warning mt-1">{t('profile_wake_lock_unsupported')}</span>
-                  )}
-              </div>
-              <ToggleSwitch checked={keepScreenAwake && wakeLockPermission === 'granted'} onChange={setKeepScreenAwake} />
-          </SettingsItem>
-          <SettingsItem>
-              <div className="flex flex-col">
-                  <span className="text-text-primary font-medium">{t('profile_enable_notifications')}</span>
-                  <span className="text-xs text-text-secondary">{t('profile_enable_notifications_desc')}</span>
-                   {permissionStatus === 'denied' && (
-                      <span className="text-xs text-warning mt-1">{t('profile_notifications_blocked')}</span>
-                   )}
-              </div>
-              <ToggleSwitch checked={enableNotifications && permissionStatus === 'granted'} onChange={handleNotificationToggle} />
-          </SettingsItem>
-      </SettingsGroup>
+                <SettingsItem>
+                    <label htmlFor="weight-input" className="text-text-primary font-medium">{t('profile_weight')}</label>
+                    <div className="flex items-center gap-2">
+                        <div className="relative w-32">
+                            <input
+                                id="weight-input"
+                                type="number"
+                                value={localWeight}
+                                onChange={(e) => setLocalWeight(e.target.value)}
+                                onBlur={handleWeightBlur}
+                                className={`${inputClass} pr-10 w-full`}
+                                placeholder="70.5"
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary text-xs pointer-events-none">{t(`workout_${weightUnit}` as TranslationKey)}</span>
+                        </div>
+                        <button 
+                        onClick={() => setIsWeightChartOpen(true)} 
+                        className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                        disabled={!profile.weightHistory || profile.weightHistory.length === 0}
+                        >
+                            <Icon name="chart-line" className="w-5 h-5" />
+                        </button>
+                    </div>
+                </SettingsItem>
+            </SettingsGroup>
 
-       <SettingsGroup title={t('profile_voice_settings')}>
-          <SettingsItem>
-              <div className="flex flex-col">
-                  <span className="text-text-primary font-medium">{t('profile_voice')}</span>
-                  <span className="text-xs text-text-secondary">{t('profile_voice_desc')}</span>
-              </div>
-               <div className="flex items-center gap-2">
-                  <select
-                      id="voice-select"
-                      value={selectedVoiceURI || ''}
-                      onChange={(e) => setSelectedVoiceURI(e.target.value || null)}
-                      className="bg-background border border-white/10 rounded-lg p-2 max-w-[140px] text-sm truncate outline-none focus:border-primary"
-                      disabled={voices.length === 0}
-                  >
-                      <option value="">Default</option>
-                      {voices.map((voice) => (
-                          <option key={voice.voiceURI} value={voice.voiceURI}>
-                              {voice.name}
-                          </option>
-                      ))}
-                  </select>
-                  <button
-                      onClick={handlePlayVoiceSample}
-                      className="p-2 bg-background border border-white/10 hover:bg-white/5 rounded-lg transition-colors"
-                      disabled={voices.length === 0}
-                      aria-label="Play voice sample"
-                  >
-                      <Icon name="play" className="w-4 h-4" />
-                  </button>
+            <SettingsGroup title={t('profile_settings')}>
+                <SettingsItem>
+                    <label className="text-text-primary font-medium">{t('profile_language')}</label>
+                    <div className="flex gap-3">
+                        <button 
+                            onClick={() => handleLanguageChange('en')}
+                            className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all duration-200 ${locale === 'en' ? 'bg-primary/10 border-primary shadow-[0_0_15px_rgba(56,189,248,0.1)]' : 'bg-transparent border-white/10 hover:bg-white/5 opacity-60 hover:opacity-100'}`}
+                        >
+                            <USFlag />
+                            <span className={`text-sm font-bold ${locale === 'en' ? 'text-primary' : 'text-text-secondary'}`}>English</span>
+                        </button>
+                        <button 
+                            onClick={() => handleLanguageChange('es')}
+                            className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all duration-200 ${locale === 'es' ? 'bg-primary/10 border-primary shadow-[0_0_15px_rgba(56,189,248,0.1)]' : 'bg-transparent border-white/10 hover:bg-white/5 opacity-60 hover:opacity-100'}`}
+                        >
+                            <ArgentinaFlag />
+                            <span className={`text-sm font-bold ${locale === 'es' ? 'text-primary' : 'text-text-secondary'}`}>Español</span>
+                        </button>
+                    </div>
+                </SettingsItem>
+                
+                {locale !== 'en' && (
+                    <SettingsItem>
+                        <div className="flex flex-col">
+                            <span className="text-text-primary font-medium">{t('profile_localized_names')}</span>
+                            <span className="text-xs text-text-secondary">{t('profile_localized_names_desc')}</span>
+                        </div>
+                        <ToggleSwitch checked={useLocalizedExerciseNames} onChange={setUseLocalizedExerciseNames} />
+                    </SettingsItem>
+                )}
+                
+                <SettingsItem>
+                    <label className="text-text-primary font-medium">{t('profile_measure_unit')}</label>
+                    <div className="flex bg-background rounded-lg p-1 border border-white/10">
+                    <button 
+                        onClick={() => setMeasureUnit('metric')}
+                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${measureUnit === 'metric' ? 'bg-primary text-white shadow-md' : 'text-text-secondary hover:text-text-primary'}`}
+                    >{t('profile_unit_metric')}</button>
+                    <button
+                        onClick={() => setMeasureUnit('imperial')}
+                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${measureUnit === 'imperial' ? 'bg-primary text-white shadow-md' : 'text-text-secondary hover:text-text-primary'}`}
+                    >{t('profile_unit_imperial')}</button>
+                    </div>
+                </SettingsItem>
+            </SettingsGroup>
+            
+            <SettingsGroup title={t('profile_default_timers')}>
+                <div className="p-0">
+                    {timerSettings.map(({ key, labelKey, infoKey }) => (
+                        <SettingsItem key={key}>
+                            <div className="flex items-center gap-2">
+                                <span className="text-text-primary font-medium">{t(labelKey)}</span>
+                                {infoKey && (
+                                    <button onClick={() => setInfoModalContent({title: t(infoKey.title), message: t(infoKey.message)})}>
+                                        <Icon name="question-mark-circle" className="w-4 h-4 text-text-secondary hover:text-primary" />
+                                    </button>
+                                )}
+                            </div>
+                            {editingTimerKey === key ? (
+                                <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
+                                    value={tempTimerValue}
+                                    onChange={handleTimerInputChange}
+                                    onBlur={handleTimerBlur}
+                                    onKeyDown={handleTimerKeyDown}
+                                    autoFocus
+                                    className="bg-background border border-primary rounded-lg p-1.5 w-24 text-center text-sm outline-none"
+                                    placeholder="m:ss"
+                                />
+                            ) : (
+                                <button 
+                                    onClick={() => handleTimerEdit(key)}
+                                    className="text-primary font-mono text-sm font-bold hover:bg-primary/10 px-3 py-1.5 rounded-lg transition-colors"
+                                >
+                                    {defaultRestTimes[key] > 0 ? formatSecondsToMMSS(defaultRestTimes[key]) : t('timer_modal_none')}
+                                </button>
+                            )}
+                        </SettingsItem>
+                    ))}
                 </div>
-          </SettingsItem>
-       </SettingsGroup>
+            </SettingsGroup>
+
+            <SettingsGroup title={t('profile_app_behaviour')}>
+                <SettingsItem>
+                    <div className="flex flex-col">
+                        <span className="text-text-primary font-medium">{t('profile_keep_screen_awake')}</span>
+                        <span className="text-xs text-text-secondary">{t('profile_keep_screen_awake_desc')}</span>
+                        {wakeLockPermission === 'denied' && (
+                            <span className="text-xs text-warning mt-1">{t('profile_wake_lock_blocked')}</span>
+                        )}
+                        {wakeLockPermission === 'unsupported' && (
+                            <span className="text-xs text-warning mt-1">{t('profile_wake_lock_unsupported')}</span>
+                        )}
+                    </div>
+                    <ToggleSwitch checked={keepScreenAwake && wakeLockPermission === 'granted'} onChange={setKeepScreenAwake} />
+                </SettingsItem>
+                <SettingsItem>
+                    <div className="flex flex-col">
+                        <span className="text-text-primary font-medium">{t('profile_enable_notifications')}</span>
+                        <span className="text-xs text-text-secondary">{t('profile_enable_notifications_desc')}</span>
+                        {permissionStatus === 'denied' && (
+                            <span className="text-xs text-warning mt-1">{t('profile_notifications_blocked')}</span>
+                        )}
+                    </div>
+                    <ToggleSwitch checked={enableNotifications && permissionStatus === 'granted'} onChange={handleNotificationToggle} />
+                </SettingsItem>
+            </SettingsGroup>
+
+            <SettingsGroup title={t('profile_voice_settings')}>
+                <SettingsItem>
+                    <div className="flex flex-col">
+                        <span className="text-text-primary font-medium">{t('profile_voice')}</span>
+                        <span className="text-xs text-text-secondary">{t('profile_voice_desc')}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <select
+                            id="voice-select"
+                            value={selectedVoiceURI || ''}
+                            onChange={(e) => setSelectedVoiceURI(e.target.value || null)}
+                            className="bg-background border border-white/10 rounded-lg p-2 max-w-[140px] text-sm truncate outline-none focus:border-primary"
+                            disabled={voices.length === 0}
+                        >
+                            <option value="">Default</option>
+                            {voices.map((voice) => (
+                                <option key={voice.voiceURI} value={voice.voiceURI}>
+                                    {voice.name}
+                                </option>
+                            ))}
+                        </select>
+                        <button
+                            onClick={handlePlayVoiceSample}
+                            className="p-2 bg-background border border-white/10 hover:bg-white/5 rounded-lg transition-colors"
+                            disabled={voices.length === 0}
+                            aria-label="Play voice sample"
+                        >
+                            <Icon name="play" className="w-4 h-4" />
+                        </button>
+                        </div>
+                </SettingsItem>
+            </SettingsGroup>
+        </div>
+      )}
 
       {isWeightChartOpen && (
         <WeightChartModal

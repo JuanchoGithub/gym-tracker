@@ -11,16 +11,15 @@ import ConfirmModal from '../components/modals/ConfirmModal';
 import Modal from '../components/common/Modal';
 import HistoryDetailModal from '../components/modals/HistoryDetailModal';
 import HistoryChartsTab from '../components/history/HistoryChartsTab';
-import InsightsTab from '../components/history/InsightsTab';
 import { TranslationKey } from '../contexts/I18nContext';
 
 const HistoryPage: React.FC = () => {
-  const { history, getExerciseById, deleteHistorySession, upsertRoutine, startWorkout, startHistoryEdit, routines, takenSupplements, supplementPlan, userSupplements } = useContext(AppContext);
+  const { history, getExerciseById, deleteHistorySession, upsertRoutine, startWorkout, startHistoryEdit, routines } = useContext(AppContext);
   const { t } = useI18n();
   const { displayWeight, weightUnit } = useMeasureUnit();
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [viewingSession, setViewingSession] = useState<WorkoutSession | null>(null);
-  const [activeTab, setActiveTab] = useState<'list' | 'charts' | 'insights'>('list');
+  const [activeTab, setActiveTab] = useState<'list' | 'charts'>('list');
   
   const [deletingSession, setDeletingSession] = useState<WorkoutSession | null>(null);
   const [templatingSession, setTemplatingSession] = useState<WorkoutSession | null>(null);
@@ -67,13 +66,6 @@ const HistoryPage: React.FC = () => {
     startWorkout(routineFromHistory);
   };
 
-  // Combine all known supplements for insights analysis (from plan + user custom list)
-  const allSupplements = [...(supplementPlan?.plan || []), ...userSupplements];
-  // Remove duplicates by ID
-  const uniqueSupplementsMap = new Map();
-  allSupplements.forEach(s => uniqueSupplementsMap.set(s.id, s));
-  const uniqueSupplements = Array.from(uniqueSupplementsMap.values());
-
   if (history.length === 0) {
     return (
       <div className="text-center text-text-secondary">
@@ -98,24 +90,18 @@ const HistoryPage: React.FC = () => {
       <div className="space-y-4 sm:space-y-6" onClick={() => { if (menuOpenId) setMenuOpenId(null) }}>
         <h1 className="text-3xl font-bold text-center">{t('nav_history')}</h1>
 
-        <div className="flex justify-center border-b border-secondary/20 overflow-x-auto">
+        <div className="flex justify-center border-b border-secondary/20">
             <button
                 onClick={() => setActiveTab('list')}
-                className={`px-4 py-2 font-medium whitespace-nowrap ${activeTab === 'list' ? 'border-b-2 border-primary text-primary' : 'text-text-secondary'}`}
+                className={`px-4 py-2 font-medium ${activeTab === 'list' ? 'border-b-2 border-primary text-primary' : 'text-text-secondary'}`}
             >
                 {t('nav_history')}
             </button>
             <button
                 onClick={() => setActiveTab('charts')}
-                className={`px-4 py-2 font-medium whitespace-nowrap ${activeTab === 'charts' ? 'border-b-2 border-primary text-primary' : 'text-text-secondary'}`}
+                className={`px-4 py-2 font-medium ${activeTab === 'charts' ? 'border-b-2 border-primary text-primary' : 'text-text-secondary'}`}
             >
                 {t('tab_graphs')}
-            </button>
-            <button
-                onClick={() => setActiveTab('insights')}
-                className={`px-4 py-2 font-medium whitespace-nowrap ${activeTab === 'insights' ? 'border-b-2 border-primary text-primary' : 'text-text-secondary'}`}
-            >
-                {t('history_tab_insights')}
             </button>
         </div>
 
@@ -183,14 +169,6 @@ const HistoryPage: React.FC = () => {
         )}
 
         {activeTab === 'charts' && <HistoryChartsTab history={history} />}
-        
-        {activeTab === 'insights' && (
-             <InsightsTab 
-                history={history}
-                takenSupplements={takenSupplements}
-                allSupplements={uniqueSupplements}
-             />
-        )}
       </div>
 
       {viewingSession && (
