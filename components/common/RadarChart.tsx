@@ -45,6 +45,12 @@ const RadarChart: React.FC<RadarChartProps> = ({
   
   const pointsString = dataPoints.map(p => `${p.x},${p.y}`).join(' ');
 
+  const getPointColor = (value: number) => {
+    // 0 = Red (0deg), 100 = Green (120deg)
+    const hue = Math.min(120, Math.max(0, value * 1.2));
+    return `hsl(${hue}, 80%, 50%)`;
+  };
+
   // Generate grid webs
   const gridWebs = [];
   for (let i = 1; i <= levels; i++) {
@@ -127,7 +133,16 @@ const RadarChart: React.FC<RadarChartProps> = ({
         
         {/* Data Points */}
         {dataPoints.map((p, i) => (
-             <circle key={`point-${i}`} cx={p.x} cy={p.y} r="3" fill={strokeColor} />
+             <circle 
+               key={`point-${i}`} 
+               cx={p.x} 
+               cy={p.y} 
+               r="4" 
+               fill={getPointColor(data[i].value)} 
+               stroke="#0f172a"
+               strokeWidth="2"
+               className="transition-all duration-1000 ease-out"
+             />
         ))}
 
         {/* Labels */}
