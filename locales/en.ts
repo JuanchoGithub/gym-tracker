@@ -18,6 +18,7 @@ export const en = {
   imbalance_upper_dominant_desc: "Your upper body strength is rated '{upper_level}', but your lower body is rated '{lower_level}'. You are leaving athletic potential on the table. Switch to a lower-body focused split.",
   imbalance_lower_dominant_title: "T-Rex Syndrome",
   imbalance_lower_dominant_desc: "Your lower body strength is rated '{lower_level}', but your upper body is rated '{upper_level}'. Great foundation, now let's build the upper body to match.",
+  strength_symmetry_subtext: "Based on strength symmetry ratios",
   
   // Navigation
   nav_train: "Train",
@@ -524,4 +525,33 @@ export const en = {
   progression_reason_bench: "You can do 20+ Pushups. Time to Bench Press.",
   progression_reason_pullup: "Your Rows are heavy. Try Pull Ups.",
   progression_reason_deadlift: "RDLs are getting easy. Switch to Deadlifts.",
+  
+  // Supplement Action Card
+  supplement_action_card_title: "It's {time}!",
+  time_morning: "Morning",
+  time_lunch: "Lunch",
+  time_afternoon: "Afternoon",
+  time_evening: "Evening",
+
+  // Routine Names & Descs
+  rt_1_name: "StrongLifts 5x5 - Workout A",
+  rt_1_desc: "A classic strength program focusing on compound lifts.",
+  rt_2_name: "StrongLifts 5x5 - Workout B",
+  rt_2_desc: "The second workout of the 5x5 program.",
+  rt_3_name: "PHUL - Upper Power",
+  rt_3_desc: "Power Hypertrophy Upper Lower training program.",
+  rt_4_name: "PHUL - Lower Power",
+  rt_4_desc: "Power Hypertrophy Upper Lower training program.",
+  rt_ppl_push_name: "PPL - Push Day",
+  rt_ppl_push_desc: "Focuses on chest, shoulders, and triceps.",
+  rt_ppl_pull_name: "PPL - Pull Day",
+  rt_ppl_pull_desc: "Focuses on back and biceps.",
+  rt_ppl_legs_name: "PPL - Leg Day",
+  rt_ppl_legs_desc: "Focuses on quads, hamstrings, glutes, and calves.",
+  rt_full_body_name: "Full Body Blast",
+  rt_full_body_desc: "A comprehensive workout hitting all major muscle groups.",
+  rt_hiit_7min_name: "Classic 7-Minute Workout",
+  rt_hiit_7min_desc: "12 bodyweight exercises performed for 30 seconds with 10 seconds of rest in between.",
+  rt_hiit_beginner_name: "Beginner HIIT Circuit",
+  rt_hiit_beginner_desc: "A 15-minute workout with 30s work and 30s rest. Complete 3 rounds.",
 };

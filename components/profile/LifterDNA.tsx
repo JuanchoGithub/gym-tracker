@@ -4,6 +4,7 @@ import { LifterStats, LifterArchetype } from '../../services/analyticsService';
 import { useI18n } from '../../hooks/useI18n';
 import { Icon } from '../common/Icon';
 import { TranslationKey } from '../../contexts/I18nContext';
+import { getBodyPartTKey } from '../../utils/i18nUtils';
 
 interface LifterDNAProps {
     stats: LifterStats;
@@ -62,6 +63,12 @@ const LifterDNA: React.FC<LifterDNAProps> = ({ stats }) => {
         </div>
     );
 
+    // Helper to localize favorite muscle
+    const getLocalizedMuscleName = (muscleName: string) => {
+        if (muscleName === 'Full Body' || muscleName === 'N/A') return t('body_part_full_body');
+        return t(getBodyPartTKey(muscleName));
+    };
+
     return (
         <div className="bg-surface border border-white/10 rounded-2xl p-5 shadow-lg mb-6">
             <div className="flex items-center gap-4 mb-6 border-b border-white/5 pb-4">
@@ -85,7 +92,7 @@ const LifterDNA: React.FC<LifterDNAProps> = ({ stats }) => {
                 
                 <div className="flex justify-between items-center py-2 border-t border-white/5 mt-2 sm:col-span-2">
                     <span className="text-xs font-bold text-text-secondary uppercase">{t('dna_stats_favorite_muscle')}</span>
-                    <span className="text-sm font-mono text-primary font-bold">{stats.favMuscle}</span>
+                    <span className="text-sm font-mono text-primary font-bold">{getLocalizedMuscleName(stats.favMuscle)}</span>
                 </div>
                 <div className="flex justify-between items-center py-2 border-t border-white/5 sm:col-span-2">
                      <span className="text-xs font-bold text-text-secondary uppercase">{t('dna_stats_lifetime_workouts')}</span>

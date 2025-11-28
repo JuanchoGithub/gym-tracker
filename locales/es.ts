@@ -18,6 +18,7 @@ export const es = {
   imbalance_upper_dominant_desc: "Tu fuerza superior está clasificada como '{upper_level}', pero tu tren inferior como '{lower_level}'. Estás desperdiciando potencial atlético. Cambiá a una rutina enfocada en piernas.",
   imbalance_lower_dominant_title: "Síndrome T-Rex",
   imbalance_lower_dominant_desc: "Tu fuerza inferior está clasificada como '{lower_level}', pero tu tren superior como '{upper_level}'. Gran base, ahora construyamos el torso para igualar.",
+  strength_symmetry_subtext: "Basado en ratios de simetría de fuerza",
   
   // Navigation
   nav_train: "Entrenar",
@@ -524,4 +525,33 @@ export const es = {
   progression_reason_bench: "Podés hacer 20+ Flexiones. Hora de Press de Banca.",
   progression_reason_pullup: "Tus remos son pesados. Probá Dominadas.",
   progression_reason_deadlift: "El Peso Muerto Rumano es fácil. Cambiá a Peso Muerto.",
+
+  // Supplement Action Card
+  supplement_action_card_title: "¡Es {time}!",
+  time_morning: "la Mañana",
+  time_lunch: "la Hora del Almuerzo",
+  time_afternoon: "la Tarde",
+  time_evening: "la Noche",
+
+  // Routine Names & Descs
+  rt_1_name: "StrongLifts 5x5 - Entrenamiento A",
+  rt_1_desc: "Programa clásico de fuerza enfocado en levantamientos compuestos.",
+  rt_2_name: "StrongLifts 5x5 - Entrenamiento B",
+  rt_2_desc: "El segundo entrenamiento del programa 5x5.",
+  rt_3_name: "PHUL - Poder Superior",
+  rt_3_desc: "Programa de entrenamiento de Poder e Hipertrofia Superior/Inferior.",
+  rt_4_name: "PHUL - Poder Inferior",
+  rt_4_desc: "Programa de entrenamiento de Poder e Hipertrofia Superior/Inferior.",
+  rt_ppl_push_name: "PPL - Día de Empuje",
+  rt_ppl_push_desc: "Enfoque en pecho, hombros y tríceps.",
+  rt_ppl_pull_name: "PPL - Día de Tracción",
+  rt_ppl_pull_desc: "Enfoque en espalda y bíceps.",
+  rt_ppl_legs_name: "PPL - Día de Piernas",
+  rt_ppl_legs_desc: "Enfoque en cuádriceps, isquiotibiales, glúteos y pantorrillas.",
+  rt_full_body_name: "Cuerpo Completo Explosivo",
+  rt_full_body_desc: "Entrenamiento integral que trabaja todos los grupos musculares principales.",
+  rt_hiit_7min_name: "Entrenamiento Clásico de 7 Minutos",
+  rt_hiit_7min_desc: "12 ejercicios de peso corporal realizados por 30 segundos con 10 segundos de descanso.",
+  rt_hiit_beginner_name: "Circuito HIIT Principiante",
+  rt_hiit_beginner_desc: "Entrenamiento de 15 minutos con 30s de trabajo y 30s de descanso. Completá 3 rondas.",
 };

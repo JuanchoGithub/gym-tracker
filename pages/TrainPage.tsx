@@ -109,12 +109,12 @@ const TrainPage: React.FC = () => {
       const takenToday = takenSupplements[todayString] || [];
       
       let currentTimeBlock = 'daily';
-      let timeLabel = 'Anytime';
+      let timeLabelKey = 'time_evening'; // Default fallback
       
-      if (hour >= 4 && hour < 11) { currentTimeBlock = 'morning'; timeLabel = 'Morning'; }
-      else if (hour >= 11 && hour < 14) { currentTimeBlock = 'lunch'; timeLabel = 'Lunch'; }
-      else if (hour >= 14 && hour < 18) { currentTimeBlock = 'afternoon'; timeLabel = 'Afternoon'; }
-      else if (hour >= 18 || hour < 4) { currentTimeBlock = 'evening'; timeLabel = 'Evening'; }
+      if (hour >= 4 && hour < 11) { currentTimeBlock = 'morning'; timeLabelKey = 'time_morning'; }
+      else if (hour >= 11 && hour < 14) { currentTimeBlock = 'lunch'; timeLabelKey = 'time_lunch'; }
+      else if (hour >= 14 && hour < 18) { currentTimeBlock = 'afternoon'; timeLabelKey = 'time_afternoon'; }
+      else if (hour >= 18 || hour < 4) { currentTimeBlock = 'evening'; timeLabelKey = 'time_evening'; }
 
       const pending = supplementPlan.plan.filter(item => {
           // Check if already taken
@@ -128,14 +128,15 @@ const TrainPage: React.FC = () => {
           if (currentTimeBlock === 'lunch' && timeKeywords.lunch.test(item.time)) return true;
           if (currentTimeBlock === 'evening' && timeKeywords.evening.test(item.time)) return true;
           // Afternoon generally doesn't have specific supplements unless pre/post workout which are tied to workout time usually
-          // but if they have general "daytime" ones we could catch them here if needed.
-          // For now, sticking to the main meal/sleep blocks.
           
           return false;
       });
       
-      return { items: pending, timeLabel };
-  }, [supplementPlan, takenSupplements, snoozedSupplements]);
+      // Translate the time label here
+      const timeLabel = t(timeLabelKey as any);
+
+      return { items: pending.slice(0, 3), timeLabel };
+  }, [supplementPlan, takenSupplements, snoozedSupplements, t]);
 
 
   const handleRoutineSelect = (routine: Routine) => {

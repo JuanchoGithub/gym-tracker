@@ -2,6 +2,7 @@
 import React from 'react';
 import { SupplementPlanItem } from '../../types';
 import { Icon } from '../common/Icon';
+import { useI18n } from '../../hooks/useI18n';
 
 interface SupplementActionCardProps {
   items: SupplementPlanItem[];
@@ -11,6 +12,7 @@ interface SupplementActionCardProps {
 }
 
 const SupplementActionCard: React.FC<SupplementActionCardProps> = ({ items, timeLabel, onTake, onSnooze }) => {
+  const { t } = useI18n();
   if (items.length === 0) return null;
 
   return (
@@ -18,7 +20,7 @@ const SupplementActionCard: React.FC<SupplementActionCardProps> = ({ items, time
         <div className="flex items-center justify-between mb-3">
             <h3 className="font-bold text-white flex items-center gap-2">
                 <Icon name="capsule" className="w-5 h-5 text-sky-300" />
-                It's {timeLabel}!
+                {t('supplement_action_card_title', { time: timeLabel })}
             </h3>
         </div>
         <div className="space-y-3">

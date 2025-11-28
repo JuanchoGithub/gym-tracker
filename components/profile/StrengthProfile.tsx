@@ -92,7 +92,7 @@ const StrengthProfile: React.FC = () => {
                 </div>
                 <div>
                     <h3 className="text-lg font-bold text-white">{t('rec_type_imbalance')}</h3>
-                    <p className="text-xs text-text-secondary">Based on strength symmetry ratios</p>
+                    <p className="text-xs text-text-secondary">{t('strength_symmetry_subtext')}</p>
                 </div>
             </div>
             
