@@ -6,6 +6,7 @@ import { generateSmartRoutine, RoutineFocus, RoutineLevel, SurveyAnswers } from 
 import { PREDEFINED_EXERCISES } from '../constants/exercises';
 import { PROGRESSION_PATHS } from '../constants/progression';
 import { getExerciseHistory, calculate1RM } from './workoutUtils';
+import { formatWeightDisplay } from './weightUtils';
 
 export interface Recommendation {
   type: 'rest' | 'workout' | 'promotion' | 'active_recovery' | 'imbalance';
@@ -404,10 +405,15 @@ export const getWorkoutRecommendation = (
   );
 
   if (trainedToday) {
+      const volume = lastSession?.exercises.reduce((total, ex) => {
+        return total + ex.sets.reduce((t, s) => t + (s.isComplete ? s.weight * s.reps : 0), 0);
+      }, 0) || 0;
+
      return {
          type: 'active_recovery',
-         titleKey: "rec_title_rest",
-         reasonKey: "rec_reason_trained_today",
+         titleKey: "rec_title_workout_complete",
+         reasonKey: "rec_reason_workout_complete",
+         reasonParams: { volume: formatWeightDisplay(volume, 'kg') + ' kg' }, // Default to kg, will be formatted in UI if needed
          suggestedBodyParts: ['Mobility'],
          relevantRoutineIds: routines.filter(r => r.name.includes('Mobility') || r.exercises.some(ex => {
              const def = exercises.find(e => e.id === ex.exerciseId);

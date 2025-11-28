@@ -35,6 +35,14 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
       gradientClass = 'from-emerald-600/90 to-teal-700/90 border-emerald-500/30';
       iconName = 'sparkles';
       cardTitle = recommendation.type === 'active_recovery' ? 'Recovery Mode' : 'Rest Day';
+
+      // Specific check for post-workout celebration
+      if (recommendation.reasonKey === "rec_reason_workout_complete") {
+           gradientClass = 'from-green-600/90 to-emerald-700/90 border-green-500/30';
+           iconName = 'trophy';
+           cardTitle = 'Workout Complete';
+      }
+
   } else if (recommendation.type === 'promotion') {
       gradientClass = 'from-amber-500/90 to-orange-600/90 border-yellow-400/30';
       iconName = 'trophy';

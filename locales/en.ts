@@ -520,6 +520,7 @@ export const en = {
   rec_title_onboarding_complete: "Start Here",
   rec_title_next_up: "Next Up: {routine}",
   rec_title_promotion: "Promotion Available: {exercise}",
+  rec_title_workout_complete: "Great Session!",
   rec_reason_fresh: "Your {muscles} are fresh (last trained {days} days ago).",
   rec_reason_neglected: "It's been {days} days since you trained {muscles}.",
   rec_reason_fatigued: "Your recovery scores are low. Consider a rest day or light cardio.",
@@ -527,6 +528,7 @@ export const en = {
   rec_reason_onboarding_complete: "Your custom plan is ready.",
   rec_reason_next_up: "Continuing your {routine} plan.",
   rec_reason_trained_today: "You already logged a workout today.",
+  rec_reason_workout_complete: "You moved {volume} today! Now it's time to rest.",
   progression_reason_squat: "Your Goblet Squat is strong! Upgrade to Barbell Squat.",
   progression_reason_bench: "You can do 20+ Pushups. Time to Bench Press.",
   progression_reason_pullup: "Your Rows are heavy. Try Pull Ups.",
@@ -534,6 +536,10 @@ export const en = {
   
   // Supplement Action Card
   supplement_action_card_title: "It's {time}!",
+  supplement_missed_title: "Missed Supplement?",
+  supplement_missed_message: "You trained today but didn't log {supplements}. Did you take them?",
+  supplement_missed_action_taken: "Yes, I did",
+  supplement_missed_action_dismiss: "No, skip",
   time_morning: "Morning",
   time_lunch: "Lunch",
   time_afternoon: "Afternoon",

@@ -16,6 +16,7 @@ import OnboardingWizard from '../components/onboarding/OnboardingWizard';
 import ConfirmModal from '../components/modals/ConfirmModal';
 import SupplementActionCard from '../components/train/SupplementActionCard';
 import { getDateString } from '../utils/timeUtils';
+import { getExplanationIdForSupplement } from '../services/explanationService';
 
 const timeKeywords = {
     morning: /morning|breakfast|am/i,
@@ -44,6 +45,7 @@ const TrainPage: React.FC = () => {
   const [isUpgradeConfirmOpen, setIsUpgradeConfirmOpen] = useState(false);
   const [onboardingRoutines, setOnboardingRoutines] = useState<Routine[]>([]);
   const [imbalanceSnoozedUntil, setImbalanceSnoozedUntil] = useLocalStorage('imbalanceSnooze', 0);
+  const [dismissedMissedSupplements, setDismissedMissedSupplements] = useState<Set<string>>(new Set());
 
   // Onboarding State
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
@@ -53,6 +55,17 @@ const TrainPage: React.FC = () => {
       const hasCustomRoutines = routines.some(r => !r.id.startsWith('rt-'));
       return !hasHistory && !hasCustomRoutines;
   }, [history, routines]);
+
+  // Check if workout finished today
+  const workoutFinishedToday = useMemo(() => {
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      const lastSession = history.length > 0 ? history[0] : null;
+      return lastSession && (
+          lastSession.startTime >= todayStart || 
+          (lastSession.endTime > 0 && lastSession.endTime >= todayStart)
+      );
+  }, [history]);
 
   useEffect(() => {
       if (onboardingRoutines.length > 0) {
@@ -101,8 +114,8 @@ const TrainPage: React.FC = () => {
   }, [recommendation, routines, onboardingRoutines]);
   
   // Supplement "Quick Intake" Logic
-  const pendingSupplements = useMemo(() => {
-      if (!supplementPlan) return { items: [], timeLabel: '' };
+  const { pendingSupplements, missedPreWorkouts } = useMemo(() => {
+      if (!supplementPlan) return { pendingSupplements: { items: [], timeLabel: '' }, missedPreWorkouts: [] };
       const now = new Date();
       const hour = now.getHours();
       const todayString = getDateString(now);
@@ -123,20 +136,32 @@ const TrainPage: React.FC = () => {
           const snoozeTime = snoozedSupplements[item.id];
           if (snoozeTime && snoozeTime > Date.now()) return false;
           
+          // Check for Pre-Workout expiry logic: If workout is done today, hide pre-workout suggestions from pending list
+          const isPreWorkout = item.time.toLowerCase().includes('pre-workout') || item.time.toLowerCase().includes('pre-entreno') || getExplanationIdForSupplement(item.supplement) === 'caffeine';
+          if (workoutFinishedToday && isPreWorkout) return false;
+
           // Check time match
           if (currentTimeBlock === 'morning' && timeKeywords.morning.test(item.time)) return true;
           if (currentTimeBlock === 'lunch' && timeKeywords.lunch.test(item.time)) return true;
           if (currentTimeBlock === 'evening' && timeKeywords.evening.test(item.time)) return true;
-          // Afternoon generally doesn't have specific supplements unless pre/post workout which are tied to workout time usually
           
           return false;
       });
-      
-      // Translate the time label here
-      const timeLabel = t(timeLabelKey as any);
 
-      return { items: pending.slice(0, 3), timeLabel };
-  }, [supplementPlan, takenSupplements, snoozedSupplements, t]);
+      // Identify missed pre-workout supplements
+      let missed: SupplementPlanItem[] = [];
+      if (workoutFinishedToday) {
+          missed = supplementPlan.plan.filter(item => {
+              const isPreWorkout = item.time.toLowerCase().includes('pre-workout') || item.time.toLowerCase().includes('pre-entreno') || getExplanationIdForSupplement(item.supplement) === 'citrulline';
+              const isTaken = takenToday.includes(item.id);
+              const isDismissed = dismissedMissedSupplements.has(item.id);
+              return isPreWorkout && !isTaken && !isDismissed;
+          });
+      }
+      
+      const timeLabel = t(timeLabelKey as any);
+      return { pendingSupplements: { items: pending.slice(0, 3), timeLabel }, missedPreWorkouts: missed };
+  }, [supplementPlan, takenSupplements, snoozedSupplements, t, workoutFinishedToday, dismissedMissedSupplements]);
 
 
   const handleRoutineSelect = (routine: Routine) => {
@@ -244,6 +269,10 @@ const TrainPage: React.FC = () => {
       toggleSupplementIntake(todayString, id);
   };
 
+  const handleDismissMissedSupplement = (id: string) => {
+      setDismissedMissedSupplements(prev => new Set(prev).add(id));
+  };
+
   return (
     <div className="space-y-10 pb-8">
       <div className="flex items-center justify-between pt-2">
@@ -251,6 +280,36 @@ const TrainPage: React.FC = () => {
       </div>
       
       <div className="space-y-8">
+        
+        {/* Missed Pre-Workout Check */}
+        {missedPreWorkouts.length > 0 && (
+            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4 mb-2 shadow-lg animate-fadeIn">
+                <div className="flex items-center gap-3 mb-3">
+                    <Icon name="warning" className="w-6 h-6 text-yellow-500" />
+                    <div>
+                        <h3 className="font-bold text-yellow-200">{t('supplement_missed_title')}</h3>
+                        <p className="text-xs text-yellow-200/70">
+                            {t('supplement_missed_message', { supplements: missedPreWorkouts.map(i => i.supplement).join(', ') })}
+                        </p>
+                    </div>
+                </div>
+                <div className="flex gap-2">
+                     <button 
+                        onClick={() => handleTakeSupplement(missedPreWorkouts[0].id)} // Take the first one for now, usually just one
+                        className="flex-1 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-200 text-sm font-bold py-2 rounded-lg transition-colors"
+                    >
+                        {t('supplement_missed_action_taken')}
+                    </button>
+                    <button 
+                        onClick={() => handleDismissMissedSupplement(missedPreWorkouts[0].id)}
+                        className="flex-1 bg-transparent border border-yellow-500/30 hover:bg-yellow-500/10 text-yellow-200/70 text-sm font-bold py-2 rounded-lg transition-colors"
+                    >
+                        {t('supplement_missed_action_dismiss')}
+                    </button>
+                </div>
+            </div>
+        )}
+
         {/* Quick Supplement Intake Card */}
         {pendingSupplements.items.length > 0 && (
             <SupplementActionCard 

@@ -1,5 +1,4 @@
 
-
 import React, { useContext, useMemo, useCallback, useState, useEffect } from 'react';
 import { AppContext } from '../../contexts/AppContext';
 import { useI18n } from '../../hooks/useI18n';
@@ -26,9 +25,11 @@ const timeKeywords = {
     }
 };
 
+// Sort helper - Lower number means earlier in the day
 const timeOrder: { [key: string]: number } = {
+    pre_workout: 0.5, // Explicitly before morning
     morning: 1,
-    pre_workout: 2,
+    intra_workout: 2.5,
     post_workout: 3,
     lunch: 3.5,
     with_meal: 4,
@@ -108,16 +109,19 @@ const DailySupplementList: React.FC<DailySupplementListProps> = ({ date, readOnl
         const originalKey = key;
 
         // --- SMART SORTING LOGIC ---
+        // Only apply if enabled AND if we are not dealing with Pre-Workout which has its own specific early slot
         if (isSmartSortEnabled && isTrainingDay) {
-             // Move Pre/Post workout items into the Morning/Lunch/Evening buckets based on user profile
-             if (key === 'pre_workout' || key === 'post_workout' || key === 'intra_workout') {
+             // Move Post workout items into Morning/Evening buckets if applicable, but keep Pre-workout separate/first unless it's Evening training
+             if (key === 'post_workout' || key === 'intra_workout') {
                  if (trainingTime === 'morning') {
                      key = 'morning';
                  } else if (trainingTime === 'night') {
                      key = 'evening';
                  }
-                 // For afternoon, we keep them separate or map to lunch if strictly needed, 
-                 // but usually pre/post indicates afternoon implicitly in standard sort order.
+             }
+             // For Pre-workout, if training in evening, move to evening group, otherwise keep as separate high priority group
+             if (key === 'pre_workout' && trainingTime === 'night') {
+                 key = 'evening';
              }
         }
 
@@ -133,10 +137,6 @@ const DailySupplementList: React.FC<DailySupplementListProps> = ({ date, readOnl
     }, {} as Record<string, SupplementPlanItem[]>);
     
     const ordered = Object.keys(grouped).sort((a, b) => (timeOrder[a] || 99) - (timeOrder[b] || 99));
-
-    // Update state for notification only if it changed to prevent render loops
-    // We use a ref-like pattern by checking if state needs update
-    // Note: Setting state during render is okay if conditional, but safer in useEffect
     
     return { groupedPlan: grouped, orderedGroups: ordered, isTrainingDay, scheduledCount: itemsForDay.length, changesDetected };
   }, [supplementPlan, getTimeKey, date, t, isSmartSortEnabled, trainingTime]);
@@ -148,24 +148,7 @@ const DailySupplementList: React.FC<DailySupplementListProps> = ({ date, readOnl
       const isDay = !!supplementPlan?.info?.trainingDays?.includes(dayOfWeek);
       
       if (isDay) {
-          // Calculate if changes WOULD happen
-          // We re-run a tiny logic check here to avoid passing `changesDetected` directly from render
-          // causing a cycle if we set state based on it directly.
-          // Actually, simply setting it if different is safe in React 18+ usually, but let's be safe.
-          
-          const fakeItems = [{time: 'Pre-workout'}, {time: 'Post-workout'}];
-          const hasPotentialChange = fakeItems.some(i => {
-              const k = getTimeKey(i.time);
-              let smartK = k;
-              if (trainingTime === 'morning') smartK = 'morning';
-              if (trainingTime === 'night') smartK = 'evening';
-              return k !== smartK;
-          });
-          
-          // Only show if enabled AND there are actually items in the schedule that moved
-          // Accessing the computed `changesDetected` from useMemo is tricky if we want to set state.
-          // Instead, we trust the user interaction (Undo) to toggle it.
-          // We simply set HasSmartSortChanges based on the result of the memo.
+          // Just setting HasSmartSortChanges based on the result of the memo is fine here.
       }
   }, [date, supplementPlan, trainingTime, getTimeKey]);
   
@@ -231,7 +214,7 @@ const DailySupplementList: React.FC<DailySupplementListProps> = ({ date, readOnl
             <div key={groupName}>
                 <h3 className="text-lg font-semibold text-text-secondary mb-3 border-b border-secondary/20 pb-2 capitalize">
                     {/* Handle translation for standard keys, or fallback to capitalized key for re-mapped groups */}
-                    {['morning', 'lunch', 'evening', 'pre_workout', 'post_workout'].includes(groupName) 
+                    {['morning', 'lunch', 'evening', 'pre_workout', 'post_workout', 'intra_workout'].includes(groupName) 
                         ? t(`supplements_timegroup_${groupName}` as any) 
                         : t(`supplements_timegroup_${groupName}` as any) || groupName
                     }

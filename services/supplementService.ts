@@ -4,10 +4,10 @@ import { getExplanationIdForSupplement } from './explanationService';
 import { PREDEFINED_EXERCISES } from '../constants/exercises';
 import { getDateString } from '../utils/timeUtils';
 
-// Sort helper
+// Sort helper - Lower number means earlier in the day
 const timeOrder: { [key: string]: number } = {
+    'Pre-workout': 0.5, // Highest priority for sorting
     'Morning': 1,
-    'Pre-workout': 2,
     'Intra-workout': 2.5,
     'Post-workout': 3,
     'Lunch': 3.5,

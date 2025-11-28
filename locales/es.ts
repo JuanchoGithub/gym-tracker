@@ -520,6 +520,7 @@ export const es = {
   rec_title_onboarding_complete: "Empezá Acá",
   rec_title_next_up: "Siguiente: {routine}",
   rec_title_promotion: "Promoción Disponible: {exercise}",
+  rec_title_workout_complete: "¡Gran Sesión!",
   rec_reason_fresh: "Tus {muscles} están frescos (último entreno hace {days} días).",
   rec_reason_neglected: "Pasaron {days} días desde que entrenaste {muscles}.",
   rec_reason_fatigued: "Tus puntajes de recuperación son bajos. Considerá un día de descanso o cardio ligero.",
@@ -527,6 +528,7 @@ export const es = {
   rec_reason_onboarding_complete: "Tu plan personalizado está listo.",
   rec_reason_next_up: "Continuando tu plan {routine}.",
   rec_reason_trained_today: "Ya registraste un entrenamiento hoy.",
+  rec_reason_workout_complete: "¡Moviste {volume} hoy! Ahora toca descansar.",
   progression_reason_squat: "¡Tu Sentadilla Copa es fuerte! Pasá a Sentadilla con Barra.",
   progression_reason_bench: "Podés hacer 20+ Flexiones. Hora de Press de Banca.",
   progression_reason_pullup: "Tus remos son pesados. Probá Dominadas.",
@@ -534,6 +536,10 @@ export const es = {
 
   // Supplement Action Card
   supplement_action_card_title: "¡Es {time}!",
+  supplement_missed_title: "¿Te olvidaste del Suplemento?",
+  supplement_missed_message: "Entrenaste hoy pero no registraste {supplements}. ¿Los tomaste?",
+  supplement_missed_action_taken: "Sí, lo hice",
+  supplement_missed_action_dismiss: "No, omitir",
   time_morning: "la Mañana",
   time_lunch: "la Hora del Almuerzo",
   time_afternoon: "la Tarde",

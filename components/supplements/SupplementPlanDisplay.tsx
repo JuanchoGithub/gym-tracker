@@ -1,6 +1,4 @@
 
-
-
 import React, { useMemo, useCallback, useState, useContext } from 'react';
 import { SupplementPlan, SupplementPlanItem } from '../../types';
 import { useI18n } from '../../hooks/useI18n';
@@ -40,8 +38,9 @@ const timeKeywords = {
 };
 
 const timeOrder: { [key: string]: number } = {
+    pre_workout: 0.5, // Explicitly before morning
     morning: 1,
-    pre_workout: 2,
+    intra_workout: 2.5,
     post_workout: 3,
     lunch: 3.5,
     with_meal: 4,
@@ -247,8 +246,11 @@ const SupplementPlanOverview: React.FC<SupplementPlanOverviewProps> = ({ plan, o
 
         return (
           <div key={groupName} className="bg-surface/50 p-4 rounded-lg">
-            <h3 className="text-xl font-semibold text-text-primary mb-3 border-b border-secondary/20 pb-2">
-              {t(`supplements_timegroup_${groupName}` as any)}
+            <h3 className="text-xl font-semibold text-text-primary mb-3 border-b border-secondary/20 pb-2 capitalize">
+              {['morning', 'lunch', 'evening', 'pre_workout', 'post_workout', 'intra_workout'].includes(groupName) 
+                  ? t(`supplements_timegroup_${groupName}` as any) 
+                  : t(`supplements_timegroup_${groupName}` as any) || groupName
+              }
             </h3>
             <div className="space-y-4">
               {hasAllDaysItems && (
