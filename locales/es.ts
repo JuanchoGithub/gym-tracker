@@ -55,7 +55,7 @@ export const es = {
   train_onboarding_card_title: "¡Bienvenido a Fortachon!",
   train_onboarding_card_desc: "Configuremos tu plan de entrenamiento personalizado.",
   train_onboarding_card_button: "Comenzar Configuración",
-  train_start_empty: "Empezar Entrenamiento Vacío",
+  train_start_empty: "¡A Entrenar!",
   train_empty_workout_subtext: "Sesión libre",
   train_latest_workouts: "Entrenamientos Recientes",
   train_my_templates: "Mis Plantillas",

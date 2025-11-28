@@ -54,7 +54,7 @@ export const en = {
   train_onboarding_card_title: "Welcome to Fortachon!",
   train_onboarding_card_desc: "Let's set up your personalized training plan.",
   train_onboarding_card_button: "Start Setup",
-  train_start_empty: "Start Empty Workout",
+  train_start_empty: "Let's Train",
   train_empty_workout_subtext: "Freestyle session",
   train_latest_workouts: "Recent Workouts",
   train_my_templates: "My Templates",
