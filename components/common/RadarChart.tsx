@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useId } from 'react';
 
 interface RadarChartData {
   label: string;
@@ -19,6 +19,7 @@ const RadarChart: React.FC<RadarChartProps> = ({
     fillColor = 'rgba(56, 189, 248, 0.5)', 
     strokeColor = '#38bdf8' 
 }) => {
+  const uniqueId = useId().replace(/:/g, '');
   const width = size;
   const height = size;
   const centerX = width / 2;
@@ -118,17 +119,49 @@ const RadarChart: React.FC<RadarChartProps> = ({
 
   return (
     <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} className="overflow-visible">
+        <defs>
+            <clipPath id={`clip-${uniqueId}`}>
+                <polygon points={pointsString} />
+            </clipPath>
+            
+            {data.map((d, i) => (
+                <radialGradient key={`grad-${i}`} id={`grad-${uniqueId}-${i}`} cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stopColor={getPointColor(d.value)} stopOpacity="0.6" />
+                    <stop offset="100%" stopColor={getPointColor(d.value)} stopOpacity="0" />
+                </radialGradient>
+            ))}
+        </defs>
+
         {/* Background Grid */}
         {gridWebs}
         {axes}
         
-        {/* Data Polygon */}
+        {/* Gradient Filled Area */}
+        <g clipPath={`url(#clip-${uniqueId})`}>
+            {/* Base subtle fill */}
+            <rect x="0" y="0" width={width} height={height} fill={fillColor} opacity="0.1" />
+            
+            {/* Color blobs for each vertex */}
+            {dataPoints.map((p, i) => (
+                <circle 
+                    key={`fill-${i}`}
+                    cx={p.x}
+                    cy={p.y}
+                    r={radius} // Cover a good portion of the chart
+                    fill={`url(#grad-${uniqueId}-${i})`}
+                    className="mix-blend-screen" 
+                />
+            ))}
+        </g>
+        
+        {/* Outline */}
         <polygon 
             points={pointsString}
-            fill={fillColor}
+            fill="none"
             stroke={strokeColor}
             strokeWidth="2"
-            className="drop-shadow-[0_0_10px_rgba(56,189,248,0.3)] transition-all duration-1000 ease-out"
+            strokeLinejoin="round"
+            className="drop-shadow-[0_0_5px_rgba(56,189,248,0.5)]"
         />
         
         {/* Data Points */}
