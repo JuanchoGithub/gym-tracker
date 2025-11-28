@@ -1,4 +1,5 @@
 
+
 export const es = {
   // Imbalance / Symmetry
   rec_type_imbalance: "Control de Simetría",
@@ -68,6 +69,11 @@ export const es = {
   routine_preview_exercises: "Ejercicios",
   routine_preview_view_exercise_details: "Ver detalles del ejercicio",
   routine_preview_start_workout: "Comenzar Entrenamiento",
+  create_template_mode_title: "Crear Plantilla",
+  create_template_mode_manual: "Creación Manual",
+  create_template_mode_manual_desc: "Construir desde cero",
+  create_template_mode_wizard: "Generador Inteligente",
+  create_template_mode_wizard_desc: "Generar plan basado en tus metas",
 
   // History Page
   history_page_no_workouts: "No hay entrenamientos registrados aún.",

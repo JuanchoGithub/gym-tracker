@@ -1,3 +1,4 @@
+
 import React, { useContext, useState } from 'react';
 import { Routine, Exercise } from '../../types';
 import { AppContext } from '../../contexts/AppContext';
@@ -13,9 +14,11 @@ interface RoutinePreviewModalProps {
   isOpen: boolean;
   onClose: () => void;
   onStart: (routine: Routine) => void;
+  actionLabel?: string;
+  description?: string;
 }
 
-const RoutinePreviewModal: React.FC<RoutinePreviewModalProps> = ({ routine, isOpen, onClose, onStart }) => {
+const RoutinePreviewModal: React.FC<RoutinePreviewModalProps> = ({ routine, isOpen, onClose, onStart, actionLabel, description }) => {
   const { getExerciseById } = useContext(AppContext);
   const { t } = useI18n();
   const [viewingExercise, setViewingExercise] = useState<Exercise | null>(null);
@@ -26,7 +29,7 @@ const RoutinePreviewModal: React.FC<RoutinePreviewModalProps> = ({ routine, isOp
     <>
       <Modal isOpen={isOpen && !viewingExercise} onClose={onClose} title={routine.name}>
         <div className="flex flex-col h-full max-h-[60vh]">
-          <p className="text-text-secondary mb-4 flex-shrink-0">{routine.description}</p>
+          <p className="text-text-secondary mb-4 flex-shrink-0">{description || routine.description}</p>
 
           <div className="flex-grow space-y-3 overflow-y-auto pr-2" style={{ overscrollBehaviorY: 'contain' }}>
             <h4 className="font-semibold text-lg">{t('routine_preview_exercises')}</h4>
@@ -63,8 +66,7 @@ const RoutinePreviewModal: React.FC<RoutinePreviewModalProps> = ({ routine, isOp
               onClick={() => onStart(routine)}
               className="w-full bg-primary text-white font-bold py-3 rounded-lg hover:bg-sky-600 transition-colors"
             >
-              {/* FIX: Corrected translation key from 'routine_start_workout' to 'routine_preview_start_workout'. */}
-              {t('routine_preview_start_workout')}
+              {actionLabel || t('routine_preview_start_workout')}
             </button>
           </div>
         </div>

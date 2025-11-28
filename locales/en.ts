@@ -68,6 +68,11 @@ export const en = {
   routine_preview_exercises: "Exercises",
   routine_preview_view_exercise_details: "View exercise details",
   routine_preview_start_workout: "Start Workout",
+  create_template_mode_title: "Create Template",
+  create_template_mode_manual: "Manual Creation",
+  create_template_mode_manual_desc: "Build a routine from scratch",
+  create_template_mode_wizard: "Smart Generator",
+  create_template_mode_wizard_desc: "Generate a plan based on your goals",
 
   // History Page
   history_page_no_workouts: "No workouts recorded yet.",

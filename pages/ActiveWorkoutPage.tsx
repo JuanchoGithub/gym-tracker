@@ -22,9 +22,9 @@ import { generateSmartRoutine, RoutineFocus } from '../utils/routineGenerator';
 import { inferUserProfile } from '../services/analyticsService';
 import { calculateMuscleFreshness } from '../utils/fatigueUtils';
 import { MUSCLES } from '../constants/muscles';
-import ConfirmModal from '../components/modals/ConfirmModal';
 import { TranslationKey } from '../contexts/I18nContext';
 import OnboardingWizard from '../components/onboarding/OnboardingWizard';
+import RoutinePreviewModal from '../components/modals/RoutinePreviewModal';
 
 const PUSH_MUSCLES = [MUSCLES.PECTORALS, MUSCLES.FRONT_DELTS, MUSCLES.TRICEPS];
 const PULL_MUSCLES = [MUSCLES.LATS, MUSCLES.TRAPS, MUSCLES.BICEPS];
@@ -939,19 +939,18 @@ const ActiveWorkoutPage: React.FC = () => {
         />
       )}
 
-      {/* Suggestion Confirm Modal */}
+      {/* Suggestion Preview Modal */}
       {suggestedRoutine && (
-          <ConfirmModal 
+          <RoutinePreviewModal 
             isOpen={!!suggestedRoutine}
             onClose={() => setSuggestedRoutine(null)}
-            onConfirm={handleAcceptSuggestion}
-            title={t('active_workout_suggestion_title', { name: suggestedRoutine.routine.name })}
-            message={suggestedRoutine.isFallback 
+            routine={suggestedRoutine.routine}
+            onStart={handleAcceptSuggestion}
+            actionLabel={t('active_workout_accept_suggestion')}
+            description={suggestedRoutine.isFallback 
                 ? t('active_workout_suggestion_reason_start') 
                 : t('active_workout_suggestion_reason', { focus: suggestedRoutine.focus })
             }
-            confirmText={t('active_workout_accept_suggestion')}
-            confirmButtonClass="bg-indigo-600 hover:bg-indigo-500"
           />
       )}
 

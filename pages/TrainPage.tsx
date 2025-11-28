@@ -17,6 +17,7 @@ import ConfirmModal from '../components/modals/ConfirmModal';
 import SupplementActionCard from '../components/train/SupplementActionCard';
 import { getDateString } from '../utils/timeUtils';
 import { getExplanationIdForSupplement } from '../services/explanationService';
+import Modal from '../components/common/Modal';
 
 const timeKeywords = {
     morning: /morning|breakfast|am/i,
@@ -45,10 +46,16 @@ const TrainPage: React.FC = () => {
   const [isUpgradeConfirmOpen, setIsUpgradeConfirmOpen] = useState(false);
   const [onboardingRoutines, setOnboardingRoutines] = useState<Routine[]>([]);
   const [imbalanceSnoozedUntil, setImbalanceSnoozedUntil] = useLocalStorage('imbalanceSnooze', 0);
-  const [dismissedMissedSupplements, setDismissedMissedSupplements] = useState<Set<string>>(new Set());
+  
+  // Persistent dismissed missed supplements
+  const [dismissedHistory, setDismissedHistory] = useLocalStorage<Record<string, string[]>>('dismissedMissedSupplements', {});
+  
+  const todayStr = getDateString(new Date());
+  const dismissedMissedSupplements = useMemo(() => new Set(dismissedHistory[todayStr] || []), [dismissedHistory, todayStr]);
 
   // Onboarding State
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
+  const [isCreateOptionModalOpen, setIsCreateOptionModalOpen] = useState(false);
   
   const isNewUser = useMemo(() => {
       const hasHistory = history.length > 0;
@@ -188,18 +195,24 @@ const TrainPage: React.FC = () => {
     };
     handleRoutineSelect(emptyRoutine);
   };
-  
-  const handleCreateNewTemplate = () => {
-      const newTemplate: Routine = {
-          id: `custom-${Date.now()}`,
-          originId: `custom-${Date.now()}`,
-          name: t('train_new_custom_template_name'),
-          description: '',
-          exercises: [],
-          isTemplate: true,
-          routineType: 'strength',
-      };
-      startTemplateEdit(newTemplate);
+
+  const handleCreateManual = () => {
+    setIsCreateOptionModalOpen(false);
+    const newTemplate: Routine = {
+        id: `custom-${Date.now()}`,
+        originId: `custom-${Date.now()}`,
+        name: t('train_new_custom_template_name'),
+        description: '',
+        exercises: [],
+        isTemplate: true,
+        routineType: 'strength',
+    };
+    startTemplateEdit(newTemplate);
+  };
+
+  const handleCreateWizard = () => {
+    setIsCreateOptionModalOpen(false);
+    setIsOnboardingOpen(true);
   };
 
   const handleConfirmStartNew = () => {
@@ -270,7 +283,11 @@ const TrainPage: React.FC = () => {
   };
 
   const handleDismissMissedSupplement = (id: string) => {
-      setDismissedMissedSupplements(prev => new Set(prev).add(id));
+      setDismissedHistory(prev => {
+          const current = prev[todayStr] || [];
+          if (current.includes(id)) return prev;
+          return { ...prev, [todayStr]: [...current, id] };
+      });
   };
 
   return (
@@ -377,7 +394,7 @@ const TrainPage: React.FC = () => {
             onRoutineDuplicate={startTemplateDuplicate}
             headerAction={
                 <button
-                    onClick={handleCreateNewTemplate}
+                    onClick={() => setIsCreateOptionModalOpen(true)}
                     className="text-primary bg-primary/10 hover:bg-primary/20 px-4 py-1.5 rounded-full transition-colors flex items-center space-x-1.5 text-sm font-semibold"
                 >
                     <Icon name="plus" className="w-4 h-4" />
@@ -435,6 +452,30 @@ const TrainPage: React.FC = () => {
               confirmButtonClass="bg-amber-600 hover:bg-amber-700"
           />
       )}
+
+      <Modal isOpen={isCreateOptionModalOpen} onClose={() => setIsCreateOptionModalOpen(false)} title={t('create_template_mode_title')}>
+        <div className="grid grid-cols-1 gap-3">
+            <button onClick={handleCreateWizard} className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-4 rounded-xl text-left flex items-center gap-4 hover:brightness-110 transition-all group">
+                <div className="bg-white/20 p-3 rounded-lg">
+                    <Icon name="sparkles" className="w-6 h-6 text-yellow-300" />
+                </div>
+                <div>
+                    <span className="block font-bold text-lg">{t('create_template_mode_wizard')}</span>
+                    <span className="block text-xs opacity-80">{t('create_template_mode_wizard_desc')}</span>
+                </div>
+            </button>
+
+            <button onClick={handleCreateManual} className="bg-surface border border-white/10 text-text-primary p-4 rounded-xl text-left flex items-center gap-4 hover:bg-white/5 transition-all group">
+                <div className="bg-white/5 p-3 rounded-lg">
+                    <Icon name="edit" className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                    <span className="block font-bold text-lg">{t('create_template_mode_manual')}</span>
+                    <span className="block text-xs text-text-secondary">{t('create_template_mode_manual_desc')}</span>
+                </div>
+            </button>
+        </div>
+      </Modal>
     </div>
   );
 };
