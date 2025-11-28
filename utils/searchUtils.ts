@@ -1,5 +1,5 @@
 
-import { Exercise } from '../types';
+import { Exercise, MuscleGroup } from '../types';
 import { getBodyPartTKey, getCategoryTKey, getMuscleTKey } from './i18nUtils';
 
 // Use a loose type for t to avoid complex type imports and symbol errors
@@ -57,4 +57,36 @@ export const searchExercises = (
       muscleNames.some(m => m.includes(term))
     );
   });
+};
+
+export const getMatchedMuscles = (
+  exercise: Exercise,
+  searchTerm: string,
+  t: Translator
+): { name: MuscleGroup; type: 'primary' | 'secondary' }[] => {
+  const matched: { name: MuscleGroup; type: 'primary' | 'secondary' }[] = [];
+  const trimmedTerm = searchTerm.trim();
+  if (!trimmedTerm) return matched;
+
+  const terms = normalizeText(trimmedTerm).split(/\s+/).filter(term => term.length > 0);
+
+  const checkMuscle = (muscle: string) => {
+      const normalizedMuscle = normalizeText(muscle);
+      const localizedMuscle = normalizeText(t(getMuscleTKey(muscle)));
+      return terms.some(term => normalizedMuscle.includes(term) || localizedMuscle.includes(term));
+  };
+
+  if (exercise.primaryMuscles) {
+      exercise.primaryMuscles.forEach(m => {
+          if (checkMuscle(m)) matched.push({ name: m, type: 'primary' });
+      });
+  }
+  
+  if (exercise.secondaryMuscles) {
+      exercise.secondaryMuscles.forEach(m => {
+          if (checkMuscle(m)) matched.push({ name: m, type: 'secondary' });
+      });
+  }
+
+  return matched;
 };

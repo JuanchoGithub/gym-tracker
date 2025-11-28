@@ -7,11 +7,11 @@ import ExerciseDetailModal from '../components/exercise/ExerciseDetailModal';
 import { Icon } from '../components/common/Icon';
 import FilterDropdown from '../components/common/FilterDropdown';
 import { BODY_PART_OPTIONS, CATEGORY_OPTIONS } from '../constants/filters';
-import { getBodyPartTKey, getCategoryTKey } from '../utils/i18nUtils';
+import { getBodyPartTKey, getCategoryTKey, getMuscleTKey } from '../utils/i18nUtils';
 import { useMeasureUnit } from '../hooks/useWeight';
 import { getBodyPartColor, getCategoryColor } from '../utils/colorUtils';
 import { TranslationKey } from '../contexts/I18nContext';
-import { searchExercises } from '../utils/searchUtils';
+import { searchExercises, getMatchedMuscles } from '../utils/searchUtils';
 
 const ExercisesPage: React.FC = () => {
   const { exercises, startExerciseEdit, allTimeBestSets } = useContext(AppContext);
@@ -136,6 +136,8 @@ const ExercisesPage: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {filteredExercises.length > 0 ? filteredExercises.map(exercise => {
           const bestSet = allTimeBestSets[exercise.id];
+          const matchedMuscles = getMatchedMuscles(exercise, searchTerm, t);
+
           return (
             <div
               key={exercise.id}
@@ -152,7 +154,7 @@ const ExercisesPage: React.FC = () => {
                     </span>
                 </div>
                 
-                <div className="flex items-center gap-2 mb-4">
+                <div className="flex items-center gap-2 mb-4 flex-wrap">
                      <span className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wide border border-white/5 ${getCategoryColor(exercise.category)}`}>
                         {t(getCategoryTKey(exercise.category))}
                     </span>
@@ -162,6 +164,11 @@ const ExercisesPage: React.FC = () => {
                             <span>{t('set_type_timed')}</span>
                         </span>
                     )}
+                    {matchedMuscles.map((m, idx) => (
+                        <span key={idx} className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wide border border-white/5 whitespace-nowrap ${m.type === 'primary' ? 'bg-red-500/20 text-red-400' : 'bg-orange-500/20 text-orange-400'}`}>
+                            {t(getMuscleTKey(m.name))}
+                        </span>
+                    ))}
                 </div>
               </div>
               

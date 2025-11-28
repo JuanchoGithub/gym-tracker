@@ -7,10 +7,10 @@ import { Exercise, BodyPart, ExerciseCategory } from '../../types';
 import { Icon } from '../common/Icon';
 import FilterDropdown from '../common/FilterDropdown';
 import { BODY_PART_OPTIONS, CATEGORY_OPTIONS } from '../../constants/filters';
-import { getBodyPartTKey, getCategoryTKey } from '../../utils/i18nUtils';
+import { getBodyPartTKey, getCategoryTKey, getMuscleTKey } from '../../utils/i18nUtils';
 import ExerciseDetailModal from '../exercise/ExerciseDetailModal';
 import { getBodyPartColor, getCategoryColor } from '../../utils/colorUtils';
-import { searchExercises } from '../../utils/searchUtils';
+import { searchExercises, getMatchedMuscles } from '../../utils/searchUtils';
 
 interface ReplaceExerciseModalProps {
   isOpen: boolean;
@@ -91,41 +91,49 @@ const ReplaceExerciseModal: React.FC<ReplaceExerciseModalProps> = ({ isOpen, onC
               </div>
 
               <div className="flex-grow space-y-2 overflow-y-auto pr-2">
-                  {filteredExercises.length > 0 ? filteredExercises.map(exercise => (
-                  <div
-                      key={exercise.id}
-                      className="bg-slate-900/50 p-3 rounded-lg flex justify-between items-center"
-                  >
-                      <div className="flex items-center gap-2 flex-grow min-w-0">
-                          <button
-                              onClick={(e) => { e.stopPropagation(); setViewingExercise(exercise); }}
-                              className="p-1 text-text-secondary hover:text-primary transition-colors flex-shrink-0"
-                              aria-label={`View details for ${exercise.name}`}
-                          >
-                              <Icon name="question-mark-circle" className="w-5 h-5" />
-                          </button>
-                          <div className="truncate">
-                              <h3 className="font-semibold text-text-primary truncate">{exercise.name}</h3>
-                              <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                  <span className={`text-xs px-2 py-0.5 rounded-full ${getBodyPartColor(exercise.bodyPart)}`}>{t(getBodyPartTKey(exercise.bodyPart))}</span>
-                                  <span className={`text-xs px-2 py-0.5 rounded-full ${getCategoryColor(exercise.category)}`}>{t(getCategoryTKey(exercise.category))}</span>
-                                  {exercise.isTimed && (
-                                    <span className="text-xs bg-yellow-400/20 text-yellow-300 px-2 py-0.5 rounded-full flex items-center gap-1">
-                                        <Icon name="stopwatch" className="w-3 h-3" />
-                                        <span>{t('set_type_timed')}</span>
-                                    </span>
-                                  )}
+                  {filteredExercises.length > 0 ? filteredExercises.map(exercise => {
+                    const matchedMuscles = getMatchedMuscles(exercise, searchTerm, t);
+                    return (
+                      <div
+                          key={exercise.id}
+                          className="bg-slate-900/50 p-3 rounded-lg flex justify-between items-center"
+                      >
+                          <div className="flex items-center gap-2 flex-grow min-w-0">
+                              <button
+                                  onClick={(e) => { e.stopPropagation(); setViewingExercise(exercise); }}
+                                  className="p-1 text-text-secondary hover:text-primary transition-colors flex-shrink-0"
+                                  aria-label={`View details for ${exercise.name}`}
+                              >
+                                  <Icon name="question-mark-circle" className="w-5 h-5" />
+                              </button>
+                              <div className="truncate">
+                                  <h3 className="font-semibold text-text-primary truncate">{exercise.name}</h3>
+                                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                      <span className={`text-xs px-2 py-0.5 rounded-full ${getBodyPartColor(exercise.bodyPart)}`}>{t(getBodyPartTKey(exercise.bodyPart))}</span>
+                                      <span className={`text-xs px-2 py-0.5 rounded-full ${getCategoryColor(exercise.category)}`}>{t(getCategoryTKey(exercise.category))}</span>
+                                      {exercise.isTimed && (
+                                        <span className="text-xs bg-yellow-400/20 text-yellow-300 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                            <Icon name="stopwatch" className="w-3 h-3" />
+                                            <span>{t('set_type_timed')}</span>
+                                        </span>
+                                      )}
+                                      {matchedMuscles.map((m, idx) => (
+                                        <span key={idx} className={`text-[10px] font-bold px-2 py-0.5 rounded-md border border-white/5 uppercase tracking-wide ${m.type === 'primary' ? 'bg-red-500/20 text-red-400' : 'bg-orange-500/20 text-orange-400'}`}>
+                                            {t(getMuscleTKey(m.name))}
+                                        </span>
+                                      ))}
+                                  </div>
                               </div>
                           </div>
+                          <button 
+                              onClick={() => handleSelectExercise(exercise.id)}
+                              className="bg-primary text-white font-bold py-1 px-3 rounded-md text-sm flex-shrink-0 ml-2"
+                          >
+                              {buttonText || t('replace_exercise_modal_button')}
+                          </button>
                       </div>
-                      <button 
-                          onClick={() => handleSelectExercise(exercise.id)}
-                          className="bg-primary text-white font-bold py-1 px-3 rounded-md text-sm flex-shrink-0 ml-2"
-                      >
-                          {buttonText || t('replace_exercise_modal_button')}
-                      </button>
-                  </div>
-                  )) : <p className="text-center text-text-secondary">{t('replace_exercise_modal_no_match')}</p>}
+                    );
+                  }) : <p className="text-center text-text-secondary">{t('replace_exercise_modal_no_match')}</p>}
               </div>
           </div>
       </Modal>

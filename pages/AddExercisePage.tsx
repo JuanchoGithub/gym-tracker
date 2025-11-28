@@ -6,12 +6,12 @@ import { BodyPart, ExerciseCategory, Exercise } from '../types';
 import { Icon } from '../components/common/Icon';
 import FilterDropdown from '../components/common/FilterDropdown';
 import { BODY_PART_OPTIONS, CATEGORY_OPTIONS } from '../constants/filters';
-import { getBodyPartTKey, getCategoryTKey } from '../utils/i18nUtils';
+import { getBodyPartTKey, getCategoryTKey, getMuscleTKey } from '../utils/i18nUtils';
 import ExerciseDetailModal from '../components/exercise/ExerciseDetailModal';
 import { getBodyPartColor, getCategoryColor } from '../utils/colorUtils';
 import { useMeasureUnit } from '../hooks/useWeight';
 import { TranslationKey } from '../contexts/I18nContext';
-import { searchExercises } from '../utils/searchUtils';
+import { searchExercises, getMatchedMuscles } from '../utils/searchUtils';
 
 const AddExercisePage: React.FC = () => {
   const { 
@@ -165,6 +165,7 @@ const AddExercisePage: React.FC = () => {
           {filteredExercises.map(exercise => {
             const isSelected = selectedIds.includes(exercise.id);
             const bestSet = allTimeBestSets[exercise.id];
+            const matchedMuscles = getMatchedMuscles(exercise, searchTerm, t);
             
             return (
               <div
@@ -219,6 +220,11 @@ const AddExercisePage: React.FC = () => {
                                   <span>{t('set_type_timed')}</span>
                               </span>
                             )}
+                            {matchedMuscles.map((m, idx) => (
+                                <span key={idx} className={`text-[10px] font-bold px-2 py-0.5 rounded-md border border-white/5 uppercase tracking-wide ${m.type === 'primary' ? 'bg-red-500/20 text-red-400' : 'bg-orange-500/20 text-orange-400'}`}>
+                                    {t(getMuscleTKey(m.name))}
+                                </span>
+                            ))}
                         </div>
                     </div>
                 </div>
