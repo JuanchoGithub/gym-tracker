@@ -1,126 +1,228 @@
 
 # Fortachon 🏋️‍♂️
 
-**Fortachon** is a sophisticated, privacy-first Progressive Web App (PWA) designed for serious strength training. It transcends simple logging by leveraging biomechanical heuristics and local analytics to act as an intelligent coaching assistant.
+**Fortachon** is a comprehensive, privacy-focused Progressive Web App (PWA) designed for serious strength training. It combines advanced workout tracking, biomechanical analytics, and intelligent supplement planning into a single, offline-capable application.
 
 Built with **React**, **TypeScript**, and **Tailwind CSS**.
 
----
+## ✨ Key Features
 
-## 🧠 Core Intelligence: The "Smart Coach" Engine
+### 🏋️‍♂️ Training & Tracking
+*   **Active Workout Mode:** Real-time tracking with support for **Supersets**, Drop Sets, Warmups, and Timed Sets.
+*   **Smart Timers:** Auto-calculating rest timers based on set intensity (Warmup vs. Failure) with background notification support.
+*   **Voice Coach:** Text-to-Speech (TTS) announcements for rounds, rest intervals, and upcoming exercises.
+*   **Quick HIIT Mode:** Dedicated interval timer for high-intensity sessions with customizable work/rest ratios.
+*   **Routine Management:** Create custom templates or use built-in programs (StrongLifts, PPL, PHUL).
+*   **Superset Player:** A dedicated UI for managing complex superset transitions and rest periods.
 
-Fortachon uses a priority-based decision tree to determine the optimal workout for the user at any given moment. It runs entirely client-side, analyzing the user's history (`WorkoutSession[]`) and profile.
+### 📊 Analytics & Insights
+*   **Muscle Heatmap:** Visualizes muscle freshness/fatigue based on your last 4 days of training volume.
+*   **Strength Symmetry:** Radar chart analysis comparing your major lifts (Squat, Bench, Deadlift, OHP, Row) against ideal ratios to detect structural imbalances.
+*   **Systemic Fatigue:** Monitors cumulative CNS (Central Nervous System) load to recommend deload weeks.
+*   **Lifter DNA:** Analyzes your training history to categorize your archetype (Powerbuilder, Bodybuilder, Hybrid) and score your Consistency, Volume, and Intensity.
+*   **Progression Tracking:** Automatic calculation of **e1RM** (Estimated 1-Rep Max) and volume trends per exercise.
+*   **Smart Recommendations:** Suggests the optimal workout for the day (e.g., "Push Day" vs "Active Recovery") based on muscle recovery status.
 
-### 1. Decision Hierarchy
-The engine evaluates conditions in the following order. The first match dictates the recommended card on the Dashboard.
-
-1.  **Onboarding Sticky Plan:** If the user is new (< 5 sessions) and created a plan via the Wizard, it enforces adherence to that specific routine sequence.
-2.  **Structural Imbalances:** Checks strength symmetry ratios (see Analytics below). If a critical imbalance (>15% deviation) is detected, it suggests a corrective focus (e.g., "Squat Dominant" -> Suggest Posterior Chain).
-3.  **Progression Promotions:** Checks if specific strength standards are met (e.g., 20+ Pushups) to suggest upgrading to a harder variation (Bench Press).
-4.  **Systemic Fatigue Override:** If CNS load > 110 (High), it overrides all other logic to force a **Deload** or **Gap Session**.
-5.  **Smart Coach (Freshness):** The default state. It calculates muscle recovery scores and suggests the most "fresh" muscle group (Push vs. Pull vs. Legs).
-6.  **Gap Session Prediction:** If the user trained yesterday, the engine predicts the *next* likely heavy workout (e.g., Leg Day) and generates an **Active Recovery** session that specifically avoids the muscles needed for tomorrow.
-
-### 2. Gap Session Logic (Active Recovery)
-A unique feature of Fortachon is the dynamic generation of "Gap Sessions". These are not pre-defined routines but are procedurally generated at runtime.
-
-**The Algorithm:**
-1.  **Prediction:** Analyzes history patterns (A -> B -> C) to predict the *next* heavy session.
-2.  **Protection:** Identifies the `PrimaryMuscles` used in that predicted session (e.g., Quads/Glutes for Leg Day).
-3.  **Weak Point Analysis:** Calculates normalized strength scores across 5 compound lifts to find the user's weakest movement pattern (e.g., Overhead Press).
-4.  **Selection:** Filters the exercise database for:
-    *   Low CNS cost (Bodyweight, Cardio, Isolation).
-    *   **Excludes** protected muscles (to ensure recovery).
-    *   **Includes** accessory muscles for the identified weak point.
-5.  **Volume Scaling:** Adjusts sets/reps based on the user's duration preference.
-
-### 3. Muscle Freshness Algorithm
-We use a non-linear decay model to estimate recovery.
-
-*   **Fatigue Injection:**
-    *   **Primary Mover:** 12 Fatigue Units per effective set.
-    *   **Secondary Mover:** 6 Fatigue Units per effective set.
-*   **Recovery Window:** Each muscle group has a specific biological recovery curve defined in `RECOVERY_PROFILES` (e.g., Spinal Erectors = 72h, Side Delts = 48h, Abs = 24h).
-*   **Calculation:**
-    $$ \text{Freshness} = 100 - \sum (\text{SetFatigue} \times (1 - \frac{\text{HoursSince}}{\text{RecoveryWindow}})) $$
+### 💊 Nutrition & Health
+*   **Supplement Wizard:** Generates a personalized supplement schedule based on weight, gender, goals (cut/bulk), and medical conditions.
+*   **Context-Aware Scheduling:** Automatically adjusts supplement timing (e.g., moving Protein from Breakfast to Lunch) based on your workout schedule.
+*   **Smart Correlations:** Analyzes workout history against supplement logs to find correlations (e.g., "Levantás un 5% más de volumen cuando tomás Creatina").
+*   **Inventory Management:** Tracks stock levels and sends reminders.
 
 ---
 
-## 📊 Analytics Engines
+## 🧠 Technical Deep Dive: The Math Behind the App
 
-### 1. Lifter DNA (Archetyping)
-Users are classified into archetypes based on their last 20 sessions. This is derived using a **Volume-Weighted Average Repetition** ($R_{avg}$) formula. This prevents warmups or light isolation work from skewing the data.
+Fortachon runs entirely client-side using `localStorage`. Below are the core algorithms driving the analytics.
 
-$$ R_{avg} = \frac{\sum (\text{SetReps} \times \text{SetVolume})}{\sum \text{SetVolume}} $$
+### 1. Estimated 1-Rep Max (e1RM)
+We use the **Epley Formula** to estimate strength potential from sub-maximal sets. This allows for normalization of performance across different rep ranges.
 
-*   **Powerbuilder:** $R_{avg} \le 7.5$ (Focus on heavy compound movements)
-*   **Bodybuilder:** $7.5 < R_{avg} \le 13$ (Hypertrophy focus)
-*   **Endurance:** $R_{avg} > 13$ (High rep/Metabolic conditioning)
+$$
+1RM = w \cdot (1 + \frac{r}{30})
+$$
 
-### 2. Systemic Fatigue (CNS Load)
-To prevent burnout, we track cumulative neurological stress.
-*   **Cost Model:** Every exercise is assigned a CNS cost based on axial loading and complexity.
-    *   *Heavy Spinal Loading (Squat/Deadlift):* 4 points/set
-    *   *Compound (Bench/Row):* 3 points/set
-    *   *Isolation:* 1 point/set
-*   **Accumulation:** We use an exponential decay function over 7 days ($0.6^d$) to model accumulated fatigue.
+*   $w$ = Weight lifted
+*   $r$ = Repetitions performed
 
-### 3. Supplement Correlations
-The app analyzes the intersection of `SupplementLog` and `WorkoutHistory`. It calculates the percentage difference in **Total Volume** and **PR Count** for sessions where a specific supplement was marked as "Taken" versus "Not Taken".
+### 2. Muscle Freshness & Recovery Algorithm
+The app calculates a "Freshness Score" (0-100%) for every muscle group.
+*   **Fatigue Induction:** A set creates fatigue units based on muscle role (Primary vs. Secondary mover).
+    *   Primary: 12 units
+    *   Secondary: 6 units
+*   **Recovery Profile:** Each muscle has a recovery window (e.g., Quads = 72h, Abs = 24h).
+*   **Linear Recovery:**
+
+$$
+\text{Fatigue}_{current} = \text{Fatigue}_{initial} \times (1 - \frac{\text{HoursSinceWorkout}}{\text{RecoveryDuration}})
+$$
+
+$$
+\text{Freshness} = \max(0, 100 - \text{Fatigue}_{current})
+$$
+
+### 3. Lifter DNA Scoring
+We classify users based on their training history (last 20 sessions).
+
+*   **Archetype:** Determined by volume-weighted average repetitions per set ($R_{avg}$).
+    *   $R_{avg} \le 7.5$: **Powerbuilder**
+    *   $7.5 < R_{avg} \le 13$: **Bodybuilder**
+    *   $R_{avg} > 13$: **Endurance**
+*   **Volume Score:** Normalized against a heuristic baseline (e.g., 10,000kg total volume = 100 points).
+*   **Intensity Score:** Heuristic based on rep ranges (lower reps imply higher % of 1RM).
+
+### 4. Systemic Fatigue (CNS Load)
+We track central nervous system stress to prevent burnout.
+*   **Base Cost:** Heavy Compounds (4 pts) > Accessories (2.5 pts) > Isolation (1 pt).
+*   **Decay:** Exponential decay over 7 days ($0.6^d$).
+
+$$
+\text{SystemicLoad} = \sum_{d=0}^{7} (\text{SessionLoad}_d \times 0.6^d)
+$$
+
+### 5. Strength Symmetry Ratios
+Imbalances are detected by comparing your estimated 1RMs against idealized structural ratios:
+*   **Bench Press : Squat** $\approx$ 3:4
+*   **Squat : Deadlift** $\approx$ 4:5
+*   **Overhead Press : Bench** $\approx$ 2:3
+*   **Push : Pull** $\approx$ 1:1
+
+### 6. The Smart Coach Decision Matrix
+The recommendation engine (`smartCoachUtils.ts`) uses a hierarchy of needs to determine the daily suggestion:
+
+1.  **Phase 0: Safety (CNS Override)**
+    *   If Systemic Fatigue > 110 (High), the engine forces a **Deload** recommendation, blocking heavy lifting suggestions to prevent overtraining.
+
+2.  **Phase 1: Habit Formation (The "Sticky" Plan)**
+    *   For "Rookies" (< 10 sessions), the engine ignores freshness and adheres strictly to the user's onboarding schedule (e.g., A -> B -> A) to build consistency.
+
+3.  **Phase 2: Progression (Exercise Promotion)**
+    *   The engine scans history for "Graduation Criteria".
+    *   *Example:* If a user performs 3 sessions of Goblet Squats with > 35% Bodyweight for 10+ reps, it prompts an upgrade to **Barbell Squats**.
+
+4.  **Phase 3: Advanced Selection (The "Gap" Session)**
+    *   If local muscle fatigue is high (avg freshness < 60%) AND no specific muscle group is fully recovered:
+    *   It generates a **Gap Session** (Active Recovery).
+    *   **Logic:**
+        1.  Identify **Weak Points** (lowest normalized strength score).
+        2.  Identify **Protected Muscles** (primary movers of the *next* predicted heavy session).
+        3.  Select low-impact exercises that target the Weak Points *without* hitting the Protected Muscles.
+
+5.  **Phase 4: Performance (The Split)**
+    *   If muscles are fresh, it predicts the next routine based on history patterns (e.g., Push -> Pull -> Legs) or selects the specific body part with the highest freshness score.
 
 ---
 
-## 🛠️ Technical Architecture
+## 🌊 System Architecture & Flows
 
-### Tech Stack
-*   **Framework:** React 18 (Hooks-heavy architecture)
-*   **Language:** TypeScript (Strict mode)
-*   **Styling:** Tailwind CSS (Mobile-first, Dark mode native)
-*   **Icons:** Custom SVG paths (No external icon libraries to reduce bundle size)
+### 1. Workout Session Lifecycle
+The core loop of the application.
 
-### Data Persistence
-Fortachon is a "Local-First" app.
-*   **Storage:** `localStorage` with a custom hook wrapper (`useLocalStorage`) handling serialization and hydration.
-*   **Migration:** The `AppContext` includes logic to migrate data structures (e.g., adding IDs to old sets) on mount.
-*   **Export:** Data can be exported to JSON/CSV for backup.
-
-### PWA Capabilities
-*   **Service Worker:** Caches app shell for instant load and offline capability.
-*   **Wake Lock:** Uses the `navigator.wakeLock` API to prevent the screen from dimming during active workouts.
-*   **Speech Synthesis:** Uses the Web Speech API for the workout coach (announcing rest times and rounds).
-
-### Project Structure
+```mermaid
+graph TD
+    A[Start] --> B{Select Routine}
+    B -->|Existing| C[Load Template]
+    B -->|New| D[Empty Workout]
+    C --> E[Active Workout View]
+    D --> E
+    
+    subgraph Active Session
+    E --> F{Interact}
+    F -->|Log Set| G[Update State & Timer]
+    F -->|Superset| H[Superset Player UI]
+    F -->|Minimize| I[Background Mode]
+    end
+    
+    E --> J[Finish Workout]
+    J --> K[Calculate PRs]
+    K --> L[Save to History]
+    L --> M[Update Muscle Heatmap]
+    L --> N[Update Lifter DNA]
 ```
-src/
-├── components/       # Atomic UI components
-│   ├── common/       # Buttons, Modals, Charts
-│   ├── workout/      # Active Session UI (Timer, SetRow)
-│   ├── supplements/  # Plan management
-│   └── insights/     # Heatmaps, Graphs
-├── contexts/         # State Management
-│   ├── AppContext    # Global state (Routines, History, User Settings)
-│   └── I18nContext   # Localization logic
-├── services/         # Business Logic (Pure Functions)
-│   ├── analyticsService.ts  # Lifter DNA, Correlations
-│   ├── supplementService.ts # Plan Generation Wizard
-│   ├── audioService.ts      # Sound effects (Oscillators)
-│   └── speechService.ts     # TTS wrapper
-└── utils/
-    ├── recommendationUtils.ts # The Smart Coach Brain
-    ├── fatigueUtils.ts        # Muscle recovery math
-    └── smartCoachUtils.ts     # Gap session generation
+
+### 2. Smart Recommendation Engine
+How the app decides what you should train today (`rec_reason_fresh` vs `rec_reason_neglected`).
+
+```mermaid
+sequenceDiagram
+    participant UI as Dashboard
+    participant Heuristic as Recommendation Engine
+    participant History as Workout History
+    participant Fatigue as Algo Fatiga
+
+    UI->>Heuristic: Request Suggestion
+    Heuristic->>History: Get Recent Sessions
+    Heuristic->>Fatigue: Calculate Muscle Freshness
+    Fatigue-->>Heuristic: Returns { Chest: 100%, Legs: 40% }
+    
+    alt Systemic Fatigue High
+        Heuristic-->>UI: Suggest Active Recovery / Deload
+    else Specific Muscle Fresh
+        Heuristic->>Heuristic: Sort Routines by Focus (Push/Pull/Legs)
+        Heuristic-->>UI: Suggest "Push Day" (Chest Fresh)
+    end
 ```
+
+### 3. Supplement Plan Generation
+Logic flow for the `SupplementService`.
+
+```mermaid
+graph LR
+    Input[User Inputs] --> Logic{Analysis Engine}
+    
+    Input -->|Goal: Gain| Logic
+    Input -->|Time: Night| Logic
+    Input -->|Diet: Vegan| Logic
+    
+    Logic -->|Check Volume| Creatine[Add Creatine]
+    Logic -->|Check Sleep| ZMA[Add ZMA]
+    Logic -->|Check Diet| Protein[Add Plant Protein]
+    
+    Creatine --> Output[Final Plan]
+    ZMA --> Output
+    Protein --> Output
+    
+    Output --> Schedule[Daily Tasks]
+```
+
+---
+
+## 📂 Project Structure
+
+```
+/
+├── src/
+│   ├── components/      # UI Components (Cards, Modals, Graphs)
+│   ├── constants/       # Static data (Muscles, Predefined Routines)
+│   ├── contexts/        # React Context (App State, I18n)
+│   ├── hooks/           # Custom Hooks (useWeight, useWakeLock)
+│   ├── locales/         # i18n translations (EN/ES)
+│   ├── pages/           # Main Route Views
+│   ├── services/        # Logic (Analytics, Audio, Speech, Supplements)
+│   ├── utils/           # Helper functions (Math, Time, Colors)
+│   ├── App.tsx          # Main Router
+│   └── index.tsx        # Entry Point
+└── public/              # Static Assets & Icons
+```
+
+## 🚀 Getting Started
+
+1.  **Install Dependencies:**
+    ```bash
+    npm install
+    ```
+
+2.  **Run Development Server:**
+    ```bash
+    npm run dev
+    ```
+
+3.  **Build for Production:**
+    ```bash
+    npm run build
+    ```
 
 ## 🌍 Localization
-The app features a custom lightweight i18n engine (`I18nContext`).
-*   **Dictionaries:** Located in `src/locales/`.
-*   **Dynamic Replacement:** Supports variable interpolation (e.g., `{weight} kg`).
-*   **TTS Integration:** The Voice Coach automatically switches language based on the selected locale.
 
----
-
-## 🚀 Running Locally
-
-1.  **Install:** `npm install`
-2.  **Dev:** `npm run dev`
-3.  **Build:** `npm run build`
+Fortachon currently supports **English** and **Spanish**. 
+The `I18nContext` handles hot-swapping languages, including complex exercise descriptions and TTS (Text-to-Speech) announcements.
