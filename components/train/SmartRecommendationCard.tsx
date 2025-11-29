@@ -29,7 +29,7 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
 
   let gradientClass = 'from-violet-600/90 to-indigo-700/90 border-indigo-500/30';
   let iconName = 'dumbbell';
-  let cardTitle = 'Smart Coach';
+  let cardTitle = t('smart_coach_title');
   
   if (recommendation.type === 'rest' || recommendation.type === 'active_recovery') {
       gradientClass = 'from-emerald-600/90 to-teal-700/90 border-emerald-500/30';
@@ -37,26 +37,26 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
       
       // Distinguish between general rest and specific gap workouts
       if (recommendation.generatedRoutine?.tags?.includes('gap_session')) {
-         cardTitle = 'Gap Session';
+         cardTitle = t('smart_gap_session');
          // Maybe a slightly different green or teal for active recovery
          gradientClass = 'from-teal-600/90 to-cyan-700/90 border-teal-500/30';
       } else if (recommendation.type === 'active_recovery') {
-         cardTitle = 'Recovery Mode';
+         cardTitle = t('smart_recovery_mode');
       } else {
-         cardTitle = 'Rest Day';
+         cardTitle = t('smart_rest_day');
       }
 
       // Specific check for post-workout celebration
       if (recommendation.reasonKey === "rec_reason_workout_complete") {
            gradientClass = 'from-green-600/90 to-emerald-700/90 border-green-500/30';
            iconName = 'trophy';
-           cardTitle = 'Workout Complete';
+           cardTitle = t('smart_workout_complete');
       }
 
   } else if (recommendation.type === 'promotion') {
       gradientClass = 'from-amber-500/90 to-orange-600/90 border-yellow-400/30';
       iconName = 'trophy';
-      cardTitle = 'Level Up!';
+      cardTitle = t('smart_level_up');
   } else if (recommendation.type === 'imbalance') {
       gradientClass = 'from-amber-600 to-orange-700 border-orange-500/30';
       iconName = 'scale';
@@ -64,7 +64,7 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
   } else if (recommendation.type === 'deload') {
       gradientClass = 'from-rose-600/90 to-pink-700/90 border-rose-500/30';
       iconName = 'warning';
-      cardTitle = 'CNS Overload';
+      cardTitle = t('smart_cns_overload');
   }
 
   // Format parameters if this is an imbalance check (assuming keys map to weight values)
@@ -156,7 +156,7 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
                     }`}
                 >
                     <Icon name={recommendation.type === 'deload' ? 'sparkles' : 'sparkles'} className="w-4 h-4" />
-                    <span>{recommendation.generatedRoutine.tags?.includes('gap_session') ? 'Start Recovery Session' : 'Smart Workout'}</span>
+                    <span>{recommendation.generatedRoutine.tags?.includes('gap_session') ? t('smart_gap_session') : t('smart_coach_title')}</span>
                 </button>
             )}
             

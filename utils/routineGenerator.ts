@@ -120,10 +120,13 @@ const getExerciseId = (slot: keyof typeof EXERCISE_MAP['gym'], equipment: Survey
 
 export type RoutineFocus = 'push' | 'pull' | 'legs' | 'full_body' | 'upper' | 'lower' | 'cardio';
 
+// Helper to satisfy type requirement for t argument
+type TranslateFunc = (key: string, replacements?: Record<string, string | number>) => string;
+
 export const generateSmartRoutine = (
   focus: RoutineFocus, 
   settings: SurveyAnswers, 
-  t: (key: string) => string
+  t: TranslateFunc
 ): Routine => {
     const { goal, equipment, time, experience } = settings;
     
@@ -183,19 +186,19 @@ export const generateSmartRoutine = (
         exercises.push(createExercise(id, sets, finalReps, rest, finalTime));
     });
     
-    const focusName = focus.charAt(0).toUpperCase() + focus.slice(1).replace('_', ' ');
-
+    const localizedFocus = t(`focus_${focus}`);
+    
     return {
         id: `smart-${focus}-${Date.now()}`,
-        name: `Smart ${focusName} Session`,
-        description: `A personalized ${focusName} workout based on your recovery and history.`,
+        name: t('smart_routine_name', { focus: localizedFocus }),
+        description: t('smart_routine_desc', { focus: localizedFocus }),
         exercises,
         isTemplate: false, // It's a generated session, not necessarily a saved template yet
         routineType: 'strength',
     };
 }
 
-export const generateRoutines = (answers: SurveyAnswers, t: (key: string) => string): Routine[] => {
+export const generateRoutines = (answers: SurveyAnswers, t: TranslateFunc): Routine[] => {
     const { experience, goal, equipment, time } = answers;
     
     const routines: Routine[] = [];

@@ -451,7 +451,7 @@ export const getWorkoutRecommendation = (
          type: 'active_recovery',
          titleKey: "rec_title_gap_workout",
          reasonKey: predictedNextRoutine ? "rec_reason_gap_predict" : "rec_reason_fatigued",
-         reasonParams: { next_routine: predictedNextRoutine?.name || "Next Session" },
+         reasonParams: { next_routine: predictedNextRoutine?.name || t('common_next_session') },
          suggestedBodyParts: ['Cardio', 'Mobility', 'Core'],
          relevantRoutineIds: [],
          generatedRoutine: gapSession,
@@ -546,7 +546,7 @@ export const getWorkoutRecommendation = (
           return r.exercises.length > 0 && (targetCount / r.exercises.length) > 0.4;
       }).map(r => r.id);
 
-      const daysText = winner.daysSince === 999 ? 'many' : winner.daysSince.toString();
+      const daysText = winner.daysSince === 999 ? t('common_many') : winner.daysSince.toString();
       
       // Only generate a smart routine if we are in the advanced phase or really need one
       const generatedRoutine = isOnboardingPhase ? undefined : generateSmartRoutine(winner.focusKey, userProfile, t);

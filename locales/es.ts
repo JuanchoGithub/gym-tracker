@@ -1,5 +1,4 @@
 
-
 export const es = {
   // Imbalance / Symmetry
   rec_type_imbalance: "Control de Simetría",
@@ -47,6 +46,8 @@ export const es = {
   common_save_changes: "Guardar Cambios",
   common_close: "Cerrar",
   common_new: "Nuevo",
+  common_many: "muchos",
+  common_next_session: "Próxima Sesión",
 
   // Train Page
   train_empty_workout_name: "Entrenamiento Vacío",
@@ -560,10 +561,10 @@ export const es = {
   supplement_missed_message: "Entrenaste hoy pero no registraste {supplements}. ¿Los tomaste?",
   supplement_missed_action_taken: "Sí, lo hice",
   supplement_missed_action_dismiss: "No, omitir",
-  time_morning: "la Mañana",
-  time_lunch: "la Hora del Almuerzo",
-  time_afternoon: "la Tarde",
-  time_evening: "la Noche",
+  time_morning: "de Mañana",
+  time_lunch: "Mediodia",
+  time_afternoon: "de Tarde",
+  time_evening: "de Noche",
 
   // Routine Names & Descs
   rt_1_name: "StrongLifts 5x5 - Entrenamiento A",
@@ -589,4 +590,24 @@ export const es = {
 
   supplements_tab_suggestions: "Sugerencias",
   supplements_tab_analysis: "Estadísticas",
+
+  // Smart Coach & Card Headers
+  smart_coach_title: "Entrenador Inteligente",
+  smart_gap_session: "Sesión Puente",
+  smart_recovery_mode: "Modo Recuperación",
+  smart_rest_day: "Día de Descanso",
+  smart_workout_complete: "Entrenamiento Completo",
+  smart_level_up: "¡Subir de Nivel!",
+  smart_cns_overload: "Sobrecarga del SNC",
+
+  // Generated Routine Translations
+  smart_routine_name: "Sesión Inteligente de {focus}",
+  smart_routine_desc: "Un entrenamiento personalizado de {focus} basado en tu recuperación e historial.",
+  focus_push: "Empuje",
+  focus_pull: "Tracción",
+  focus_legs: "Piernas",
+  focus_full_body: "Cuerpo Completo",
+  focus_upper: "Tren Superior",
+  focus_lower: "Tren Inferior",
+  focus_cardio: "Cardio",
 };

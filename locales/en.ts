@@ -46,6 +46,8 @@ export const en = {
   common_save_changes: "Save Changes",
   common_close: "Close",
   common_new: "New",
+  common_many: "many",
+  common_next_session: "Next Session",
 
   // Train Page
   train_empty_workout_name: "Empty Workout",
@@ -588,4 +590,24 @@ export const en = {
 
   supplements_tab_suggestions: "Suggestions",
   supplements_tab_analysis: "Insights",
+  
+  // Smart Coach & Card Headers
+  smart_coach_title: "Smart Coach",
+  smart_gap_session: "Gap Session",
+  smart_recovery_mode: "Recovery Mode",
+  smart_rest_day: "Rest Day",
+  smart_workout_complete: "Workout Complete",
+  smart_level_up: "Level Up!",
+  smart_cns_overload: "CNS Overload",
+  
+  // Generated Routine Translations
+  smart_routine_name: "Smart {focus} Session",
+  smart_routine_desc: "A personalized {focus} workout based on your recovery and history.",
+  focus_push: "Push",
+  focus_pull: "Pull",
+  focus_legs: "Legs",
+  focus_full_body: "Full Body",
+  focus_upper: "Upper Body",
+  focus_lower: "Lower Body",
+  focus_cardio: "Cardio",
 };
