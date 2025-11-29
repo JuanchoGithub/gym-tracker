@@ -4,7 +4,7 @@ import { MUSCLES } from './muscles';
 
 export const BODY_PART_OPTIONS: ReadonlyArray<BodyPart> = ['Chest', 'Back', 'Legs', 'Glutes', 'Shoulders', 'Biceps', 'Triceps', 'Core', 'Full Body', 'Calves', 'Forearms', 'Mobility', 'Cardio'];
 
-export const CATEGORY_OPTIONS: ReadonlyArray<ExerciseCategory> = ['Barbell', 'Dumbbell', 'Machine', 'Cable', 'Bodyweight', 'Assisted Bodyweight', 'Kettlebell', 'Plyometrics', 'Reps Only', 'Cardio', 'Duration'];
+export const CATEGORY_OPTIONS: ReadonlyArray<ExerciseCategory> = ['Barbell', 'Dumbbell', 'Machine', 'Cable', 'Bodyweight', 'Assisted Bodyweight', 'Kettlebell', 'Plyometrics', 'Reps Only', 'Cardio', 'Duration', 'Smith Machine'];
 
 export const MUSCLE_GROUP_OPTIONS: ReadonlyArray<MuscleGroup> = [
   MUSCLES.PECTORALS, MUSCLES.UPPER_CHEST, MUSCLES.LOWER_CHEST, MUSCLES.SERRATUS_ANTERIOR,

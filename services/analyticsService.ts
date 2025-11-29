@@ -1,9 +1,10 @@
 
-import { WorkoutSession, SupplementPlanItem, PerformedSet } from '../types';
+import { WorkoutSession, SupplementPlanItem, PerformedSet, Profile, Exercise } from '../types';
 import { getDateString } from '../utils/timeUtils';
 import { PREDEFINED_EXERCISES } from '../constants/exercises';
 import { SurveyAnswers } from '../utils/routineGenerator';
 import { calculate1RM, getExerciseHistory } from '../utils/workoutUtils';
+import { ANCHOR_EXERCISES, EXERCISE_RATIOS, BODY_PART_ANCHORS, CATEGORY_RATIOS } from '../constants/ratios';
 
 // Exercise IDs grouped by pattern for 1RM aggregation
 export const MOVEMENT_PATTERNS = {
@@ -50,6 +51,126 @@ export const calculateMaxStrengthProfile = (history: WorkoutSession[]) => {
 
     return profile;
 }
+
+/**
+ * Helper to find the anchor and ratio for any exercise (Tiered Lookup)
+ */
+export const resolveAnchorAndRatio = (exerciseId: string, allExercises: Exercise[]) => {
+    // 1. Specific Mapping (Highest Accuracy)
+    if (EXERCISE_RATIOS[exerciseId]) {
+        return EXERCISE_RATIOS[exerciseId];
+    }
+    
+    // 2. Fallback Mapping (Pattern Matching)
+    const exercise = allExercises.find(e => e.id === exerciseId) || PREDEFINED_EXERCISES.find(e => e.id === exerciseId);
+    
+    if (exercise) {
+        const anchorId = BODY_PART_ANCHORS[exercise.bodyPart];
+        const ratio = CATEGORY_RATIOS[exercise.category];
+        
+        if (anchorId && ratio) {
+            return { anchorId, ratio };
+        }
+    }
+    
+    return null;
+}
+
+/**
+ * Calculates "Synthetic Anchors" for the Big 4 based on all available history.
+ * It normalizes accessory lifts to the main lift standard to find the user's theoretical max capabilities.
+ */
+export const calculateSyntheticAnchors = (history: WorkoutSession[], allExercises: Exercise[], profile?: Profile): Record<string, number> => {
+    const anchors = {
+        [ANCHOR_EXERCISES.SQUAT]: 0,
+        [ANCHOR_EXERCISES.BENCH]: 0,
+        [ANCHOR_EXERCISES.DEADLIFT]: 0,
+        [ANCHOR_EXERCISES.OHP]: 0,
+    };
+    
+    // 1. Initialize with stored profile maxes if available
+    if (profile?.oneRepMaxes) {
+        Object.values(ANCHOR_EXERCISES).forEach(anchorId => {
+            if (profile.oneRepMaxes?.[anchorId]) {
+                anchors[anchorId] = profile.oneRepMaxes[anchorId].weight;
+            }
+        });
+    }
+
+    // 2. Analyze History for "Best Fit" maxes
+    // Iterate through all exercises in history. If an exercise is mapped to an anchor,
+    // calculate its e1RM, normalize it, and update the anchor if it's higher.
+    const sixMonthsAgo = Date.now() - (180 * 24 * 60 * 60 * 1000);
+
+    history.forEach(session => {
+        if (session.startTime < sixMonthsAgo) return;
+
+        session.exercises.forEach(ex => {
+            // Resolve ratio for this specific exercise instance
+            const ratioData = resolveAnchorAndRatio(ex.exerciseId, allExercises);
+            
+            // Also check if it IS an anchor itself
+            const isAnchor = Object.values(ANCHOR_EXERCISES).includes(ex.exerciseId);
+
+            if (!ratioData && !isAnchor) return;
+
+            // If it IS an anchor, ratio is 1.0 by definition
+            const anchorId = ratioData ? ratioData.anchorId : ex.exerciseId;
+            const ratio = ratioData ? ratioData.ratio : 1.0;
+
+            // Find best set in this exercise instance
+            let maxSetE1RM = 0;
+            ex.sets.forEach(set => {
+                if (set.type === 'normal' && set.isComplete && set.weight > 0 && set.reps > 0 && set.reps <= 12) {
+                    // Only consider sets < 12 reps for accurate strength projection
+                     const e1rm = calculate1RM(set.weight, set.reps);
+                     if (e1rm > maxSetE1RM) maxSetE1RM = e1rm;
+                }
+            });
+
+            if (maxSetE1RM > 0) {
+                // Normalize: If I Leg Press 250kg (Ratio 2.5), my Theoretical Squat is 100kg.
+                const normalizedMax = maxSetE1RM / ratio;
+                
+                // Update Anchor if this performance implies a higher strength level
+                // Note: We might want to apply a small penalty/tax for indirect calculations to be conservative, 
+                // but for now, raw conversion.
+                if (anchors[anchorId] !== undefined && normalizedMax > anchors[anchorId]) {
+                    anchors[anchorId] = normalizedMax;
+                }
+            }
+        });
+    });
+
+    return anchors;
+};
+
+/**
+ * Infers the 1RM for a specific exercise based on Synthetic Anchors.
+ */
+export const getInferredMax = (exercise: Exercise, syntheticAnchors: Record<string, number>, allExercises: Exercise[]): { value: number, source: string } | null => {
+    // 1. Is this exercise an Anchor itself?
+    if (Object.values(ANCHOR_EXERCISES).includes(exercise.id)) {
+        const val = syntheticAnchors[exercise.id];
+        return val > 0 ? { value: val, source: 'History' } : null; // 'History' here essentially means calculated aggregate
+    }
+
+    // 2. Is it a mapped accessory?
+    const mapping = resolveAnchorAndRatio(exercise.id, allExercises);
+    
+    if (mapping) {
+        const anchorMax = syntheticAnchors[mapping.anchorId];
+        if (anchorMax > 0) {
+            const inferred = anchorMax * mapping.ratio;
+            // Find Anchor Name for source label
+            const anchorName = allExercises.find(e => e.id === mapping.anchorId)?.name || 'Anchor';
+            return { value: inferred, source: anchorName };
+        }
+    }
+
+    return null;
+};
+
 
 export const calculateNormalizedStrengthScores = (history: WorkoutSession[]) => {
     const maxLifts = calculateMaxStrengthProfile(history);

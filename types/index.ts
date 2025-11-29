@@ -6,7 +6,7 @@ export type BodyPart = 'Chest' | 'Back' | 'Legs' | 'Glutes' | 'Shoulders' | 'Bic
 export type MuscleGroup = typeof MUSCLES[keyof typeof MUSCLES];
 
 // FIX: Added 'Duration' to the ExerciseCategory type to match its usage in the application.
-export type ExerciseCategory = 'Barbell' | 'Dumbbell' | 'Machine' | 'Cable' | 'Bodyweight' | 'Assisted Bodyweight' | 'Kettlebell' | 'Plyometrics' | 'Reps Only' | 'Cardio' | 'Duration';
+export type ExerciseCategory = 'Barbell' | 'Dumbbell' | 'Machine' | 'Cable' | 'Bodyweight' | 'Assisted Bodyweight' | 'Kettlebell' | 'Plyometrics' | 'Reps Only' | 'Cardio' | 'Duration' | 'Smith Machine';
 
 export interface Exercise {
   id: string;

@@ -9,6 +9,7 @@ import OneRepMaxDetailView from './OneRepMaxDetailView';
 import { calculate1RM } from '../../utils/workoutUtils';
 import { TranslationKey } from '../../contexts/I18nContext';
 import AddExercisesModal from '../modals/AddExercisesModal';
+import { calculateSyntheticAnchors, getInferredMax } from '../../services/analyticsService';
 
 interface OneRepMaxHubProps {
     isOpen: boolean;
@@ -17,7 +18,7 @@ interface OneRepMaxHubProps {
 
 const OneRepMaxHub: React.FC<OneRepMaxHubProps> = ({ isOpen, onClose }) => {
     const { t } = useI18n();
-    const { profile, allTimeBestSets, getExerciseById, updateOneRepMax } = useContext(AppContext);
+    const { profile, allTimeBestSets, getExerciseById, updateOneRepMax, history, exercises } = useContext(AppContext);
     const { displayWeight, weightUnit } = useMeasureUnit();
     const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
@@ -25,6 +26,9 @@ const OneRepMaxHub: React.FC<OneRepMaxHubProps> = ({ isOpen, onClose }) => {
 
     const coreIds = ['ex-2', 'ex-1', 'ex-3', 'ex-4']; // Squat, Bench, Deadlift, OHP
     
+    // Compute synthetic anchors once for the list
+    const syntheticAnchors = useMemo(() => calculateSyntheticAnchors(history, exercises, profile), [history, exercises, profile]);
+
     // Helper to render exercise card
     const ExerciseCard = ({ id, isCore = false }: { id: string, isCore?: boolean }) => {
         const exercise = getExerciseById(id);
@@ -35,8 +39,15 @@ const OneRepMaxHub: React.FC<OneRepMaxHubProps> = ({ isOpen, onClose }) => {
         const bestSet = allTimeBestSets[id];
         const calculatedMax = bestSet ? calculate1RM(bestSet.weight, bestSet.reps) : 0;
         
+        const inferredData = getInferredMax(exercise, syntheticAnchors, exercises);
+        const inferredMax = inferredData ? inferredData.value : 0;
+
         const hasNewPotential = calculatedMax > storedMax;
         const isTested = storedEntry?.method === 'tested';
+        
+        // Effective max to show: Stored > Inferred
+        const displayMax = storedMax > 0 ? storedMax : inferredMax;
+        const isInferredOnly = storedMax === 0 && inferredMax > 0;
 
         return (
             <button 
@@ -55,16 +66,22 @@ const OneRepMaxHub: React.FC<OneRepMaxHubProps> = ({ isOpen, onClose }) => {
                                  {t(isTested ? 'orm_tested_badge' : 'orm_estimated_badge')}
                              </span>
                         ) : (
-                            <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border text-yellow-400 border-yellow-500/30 bg-yellow-500/10">
-                                {t('orm_calibrate')}
-                            </span>
+                            isInferredOnly ? (
+                                <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border text-indigo-300 border-indigo-500/30 bg-indigo-500/10">
+                                    Inferred
+                                </span>
+                            ) : (
+                                <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border text-yellow-400 border-yellow-500/30 bg-yellow-500/10">
+                                    {t('orm_calibrate')}
+                                </span>
+                            )
                         )}
                     </div>
                 </div>
 
                 <div className={isCore ? "" : "text-right"}>
-                    <span className={`font-mono font-bold text-white ${isCore ? 'text-3xl' : 'text-xl'}`}>
-                        {storedMax > 0 ? displayWeight(storedMax) : '-'}
+                    <span className={`font-mono font-bold ${isInferredOnly ? 'text-indigo-200/70' : 'text-white'} ${isCore ? 'text-3xl' : 'text-xl'}`}>
+                        {displayMax > 0 ? displayWeight(displayMax) : '-'}
                     </span>
                     <span className="text-xs text-text-secondary ml-1">{t(('workout_' + weightUnit) as TranslationKey)}</span>
                 </div>

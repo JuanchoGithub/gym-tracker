@@ -1,5 +1,5 @@
 
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useMemo } from 'react';
 import { Exercise } from '../../types';
 import { AppContext } from '../../contexts/AppContext';
 import { useI18n } from '../../hooks/useI18n';
@@ -9,6 +9,7 @@ import { TranslationKey } from '../../contexts/I18nContext';
 import OneRepMaxTestRunner from './OneRepMaxTestRunner';
 import { calculate1RM } from '../../utils/workoutUtils';
 import CascadeUpdateModal from './CascadeUpdateModal';
+import { calculateSyntheticAnchors, getInferredMax } from '../../services/analyticsService';
 
 interface OneRepMaxDetailViewProps {
     exercise: Exercise;
@@ -17,7 +18,7 @@ interface OneRepMaxDetailViewProps {
 
 const OneRepMaxDetailView: React.FC<OneRepMaxDetailViewProps> = ({ exercise, onBack }) => {
     const { t } = useI18n();
-    const { profile, allTimeBestSets, updateOneRepMax } = useContext(AppContext);
+    const { profile, allTimeBestSets, updateOneRepMax, history, exercises } = useContext(AppContext);
     const { displayWeight, weightUnit, getStoredWeight } = useMeasureUnit();
 
     const [isTestRunnerOpen, setIsTestRunnerOpen] = useState(false);
@@ -31,17 +32,32 @@ const OneRepMaxDetailView: React.FC<OneRepMaxDetailViewProps> = ({ exercise, onB
     // Get e1RM from history
     const bestSet = allTimeBestSets[exercise.id];
     const calculatedMax = bestSet ? calculate1RM(bestSet.weight, bestSet.reps) : 0;
+
+    // Calculate Inferred Max from Parent/Anchor
+    const syntheticAnchors = useMemo(() => calculateSyntheticAnchors(history, exercises, profile), [history, exercises, profile]);
+    const inferredData = useMemo(() => getInferredMax(exercise, syntheticAnchors, exercises), [exercise, syntheticAnchors, exercises]);
+    const inferredMax = inferredData ? inferredData.value : 0;
     
-    // Rookie state: No history, no stored max
-    const isRookie = !storedMax && !calculatedMax;
+    // Rookie state: No history, no stored max, no inferred max
+    const isRookie = !storedMax && !calculatedMax && !inferredMax;
     
     // Estimated state: We have history, maybe stored max is outdated or missing
     const isEstimated = calculatedMax > storedMax;
+
+    // Inferred state: No direct history/stored, but parent data exists
+    const isInferredOnly = !storedMax && !calculatedMax && inferredMax > 0;
 
     const handleUpdateFromEstimate = () => {
         updateOneRepMax(exercise.id, calculatedMax, 'calculated');
         setNewlyUpdatedMax(calculatedMax);
         setIsCascadeOpen(true);
+    };
+    
+    const handleUpdateFromInference = () => {
+        if (inferredMax > 0) {
+            updateOneRepMax(exercise.id, inferredMax, 'calculated');
+            // No cascade from an inferred update typically, as it's already downstream
+        }
     };
 
     const handleTestComplete = (newMax: number) => {
@@ -72,7 +88,7 @@ const OneRepMaxDetailView: React.FC<OneRepMaxDetailViewProps> = ({ exercise, onB
             <div className="text-center mb-8">
                 <h2 className="text-3xl font-bold text-white mb-2">{exercise.name}</h2>
                 <div className="inline-flex items-center gap-2 bg-surface px-3 py-1 rounded-full border border-white/10">
-                    <span className={`w-2 h-2 rounded-full ${storedEntry?.method === 'tested' ? 'bg-green-500' : 'bg-yellow-500'}`}></span>
+                    <span className={`w-2 h-2 rounded-full ${storedEntry?.method === 'tested' ? 'bg-green-500' : (storedMax > 0 ? 'bg-yellow-500' : 'bg-white/20')}`}></span>
                     <span className="text-xs font-bold text-text-secondary uppercase tracking-wider">
                         {storedEntry ? t(storedEntry.method === 'tested' ? 'orm_tested_badge' : 'orm_estimated_badge') : t('orm_needs_calibration')}
                     </span>
@@ -111,18 +127,30 @@ const OneRepMaxDetailView: React.FC<OneRepMaxDetailViewProps> = ({ exercise, onB
                 <div className="space-y-6">
                     {/* Main Status Card */}
                     <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-surface border border-white/10 p-5 rounded-2xl flex flex-col items-center justify-center">
+                        <div className="bg-surface border border-white/10 p-5 rounded-2xl flex flex-col items-center justify-center text-center">
                             <p className="text-xs text-text-secondary uppercase font-bold mb-2">{t('orm_detail_current_profile')}</p>
                             <p className="text-3xl font-mono font-bold text-white">{displayWeight(storedMax)} <span className="text-lg text-text-secondary/50">{t(('workout_' + weightUnit) as TranslationKey)}</span></p>
                             <p className="text-[10px] text-text-secondary/50 mt-2">{storedEntry ? new Date(storedEntry.date).toLocaleDateString() : '-'}</p>
                         </div>
-                        <div className={`border p-5 rounded-2xl flex flex-col items-center justify-center ${isEstimated ? 'bg-green-500/10 border-green-500/30' : 'bg-surface border-white/10 opacity-50'}`}>
+                        <div className={`border p-5 rounded-2xl flex flex-col items-center justify-center text-center ${isEstimated || isInferredOnly ? 'bg-green-500/10 border-green-500/30' : 'bg-surface border-white/10 opacity-50'}`}>
                             <p className="text-xs text-text-secondary uppercase font-bold mb-2">{t('orm_detail_calculated')}</p>
-                            <p className={`text-3xl font-mono font-bold ${isEstimated ? 'text-green-400' : 'text-text-secondary'}`}>{displayWeight(calculatedMax)}</p>
-                            {isEstimated && (
-                                <button onClick={handleUpdateFromEstimate} className="mt-2 text-[10px] bg-green-500/20 text-green-400 px-2 py-1 rounded border border-green-500/30 hover:bg-green-500/30 transition-colors">
-                                    {t('orm_detail_action_update')}
-                                </button>
+                            {isInferredOnly ? (
+                                <>
+                                    <p className="text-3xl font-mono font-bold text-green-400">{displayWeight(inferredMax)}</p>
+                                    <p className="text-[10px] text-green-300/70 mt-1 truncate max-w-full px-1">via {inferredData?.source}</p>
+                                    <button onClick={handleUpdateFromInference} className="mt-2 text-[10px] bg-green-500/20 text-green-400 px-2 py-1 rounded border border-green-500/30 hover:bg-green-500/30 transition-colors">
+                                        Apply Estimate
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    <p className={`text-3xl font-mono font-bold ${isEstimated ? 'text-green-400' : 'text-text-secondary'}`}>{displayWeight(calculatedMax)}</p>
+                                    {isEstimated && (
+                                        <button onClick={handleUpdateFromEstimate} className="mt-2 text-[10px] bg-green-500/20 text-green-400 px-2 py-1 rounded border border-green-500/30 hover:bg-green-500/30 transition-colors">
+                                            {t('orm_detail_action_update')}
+                                        </button>
+                                    )}
+                                </>
                             )}
                         </div>
                     </div>
@@ -174,7 +202,7 @@ const OneRepMaxDetailView: React.FC<OneRepMaxDetailViewProps> = ({ exercise, onB
                 isOpen={isTestRunnerOpen} 
                 onClose={() => setIsTestRunnerOpen(false)} 
                 exerciseId={exercise.id}
-                targetMax={calculatedMax || storedMax || 20} // Default to bar if nothing known
+                targetMax={calculatedMax || storedMax || inferredMax || 20} 
                 onComplete={handleTestComplete}
             />
 

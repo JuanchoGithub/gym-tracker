@@ -65,6 +65,7 @@ export const en_exercise_data = {
   category_reps_only: "Reps Only",
   category_cardio: "Cardio",
   category_duration: "Duration",
+  category_smith_machine: "Smith Machine",
   
   // Exercises Page UI
   search_placeholder: "Search...",
