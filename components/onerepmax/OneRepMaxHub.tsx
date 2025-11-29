@@ -30,7 +30,7 @@ const OneRepMaxHub: React.FC<OneRepMaxHubProps> = ({ isOpen, onClose }) => {
     const syntheticAnchors = useMemo(() => calculateSyntheticAnchors(history, exercises, profile), [history, exercises, profile]);
 
     // Helper to render exercise card
-    const ExerciseCard = ({ id, isCore = false }: { id: string, isCore?: boolean }) => {
+    const ExerciseCard: React.FC<{ id: string, isCore?: boolean }> = ({ id, isCore = false }) => {
         const exercise = getExerciseById(id);
         if (!exercise) return null;
 

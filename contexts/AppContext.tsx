@@ -1,104 +1,125 @@
 
-import React, { createContext, useState, ReactNode, useMemo, useEffect, useCallback } from 'react';
+import React, { createContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import { Routine, WorkoutSession, Exercise, WorkoutExercise, PerformedSet, ActiveHiitSession, SupplementPlan, SupplementPlanItem, SupplementSuggestion, RejectedSuggestion, Profile, SupersetDefinition, OneRepMaxEntry } from '../types';
-import { PREDEFINED_ROUTINES } from '../constants/routines';
+import { 
+  Routine, WorkoutSession, Exercise, WorkoutExercise, PerformedSet, 
+  Profile, SupplementPlan, SupplementPlanItem, SupplementSuggestion, 
+  AutoUpdateEntry
+} from '../types';
 import { PREDEFINED_EXERCISES } from '../constants/exercises';
-import { useI18n } from '../hooks/useI18n';
-import { TranslationKey } from './I18nContext';
-import { calculateRecords, getExerciseHistory, calculate1RM, getTimerDuration } from '../utils/workoutUtils';
-import { speak } from '../services/speechService';
-import { unlockAudioContext } from '../services/audioService';
-import { reviewSupplementPlan, analyzeVolumeDrop } from '../services/supplementService';
-import { cancelTimerNotification, sendSupplementUpdateNotification } from '../services/notificationService';
+import { PREDEFINED_ROUTINES } from '../constants/routines';
 
-export type WeightUnit = 'kg' | 'lbs';
-export type MeasureUnit = 'metric' | 'imperial';
+// Define types exported from Context
 export type CheckInReason = 'busy' | 'deload' | 'injury';
-
-export interface CheckInState {
-    active: boolean;
-    lastChecked?: number;
-    reason?: CheckInReason;
-}
+export type WeightUnit = 'kg' | 'lbs';
 
 export interface ActiveTimerInfo {
   exerciseId: string;
   setId: string;
-  targetTime: number; // Timestamp (Date.now() + duration) when the timer should end
-  totalDuration: number; // The current total duration for progress bar calculation
-  initialDuration: number; // The original duration for reset
+  targetTime: number;
+  totalDuration: number;
+  initialDuration: number;
   isPaused: boolean;
-  timeLeftWhenPaused: number; // Time left in seconds when it was paused
+  timeLeftWhenPaused: number;
 }
 
-interface AppContextType {
-  routines: Routine[];
-  upsertRoutine: (routine: Routine) => void;
-  upsertRoutines: (routines: Routine[]) => void;
-  deleteRoutine: (routineId: string) => void;
-  history: WorkoutSession[];
-  deleteHistorySession: (sessionId: string) => void;
-  updateHistorySession: (session: WorkoutSession) => void;
-  exercises: Exercise[];
-  getExerciseById: (id: string) => Exercise | undefined;
-  upsertExercise: (exercise: Exercise) => void;
+export interface TimedSetInfo {
+    exercise: WorkoutExercise;
+    set: PerformedSet;
+}
+
+export interface AppContextType {
+  // Workout State
   activeWorkout: WorkoutSession | null;
   startWorkout: (routine: Routine) => void;
   updateActiveWorkout: (workout: WorkoutSession) => void;
   endWorkout: () => void;
+  discardActiveWorkout: () => void;
   isWorkoutMinimized: boolean;
   minimizeWorkout: () => void;
   maximizeWorkout: () => void;
-  discardActiveWorkout: () => void;
-  measureUnit: MeasureUnit;
-  setMeasureUnit: (unit: MeasureUnit) => void;
-  defaultRestTimes: { normal: number; warmup: number; drop: number; timed: number; effort: number; failure: number; };
-  setDefaultRestTimes: (times: { normal: number; warmup: number; drop: number; timed: number; effort: number; failure: number; }) => void;
-  editingTemplate: Routine | null;
-  updateEditingTemplate: (template: Routine) => void;
-  startTemplateEdit: (template: Routine) => void;
-  startTemplateDuplicate: (template: Routine) => void;
-  endTemplateEdit: (savedTemplate?: Routine) => void;
+  
+  // Lists
+  routines: Routine[];
+  upsertRoutine: (routine: Routine) => void;
+  upsertRoutines: (routines: Routine[]) => void;
+  deleteRoutine: (id: string) => void;
+  
+  exercises: Exercise[];
+  setRawExercises: React.Dispatch<React.SetStateAction<Exercise[]>>;
+  getExerciseById: (id: string) => Exercise | undefined;
+  startExerciseEdit: (exercise: Exercise, onComplete?: (ex: Exercise) => void) => void;
+  endExerciseEdit: (exercise?: Exercise) => void;
   editingExercise: Exercise | null;
-  startExerciseEdit: (exercise: Exercise, onSaveCallback?: (savedExercise: Exercise) => void) => void;
-  endExerciseEdit: (savedExercise?: Exercise) => void;
-  startExerciseDuplicate: (exercise: Exercise, onSaveCallback?: (savedExercise: Exercise) => void) => void;
-  editingHistorySession: WorkoutSession | null;
+  startExerciseDuplicate: (exercise: Exercise, onComplete?: (ex: Exercise) => void) => void;
+
+  history: WorkoutSession[];
+  deleteHistorySession: (id: string) => void;
   startHistoryEdit: (session: WorkoutSession) => void;
-  endHistoryEdit: (savedSession?: WorkoutSession) => void;
-  useLocalizedExerciseNames: boolean;
-  setUseLocalizedExerciseNames: (value: boolean) => void;
-  keepScreenAwake: boolean;
-  setKeepScreenAwake: (value: boolean) => void;
-  enableNotifications: boolean;
-  setEnableNotifications: (value: boolean) => void;
-  allTimeBestSets: Record<string, PerformedSet>;
-  activeHiitSession: ActiveHiitSession | null;
+  endHistoryEdit: (session?: WorkoutSession) => void;
+  editingHistorySession: WorkoutSession | null;
+  
+  // Templates
+  editingTemplate: Routine | null;
+  startTemplateEdit: (routine: Routine) => void;
+  updateEditingTemplate: (routine: Routine) => void;
+  endTemplateEdit: (routine?: Routine) => void;
+  startTemplateDuplicate: (routine: Routine) => void;
+  
+  // Adding Exercises
+  isAddingExercisesToWorkout: boolean;
+  startAddExercisesToWorkout: (supersetId?: string) => void;
+  endAddExercisesToWorkout: (ids?: string[]) => void;
+  isAddingExercisesToTemplate: boolean;
+  startAddExercisesToTemplate: (supersetId?: string) => void;
+  endAddExercisesToTemplate: (ids?: string[]) => void;
+  
+  // Timers
+  activeTimerInfo: ActiveTimerInfo | null;
+  setActiveTimerInfo: React.Dispatch<React.SetStateAction<ActiveTimerInfo | null>>;
+  activeTimedSet: TimedSetInfo | null;
+  setActiveTimedSet: React.Dispatch<React.SetStateAction<TimedSetInfo | null>>;
+  activeQuickTimer: number | null;
+  startQuickTimer: (seconds: number) => void;
+  endQuickTimer: () => void;
+  activeHiitSession: { routine: Routine, startTime: number } | null;
   startHiitSession: (routine: Routine) => void;
   endHiitSession: () => void;
-  selectedVoiceURI: string | null;
-  setSelectedVoiceURI: (uri: string | null) => void;
-  isAddingExercisesToWorkout: boolean;
-  startAddExercisesToWorkout: (targetSupersetId?: string) => void;
-  endAddExercisesToWorkout: (newExerciseIds?: string[]) => void;
-  isAddingExercisesToTemplate: boolean;
-  startAddExercisesToTemplate: (targetSupersetId?: string) => void;
-  endAddExercisesToTemplate: (newExerciseIds?: string[]) => void;
-  activeQuickTimer: number | null;
-  startQuickTimer: (duration: number) => void;
-  endQuickTimer: () => void;
+  
+  // Profile & Settings
+  profile: Profile;
+  updateProfileInfo: (info: Partial<Profile>) => void;
+  currentWeight: number | undefined;
+  logWeight: (weight: number) => void;
+  measureUnit: 'metric' | 'imperial';
+  setMeasureUnit: (unit: 'metric' | 'imperial') => void;
+  
+  // Logic/Analytics
+  allTimeBestSets: Record<string, PerformedSet>;
+  checkInState: { active: boolean };
+  handleCheckInResponse: (reason: CheckInReason) => void;
+  logUnlock: (from: string, to: string) => void;
+  
+  // 1RM
+  updateOneRepMax: (exerciseId: string, weight: number, method: 'calculated' | 'tested') => void;
+  snoozeOneRepMaxUpdate: (exerciseId: string, until: number) => void;
+  undoAutoUpdate: (exerciseId: string) => void;
+  dismissAutoUpdate: (exerciseId: string) => void;
+  applyCalculated1RM: (exerciseId: string, weight: number) => void;
+
+  // Supplements
   supplementPlan: SupplementPlan | null;
   setSupplementPlan: (plan: SupplementPlan | null) => void;
   userSupplements: SupplementPlanItem[];
   setUserSupplements: React.Dispatch<React.SetStateAction<SupplementPlanItem[]>>;
   takenSupplements: Record<string, string[]>;
-  setTakenSupplements: React.Dispatch<React.SetStateAction<Record<string, string[]>>>;
   toggleSupplementIntake: (date: string, itemId: string) => void;
-  updateSupplementStock: (itemId: string, delta: number) => void;
-  updateSupplementPlanItem: (itemId: string, updates: Partial<SupplementPlanItem>) => void;
   snoozedSupplements: Record<string, number>;
   snoozeSupplement: (itemId: string) => void;
+  updateSupplementStock: (itemId: string, amountToAdd: number) => void;
+  updateSupplementPlanItem: (itemId: string, updates: Partial<SupplementPlanItem>) => void;
+  
+  // Suggestions (Supplements)
   newSuggestions: SupplementSuggestion[];
   applyPlanSuggestion: (suggestionId: string) => void;
   applyAllPlanSuggestions: () => void;
@@ -106,168 +127,70 @@ interface AppContextType {
   dismissAllSuggestions: () => void;
   clearNewSuggestions: () => void;
   triggerManualPlanReview: () => void;
-  profile: Profile;
-  updateProfileInfo: (updates: Partial<Omit<Profile, 'weightHistory' | 'unlocks'>>) => void;
-  updateOneRepMax: (exerciseId: string, weight: number, method: 'calculated' | 'tested') => void;
-  snoozeOneRepMaxUpdate: (exerciseId: string, durationMs: number) => void;
-  undoAutoUpdate: (exerciseId: string) => void;
-  dismissAutoUpdate: (exerciseId: string) => void;
-  applyCalculated1RM: (exerciseId: string, weight: number) => void;
-  currentWeight?: number; // in kg
-  logWeight: (weightInKg: number) => void;
-  logUnlock: (fromExercise: string, toExercise: string) => void;
-  activeTimerInfo: ActiveTimerInfo | null;
-  setActiveTimerInfo: React.Dispatch<React.SetStateAction<ActiveTimerInfo | null>>;
+
+  // UI/State
+  defaultRestTimes: { normal: number; warmup: number; drop: number; timed: number; effort: number; failure: number; };
+  setDefaultRestTimes: React.Dispatch<React.SetStateAction<{ normal: number; warmup: number; drop: number; timed: number; effort: number; failure: number; }>>;
+  useLocalizedExerciseNames: boolean;
+  setUseLocalizedExerciseNames: React.Dispatch<React.SetStateAction<boolean>>;
+  keepScreenAwake: boolean;
+  setKeepScreenAwake: React.Dispatch<React.SetStateAction<boolean>>;
+  enableNotifications: boolean;
+  setEnableNotifications: React.Dispatch<React.SetStateAction<boolean>>;
+  selectedVoiceURI: string | null;
+  setSelectedVoiceURI: React.Dispatch<React.SetStateAction<string | null>>;
+  
   collapsedExerciseIds: string[];
   setCollapsedExerciseIds: React.Dispatch<React.SetStateAction<string[]>>;
   collapsedSupersetIds: string[];
   setCollapsedSupersetIds: React.Dispatch<React.SetStateAction<string[]>>;
-  activeTimedSet: { exercise: WorkoutExercise; set: PerformedSet } | null;
-  setActiveTimedSet: React.Dispatch<React.SetStateAction<{ exercise: WorkoutExercise; set: PerformedSet } | null>>;
-  checkInState: CheckInState;
-  handleCheckInResponse: (reason: CheckInReason) => void;
 }
 
 export const AppContext = createContext<AppContextType>({} as AppContextType);
 
-const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
-const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
-const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
-
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [userRoutines, setUserRoutines] = useLocalStorage<Routine[]>('userRoutines', []);
+  // Persistence
   const [history, setHistory] = useLocalStorage<WorkoutSession[]>('history', []);
+  const [routines, setRoutines] = useLocalStorage<Routine[]>('routines', PREDEFINED_ROUTINES);
   const [rawExercises, setRawExercises] = useLocalStorage<Exercise[]>('exercises', PREDEFINED_EXERCISES);
   const [activeWorkout, setActiveWorkout] = useLocalStorage<WorkoutSession | null>('activeWorkout', null);
-  const [isWorkoutMinimized, setIsWorkoutMinimized] = useLocalStorage<boolean>('isWorkoutMinimized', false);
-  const [measureUnit, setMeasureUnit] = useLocalStorage<MeasureUnit>('measureUnit', 'metric');
-  const [defaultRestTimes, setDefaultRestTimes] = useLocalStorage<{ normal: number; warmup: number; drop: number; timed: number; effort: number; failure: number; }>('defaultRestTimes', { normal: 90, warmup: 60, drop: 30, timed: 10, effort: 180, failure: 300 });
-  const [editingTemplate, setEditingTemplate] = useState<Routine | null>(null);
-  const [editingExercise, setEditingExercise] = useState<Exercise | null>(null);
-  const [editingHistorySession, setEditingHistorySession] = useState<WorkoutSession | null>(null);
-  const { t, locale, t_ins } = useI18n();
-  const [useLocalizedExerciseNames, setUseLocalizedExerciseNames] = useLocalStorage<boolean>('useLocalizedExerciseNames', true);
-  const [keepScreenAwake, setKeepScreenAwake] = useLocalStorage<boolean>('keepScreenAwake', true);
-  const [enableNotifications, setEnableNotifications] = useLocalStorage<boolean>('enableNotifications', true);
-  const [exerciseEditCallback, setExerciseEditCallback] = useState<((exercise: Exercise) => void) | null>(null);
-  const [activeHiitSession, setActiveHiitSession] = useLocalStorage<ActiveHiitSession | null>('activeHiitSession', null);
-  const [activeQuickTimer, setActiveQuickTimer] = useLocalStorage<number | null>('activeQuickTimer', null);
-  const [selectedVoiceURI, setSelectedVoiceURI] = useLocalStorage<string | null>('selectedVoiceURI', null);
-  
-  const [isAddingExercisesToWorkout, setIsAddingExercisesToWorkout] = useState(false);
-  const [isAddingExercisesToTemplate, setIsAddingExercisesToTemplate] = useState(false);
-  const [targetSupersetId, setTargetSupersetId] = useState<string | undefined>(undefined);
-
+  const [profile, setProfile] = useLocalStorage<Profile>('profile', { weightHistory: [] });
   const [supplementPlan, setSupplementPlan] = useLocalStorage<SupplementPlan | null>('supplementPlan', null);
   const [userSupplements, setUserSupplements] = useLocalStorage<SupplementPlanItem[]>('userSupplements', []);
   const [takenSupplements, setTakenSupplements] = useLocalStorage<Record<string, string[]>>('takenSupplements', {});
   const [snoozedSupplements, setSnoozedSupplements] = useLocalStorage<Record<string, number>>('snoozedSupplements', {});
+  
+  // Settings
+  const [measureUnit, setMeasureUnit] = useLocalStorage<'metric' | 'imperial'>('measureUnit', 'metric');
+  const [defaultRestTimes, setDefaultRestTimes] = useLocalStorage('defaultRestTimes', { normal: 90, warmup: 60, drop: 30, timed: 60, effort: 180, failure: 300 });
+  const [useLocalizedExerciseNames, setUseLocalizedExerciseNames] = useLocalStorage('useLocalizedExerciseNames', false);
+  const [keepScreenAwake, setKeepScreenAwake] = useLocalStorage('keepScreenAwake', true);
+  const [enableNotifications, setEnableNotifications] = useLocalStorage('enableNotifications', false);
+  const [selectedVoiceURI, setSelectedVoiceURI] = useLocalStorage<string | null>('selectedVoiceURI', null);
 
-  const [profile, setProfile] = useLocalStorage<Profile>('profile', { weightHistory: [], unlocks: [], oneRepMaxes: {}, oneRepMaxSnoozes: {}, autoUpdated1RMs: {} });
-  const [activeTimerInfo, setActiveTimerInfo] = useLocalStorage<ActiveTimerInfo | null>('activeRestTimer', null);
-  const [collapsedExerciseIds, setCollapsedExerciseIds] = useLocalStorage<string[]>('collapsedExerciseIds', []);
-  const [collapsedSupersetIds, setCollapsedSupersetIds] = useLocalStorage<string[]>('collapsedSupersetIds', []);
-  const [activeTimedSet, setActiveTimedSet] = useState<{ exercise: WorkoutExercise; set: PerformedSet } | null>(null);
+  // Transient UI State
+  const [isWorkoutMinimized, setIsWorkoutMinimized] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<Routine | null>(null);
+  const [editingExercise, setEditingExercise] = useState<Exercise | null>(null);
+  const [editingHistorySession, setEditingHistorySession] = useState<WorkoutSession | null>(null);
+  const [onExerciseEditComplete, setOnExerciseEditComplete] = useState<((ex: Exercise) => void) | undefined>();
+  const [activeHiitSession, setActiveHiitSession] = useState<{ routine: Routine, startTime: number } | null>(null);
+  const [activeQuickTimer, setActiveQuickTimer] = useState<number | null>(null);
+  
+  const [isAddingExercisesToWorkout, setIsAddingExercisesToWorkout] = useState(false);
+  const [isAddingExercisesToTemplate, setIsAddingExercisesToTemplate] = useState(false);
+  const [addingTargetSupersetId, setAddingTargetSupersetId] = useState<string | undefined>(undefined);
 
-  const [lastAnalysisTimestamp, setLastAnalysisTimestamp] = useLocalStorage<number>('lastAnalysisTimestamp', 0);
-  const [rejectedSuggestions, setRejectedSuggestions] = useLocalStorage<RejectedSuggestion[]>('rejectedSuggestions', []);
+  const [activeTimerInfo, setActiveTimerInfo] = useState<ActiveTimerInfo | null>(null);
+  const [activeTimedSet, setActiveTimedSet] = useState<TimedSetInfo | null>(null);
+  const [collapsedExerciseIds, setCollapsedExerciseIds] = useState<string[]>([]);
+  const [collapsedSupersetIds, setCollapsedSupersetIds] = useState<string[]>([]);
+  
+  // Suggestions State
   const [newSuggestions, setNewSuggestions] = useState<SupplementSuggestion[]>([]);
-  const [checkInState, setCheckInState] = useLocalStorage<CheckInState>('checkInState', { active: false });
+  const [dismissedSuggestions, setDismissedSuggestions] = useLocalStorage<string[]>('dismissedSuggestions', []);
 
-  // Initialize oneRepMaxes if missing
-  useEffect(() => {
-      setProfile(prev => {
-          const updates: Partial<Profile> = {};
-          if (!prev.oneRepMaxes) updates.oneRepMaxes = {};
-          if (!prev.oneRepMaxSnoozes) updates.oneRepMaxSnoozes = {};
-          if (!prev.autoUpdated1RMs) updates.autoUpdated1RMs = {};
-          
-          if (Object.keys(updates).length > 0) {
-              return { ...prev, ...updates };
-          }
-          return prev;
-      });
-  }, [setProfile]);
-
-  const allTimeBestSets = useMemo(() => {
-    const bestSets: Record<string, PerformedSet> = {};
-    for (const exercise of rawExercises) {
-        const exerciseHistory = getExerciseHistory(history, exercise.id);
-        if (exerciseHistory.length > 0) {
-            let bestSet: PerformedSet | null = null;
-            let best1RM = -1;
-            for (const entry of exerciseHistory) {
-                for (const set of entry.exerciseData.sets) {
-                    if (set.type === 'normal' && set.isComplete) {
-                        const current1RM = calculate1RM(set.weight, set.reps);
-                        if (current1RM > best1RM) {
-                            best1RM = current1RM;
-                            bestSet = set;
-                        }
-                    }
-                }
-            }
-            if (bestSet) {
-                bestSets[exercise.id] = bestSet;
-            }
-        }
-    }
-    return bestSets;
-  }, [history, rawExercises]);
-  
-  // Auto-seed 1RM from history if profile is empty ("Don't force calibration")
-  useEffect(() => {
-      if (Object.keys(allTimeBestSets).length > 0) {
-          setProfile(prev => {
-              const currentMaxes = prev.oneRepMaxes || {};
-              let hasChanges = false;
-              const newMaxes = { ...currentMaxes };
-
-              // Core Lifts to prioritize seeding
-              const coreLifts = ['ex-1', 'ex-2', 'ex-3', 'ex-4']; // Bench, Squat, Deadlift, OHP
-
-              Object.entries(allTimeBestSets).forEach(([id, set]) => {
-                  if (!newMaxes[id]) {
-                      const e1rm = calculate1RM(set.weight, set.reps);
-                      if (e1rm > 0) {
-                          newMaxes[id] = {
-                              exerciseId: id,
-                              weight: e1rm,
-                              date: Date.now(),
-                              method: 'calculated' // Mark as calculated so we know it's not a hard test
-                          };
-                          hasChanges = true;
-                      }
-                  }
-              });
-
-              if (hasChanges) {
-                  return { ...prev, oneRepMaxes: newMaxes };
-              }
-              return prev;
-          });
-      }
-  }, [allTimeBestSets, setProfile]);
-
-  useEffect(() => {
-    const oldWeightUnitRaw = window.localStorage.getItem('weightUnit');
-    if (oldWeightUnitRaw) {
-        try {
-            const oldUnit = JSON.parse(oldWeightUnitRaw);
-            if (oldUnit === 'lbs') {
-                setMeasureUnit('imperial');
-            } else {
-                setMeasureUnit('metric');
-            }
-        } catch (e) {
-            console.error('Failed to parse old weight unit, defaulting to metric.', e);
-            setMeasureUnit('metric');
-        } finally {
-            window.localStorage.removeItem('weightUnit');
-        }
-    }
-  }, [setMeasureUnit]);
-  
+  // Exercise Fixing Logic from previous snippet
   useEffect(() => {
     setRawExercises(currentExercises => {
         let hasChanges = false;
@@ -277,11 +200,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 if (predefined) {
                     const missingPrimary = predefined.primaryMuscles && !ex.primaryMuscles;
                     const missingSecondary = predefined.secondaryMuscles && !ex.secondaryMuscles;
+                    const categoryMismatch = ex.category !== predefined.category;
+                    const bodyPartMismatch = ex.bodyPart !== predefined.bodyPart;
                     
-                    if (missingPrimary || missingSecondary) {
+                    if (missingPrimary || missingSecondary || categoryMismatch || bodyPartMismatch) {
                         hasChanges = true;
                         return {
                             ...ex,
+                            category: predefined.category,
+                            bodyPart: predefined.bodyPart,
                             primaryMuscles: predefined.primaryMuscles,
                             secondaryMuscles: predefined.secondaryMuscles
                         };
@@ -294,1053 +221,460 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     });
   }, [setRawExercises]);
 
-  const currentWeight = useMemo(() => {
-    if (profile.weightHistory.length === 0) return undefined;
-    const sortedHistory = [...profile.weightHistory].sort((a, b) => b.date - a.date);
-    return sortedHistory[0].weight;
+  const exercises = React.useMemo(() => {
+      // Logic to merge predefined if needed, but currently we just use stored rawExercises which are initialized with predefined
+      return rawExercises;
+  }, [rawExercises]);
+
+  const getExerciseById = useCallback((id: string) => {
+      return exercises.find(e => e.id === id);
+  }, [exercises]);
+
+  const currentWeight = React.useMemo(() => {
+      const sorted = [...profile.weightHistory].sort((a, b) => b.date - a.date);
+      return sorted.length > 0 ? sorted[0].weight : undefined;
   }, [profile.weightHistory]);
 
-  const updateProfileInfo = useCallback((updates: Partial<Omit<Profile, 'weightHistory' | 'unlocks'>>) => {
-      setProfile(prev => ({ ...prev, ...updates }));
-  }, [setProfile]);
-  
-  const updateOneRepMax = useCallback((exerciseId: string, weight: number, method: 'calculated' | 'tested') => {
-      setProfile(prev => {
-          return {
-              ...prev,
-              oneRepMaxes: {
-                  ...prev.oneRepMaxes,
-                  [exerciseId]: { exerciseId, weight, date: Date.now(), method }
-              }
-          };
-      });
-  }, [setProfile]);
-  
-  const snoozeOneRepMaxUpdate = useCallback((exerciseId: string, durationMs: number) => {
-      setProfile(prev => ({
-          ...prev,
-          oneRepMaxSnoozes: {
-              ...prev.oneRepMaxSnoozes,
-              [exerciseId]: Date.now() + durationMs
-          }
-      }));
-  }, [setProfile]);
-  
-  const undoAutoUpdate = useCallback((exerciseId: string) => {
-      setProfile(prev => {
-          const entry = prev.autoUpdated1RMs?.[exerciseId];
-          if (!entry) return prev;
-
-          const newOneRepMaxes = { ...prev.oneRepMaxes };
-          if (entry.oldWeight > 0) {
-              newOneRepMaxes[exerciseId] = {
-                  exerciseId,
-                  weight: entry.oldWeight,
-                  date: Date.now(),
-                  method: 'calculated'
-              };
-          } else {
-              delete newOneRepMaxes[exerciseId]; // Was initialized to 0
-          }
-
-          const newAutoUpdates = { ...prev.autoUpdated1RMs };
-          delete newAutoUpdates[exerciseId];
-
-          return { ...prev, oneRepMaxes: newOneRepMaxes, autoUpdated1RMs: newAutoUpdates };
-      });
-  }, [setProfile]);
-
-  const dismissAutoUpdate = useCallback((exerciseId: string) => {
-      setProfile(prev => {
-          const newAutoUpdates = { ...prev.autoUpdated1RMs };
-          delete newAutoUpdates[exerciseId];
-          return { ...prev, autoUpdated1RMs: newAutoUpdates };
-      });
-  }, [setProfile]);
-
-  const applyCalculated1RM = useCallback((exerciseId: string, weight: number) => {
-       setProfile(prev => {
-          const current = prev.oneRepMaxes?.[exerciseId];
-          // If there was a pending auto-update, clear it as user manually applied
-          const newAutoUpdates = { ...prev.autoUpdated1RMs };
-          delete newAutoUpdates[exerciseId];
-          
-          return {
-              ...prev,
-              oneRepMaxes: {
-                  ...prev.oneRepMaxes,
-                  [exerciseId]: { exerciseId, weight, date: Date.now(), method: 'calculated' }
-              },
-              autoUpdated1RMs: newAutoUpdates
-          };
-      });
-  }, [setProfile]);
-
-  const logWeight = useCallback((weightInKg: number) => {
-      if (isNaN(weightInKg) || weightInKg <= 0) return;
-
-      setProfile(prev => {
-          const now = Date.now();
-          const today = new Date(now).toDateString();
-          
-          const todayEntryIndex = prev.weightHistory.findIndex(entry => new Date(entry.date).toDateString() === today);
-          
-          const newHistory = [...prev.weightHistory];
-
-          if (todayEntryIndex > -1) {
-              newHistory[todayEntryIndex] = { date: now, weight: weightInKg };
-          } else {
-              newHistory.push({ date: now, weight: weightInKg });
-          }
-          
-          newHistory.sort((a, b) => b.date - a.date);
-
-          return { ...prev, weightHistory: newHistory };
-      });
-  }, [setProfile]);
-  
-  const logUnlock = useCallback((fromExercise: string, toExercise: string) => {
-      setProfile(prev => {
-          const newUnlocks = prev.unlocks ? [...prev.unlocks] : [];
-          newUnlocks.unshift({
-              date: Date.now(),
-              fromExercise,
-              toExercise
-          });
-          return { ...prev, unlocks: newUnlocks };
-      });
-  }, [setProfile]);
-
-  const updateSupplementStock = useCallback((itemId: string, delta: number) => {
-      if (!supplementPlan) return;
-      
-      const newPlanItems = supplementPlan.plan.map(item => {
-          if (item.id === itemId && item.stock !== undefined) {
-              const newStock = Math.max(0, item.stock + delta);
-              return { ...item, stock: newStock };
-          }
-          return item;
-      });
-      
-      setSupplementPlan({ ...supplementPlan, plan: newPlanItems });
-
-      setUserSupplements(prev => prev.map(item => {
-        if (item.id === itemId && item.stock !== undefined) {
-            return { ...item, stock: Math.max(0, item.stock + delta) };
-        }
-        return item;
-    }));
-  }, [supplementPlan, setSupplementPlan, setUserSupplements]);
-  
-  const updateSupplementPlanItem = useCallback((itemId: string, updates: Partial<SupplementPlanItem>) => {
-      if (supplementPlan) {
-          const newPlanItems = supplementPlan.plan.map(item => 
-              item.id === itemId ? { ...item, ...updates } : item
-          );
-          setSupplementPlan({ ...supplementPlan, plan: newPlanItems });
-      }
-      
-      setUserSupplements(prev => prev.map(item => {
-          if (item.id === itemId) {
-              return { ...item, ...updates };
-          }
-          return item;
-      }));
-  }, [supplementPlan, setSupplementPlan, setUserSupplements]);
-
-  const toggleSupplementIntake = useCallback((date: string, itemId: string) => {
-    setTakenSupplements(prev => {
-      const currentDayTaken = prev[date] || [];
-      const wasTaken = currentDayTaken.includes(itemId);
-      
-      updateSupplementStock(itemId, wasTaken ? 1 : -1);
-
-      const newDayTaken = wasTaken
-        ? currentDayTaken.filter(id => id !== itemId)
-        : [...currentDayTaken, itemId];
-      return { ...prev, [date]: newDayTaken };
-    });
-  }, [setTakenSupplements, updateSupplementStock]);
-
-  const snoozeSupplement = useCallback((itemId: string) => {
-    setSnoozedSupplements(prev => ({
-        ...prev,
-        [itemId]: Date.now() + 60 * 60 * 1000 // 1 hour
-    }));
-  }, [setSnoozedSupplements]);
-
-  const runPlanAnalysis = useCallback((
-      planToAnalyze: SupplementPlan,
-      checkInReason: CheckInReason | null,
-      filterRejected: boolean = true
-  ) => {
-        const now = Date.now();
-        let currentRejected = rejectedSuggestions;
-
-        if (filterRejected) {
-            const validRejections = rejectedSuggestions.filter(r => (now - r.rejectedAt) < THIRTY_DAYS_MS);
-            if (validRejections.length !== rejectedSuggestions.length) {
-                setRejectedSuggestions(validRejections);
-                currentRejected = validRejections;
-            }
-        }
-        
-        const rejectedIdentifiers = new Set(filterRejected ? currentRejected.map(r => r.identifier) : []);
-
-        const allSuggestions = reviewSupplementPlan(planToAnalyze, history, t, checkInReason, takenSupplements);
-        
-        const finalSuggestions = allSuggestions.filter(suggestion => {
-            if (rejectedIdentifiers.has(suggestion.identifier)) {
-                return false;
-            }
-
-            const action = suggestion.action;
-            switch(action.type) {
-                case 'ADD':
-                    return !planToAnalyze.plan.some(item => item.supplement === action.item.supplement);
-                case 'REMOVE':
-                    return new Set(planToAnalyze.plan.map(p => p.id)).has(action.itemId);
-                case 'UPDATE':
-                    const itemToUpdate = planToAnalyze.plan.find(item => item.id === action.itemId);
-                    if (!itemToUpdate) return false;
-                    if ('stock' in action.updates) {
-                        return true; 
-                    }
-                    return Object.keys(action.updates).some(key => {
-                        const K = key as keyof typeof action.updates;
-                        // @ts-ignore
-                        return itemToUpdate[K] !== action.updates[K];
-                    });
-                default:
-                    return true;
-            }
-        });
-
-        return finalSuggestions;
-  }, [history, rejectedSuggestions, setRejectedSuggestions, t, takenSupplements]);
-
-  useEffect(() => {
-    const runDailyAnalysis = () => {
-        if (!supplementPlan) return;
-
-        const isSignificantVolumeDrop = analyzeVolumeDrop(history);
-        let currentCheckInReason: CheckInReason | null = null;
-
-        if (isSignificantVolumeDrop) {
-             const now = Date.now();
-             const isCheckInFresh = checkInState.lastChecked && (now - checkInState.lastChecked) < SEVEN_DAYS_MS;
-             
-             if (!isCheckInFresh) {
-                 setCheckInState({ active: true });
-                 currentCheckInReason = null;
-             } else {
-                 currentCheckInReason = checkInState.reason || null;
-             }
-        } else {
-             if (checkInState.active) {
-                 setCheckInState({ active: false });
-             }
-             currentCheckInReason = null;
-        }
-        
-        const suggestions = runPlanAnalysis(supplementPlan, currentCheckInReason, true);
-
-        if (suggestions.length > 0) {
-            setNewSuggestions(suggestions);
-            if (enableNotifications && !checkInState.active) {
-              sendSupplementUpdateNotification(t('notification_supplement_title'), {
-                body: t('notification_supplement_body'),
-                icon: '/icon-192x192.png',
-                tag: 'supplement-update',
-              });
-            }
-        } else {
-             setNewSuggestions([]);
-        }
-        setLastAnalysisTimestamp(Date.now());
-    };
-
-    const now = Date.now();
-    if (now - lastAnalysisTimestamp > TWENTY_FOUR_HOURS_MS) {
-        runDailyAnalysis();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [supplementPlan, history, takenSupplements]);
-
-  const handleCheckInResponse = useCallback((reason: CheckInReason) => {
-      setCheckInState({
-          active: false,
-          lastChecked: Date.now(),
-          reason: reason
-      });
-      
-      if (supplementPlan) {
-        const suggestions = runPlanAnalysis(supplementPlan, reason, true);
-        setNewSuggestions(suggestions);
-      }
-  }, [supplementPlan, runPlanAnalysis, setCheckInState]);
-
-  const triggerManualPlanReview = useCallback(() => {
-      if (!supplementPlan) return;
-      const suggestions = runPlanAnalysis(supplementPlan, checkInState.reason || null, true);
-      setNewSuggestions(suggestions);
-  }, [supplementPlan, runPlanAnalysis, checkInState.reason]);
-
-  const clearNewSuggestions = useCallback(() => {
-    setNewSuggestions([]);
-  }, []);
-
-  const dismissSuggestion = useCallback((suggestionId: string) => {
-    setNewSuggestions(prev => {
-      const suggestionToDismiss = prev.find(s => s.id === suggestionId);
-      if (suggestionToDismiss) {
-        setRejectedSuggestions(rej => [...rej, { identifier: suggestionToDismiss.identifier, rejectedAt: Date.now() }]);
-      }
-      return prev.filter(s => s.id !== suggestionId);
-    });
-  }, [setRejectedSuggestions]);
-
-  const dismissAllSuggestions = useCallback(() => {
-    setRejectedSuggestions(rej => [
-      ...rej, 
-      ...newSuggestions.map(s => ({ identifier: s.identifier, rejectedAt: Date.now() }))
-    ]);
-    clearNewSuggestions();
-  }, [newSuggestions, clearNewSuggestions, setRejectedSuggestions]);
-
-  const applyPlanSuggestion = useCallback((suggestionId: string) => {
-      const suggestion = newSuggestions.find(s => s.id === suggestionId);
-      if (!suggestion || !supplementPlan) return;
-
-      let newPlanItems = [...supplementPlan.plan];
-      let newCustomSupplements = [...userSupplements];
-      const { action } = suggestion;
-
-      switch(action.type) {
-          case 'ADD':
-              newPlanItems.push(action.item);
-              if (action.item.isCustom) {
-                  newCustomSupplements.push(action.item);
-              }
-              break;
-          case 'REMOVE':
-              newPlanItems = newPlanItems.filter(p => p.id !== action.itemId);
-              newCustomSupplements = newCustomSupplements.filter(s => s.id !== action.itemId);
-              break;
-          case 'UPDATE':
-              newPlanItems = newPlanItems.map(p => {
-                  if (p.id === action.itemId) {
-                      return { ...p, ...action.updates };
-                  }
-                  return p;
-              });
-              if (newPlanItems.find(p => p.id === action.itemId)?.isCustom) {
-                  newCustomSupplements = newCustomSupplements.map(s => {
-                      if (s.id === action.itemId) {
-                          return { ...s, ...action.updates };
+  const allTimeBestSets = React.useMemo(() => {
+      const bests: Record<string, PerformedSet> = {};
+      history.forEach(session => {
+          session.exercises.forEach(ex => {
+              ex.sets.forEach(set => {
+                  if (set.type === 'normal' && set.isComplete) {
+                      const currentBest = bests[ex.exerciseId];
+                      // Simple best: Max Weight. If tie, max reps.
+                      if (!currentBest || set.weight > currentBest.weight || (set.weight === currentBest.weight && set.reps > currentBest.reps)) {
+                          bests[ex.exerciseId] = set;
                       }
-                      return s;
-                  });
-              }
-              break;
-      }
-      
-      setSupplementPlan({ ...supplementPlan, plan: newPlanItems });
-      setUserSupplements(newCustomSupplements);
-      setNewSuggestions(prev => prev.filter(s => s.id !== suggestionId));
-  }, [newSuggestions, supplementPlan, userSupplements, setSupplementPlan, setUserSupplements]);
-
-  const applyAllPlanSuggestions = useCallback(() => {
-      if (!supplementPlan) return;
-
-      let tempPlanItems = [...supplementPlan.plan];
-      let tempCustomSupplements = [...userSupplements];
-      
-      newSuggestions.forEach(suggestion => {
-          const { action } = suggestion;
-          switch(action.type) {
-              case 'ADD':
-                  tempPlanItems.push(action.item);
-                  if (action.item.isCustom) {
-                      tempCustomSupplements.push(action.item);
                   }
-                  break;
-              case 'REMOVE':
-                  tempPlanItems = tempPlanItems.filter(p => p.id !== action.itemId);
-                  tempCustomSupplements = tempCustomSupplements.filter(s => s.id !== action.itemId);
-                  break;
-              case 'UPDATE':
-                  tempPlanItems = tempPlanItems.map(p => p.id === action.itemId ? { ...p, ...action.updates } : p);
-                  if (tempPlanItems.find(p => p.id === action.itemId)?.isCustom) {
-                      tempCustomSupplements = tempCustomSupplements.map(s => s.id === action.itemId ? { ...s, ...action.updates } : s);
-                  }
-                  break;
-          }
-      });
-
-      setSupplementPlan({ ...supplementPlan, plan: tempPlanItems });
-      setUserSupplements(tempCustomSupplements);
-      clearNewSuggestions();
-
-  }, [newSuggestions, supplementPlan, userSupplements, setSupplementPlan, setUserSupplements, clearNewSuggestions]);
-
-
-  useEffect(() => {
-    const oldRoutinesRaw = window.localStorage.getItem('routines');
-    if (oldRoutinesRaw) {
-      try {
-        const oldRoutinesFromStorage = JSON.parse(oldRoutinesRaw) as Routine[];
-        const predefinedIds = new Set(PREDEFINED_ROUTINES.map(r => r.id));
-        
-        const nonPredefinedRoutines = oldRoutinesFromStorage.filter(r => !predefinedIds.has(r.id));
-        
-        setUserRoutines(currentUserRoutines => {
-            const existingIds = new Set(currentUserRoutines.map(r => r.id));
-            const routinesToMigrate = nonPredefinedRoutines.filter(r => !existingIds.has(r.id));
-            if (routinesToMigrate.length > 0) {
-                return [...currentUserRoutines, ...routinesToMigrate];
-            }
-            return currentUserRoutines;
-        });
-
-        window.localStorage.removeItem('routines');
-      } catch (e) {
-        console.error("Failed to migrate old routines:", e);
-        window.localStorage.removeItem('routines');
-      }
-    }
-  }, [setUserRoutines]);
-  
-  const routines = useMemo(() => {
-    const translatedPredefinedRoutines = PREDEFINED_ROUTINES.map(r => {
-      const nameKey = (r.id.replace(/-/g, '_') + '_name') as TranslationKey;
-      const descKey = (r.id.replace(/-/g, '_') + '_desc') as TranslationKey;
-      const translatedName = t(nameKey);
-      const translatedDesc = t(descKey);
-      
-      // Translate exercise notes if they are translation keys
-      const translatedExercises = r.exercises.map(ex => {
-          if (ex.note) {
-             if (ex.note.startsWith('anatoly_')) {
-                 const translatedNote = t(ex.note as TranslationKey);
-                 if (translatedNote !== ex.note) {
-                     return { ...ex, note: translatedNote };
-                 }
-             }
-          }
-          return ex;
-      });
-
-      return {
-        ...r,
-        name: translatedName !== nameKey ? translatedName : r.name,
-        description: translatedDesc !== descKey ? translatedDesc : r.description,
-        exercises: translatedExercises
-      };
-    });
-
-    const predefinedIds = new Set(PREDEFINED_ROUTINES.map(r => r.id));
-    const filteredUserRoutines = userRoutines.filter(r => !predefinedIds.has(r.id));
-    return [...translatedPredefinedRoutines, ...filteredUserRoutines];
-  }, [userRoutines, t]);
-
-  const exercises = useMemo(() => {
-    if (useLocalizedExerciseNames && locale !== 'en') {
-      return rawExercises.map(ex => {
-        if (ex.id.startsWith('ex-')) {
-            const translationKey = ex.id.replace(/-/g, '_') as TranslationKey;
-            const translatedName = t(translationKey);
-            if (translatedName !== translationKey) {
-                return { ...ex, name: translatedName };
-            }
-        }
-        return ex;
-      });
-    }
-    return rawExercises;
-  }, [rawExercises, useLocalizedExerciseNames, locale, t]);
-
-
-  useEffect(() => {
-    if (activeWorkout) {
-      let needsUpdate = false;
-      const migratedExercises = activeWorkout.exercises.map(ex => {
-        if (typeof ex.restTime === 'number' || !('timed' in ex.restTime) || !('effort' in ex.restTime)) {
-          needsUpdate = true;
-          const oldNormal = typeof ex.restTime === 'number' ? ex.restTime : (ex.restTime as any).normal;
-          return {
-            ...ex,
-            restTime: {
-              normal: oldNormal,
-              warmup: (ex.restTime as any).warmup || 60,
-              drop: (ex.restTime as any).drop || 30,
-              timed: (ex.restTime as any).timed || 10,
-              effort: (ex.restTime as any).effort || 180,
-              failure: (ex.restTime as any).failure || 300,
-            }
-          };
-        }
-        return ex;
-      });
-
-      if (needsUpdate) {
-        setActiveWorkout({ ...activeWorkout, exercises: migratedExercises });
-      }
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeWorkout]);
-
-  const upsertRoutine = useCallback((routine: Routine) => {
-    if (routine.id.startsWith('rt-')) {
-      console.warn("Attempted to upsert a predefined routine. This is not allowed.");
-      return;
-    }
-    setUserRoutines(prev => {
-        const existingIndex = prev.findIndex(r => r.id === routine.id);
-        if (existingIndex > -1) {
-            const newRoutines = [...prev];
-            newRoutines[existingIndex] = routine;
-            return newRoutines;
-        } else {
-            return [...prev, routine];
-        }
-    });
-  }, [setUserRoutines]);
-
-  const upsertRoutines = useCallback((routinesToUpsert: Routine[]) => {
-    setUserRoutines(prev => {
-        const newRoutines = [...prev];
-        routinesToUpsert.forEach(routine => {
-             if (routine.id.startsWith('rt-')) return;
-             const existingIndex = newRoutines.findIndex(r => r.id === routine.id);
-             if (existingIndex > -1) {
-                 newRoutines[existingIndex] = routine;
-             } else {
-                 newRoutines.push(routine);
-             }
-        });
-        return newRoutines;
-    });
-  }, [setUserRoutines]);
-
-  const upsertExercise = useCallback((exercise: Exercise) => {
-    setRawExercises(prev => {
-        const existingIndex = prev.findIndex(e => e.id === exercise.id);
-        if (existingIndex > -1) {
-            const newExercises = [...prev];
-            newExercises[existingIndex] = exercise;
-            return newExercises;
-        } else {
-            return [...prev, exercise];
-        }
-    });
-  }, [setRawExercises]);
-
-  const deleteRoutine = useCallback((routineId: string) => {
-    if (routineId.startsWith('rt-')) {
-        console.warn("Attempted to delete a predefined routine. This is not allowed.");
-        return;
-    }
-    setUserRoutines(prev => prev.filter(r => r.id !== routineId));
-  }, [setUserRoutines]);
-  
-  const getExerciseById = useCallback((id: string): Exercise | undefined => {
-    return exercises.find(ex => ex.id === id);
-  }, [exercises]);
-  
-  const startWorkout = useCallback((routine: Routine) => {
-    unlockAudioContext();
-    setActiveTimerInfo(null);
-    setCollapsedExerciseIds([]);
-    setCollapsedSupersetIds([]);
-    const newWorkoutExercises: WorkoutExercise[] = JSON.parse(JSON.stringify(routine.exercises));
-
-    newWorkoutExercises.forEach((ex, exIndex) => {
-        ex.id = `we-${Date.now()}-${exIndex}`;
-        ex.restTime = { ...defaultRestTimes, ...ex.restTime };
-
-        const exerciseHistory = getExerciseHistory(history, ex.exerciseId);
-        const lastPerformance = exerciseHistory.length > 0 ? exerciseHistory[0].exerciseData : null;
-        const exerciseInfo = getExerciseById(ex.exerciseId);
-        const isBodyweight = exerciseInfo && ['Bodyweight', 'Assisted Bodyweight', 'Plyometrics'].includes(exerciseInfo.category);
-
-        const lastSetsByType = lastPerformance ? lastPerformance.sets.reduce((acc, set) => {
-            if (!acc[set.type]) {
-                acc[set.type] = [];
-            }
-            acc[set.type].push(set);
-            return acc;
-        }, {} as Record<string, PerformedSet[]>) : {};
-
-        const currentSetTypeCounters: Record<string, number> = {
-            normal: 0, warmup: 0, drop: 0, failure: 0, timed: 0,
-        };
-
-        ex.sets.forEach((set: PerformedSet, setIndex: number) => {
-            set.id = `set-${Date.now()}-${exIndex}-${setIndex}`;
-            set.isComplete = false;
-            set.historicalWeight = set.weight;
-            set.historicalReps = set.reps;
-            set.historicalTime = set.time;
-            
-            if (isBodyweight && currentWeight && currentWeight > 0 && set.weight === 0) {
-                set.weight = currentWeight;
-            }
-
-            if (routine.isTemplate) {
-                if (lastPerformance) {
-                    const setType = set.type;
-                    const lastSetsOfSameType = lastSetsByType[setType] || [];
-                    const typeSpecificIndex = currentSetTypeCounters[setType];
-
-                    let lastSetToInheritFrom: PerformedSet | null = null;
-                    if (lastSetsOfSameType.length > 0) {
-                        lastSetToInheritFrom = lastSetsOfSameType[typeSpecificIndex] || lastSetsOfSameType[lastSetsOfSameType.length - 1];
-                    }
-
-                    if (lastSetToInheritFrom) {
-                        if (set.type === 'timed') {
-                            set.reps = lastSetToInheritFrom.reps;
-                            set.time = lastSetToInheritFrom.time;
-                            set.historicalReps = lastSetToInheritFrom.reps;
-                            set.historicalTime = lastSetToInheritFrom.time;
-                            set.isRepsInherited = true;
-                            set.isTimeInherited = true;
-                        } else {
-                            set.weight = lastSetToInheritFrom.weight;
-                            set.reps = lastSetToInheritFrom.reps;
-                            set.historicalWeight = lastSetToInheritFrom.weight;
-                            set.historicalReps = lastSetToInheritFrom.reps;
-                            set.isWeightInherited = true;
-                            set.isRepsInherited = true;
-                        }
-                    } else {
-                        set.isWeightInherited = true;
-                        set.isRepsInherited = true;
-                        set.isTimeInherited = true;
-                    }
-
-                    currentSetTypeCounters[setType]++;
-                } else {
-                    set.isWeightInherited = true;
-                    set.isRepsInherited = true;
-                    set.isTimeInherited = true;
-                }
-            }
-        });
-    });
-
-    setActiveWorkout({
-      id: `session-${Date.now()}`,
-      routineId: routine.id,
-      routineName: routine.name,
-      startTime: Date.now(),
-      endTime: 0,
-      exercises: newWorkoutExercises,
-      supersets: routine.supersets || {},
-    });
-    setIsWorkoutMinimized(false);
-  }, [history, defaultRestTimes, exercises, getExerciseById, setActiveWorkout, setIsWorkoutMinimized, setActiveTimerInfo, setCollapsedExerciseIds, setCollapsedSupersetIds, currentWeight]);
-  
-  const updateActiveWorkout = useCallback((workout: WorkoutSession) => {
-    setActiveWorkout(workout);
-  }, [setActiveWorkout]);
-
-  // Check for automatic 1RM updates when workout ends
-  const checkAutomatic1RMUpdates = useCallback((completedWorkout: WorkoutSession) => {
-      const coreLifts = ['ex-2', 'ex-1', 'ex-3', 'ex-4']; // Squat, Bench, Deadlift, OHP
-      
-      setProfile(prev => {
-          const newOneRepMaxes = { ...prev.oneRepMaxes };
-          const newAutoUpdates = { ...prev.autoUpdated1RMs };
-          let hasChanges = false;
-
-          coreLifts.forEach(id => {
-              const snoozeUntil = prev.oneRepMaxSnoozes?.[id] || 0;
-              if (Date.now() < snoozeUntil) return;
-
-              // Calculate e1RM from *this* session only for immediate feedback/update
-              let sessionMaxE1RM = 0;
-              const exercisesInSession = completedWorkout.exercises.filter(ex => ex.exerciseId === id);
-              
-              exercisesInSession.forEach(ex => {
-                  ex.sets.forEach(set => {
-                       if (set.type === 'normal' && set.isComplete) {
-                           const e1rm = calculate1RM(set.weight, set.reps);
-                           if (e1rm > sessionMaxE1RM) sessionMaxE1RM = e1rm;
-                       }
-                  });
               });
-
-              const currentStoredMax = newOneRepMaxes[id]?.weight || 0;
-              
-              // Only auto-update if improvement is significant (> 2.5kg) or first time setting it
-              if (sessionMaxE1RM > 0 && (sessionMaxE1RM > currentStoredMax + 2.5 || currentStoredMax === 0)) {
-                   hasChanges = true;
-                   newOneRepMaxes[id] = {
-                       exerciseId: id,
-                       weight: sessionMaxE1RM,
-                       date: Date.now(),
-                       method: 'calculated'
-                   };
-                   
-                   // Log the update so user can undo/dismiss
-                   newAutoUpdates[id] = {
-                       oldWeight: currentStoredMax,
-                       newWeight: sessionMaxE1RM,
-                       date: Date.now()
-                   };
-              }
           });
-
-          if (hasChanges) {
-              return { ...prev, oneRepMaxes: newOneRepMaxes, autoUpdated1RMs: newAutoUpdates };
-          }
-          return prev;
       });
-  }, [setProfile]);
+      return bests;
+  }, [history]);
 
-  const endWorkout = useCallback(() => {
-    if (activeWorkout) {
-      const completedWorkout = { ...activeWorkout, endTime: Date.now() };
-      
-      let prCount = 0;
-      completedWorkout.exercises.forEach(ex => {
-          const exerciseHistory = getExerciseHistory(history, ex.exerciseId);
-          const previousRecords = calculateRecords(exerciseHistory);
-          const currentRecords = calculateRecords([{ session: completedWorkout, exerciseData: { sets: ex.sets } }]);
-          
-          if (currentRecords.maxWeight && (!previousRecords.maxWeight || currentRecords.maxWeight.value > previousRecords.maxWeight.value)) prCount++;
-          else if (currentRecords.maxReps && (!previousRecords.maxReps || currentRecords.maxReps.value > previousRecords.maxReps.value)) prCount++;
-          else if (currentRecords.maxVolume && (!previousRecords.maxVolume || currentRecords.maxVolume.value > previousRecords.maxVolume.value)) prCount++;
-          
-          // Note: calculate1RM calls removed from here, handled by checkAutomatic1RMUpdates now
-      });
-      completedWorkout.prCount = prCount;
+  // Actions
+  const startWorkout = (routine: Routine) => {
+      const session: WorkoutSession = {
+          id: `session-${Date.now()}`,
+          routineId: routine.id,
+          routineName: routine.name,
+          startTime: Date.now(),
+          endTime: 0,
+          exercises: routine.exercises.map(ex => ({
+              ...ex,
+              id: `we-${Date.now()}-${Math.random()}`,
+              sets: ex.sets.map(s => ({ ...s, id: `set-${Date.now()}-${Math.random()}`, isComplete: false }))
+          })),
+          supersets: routine.supersets
+      };
+      setActiveWorkout(session);
+      setIsWorkoutMinimized(false);
+  };
 
-      setHistory(prev => [completedWorkout, ...prev].sort((a, b) => b.startTime - a.startTime));
-      
-      setUserRoutines(prev => prev.map(r => r.id === activeWorkout.routineId ? { ...r, lastUsed: Date.now() } : r));
-      
-      // Check for 1RM updates
-      checkAutomatic1RMUpdates(completedWorkout);
+  const updateActiveWorkout = (workout: WorkoutSession) => {
+      setActiveWorkout(workout);
+  };
 
+  const endWorkout = () => {
+      if (activeWorkout) {
+          const finishedWorkout = { ...activeWorkout, endTime: Date.now() };
+          setHistory(prev => [finishedWorkout, ...prev]);
+          setActiveWorkout(null);
+          setIsWorkoutMinimized(false);
+          setActiveTimerInfo(null);
+          setActiveTimedSet(null);
+          setCollapsedExerciseIds([]);
+          setCollapsedSupersetIds([]);
+      }
+  };
+
+  const discardActiveWorkout = () => {
       setActiveWorkout(null);
       setIsWorkoutMinimized(false);
       setActiveTimerInfo(null);
       setActiveTimedSet(null);
       setCollapsedExerciseIds([]);
       setCollapsedSupersetIds([]);
-      cancelTimerNotification('rest-timer-finished');
-    }
-  }, [activeWorkout, setHistory, setUserRoutines, setActiveWorkout, setIsWorkoutMinimized, setActiveTimerInfo, setCollapsedExerciseIds, setCollapsedSupersetIds, setActiveTimedSet, history, checkAutomatic1RMUpdates]);
+  };
 
-  const discardActiveWorkout = useCallback(() => {
-    setActiveWorkout(null);
-    setIsWorkoutMinimized(false);
-    setActiveTimerInfo(null);
-    setActiveTimedSet(null);
-    setCollapsedExerciseIds([]);
-    setCollapsedSupersetIds([]);
-    cancelTimerNotification('rest-timer-finished');
-  }, [setActiveWorkout, setIsWorkoutMinimized, setActiveTimerInfo, setCollapsedExerciseIds, setCollapsedSupersetIds, setActiveTimedSet]);
-  
-  const minimizeWorkout = useCallback(() => setIsWorkoutMinimized(true), [setIsWorkoutMinimized]);
-  const maximizeWorkout = useCallback(() => setIsWorkoutMinimized(false), [setIsWorkoutMinimized]);
+  const upsertRoutine = (routine: Routine) => {
+      setRoutines(prev => {
+          const idx = prev.findIndex(r => r.id === routine.id);
+          if (idx >= 0) {
+              const newRoutines = [...prev];
+              newRoutines[idx] = routine;
+              return newRoutines;
+          }
+          return [...prev, routine];
+      });
+  };
 
-  const startTemplateEdit = useCallback((template: Routine) => {
-    setEditingTemplate(JSON.parse(JSON.stringify(template)));
-  }, []);
-  
-  const startTemplateDuplicate = useCallback((template: Routine) => {
-    const copy = JSON.parse(JSON.stringify(template));
-    copy.id = `custom-${Date.now()}`,
-    copy.name = `${template.name} (Copy)`;
-    copy.originId = template.id;
-    delete copy.lastUsed;
-    setEditingTemplate(copy);
-  }, []);
+  const upsertRoutines = (newRoutines: Routine[]) => {
+      setRoutines(prev => {
+          const combined = [...prev];
+          newRoutines.forEach(routine => {
+              const idx = combined.findIndex(r => r.id === routine.id);
+              if (idx >= 0) combined[idx] = routine;
+              else combined.push(routine);
+          });
+          return combined;
+      });
+  };
 
-  const updateEditingTemplate = useCallback((template: Routine) => {
-    setEditingTemplate(template);
-  }, []);
+  const deleteRoutine = (id: string) => {
+      setRoutines(prev => prev.filter(r => r.id !== id));
+  };
 
-  const endTemplateEdit = useCallback((savedTemplate?: Routine) => {
-    if (savedTemplate) {
-      upsertRoutine(savedTemplate);
-    }
-    setEditingTemplate(null);
-  }, [upsertRoutine]);
+  const deleteHistorySession = (id: string) => {
+      setHistory(prev => prev.filter(h => h.id !== id));
+  };
 
-  const startExerciseEdit = useCallback((exercise: Exercise, onSaveCallback?: (savedExercise: Exercise) => void) => {
-      setEditingExercise(JSON.parse(JSON.stringify(exercise)));
-      if (onSaveCallback) {
-          setExerciseEditCallback(() => onSaveCallback);
-      } else {
-          setExerciseEditCallback(null);
+  const startTemplateEdit = (routine: Routine) => {
+      setEditingTemplate(routine);
+  };
+
+  const updateEditingTemplate = (routine: Routine) => {
+      setEditingTemplate(routine);
+  };
+
+  const endTemplateEdit = (routine?: Routine) => {
+      if (routine) {
+          upsertRoutine(routine);
       }
-  }, []);
+      setEditingTemplate(null);
+  };
 
-  const startExerciseDuplicate = useCallback((exercise: Exercise, onSaveCallback?: (savedExercise: Exercise) => void) => {
-      const copy = JSON.parse(JSON.stringify(exercise));
-      copy.id = `custom-${Date.now()}`;
-      copy.name = `${exercise.name} (Copy)`;
-      setEditingExercise(copy);
-      if (onSaveCallback) {
-          setExerciseEditCallback(() => onSaveCallback);
-      } else {
-          setExerciseEditCallback(null);
-      }
-  }, []);
+  const startTemplateDuplicate = (routine: Routine) => {
+      const copy = { ...routine, id: `custom-${Date.now()}`, name: `${routine.name} (Copy)`, originId: routine.id };
+      startTemplateEdit(copy);
+  };
 
-  const endExerciseEdit = useCallback((savedExercise?: Exercise) => {
-      if (savedExercise) {
-          upsertExercise(savedExercise);
-          if (exerciseEditCallback) {
-              exerciseEditCallback(savedExercise);
+  const startExerciseEdit = (exercise: Exercise, onComplete?: (ex: Exercise) => void) => {
+      setEditingExercise(exercise);
+      setOnExerciseEditComplete(() => onComplete);
+  };
+
+  const endExerciseEdit = (exercise?: Exercise) => {
+      if (exercise) {
+          setRawExercises(prev => {
+              const idx = prev.findIndex(e => e.id === exercise.id);
+              if (idx >= 0) {
+                  const newExs = [...prev];
+                  newExs[idx] = exercise;
+                  return newExs;
+              }
+              return [...prev, exercise];
+          });
+          if (onExerciseEditComplete) {
+              onExerciseEditComplete(exercise);
           }
       }
       setEditingExercise(null);
-      setExerciseEditCallback(null);
-  }, [upsertExercise, exerciseEditCallback]);
-  
-  const startHistoryEdit = useCallback((session: WorkoutSession) => {
-      setEditingHistorySession(JSON.parse(JSON.stringify(session)));
-  }, []);
-  
-  const deleteHistorySession = useCallback((sessionId: string) => {
-      setHistory(prev => prev.filter(s => s.id !== sessionId));
-  }, [setHistory]);
-  
-  const updateHistorySession = useCallback((session: WorkoutSession) => {
-      setHistory(prev => 
-        prev.map(s => s.id === session.id ? session : s)
-            .sort((a, b) => b.startTime - a.startTime)
-      );
-  }, [setHistory]);
-  
-  const endHistoryEdit = useCallback((savedSession?: WorkoutSession) => {
-      if (savedSession) {
-          updateHistorySession(savedSession);
-      }
-      setEditingHistorySession(null);
-  }, [updateHistorySession]);
+      setOnExerciseEditComplete(undefined);
+  };
 
-  const startHiitSession = useCallback((routine: Routine) => {
-      setActiveHiitSession({
-          routine: JSON.parse(JSON.stringify(routine)),
-          startTime: Date.now(),
-      });
-  }, [setActiveHiitSession]);
+  const startExerciseDuplicate = (exercise: Exercise, onComplete?: (ex: Exercise) => void) => {
+      const copy = { ...exercise, id: `custom-${Date.now()}`, name: `${exercise.name} (Copy)` };
+      startExerciseEdit(copy, onComplete);
+  }
 
-  const endHiitSession = useCallback(() => {
-      setActiveHiitSession(null);
-  }, [setActiveHiitSession]);
-  
-  const startAddExercisesToWorkout = useCallback((targetSupersetId?: string) => {
+  const startAddExercisesToWorkout = (supersetId?: string) => {
+      setAddingTargetSupersetId(supersetId);
       setIsAddingExercisesToWorkout(true);
-      setTargetSupersetId(targetSupersetId);
-  }, []);
-  
-  const endAddExercisesToWorkout = useCallback((newExerciseIds?: string[]) => {
+  };
+
+  const endAddExercisesToWorkout = (ids?: string[]) => {
       setIsAddingExercisesToWorkout(false);
-      if (newExerciseIds && newExerciseIds.length > 0 && activeWorkout) {
-          const newWorkoutExercises: WorkoutExercise[] = newExerciseIds.map((id) => ({
+      if (ids && activeWorkout) {
+          const newExercises: WorkoutExercise[] = ids.map(id => ({
               id: `we-${Date.now()}-${Math.random()}`,
               exerciseId: id,
-              sets: [
-                  {
-                    id: `set-${Date.now()}-${Math.random()}`,
-                    reps: 0,
-                    weight: 0,
-                    type: 'normal',
-                    isComplete: false,
-                  }
-              ],
-              restTime: { ...defaultRestTimes },
-              supersetId: targetSupersetId
+              sets: [{ id: `set-${Date.now()}-${Math.random()}`, reps: 10, weight: 0, type: 'normal', isComplete: false }],
+              restTime: defaultRestTimes,
+              supersetId: addingTargetSupersetId
           }));
-
-          let updatedExercises = [...activeWorkout.exercises];
-          if (targetSupersetId) {
-             let insertIndex = -1;
-             for (let i = updatedExercises.length - 1; i >= 0; i--) {
-                 if (updatedExercises[i].supersetId === targetSupersetId) {
-                     insertIndex = i;
-                     break;
-                 }
-             }
-             
-             if (insertIndex !== -1) {
-                 updatedExercises.splice(insertIndex + 1, 0, ...newWorkoutExercises);
-             } else {
-                 updatedExercises = [...updatedExercises, ...newWorkoutExercises];
-             }
-          } else {
-              updatedExercises = [...updatedExercises, ...newWorkoutExercises];
-          }
           
+          let updatedExercises = [...activeWorkout.exercises];
+          
+          if (addingTargetSupersetId) {
+              // Find the last exercise of the superset and insert after it
+              let lastIndex = -1;
+              for (let i = updatedExercises.length - 1; i >= 0; i--) {
+                  if (updatedExercises[i].supersetId === addingTargetSupersetId) {
+                      lastIndex = i;
+                      break;
+                  }
+              }
+              if (lastIndex !== -1) {
+                  updatedExercises.splice(lastIndex + 1, 0, ...newExercises);
+              } else {
+                  updatedExercises.push(...newExercises);
+              }
+          } else {
+              updatedExercises.push(...newExercises);
+          }
+
           updateActiveWorkout({
               ...activeWorkout,
-              exercises: updatedExercises,
+              exercises: updatedExercises
           });
       }
-      setTargetSupersetId(undefined);
-  }, [activeWorkout, defaultRestTimes, updateActiveWorkout, targetSupersetId]);
-  
-  const startAddExercisesToTemplate = useCallback((targetSupersetId?: string) => {
+      setAddingTargetSupersetId(undefined);
+  };
+
+  const startAddExercisesToTemplate = (supersetId?: string) => {
+      setAddingTargetSupersetId(supersetId);
       setIsAddingExercisesToTemplate(true);
-      setTargetSupersetId(targetSupersetId);
-  }, []);
-  
-  const endAddExercisesToTemplate = useCallback((newExerciseIds?: string[]) => {
+  };
+
+  const endAddExercisesToTemplate = (ids?: string[]) => {
       setIsAddingExercisesToTemplate(false);
-      if (newExerciseIds && newExerciseIds.length > 0 && editingTemplate) {
-          const newWorkoutExercises: WorkoutExercise[] = newExerciseIds.map((id) => ({
-              id: `we-template-${Date.now()}-${Math.random()}`,
+      if (ids && editingTemplate) {
+          const newExercises: WorkoutExercise[] = ids.map(id => ({
+              id: `we-${Date.now()}-${Math.random()}`,
               exerciseId: id,
-              sets: [
-                  {
-                      id: `set-template-${Date.now()}-${Math.random()}`,
-                      reps: 10,
-                      weight: 0,
-                      type: 'normal',
-                      isComplete: false,
-                  }
-              ],
-              restTime: { ...defaultRestTimes },
-              supersetId: targetSupersetId
+              sets: [{ id: `set-${Date.now()}-${Math.random()}`, reps: 10, weight: 0, type: 'normal', isComplete: false }],
+              restTime: defaultRestTimes,
+              supersetId: addingTargetSupersetId
           }));
           
           let updatedExercises = [...editingTemplate.exercises];
-          if (targetSupersetId) {
-             let insertIndex = -1;
-             for (let i = updatedExercises.length - 1; i >= 0; i--) {
-                 if (updatedExercises[i].supersetId === targetSupersetId) {
-                     insertIndex = i;
-                     break;
-                 }
-             }
-             
-             if (insertIndex !== -1) {
-                 updatedExercises.splice(insertIndex + 1, 0, ...newWorkoutExercises);
-             } else {
-                 updatedExercises = [...updatedExercises, ...newWorkoutExercises];
-             }
+          
+          if (addingTargetSupersetId) {
+              let lastIndex = -1;
+              for (let i = updatedExercises.length - 1; i >= 0; i--) {
+                  if (updatedExercises[i].supersetId === addingTargetSupersetId) {
+                      lastIndex = i;
+                      break;
+                  }
+              }
+              if (lastIndex !== -1) {
+                  updatedExercises.splice(lastIndex + 1, 0, ...newExercises);
+              } else {
+                  updatedExercises.push(...newExercises);
+              }
           } else {
-              updatedExercises = [...updatedExercises, ...newWorkoutExercises];
+              updatedExercises.push(...newExercises);
           }
 
-          updateEditingTemplate({
-              ...editingTemplate,
-              exercises: updatedExercises,
+          updateEditingTemplate({ ...editingTemplate, exercises: updatedExercises });
+      }
+      setAddingTargetSupersetId(undefined);
+  };
+
+  const startHistoryEdit = (session: WorkoutSession) => {
+      setEditingHistorySession(session);
+  };
+
+  const endHistoryEdit = (session?: WorkoutSession) => {
+      if (session) {
+          setHistory(prev => prev.map(s => s.id === session.id ? session : s));
+      }
+      setEditingHistorySession(null);
+  };
+
+  const updateProfileInfo = (info: Partial<Profile>) => {
+      setProfile(prev => ({ ...prev, ...info }));
+  };
+
+  const logWeight = (weight: number) => {
+      setProfile(prev => ({
+          ...prev,
+          weightHistory: [...prev.weightHistory, { date: Date.now(), weight }]
+      }));
+  };
+
+  const updateOneRepMax = (exerciseId: string, weight: number, method: 'calculated' | 'tested') => {
+      setProfile(prev => ({
+          ...prev,
+          oneRepMaxes: {
+              ...prev.oneRepMaxes,
+              [exerciseId]: { exerciseId, weight, date: Date.now(), method }
+          },
+          // Clear auto-update entry if manual update happens
+          autoUpdated1RMs: (() => {
+              const newAuto = { ...prev.autoUpdated1RMs };
+              delete newAuto[exerciseId];
+              return newAuto;
+          })()
+      }));
+  };
+
+  const snoozeOneRepMaxUpdate = (exerciseId: string, until: number) => {
+      setProfile(prev => ({
+          ...prev,
+          oneRepMaxSnoozes: {
+              ...prev.oneRepMaxSnoozes,
+              [exerciseId]: Date.now() + until
+          }
+      }));
+  };
+
+  const undoAutoUpdate = (exerciseId: string) => {
+      const entry = profile.autoUpdated1RMs?.[exerciseId];
+      if (entry) {
+          updateOneRepMax(exerciseId, entry.oldWeight, 'calculated');
+          // Also remove from autoUpdated1RMs
+      }
+  };
+
+  const dismissAutoUpdate = (exerciseId: string) => {
+      setProfile(prev => {
+          const newAuto = { ...prev.autoUpdated1RMs };
+          delete newAuto[exerciseId];
+          return { ...prev, autoUpdated1RMs: newAuto };
+      });
+  };
+
+  const applyCalculated1RM = (exerciseId: string, weight: number) => {
+      updateOneRepMax(exerciseId, weight, 'calculated');
+  };
+
+  const logUnlock = (from: string, to: string) => {
+      setProfile(prev => ({
+          ...prev,
+          unlocks: [...(prev.unlocks || []), { date: Date.now(), fromExercise: from, toExercise: to }]
+      }));
+  };
+
+  const toggleSupplementIntake = (date: string, itemId: string) => {
+      setTakenSupplements(prev => {
+          const currentDay = prev[date] || [];
+          if (currentDay.includes(itemId)) {
+              return { ...prev, [date]: currentDay.filter(id => id !== itemId) };
+          }
+          return { ...prev, [date]: [...currentDay, itemId] };
+      });
+      // Consume stock
+      const item = [...(supplementPlan?.plan || []), ...userSupplements].find(i => i.id === itemId);
+      if (item && item.stock !== undefined && item.stock > 0) {
+          // If untaking, maybe we shouldn't refund? Let's assume we do for simplicity
+          const isTaken = takenSupplements[date]?.includes(itemId);
+          updateSupplementStock(itemId, isTaken ? 1 : -1); 
+      }
+  };
+
+  const updateSupplementStock = (itemId: string, amountToAdd: number) => {
+      if (userSupplements.some(s => s.id === itemId)) {
+          setUserSupplements(prev => prev.map(s => s.id === itemId ? { ...s, stock: (s.stock || 0) + amountToAdd } : s));
+      } else if (supplementPlan) {
+          setSupplementPlan({
+              ...supplementPlan,
+              plan: supplementPlan.plan.map(s => s.id === itemId ? { ...s, stock: (s.stock || 0) + amountToAdd } : s)
           });
       }
-      setTargetSupersetId(undefined);
-  }, [editingTemplate, defaultRestTimes, updateEditingTemplate, targetSupersetId]);
+  };
 
-  const startQuickTimer = useCallback((duration: number) => {
-      setActiveQuickTimer(duration);
-  }, [setActiveQuickTimer]);
+  const updateSupplementPlanItem = (itemId: string, updates: Partial<SupplementPlanItem>) => {
+      if (userSupplements.some(s => s.id === itemId)) {
+          setUserSupplements(prev => prev.map(s => s.id === itemId ? { ...s, ...updates } : s));
+      } else if (supplementPlan) {
+          setSupplementPlan({
+              ...supplementPlan,
+              plan: supplementPlan.plan.map(s => s.id === itemId ? { ...s, ...updates } : s)
+          });
+      }
+  };
 
-  const endQuickTimer = useCallback(() => {
-      setActiveQuickTimer(null);
-  }, [setActiveQuickTimer]);
+  const snoozeSupplement = (itemId: string) => {
+      setSnoozedSupplements(prev => ({ ...prev, [itemId]: Date.now() + 6 * 60 * 60 * 1000 })); // 6 hours
+  };
+
+  // Check-In Logic
+  const checkInState = React.useMemo(() => {
+      const now = Date.now();
+      const lastSession = history.length > 0 ? history[0] : null;
+      if (!lastSession) return { active: false };
+      const daysSince = (now - lastSession.startTime) / (1000 * 60 * 60 * 24);
+      return { active: daysSince > 10 };
+  }, [history]);
+
+  const handleCheckInResponse = (reason: CheckInReason) => {
+      // Handle response (log, suggest deload, etc.)
+      console.log('Check in reason:', reason);
+      // For now, just "touch" history to reset timer or track it separately?
+      // Let's create a dummy "Check-In" session or just ignore for simplicity until fully implemented
+  };
+
+  // Supplement Suggestions
+  const applyPlanSuggestion = (suggestionId: string) => {
+      const suggestion = newSuggestions.find(s => s.id === suggestionId);
+      if (suggestion) {
+          if (suggestion.action.type === 'ADD') {
+              if (suggestion.action.item) {
+                  setUserSupplements(prev => [...prev, { ...suggestion.action.item, isCustom: true } as SupplementPlanItem]);
+              }
+          } else if (suggestion.action.type === 'REMOVE') {
+              const id = suggestion.action.itemId;
+              updateSupplementPlanItem(id, { restDayOnly: undefined, trainingDayOnly: undefined }); // Reset flags if any
+              // Actually remove
+              if (supplementPlan) {
+                  setSupplementPlan({ ...supplementPlan, plan: supplementPlan.plan.filter(i => i.id !== id) });
+              }
+              setUserSupplements(prev => prev.filter(i => i.id !== id));
+          } else if (suggestion.action.type === 'UPDATE') {
+              updateSupplementPlanItem(suggestion.action.itemId, suggestion.action.updates);
+          }
+          dismissSuggestion(suggestionId);
+      }
+  };
+
+  const applyAllPlanSuggestions = () => {
+      newSuggestions.forEach(s => applyPlanSuggestion(s.id));
+  };
+
+  const dismissSuggestion = (suggestionId: string) => {
+      const suggestion = newSuggestions.find(s => s.id === suggestionId);
+      if (suggestion) {
+          setDismissedSuggestions(prev => [...prev, suggestion.identifier]);
+          setNewSuggestions(prev => prev.filter(s => s.id !== suggestionId));
+      }
+  };
+
+  const dismissAllSuggestions = () => {
+      setDismissedSuggestions(prev => [...prev, ...newSuggestions.map(s => s.identifier)]);
+      setNewSuggestions([]);
+  };
+
+  const clearNewSuggestions = () => {
+      setNewSuggestions([]);
+  };
+
+  const triggerManualPlanReview = () => {
+      // Implement logic to invoke `reviewSupplementPlan` service
+      // This usually needs to import the service and run it, setting `newSuggestions`
+      // For now, placeholders
+  };
+
+  // Timers
+  const startQuickTimer = (seconds: number) => setActiveQuickTimer(seconds);
+  const endQuickTimer = () => setActiveQuickTimer(null);
+  const startHiitSession = (routine: Routine) => setActiveHiitSession({ routine, startTime: Date.now() });
+  const endHiitSession = () => setActiveHiitSession(null);
 
   const value = {
-    routines,
-    upsertRoutine,
-    upsertRoutines,
-    deleteRoutine,
-    history,
-    deleteHistorySession,
-    updateHistorySession,
-    exercises,
-    getExerciseById,
-    upsertExercise,
-    activeWorkout,
-    startWorkout,
-    updateActiveWorkout,
-    endWorkout,
-    isWorkoutMinimized,
-    minimizeWorkout,
-    maximizeWorkout,
-    discardActiveWorkout,
-    measureUnit,
-    setMeasureUnit,
-    defaultRestTimes,
-    setDefaultRestTimes,
-    editingTemplate,
-    updateEditingTemplate,
-    startTemplateEdit,
-    startTemplateDuplicate,
-    endTemplateEdit,
-    editingExercise,
-    startExerciseEdit,
-    endExerciseEdit,
-    startExerciseDuplicate,
-    editingHistorySession,
-    startHistoryEdit,
-    endHistoryEdit,
-    useLocalizedExerciseNames,
-    setUseLocalizedExerciseNames,
-    keepScreenAwake,
-    setKeepScreenAwake,
-    enableNotifications,
-    setEnableNotifications,
-    allTimeBestSets,
-    activeHiitSession,
-    startHiitSession,
-    endHiitSession,
-    selectedVoiceURI,
-    setSelectedVoiceURI,
-    isAddingExercisesToWorkout,
-    startAddExercisesToWorkout,
-    endAddExercisesToWorkout,
-    isAddingExercisesToTemplate,
-    startAddExercisesToTemplate,
-    endAddExercisesToTemplate,
-    activeQuickTimer,
-    startQuickTimer,
-    endQuickTimer,
-    supplementPlan,
-    setSupplementPlan,
-    userSupplements,
-    setUserSupplements,
-    takenSupplements,
-    setTakenSupplements,
-    toggleSupplementIntake,
-    updateSupplementStock,
-    updateSupplementPlanItem,
-    snoozedSupplements,
-    snoozeSupplement,
-    newSuggestions,
-    applyPlanSuggestion,
-    applyAllPlanSuggestions,
-    dismissSuggestion,
-    dismissAllSuggestions,
-    clearNewSuggestions,
-    triggerManualPlanReview,
-    profile,
-    updateProfileInfo,
-    updateOneRepMax,
-    snoozeOneRepMaxUpdate,
-    undoAutoUpdate,
-    dismissAutoUpdate,
-    applyCalculated1RM,
-    currentWeight,
-    logWeight,
-    logUnlock,
-    activeTimerInfo,
-    setActiveTimerInfo,
-    collapsedExerciseIds,
-    setCollapsedExerciseIds,
-    collapsedSupersetIds,
-    setCollapsedSupersetIds,
-    activeTimedSet,
-    setActiveTimedSet,
-    checkInState,
-    handleCheckInResponse,
+    activeWorkout, startWorkout, updateActiveWorkout, endWorkout, discardActiveWorkout,
+    isWorkoutMinimized, minimizeWorkout: () => setIsWorkoutMinimized(true), maximizeWorkout: () => setIsWorkoutMinimized(false),
+    routines, upsertRoutine, upsertRoutines, deleteRoutine,
+    exercises, setRawExercises, getExerciseById, startExerciseEdit, endExerciseEdit, editingExercise, startExerciseDuplicate,
+    history, deleteHistorySession, startHistoryEdit, endHistoryEdit, editingHistorySession,
+    editingTemplate, startTemplateEdit, updateEditingTemplate, endTemplateEdit, startTemplateDuplicate,
+    isAddingExercisesToWorkout, startAddExercisesToWorkout, endAddExercisesToWorkout,
+    isAddingExercisesToTemplate, startAddExercisesToTemplate, endAddExercisesToTemplate,
+    activeTimerInfo, setActiveTimerInfo, activeTimedSet, setActiveTimedSet,
+    activeQuickTimer, startQuickTimer, endQuickTimer, activeHiitSession, startHiitSession, endHiitSession,
+    profile, updateProfileInfo, currentWeight, logWeight, measureUnit, setMeasureUnit,
+    allTimeBestSets, checkInState, handleCheckInResponse, logUnlock,
+    updateOneRepMax, snoozeOneRepMaxUpdate, undoAutoUpdate, dismissAutoUpdate, applyCalculated1RM,
+    supplementPlan, setSupplementPlan, userSupplements, setUserSupplements, takenSupplements, toggleSupplementIntake, snoozedSupplements, snoozeSupplement, updateSupplementStock, updateSupplementPlanItem,
+    newSuggestions, applyPlanSuggestion, applyAllPlanSuggestions, dismissSuggestion, dismissAllSuggestions, clearNewSuggestions, triggerManualPlanReview,
+    defaultRestTimes, setDefaultRestTimes,
+    useLocalizedExerciseNames, setUseLocalizedExerciseNames,
+    keepScreenAwake, setKeepScreenAwake,
+    enableNotifications, setEnableNotifications,
+    selectedVoiceURI, setSelectedVoiceURI,
+    collapsedExerciseIds, setCollapsedExerciseIds, collapsedSupersetIds, setCollapsedSupersetIds
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

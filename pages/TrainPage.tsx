@@ -2,7 +2,7 @@
 import React, { useContext, useState, useMemo, useEffect } from 'react';
 import { AppContext } from '../contexts/AppContext';
 import { useI18n } from '../hooks/useI18n';
-import { Routine, SupplementPlanItem } from '../types';
+import { Routine, SupplementPlanItem, AutoUpdateEntry } from '../types';
 import RoutinePreviewModal from '../components/modals/RoutinePreviewModal';
 import ConfirmNewWorkoutModal from '../components/modals/ConfirmNewWorkoutModal';
 import { Icon } from '../components/common/Icon';
@@ -399,9 +399,10 @@ const TrainPage: React.FC = () => {
                          <div className="text-xs text-indigo-200/70 mt-1 space-y-1">
                              {autoUpdatedEntries.map(([id, entry]) => {
                                  const ex = getExerciseById(id);
+                                 const updateEntry = entry as AutoUpdateEntry;
                                  return (
                                      <p key={id}>
-                                         {ex?.name}: <span className="font-mono">{displayWeight(entry.oldWeight)} → {displayWeight(entry.newWeight)} {t(`workout_${weightUnit}` as TranslationKey)}</span>
+                                         {ex?.name}: <span className="font-mono">{displayWeight(updateEntry.oldWeight)} → {displayWeight(updateEntry.newWeight)} {t(`workout_${weightUnit}` as TranslationKey)}</span>
                                      </p>
                                  );
                              })}
