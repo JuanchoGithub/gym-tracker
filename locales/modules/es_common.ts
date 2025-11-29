@@ -1,0 +1,31 @@
+
+export const es_common = {
+  // Navigation
+  nav_train: "Entrenar",
+  nav_history: "Historial",
+  nav_exercises: "Ejercicios",
+  nav_supplements: "Suplementos",
+  nav_profile: "Perfil",
+
+  // Common
+  common_create: "Crear",
+  common_add: "Agregar",
+  common_save: "Guardar",
+  common_cancel: "Cancelar",
+  common_delete: "Eliminar",
+  common_edit: "Editar",
+  common_duplicate: "Duplicar",
+  common_rename: "Renombrar",
+  common_select: "Seleccionar",
+  common_back: "Atrás",
+  common_next: "Siguiente",
+  common_step: "Paso",
+  common_add_and_close: "Agregar y Cerrar",
+  common_confirm: "Confirmar",
+  common_discard: "Descartar",
+  common_save_changes: "Guardar Cambios",
+  common_close: "Cerrar",
+  common_new: "Nuevo",
+  common_many: "muchos",
+  common_next_session: "Próxima Sesión",
+};

@@ -1,0 +1,31 @@
+
+export const en_common = {
+  // Navigation
+  nav_train: "Train",
+  nav_history: "History",
+  nav_exercises: "Exercises",
+  nav_supplements: "Supplements",
+  nav_profile: "Profile",
+
+  // Common
+  common_create: "Create",
+  common_add: "Add",
+  common_save: "Save",
+  common_cancel: "Cancel",
+  common_delete: "Delete",
+  common_edit: "Edit",
+  common_duplicate: "Duplicate",
+  common_rename: "Rename",
+  common_select: "Select",
+  common_back: "Back",
+  common_next: "Next",
+  common_step: "Step",
+  common_add_and_close: "Add & Close",
+  common_confirm: "Confirm",
+  common_discard: "Discard",
+  common_save_changes: "Save Changes",
+  common_close: "Close",
+  common_new: "New",
+  common_many: "many",
+  common_next_session: "Next Session",
+};
