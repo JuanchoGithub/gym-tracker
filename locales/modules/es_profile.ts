@@ -43,4 +43,17 @@ export const es_profile = {
   checkin_option_busy: "Ocupado",
   checkin_option_deload: "Descarga",
   checkin_option_injury: "Lesión",
+
+  // Fatigue Monitor
+  fatigue_title: "Carga Sistémica (SNC)",
+  fatigue_level_optimal: "Óptimo",
+  fatigue_level_overreaching: "Sobrecarga",
+  fatigue_level_warning: "Alto Riesgo",
+  fatigue_prediction_rising: "Acumulando fatiga.",
+  fatigue_prediction_burnout: "Riesgo de burnout en {days} días a este ritmo.",
+  fatigue_prediction_stable: "Carga sostenible.",
+  fatigue_prediction_recovering: "Te estás recuperando bien.",
+  fatigue_desc: "Rastrea el estrés acumulado en tu Sistema Nervioso Central basado en volumen e intensidad.",
+  fatigue_info_title: "Sobre la Fatiga del SNC",
+  fatigue_info_content: "Tu Sistema Nervioso Central (SNC) controla la contracción muscular. A diferencia del dolor muscular, la fatiga del SNC es silenciosa pero sistémica: afecta a todo el cuerpo, el estado de ánimo y el sueño.\n\nEsta métrica rastrea tu carga acumulada de los últimos 7 días basada en la intensidad (los ejercicios compuestos taxan más el SNC que los de aislamiento). Si la carga supera tu capacidad de recuperación por mucho tiempo, el rendimiento se estanca y aumenta el riesgo de lesiones.",
 };

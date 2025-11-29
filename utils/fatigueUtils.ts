@@ -201,6 +201,77 @@ export const calculateSystemicFatigue = (history: WorkoutSession[], exercises: E
     return { score, level };
 };
 
+export interface BurnoutAnalysis {
+    currentLoad: number;
+    maxLoad: number;
+    trend: 'recovering' | 'stable' | 'accumulating';
+    daysToBurnout: number | null;
+}
+
+export const calculateBurnoutAnalysis = (history: WorkoutSession[], exercises: Exercise[]): BurnoutAnalysis => {
+    const now = Date.now();
+    const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+    const recentHistory = history.filter(s => (now - s.startTime) < SEVEN_DAYS);
+    const getExerciseDef = (id: string) => exercises.find(e => e.id === id) || PREDEFINED_EXERCISES.find(e => e.id === id);
+
+    const MAX_LOAD = 150;
+    const DECAY_RATE = 0.6; // Retain 60% of fatigue each day (recover 40%)
+
+    // 1. Calculate Current Load (Weighted)
+    let currentLoad = 0;
+    let totalRawLoad = 0;
+
+    recentHistory.forEach(session => {
+        const daysAgo = (now - session.startTime) / (24 * 60 * 60 * 1000);
+        let sessionLoad = 0;
+        
+        session.exercises.forEach(ex => {
+            const def = getExerciseDef(ex.exerciseId);
+            if (!def) return;
+            const sets = ex.sets.filter(s => s.type === 'normal' && s.isComplete).length;
+            sessionLoad += sets * getCnsCost(def);
+        });
+        
+        totalRawLoad += sessionLoad;
+        currentLoad += sessionLoad * Math.pow(DECAY_RATE, daysAgo);
+    });
+
+    // 2. Calculate Average Daily Input (Trajectory)
+    // We average the raw load over 7 days to get the user's current "habit"
+    const dailyInput = totalRawLoad / 7;
+
+    // 3. Project Forward
+    let futureLoad = currentLoad;
+    let daysToBurnout: number | null = null;
+    let trend: 'recovering' | 'stable' | 'accumulating' = 'stable';
+
+    // Check trend direction
+    // Equilibrium point: Input = Load * (1 - Decay)
+    // If Input > Equilibrium, load increases.
+    const recoveryCapacity = currentLoad * (1 - DECAY_RATE);
+    
+    if (dailyInput > recoveryCapacity * 1.1) {
+        trend = 'accumulating';
+        // Simulate forward 14 days
+        for (let i = 1; i <= 14; i++) {
+            futureLoad = (futureLoad * DECAY_RATE) + dailyInput;
+            if (futureLoad >= MAX_LOAD) {
+                daysToBurnout = i;
+                break;
+            }
+        }
+    } else if (dailyInput < recoveryCapacity * 0.9) {
+        trend = 'recovering';
+    }
+
+    return {
+        currentLoad: Math.round(currentLoad),
+        maxLoad: MAX_LOAD,
+        trend,
+        daysToBurnout
+    };
+};
+
 export const getFreshnessColor = (score: number): string => {
     // HSL Interpolation: 0 (Red/0deg) -> 100 (Green/120deg)
     const hue = Math.round((score / 100) * 120);

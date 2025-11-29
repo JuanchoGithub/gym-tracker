@@ -19,6 +19,7 @@ import StrengthProfile from '../components/profile/StrengthProfile';
 import MuscleHeatmap from '../components/insights/MuscleHeatmap';
 import { calculateMuscleFreshness } from '../utils/fatigueUtils';
 import OneRepMaxDetailView from '../components/onerepmax/OneRepMaxDetailView';
+import FatigueMonitor from '../components/profile/FatigueMonitor';
 
 const SettingsGroup: React.FC<{ title?: string, children: React.ReactNode }> = ({ title, children }) => (
   <div className="mb-8">
@@ -279,7 +280,7 @@ const ProfilePage: React.FC = () => {
     speak(sampleText, selectedVoiceURI, locale);
   };
 
-  const timerSettings: { key: keyof typeof defaultRestTimes; labelKey: TranslationKey, infoKey?: {title: TranslationKey, message: TranslationKey} }[] = [
+  const timerInputs: { key: keyof typeof defaultRestTimes; labelKey: TranslationKey, infoKey?: {title: TranslationKey, message: TranslationKey} }[] = [
     { key: 'normal', labelKey: 'timer_normal', infoKey: {title: 'timer_normal_desc_title', message: 'timer_normal_desc'} },
     { key: 'warmup', labelKey: 'timer_warmup', infoKey: {title: 'timer_warmup_desc_title', message: 'timer_warmup_desc'} },
     { key: 'drop', labelKey: 'timer_drop', infoKey: {title: 'timer_drop_desc_title', message: 'timer_drop_desc'} },
@@ -315,6 +316,17 @@ const ProfilePage: React.FC = () => {
       
       {activeTab === 'you' && (
         <div className="animate-fadeIn space-y-8">
+            {/* Fatigue Monitor */}
+            <FatigueMonitor history={history} exercises={exercises} />
+            
+            {/* Recovery Heatmap */}
+            <div>
+                <h3 className="text-xl font-bold text-text-primary mb-4 px-4">{t('insights_recovery_heatmap_title')}</h3>
+                <div className="max-w-md mx-auto w-full px-2">
+                    <MuscleHeatmap freshnessData={muscleFreshness} />
+                </div>
+            </div>
+
             {/* Lifter DNA Visualization */}
             <LifterDNA stats={lifterStats} />
 
@@ -345,14 +357,6 @@ const ProfilePage: React.FC = () => {
                     );
                 })}
             </SettingsGroup>
-
-            {/* Recovery Heatmap */}
-            <div>
-                <h3 className="text-xl font-bold text-text-primary mb-4 px-4">{t('insights_recovery_heatmap_title')}</h3>
-                <div className="max-w-md mx-auto w-full px-2">
-                    <MuscleHeatmap freshnessData={muscleFreshness} />
-                </div>
-            </div>
             
             {/* Unlock History */}
             <UnlockHistory unlocks={profile.unlocks || []} />
@@ -478,7 +482,7 @@ const ProfilePage: React.FC = () => {
             
             <SettingsGroup title={t('profile_default_timers')}>
                 <div className="p-0">
-                    {timerSettings.map(({ key, labelKey, infoKey }) => (
+                    {timerInputs.map(({ key, labelKey, infoKey }) => (
                         <SettingsItem key={key}>
                             <div className="flex items-center gap-2">
                                 <span className="text-text-primary font-medium">{t(labelKey)}</span>
