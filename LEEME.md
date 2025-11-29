@@ -99,13 +99,17 @@ Para predecir cuánto levantás en ejercicios que no hacés seguido, la app usa 
 
 *   **Concepto:** Cada ejercicio está vinculado a un "Ancla" de los 4 Grandes (Sentadilla, Banco, Peso Muerto, Militar) mediante un ratio de palanca ($R$).
 *   **Cálculo de Ancla Sintética:** Normalizamos cada serie que hacés para encontrar tu techo teórico en los levantamientos principales.
-    $$
-    \text{Max Ancla Teórico} = \frac{\text{Accesorio} \times \text{e1RM}}{R}
-    $$
-    *   *Ejemplo:* Si hacés Prensa de Piernas con 250kg a 10 reps ($e1RM \approx 333kg$) y el ratio es 2.5:
-        $$
-        \text{Max Sentadilla Teórico} = \frac{333}{2.5} = 133\text{kg}
-        $$
+
+$$
+\text{Max Ancla Teórico} = \frac{\text{Accesorio} \times \text{e1RM}}{R}
+$$
+
+*   *Ejemplo:* Si hacés Prensa de Piernas con 250kg a 10 reps ($e1RM \approx 333kg$) y el ratio es 2.5:
+
+$$
+\text{Max Sentadilla Teórico} = \frac{333}{2.5} = 133\text{kg}
+$$
+
 *   **Inferencia:** Si tu máximo guardado de Banco Plano es 0, pero hacés Banco Inclinado con 80kg ($R=0.8$), inferimos que tu máximo de Banco Plano es $80 / 0.8 = 100kg$.
 *   **Actualización en Cascada:** Cuando testeás un 1RM real en un ejercicio principal, el sistema te sugiere actualizar todos los ejercicios accesorios hijos basándose en $NuevoAncla \times R$.
 
