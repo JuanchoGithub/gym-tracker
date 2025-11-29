@@ -62,7 +62,14 @@ export const resolveAnchorAndRatio = (exerciseId: string, allExercises: Exercise
     }
     
     // 2. Fallback Mapping (Pattern Matching)
-    const exercise = allExercises.find(e => e.id === exerciseId) || PREDEFINED_EXERCISES.find(e => e.id === exerciseId);
+    // CRITICAL FIX: Always prefer PREDEFINED definition for structural properties (BodyPart/Category)
+    // to ensure math works even if local storage has stale data for that ID.
+    let exercise = PREDEFINED_EXERCISES.find(e => e.id === exerciseId);
+    
+    // If not a predefined exercise, look it up in the passed list (which contains custom ones)
+    if (!exercise) {
+        exercise = allExercises.find(e => e.id === exerciseId);
+    }
     
     if (exercise) {
         const anchorId = BODY_PART_ANCHORS[exercise.bodyPart];
@@ -133,8 +140,6 @@ export const calculateSyntheticAnchors = (history: WorkoutSession[], allExercise
                 const normalizedMax = maxSetE1RM / ratio;
                 
                 // Update Anchor if this performance implies a higher strength level
-                // Note: We might want to apply a small penalty/tax for indirect calculations to be conservative, 
-                // but for now, raw conversion.
                 if (anchors[anchorId] !== undefined && normalizedMax > anchors[anchorId]) {
                     anchors[anchorId] = normalizedMax;
                 }
@@ -163,7 +168,13 @@ export const getInferredMax = (exercise: Exercise, syntheticAnchors: Record<stri
         if (anchorMax > 0) {
             const inferred = anchorMax * mapping.ratio;
             // Find Anchor Name for source label
-            const anchorName = allExercises.find(e => e.id === mapping.anchorId)?.name || 'Anchor';
+            // Try to find in passed list first, then fallback to PREDEFINED to ensure we find name
+            let anchorExercise = allExercises.find(e => e.id === mapping.anchorId);
+            if (!anchorExercise) {
+                anchorExercise = PREDEFINED_EXERCISES.find(e => e.id === mapping.anchorId);
+            }
+            
+            const anchorName = anchorExercise?.name || 'Anchor';
             return { value: inferred, source: anchorName };
         }
     }
@@ -196,7 +207,6 @@ export const calculateNormalizedStrengthScores = (history: WorkoutSession[]) => 
     };
 };
 
-// ... existing SupplementCorrelation code ...
 export interface SupplementCorrelation {
     supplementId: string;
     supplementName: string;

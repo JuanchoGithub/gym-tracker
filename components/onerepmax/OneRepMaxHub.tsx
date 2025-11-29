@@ -10,6 +10,7 @@ import { calculate1RM } from '../../utils/workoutUtils';
 import { TranslationKey } from '../../contexts/I18nContext';
 import AddExercisesModal from '../modals/AddExercisesModal';
 import { calculateSyntheticAnchors, getInferredMax } from '../../services/analyticsService';
+import { searchExercises } from '../../utils/searchUtils';
 
 interface OneRepMaxHubProps {
     isOpen: boolean;
@@ -71,7 +72,7 @@ const OneRepMaxHub: React.FC<OneRepMaxHubProps> = ({ isOpen, onClose }) => {
                                     Inferred
                                 </span>
                             ) : (
-                                <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border text-yellow-400 border-yellow-500/30 bg-yellow-500/10">
+                                <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border text-text-secondary border-white/10 bg-white/5">
                                     {t('orm_calibrate')}
                                 </span>
                             )
@@ -89,14 +90,20 @@ const OneRepMaxHub: React.FC<OneRepMaxHubProps> = ({ isOpen, onClose }) => {
         );
     };
 
-    // Filter accessory list (exclude core 4)
-    const accessoryIds = Object.keys(profile.oneRepMaxes || {}).filter(id => !coreIds.includes(id));
-    
-    // Filter by search
-    const filteredAccessories = accessoryIds.filter(id => {
-        const ex = getExerciseById(id);
-        return ex?.name.toLowerCase().includes(searchTerm.toLowerCase());
-    });
+    // Filter logic
+    const filteredAccessories = useMemo(() => {
+        if (searchTerm) {
+            // If searching, search against ALL exercises (excluding core ones)
+            // This allows discovering inferred maxes for untracked exercises
+            const allAccessories = exercises.filter(ex => !coreIds.includes(ex.id));
+            return searchExercises(allAccessories, searchTerm, t).map(ex => ex.id);
+        } else {
+            // If not searching, show only exercises that are tracked in profile
+            const trackedIds = Object.keys(profile.oneRepMaxes || {});
+            // And exclude core IDs from this list as they have their own section
+            return trackedIds.filter(id => !coreIds.includes(id));
+        }
+    }, [searchTerm, exercises, profile.oneRepMaxes, t]);
 
     return (
         <Modal 
@@ -154,7 +161,14 @@ const OneRepMaxHub: React.FC<OneRepMaxHubProps> = ({ isOpen, onClose }) => {
 
                             <div className="space-y-3">
                                 {filteredAccessories.length > 0 ? filteredAccessories.map(id => <ExerciseCard key={id} id={id} />) : (
-                                    <p className="text-center text-text-secondary text-sm py-4 opacity-50">{searchTerm ? t('exercises_no_match') : "No accessories tracked yet."}</p>
+                                    <div className="text-center text-text-secondary text-sm py-4 opacity-50">
+                                        {searchTerm ? t('exercises_no_match') : 
+                                            <span className="flex flex-col items-center gap-2">
+                                                <Icon name="search" className="w-8 h-8 opacity-50" />
+                                                <span>Search any exercise to see estimated 1RM based on your main lifts.</span>
+                                            </span>
+                                        }
+                                    </div>
                                 )}
                             </div>
                         </section>

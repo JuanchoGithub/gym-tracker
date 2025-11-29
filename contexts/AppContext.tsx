@@ -190,7 +190,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [newSuggestions, setNewSuggestions] = useState<SupplementSuggestion[]>([]);
   const [dismissedSuggestions, setDismissedSuggestions] = useLocalStorage<string[]>('dismissedSuggestions', []);
 
-  // Exercise Fixing Logic from previous snippet
+  // Exercise Fixing Logic
   useEffect(() => {
     setRawExercises(currentExercises => {
         let hasChanges = false;
@@ -198,6 +198,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             if (ex.id.startsWith('ex-')) {
                 const predefined = PREDEFINED_EXERCISES.find(p => p.id === ex.id);
                 if (predefined) {
+                    // Check for structural updates (muscle data, category, body part)
+                    // Important: Local storage can hold stale data if we change categories in code.
+                    // We force sync structural properties from PREDEFINED to ensure logic like 1RM inference works.
                     const missingPrimary = predefined.primaryMuscles && !ex.primaryMuscles;
                     const missingSecondary = predefined.secondaryMuscles && !ex.secondaryMuscles;
                     const categoryMismatch = ex.category !== predefined.category;

@@ -32,7 +32,7 @@ export const EXERCISE_RATIOS: Record<string, { anchorId: string, ratio: number }
     'ex-43': { anchorId: ANCHOR_EXERCISES.DEADLIFT, ratio: 1.10 }, // Rack Pull
     'ex-134':{ anchorId: ANCHOR_EXERCISES.DEADLIFT, ratio: 0.40 }, // KB Swing
     'ex-51': { anchorId: ANCHOR_EXERCISES.DEADLIFT, ratio: 0.90 }, // Shrugs (Strength correlation)
-
+    
     // --- BENCH ACCESSORIES ---
     'ex-12': { anchorId: ANCHOR_EXERCISES.BENCH, ratio: 0.35 }, // Incline DB Press (Per hand)
     'ex-25': { anchorId: ANCHOR_EXERCISES.BENCH, ratio: 0.80 }, // Incline Barbell
@@ -42,6 +42,8 @@ export const EXERCISE_RATIOS: Record<string, { anchorId: string, ratio: number }
     'ex-31': { anchorId: ANCHOR_EXERCISES.BENCH, ratio: 1.20 }, // Machine Chest Press (Leverage advantage)
     'ex-24': { anchorId: ANCHOR_EXERCISES.BENCH, ratio: 1.10 }, // Dips (Bodyweight + Load vs Bench) - rough estimate
     'ex-23': { anchorId: ANCHOR_EXERCISES.BENCH, ratio: 0.60 }, // Pushups (Endurance mapping)
+    'ex-32': { anchorId: ANCHOR_EXERCISES.BENCH, ratio: 0.50 }, // Low-to-High Cable Fly
+    'ex-33': { anchorId: ANCHOR_EXERCISES.BENCH, ratio: 0.50 }, // High-to-Low Cable Fly
 
     // --- OHP ACCESSORIES ---
     'ex-60': { anchorId: ANCHOR_EXERCISES.OHP, ratio: 0.35 }, // Arnold Press (Per hand)
@@ -50,6 +52,9 @@ export const EXERCISE_RATIOS: Record<string, { anchorId: string, ratio: number }
     'ex-4':  { anchorId: ANCHOR_EXERCISES.OHP, ratio: 1.00 }, // Self
     'ex-146':{ anchorId: ANCHOR_EXERCISES.OHP, ratio: 0.80 }, // KB Clean & Press (Single arm usually, or double) - Conservative for single
     'ex-145':{ anchorId: ANCHOR_EXERCISES.OHP, ratio: 0.40 }, // Turkish Get Up
+    
+    // --- BAND / REPS ONLY OVERRIDES ---
+    'ex-83': { anchorId: ANCHOR_EXERCISES.DEADLIFT, ratio: 0.40 }, // Band Curl (Approximate resistance correlation to pulling strength)
 };
 
 // 2. Fallback Maps (Pattern Matching)
@@ -59,18 +64,24 @@ export const BODY_PART_ANCHORS: Partial<Record<BodyPart, string>> = {
     'Triceps': ANCHOR_EXERCISES.BENCH,
     'Legs': ANCHOR_EXERCISES.SQUAT,
     'Glutes': ANCHOR_EXERCISES.DEADLIFT,
-    'Back': ANCHOR_EXERCISES.DEADLIFT,
+    'Back': ANCHOR_EXERCISES.DEADLIFT, // Or row if we had one as anchor
+    'Biceps': ANCHOR_EXERCISES.DEADLIFT, // Pulling strength correlation
 };
 
 // Multiplier against the Anchor
 export const CATEGORY_RATIOS: Partial<Record<ExerciseCategory, number>> = {
     'Barbell': 0.8,
-    'Dumbbell': 0.35, // Per hand
+    'Dumbbell': 0.35, // Per hand, approx 0.7 total
     'Machine': 1.2,
     'Cable': 0.5,
     'Kettlebell': 0.3, // Per hand
     'Smith Machine': 0.95,
     'Bodyweight': 0.4, // Very rough estimate for bodyweight moves vs loaded barbell
+    'Assisted Bodyweight': 0.4,
+    'Plyometrics': 0, // N/A
+    'Reps Only': 0,
+    'Cardio': 0,
+    'Duration': 0,
 };
 
 // Used for Cascade Suggestions (Parent -> Children)

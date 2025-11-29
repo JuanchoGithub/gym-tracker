@@ -33,7 +33,7 @@ export const getCategoryColor = (category: ExerciseCategory): string => {
     'Reps Only': 'bg-stone-500/20 text-stone-400',
     'Cardio': 'bg-rose-500/20 text-rose-400',
     'Duration': 'bg-cyan-500/20 text-cyan-400',
-    'Smith Machine': 'bg-gray-500/20 text-gray-400',
+    'Smith Machine': 'bg-gray-400/20 text-gray-300',
   };
   return colors[category] || 'bg-gray-500/20 text-gray-400';
 };
