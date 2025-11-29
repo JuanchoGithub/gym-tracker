@@ -1,9 +1,9 @@
+
 import React, { useState, useMemo, useContext, useRef } from 'react';
-import { Exercise, WorkoutExercise, PerformedSet, SupersetDefinition } from '../../types';
-import { getExerciseHistory } from '../../utils/workoutUtils';
+import { Exercise, WorkoutExercise, PerformedSet } from '../../types';
+import { getExerciseHistory, calculate1RM } from '../../utils/workoutUtils';
 import { Icon } from '../common/Icon';
 import { AppContext } from '../../contexts/AppContext';
-import ChangeTimerModal from '../modals/ChangeTimerModal';
 import ReplaceExerciseModal from '../modals/ReplaceExerciseModal';
 import SelectBarModal from '../modals/SelectBarModal';
 import Modal from '../common/Modal';
@@ -13,6 +13,9 @@ import { useMeasureUnit } from '../../hooks/useWeight';
 import { TranslationKey } from '../../contexts/I18nContext';
 import { useClickOutside } from '../../hooks/useClickOutside';
 import SelectSupersetModal from '../modals/SelectSupersetModal';
+import PercentageCalculatorModal from '../modals/PercentageCalculatorModal';
+import OneRepMaxTestRunner from '../onerepmax/OneRepMaxTestRunner';
+import CascadeUpdateModal from '../onerepmax/CascadeUpdateModal';
 
 interface ExerciseHeaderProps {
     workoutExercise: WorkoutExercise;
@@ -41,9 +44,9 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = (props) => {
         onMoveUp, onMoveDown, isMoveUpDisabled, isMoveDownDisabled, onReorganize, onRemove, 
         onCreateSuperset, onJoinSuperset, availableSupersets = [], onShowDetails
     } = props;
-    const { history: allHistory } = useContext(AppContext);
+    const { history: allHistory, profile, updateOneRepMax } = useContext(AppContext);
     const { t } = useI18n();
-    const { weightUnit, displayWeight } = useMeasureUnit();
+    const { weightUnit, displayWeight, getStoredWeight } = useMeasureUnit();
 
     const [isFocusMenuOpen, setIsFocusMenuOpen] = useState(false);
     const [isOptionsMenuOpen, setIsOptionsMenuOpen] = useState(false);
@@ -53,6 +56,11 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = (props) => {
     const [isConfirmRemoveOpen, setIsConfirmRemoveOpen] = useState(false);
     const [isBarModalOpen, setIsBarModalOpen] = useState(false);
     const [isSupersetModalOpen, setIsSupersetModalOpen] = useState(false);
+    const [isPercentageModalOpen, setIsPercentageModalOpen] = useState(false);
+    const [isOrmTestOpen, setIsOrmTestOpen] = useState(false);
+    const [isPotentialModalOpen, setIsPotentialModalOpen] = useState(false);
+    const [isCascadeOpen, setIsCascadeOpen] = useState(false);
+    const [newMaxForCascade, setNewMaxForCascade] = useState(0);
     
     const focusMenuRef = useRef<HTMLDivElement>(null);
     const optionsMenuRef = useRef<HTMLDivElement>(null);
@@ -72,6 +80,26 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = (props) => {
         return totalVolume - lastVolume;
     }, [previousHistory, totalVolume]);
     
+    // 1RM Logic
+    const storedMax = profile.oneRepMaxes?.[exerciseInfo.id]?.weight || 0;
+    
+    const currentSessionPotential = useMemo(() => {
+        let maxE1rm = 0;
+        let bestSet = null;
+        workoutExercise.sets.forEach(set => {
+            if (set.type === 'normal' && set.isComplete && set.weight > 0 && set.reps > 0) {
+                const e1rm = calculate1RM(set.weight, set.reps);
+                if (e1rm > maxE1rm) {
+                    maxE1rm = e1rm;
+                    bestSet = set;
+                }
+            }
+        });
+        return { maxE1rm, bestSet };
+    }, [workoutExercise.sets]);
+
+    const hasNewPotential = storedMax > 0 && currentSessionPotential.maxE1rm > storedMax;
+
     const handleSetFocus = (type: FocusType) => {
         setFocusType(type);
         setIsFocusMenuOpen(false);
@@ -79,86 +107,25 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = (props) => {
 
     const handleAddWarmupSets = () => {
         setIsOptionsMenuOpen(false);
-
         const firstWorkingSet = workoutExercise.sets.find(s => s.type === 'normal');
         const targetWeight = firstWorkingSet?.weight || 0;
         const barWeight = workoutExercise.barWeight || 0;
         const newWarmupSets: PerformedSet[] = [];
         const reps = 10;
-
-        if (targetWeight === 0) {
-            newWarmupSets.push({
-                id: `set-${Date.now()}-${Math.random()}`,
-                reps,
-                weight: barWeight,
-                type: 'warmup',
-                isComplete: false,
-            });
-        } else if (targetWeight <= barWeight + 10 && barWeight > 0) {
-            newWarmupSets.push({
-                id: `set-${Date.now()}-${Math.random()}`,
-                reps,
-                weight: barWeight,
-                type: 'warmup',
-                isComplete: false,
-            });
-        } else if (targetWeight < 40) {
-            const warmupWeight = Math.round((targetWeight * 0.5) / 2.5) * 2.5;
-            if (warmupWeight < targetWeight) {
-                newWarmupSets.push({
-                    id: `set-${Date.now()}-${Math.random()}`,
-                    reps,
-                    weight: warmupWeight,
-                    type: 'warmup',
-                    isComplete: false,
-                });
-            }
-        } else { // targetWeight >= 40
-            const useThreeSets = targetWeight >= 80;
-            const percentages = useThreeSets ? [0.4, 0.6, 0.8] : [0.5, 0.75];
-            
-            const weights = percentages
-                .map(p => targetWeight * p)
-                .map(w => Math.max(w, barWeight))
-                .map(w => Math.round(w / 2.5) * 2.5)
-                .filter(w => w < targetWeight);
-
-            const finalWeights = [...new Set(weights)].sort((a, b) => a - b);
-
-            for (const weight of finalWeights) {
-                 newWarmupSets.push({
-                    id: `set-${Date.now()}-${Math.random()}`,
-                    reps,
-                    weight,
-                    type: 'warmup',
-                    isComplete: false,
-                });
-            }
-            if (finalWeights.length === 0 && targetWeight > barWeight && barWeight > 0) {
-                 newWarmupSets.push({
-                    id: `set-${Date.now()}-${Math.random()}`,
-                    reps,
-                    weight: barWeight,
-                    type: 'warmup',
-                    isComplete: false,
-                });
-            }
-        }
         
-        if (newWarmupSets.length > 0) {
-            onUpdate({ ...workoutExercise, sets: [...newWarmupSets, ...workoutExercise.sets] });
-        } else if (targetWeight > 0) {
-            alert("Could not generate warmup sets. Target weight might be too low.");
-        }
+        if (targetWeight === 0) { newWarmupSets.push({ id: `set-${Date.now()}-${Math.random()}`, reps, weight: barWeight, type: 'warmup', isComplete: false }); } 
+        else if (targetWeight <= barWeight + 10 && barWeight > 0) { newWarmupSets.push({ id: `set-${Date.now()}-${Math.random()}`, reps, weight: barWeight, type: 'warmup', isComplete: false }); } 
+        else if (targetWeight < 40) { const warmupWeight = Math.round((targetWeight * 0.5) / 2.5) * 2.5; if (warmupWeight < targetWeight) newWarmupSets.push({ id: `set-${Date.now()}-${Math.random()}`, reps, weight: warmupWeight, type: 'warmup', isComplete: false }); } 
+        else { const useThreeSets = targetWeight >= 80; const percentages = useThreeSets ? [0.4, 0.6, 0.8] : [0.5, 0.75]; const weights = percentages.map(p => targetWeight * p).map(w => Math.max(w, barWeight)).map(w => Math.round(w / 2.5) * 2.5).filter(w => w < targetWeight); const finalWeights = [...new Set(weights)].sort((a, b) => a - b); for (const weight of finalWeights) newWarmupSets.push({ id: `set-${Date.now()}-${Math.random()}`, reps, weight, type: 'warmup', isComplete: false }); if (finalWeights.length === 0 && targetWeight > barWeight && barWeight > 0) newWarmupSets.push({ id: `set-${Date.now()}-${Math.random()}`, reps, weight: barWeight, type: 'warmup', isComplete: false }); }
+        
+        if (newWarmupSets.length > 0) onUpdate({ ...workoutExercise, sets: [...newWarmupSets, ...workoutExercise.sets] });
     };
 
     const handleReplaceExercise = (newExerciseId: string) => onUpdate({ ...workoutExercise, exerciseId: newExerciseId });
     const handleSelectBar = (barWeight: number) => onUpdate({ ...workoutExercise, barWeight });
     
     const handleConfirmRemove = () => {
-        if (onRemove) {
-            onRemove();
-        }
+        if (onRemove) onRemove();
         setIsConfirmRemoveOpen(false);
     };
 
@@ -178,6 +145,33 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = (props) => {
         } else if (id !== 'new' && onJoinSuperset) {
             onJoinSuperset(id);
         }
+    };
+
+    const handleApplyPercentage = (percentage: number) => {
+        const targetWeight = storedMax * (percentage / 100);
+        const updatedSets = workoutExercise.sets.map(set => {
+            if (set.type === 'normal' && !set.isComplete) {
+                const rounded = Math.round(targetWeight / 2.5) * 2.5;
+                return { ...set, weight: rounded };
+            }
+            return set;
+        });
+        onUpdate({ ...workoutExercise, sets: updatedSets });
+    };
+    
+    const handleUpdateProfileFromPotential = () => {
+        const e1rm = currentSessionPotential.maxE1rm;
+        updateOneRepMax(exerciseInfo.id, e1rm, 'calculated');
+        setIsPotentialModalOpen(false);
+        setNewMaxForCascade(e1rm);
+        setIsCascadeOpen(true);
+    };
+
+    const handleTestComplete = (newMax: number) => {
+        updateOneRepMax(exerciseInfo.id, newMax, 'tested');
+        setIsOrmTestOpen(false);
+        setNewMaxForCascade(newMax);
+        setIsCascadeOpen(true);
     };
 
     const renderFocusContent = () => {
@@ -206,6 +200,14 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = (props) => {
                 <button onClick={onToggleCollapse} className="text-left truncate min-w-0">
                     <h3 className="font-bold text-xl text-primary truncate">{exerciseInfo.name}</h3>
                 </button>
+                {hasNewPotential && (
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); setIsPotentialModalOpen(true); }}
+                        className="bg-green-500/20 text-green-400 p-1 rounded-md animate-pulse border border-green-500/30 hover:bg-green-500/30"
+                    >
+                        <Icon name="chart-line" className="w-4 h-4" />
+                    </button>
+                )}
                 {onShowDetails && (
                      <button onClick={(e) => { e.stopPropagation(); onShowDetails(); }} className="text-text-secondary/50 hover:text-primary transition-colors p-1 flex-shrink-0">
                          <Icon name="question-mark-circle" className="w-5 h-5" />
@@ -243,6 +245,20 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = (props) => {
                                 <div className="h-px bg-secondary/50 my-1"></div>
                                 </>
                             )}
+                             {['Barbell', 'Dumbbell'].includes(exerciseInfo.category) && (
+                                <>
+                                    <button onClick={() => { setIsPercentageModalOpen(true); setIsOptionsMenuOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600 flex items-center gap-2">
+                                        <Icon name="chart-line" className="w-4 h-4"/>
+                                        <span>{t('orm_action_use_weights')}</span>
+                                    </button>
+                                    <button onClick={() => { setIsOrmTestOpen(true); setIsOptionsMenuOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600 flex items-center gap-2">
+                                        <Icon name="trophy" className="w-4 h-4"/>
+                                        <span>{t('orm_action_recalibrate')}</span>
+                                    </button>
+                                    <div className="h-px bg-secondary/50 my-1"></div>
+                                </>
+                             )}
+
                             <button onClick={() => { onMoveUp(); setIsOptionsMenuOpen(false); }} disabled={isMoveUpDisabled} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
                                 <Icon name="arrow-up" className="w-4 h-4"/>
                                 <span>{t('exercise_header_menu_move_up')}</span>
@@ -307,6 +323,47 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = (props) => {
             availableSupersets={availableSupersets}
             onSelect={handleSupersetSelection}
         />
+
+        <PercentageCalculatorModal
+            isOpen={isPercentageModalOpen}
+            onClose={() => setIsPercentageModalOpen(false)}
+            oneRepMax={storedMax}
+            onApplyToWorkout={handleApplyPercentage}
+        />
+
+        <OneRepMaxTestRunner
+            isOpen={isOrmTestOpen}
+            onClose={() => setIsOrmTestOpen(false)}
+            exerciseId={exerciseInfo.id}
+            targetMax={storedMax > 0 ? storedMax : (currentSessionPotential.maxE1rm || 20)}
+            onComplete={handleTestComplete}
+        />
+        
+        <CascadeUpdateModal 
+            isOpen={isCascadeOpen}
+            onClose={() => setIsCascadeOpen(false)}
+            parentExerciseId={exerciseInfo.id}
+            newParentMax={newMaxForCascade}
+        />
+        
+        {/* Active PR Modal */}
+        <Modal isOpen={isPotentialModalOpen} onClose={() => setIsPotentialModalOpen(false)} title={t('orm_workout_potential_title')}>
+            <div className="space-y-4">
+                 <div className="bg-green-500/10 border border-green-500/30 p-4 rounded-xl">
+                    <Icon name="trophy" className="w-12 h-12 text-yellow-400 mx-auto mb-2" />
+                     <p className="text-white text-center text-lg">
+                         {t('orm_workout_potential_msg', {
+                             weight: displayWeight(currentSessionPotential.bestSet?.weight || 0),
+                             reps: currentSessionPotential.bestSet?.reps || 0,
+                             e1rm: displayWeight(currentSessionPotential.maxE1rm)
+                         })}
+                     </p>
+                 </div>
+                 <button onClick={handleUpdateProfileFromPotential} className="w-full bg-primary text-white font-bold py-3 rounded-lg shadow-lg">
+                     {t('orm_workout_update_btn')}
+                 </button>
+            </div>
+        </Modal>
       </>
     );
 };

@@ -1,9 +1,7 @@
 
-
-
 import React, { createContext, useState, ReactNode, useMemo, useEffect, useCallback } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import { Routine, WorkoutSession, Exercise, WorkoutExercise, PerformedSet, ActiveHiitSession, SupplementPlan, SupplementPlanItem, SupplementSuggestion, RejectedSuggestion, Profile, SupersetDefinition } from '../types';
+import { Routine, WorkoutSession, Exercise, WorkoutExercise, PerformedSet, ActiveHiitSession, SupplementPlan, SupplementPlanItem, SupplementSuggestion, RejectedSuggestion, Profile, SupersetDefinition, OneRepMaxEntry } from '../types';
 import { PREDEFINED_ROUTINES } from '../constants/routines';
 import { PREDEFINED_EXERCISES } from '../constants/exercises';
 import { useI18n } from '../hooks/useI18n';
@@ -110,6 +108,7 @@ interface AppContextType {
   triggerManualPlanReview: () => void;
   profile: Profile;
   updateProfileInfo: (updates: Partial<Omit<Profile, 'weightHistory' | 'unlocks'>>) => void;
+  updateOneRepMax: (exerciseId: string, weight: number, method: 'calculated' | 'tested') => void;
   currentWeight?: number; // in kg
   logWeight: (weightInKg: number) => void;
   logUnlock: (fromExercise: string, toExercise: string) => void;
@@ -160,7 +159,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [takenSupplements, setTakenSupplements] = useLocalStorage<Record<string, string[]>>('takenSupplements', {});
   const [snoozedSupplements, setSnoozedSupplements] = useLocalStorage<Record<string, number>>('snoozedSupplements', {});
 
-  const [profile, setProfile] = useLocalStorage<Profile>('profile', { weightHistory: [], unlocks: [] });
+  const [profile, setProfile] = useLocalStorage<Profile>('profile', { weightHistory: [], unlocks: [], oneRepMaxes: {} });
   const [activeTimerInfo, setActiveTimerInfo] = useLocalStorage<ActiveTimerInfo | null>('activeRestTimer', null);
   const [collapsedExerciseIds, setCollapsedExerciseIds] = useLocalStorage<string[]>('collapsedExerciseIds', []);
   const [collapsedSupersetIds, setCollapsedSupersetIds] = useLocalStorage<string[]>('collapsedSupersetIds', []);
@@ -170,6 +169,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [rejectedSuggestions, setRejectedSuggestions] = useLocalStorage<RejectedSuggestion[]>('rejectedSuggestions', []);
   const [newSuggestions, setNewSuggestions] = useState<SupplementSuggestion[]>([]);
   const [checkInState, setCheckInState] = useLocalStorage<CheckInState>('checkInState', { active: false });
+
+  // Initialize oneRepMaxes if missing
+  useEffect(() => {
+      if (!profile.oneRepMaxes) {
+          setProfile(prev => ({ ...prev, oneRepMaxes: {} }));
+      }
+  }, [profile.oneRepMaxes, setProfile]);
 
   useEffect(() => {
     const oldWeightUnitRaw = window.localStorage.getItem('weightUnit');
@@ -224,6 +230,31 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const updateProfileInfo = useCallback((updates: Partial<Omit<Profile, 'weightHistory' | 'unlocks'>>) => {
       setProfile(prev => ({ ...prev, ...updates }));
+  }, [setProfile]);
+  
+  const updateOneRepMax = useCallback((exerciseId: string, weight: number, method: 'calculated' | 'tested') => {
+      setProfile(prev => {
+          const current1RM = prev.oneRepMaxes?.[exerciseId];
+          
+          // Logic:
+          // 1. If tested, always update (assume new test result is intentional override)
+          // 2. If calculated, only update if greater than current stored max (calculated OR tested)
+          //    OR if current doesn't exist.
+          //    Exception: If current is 'tested' and much higher, maybe keep tested? 
+          //    But typically e1RM is a good proxy for progress. 
+          //    Let's say: Calculated only updates if > current. Tested always updates.
+          
+          if (method === 'tested' || !current1RM || weight > current1RM.weight) {
+              return {
+                  ...prev,
+                  oneRepMaxes: {
+                      ...prev.oneRepMaxes,
+                      [exerciseId]: { exerciseId, weight, date: Date.now(), method }
+                  }
+              };
+          }
+          return prev;
+      });
   }, [setProfile]);
 
   const logWeight = useCallback((weightInKg: number) => {
@@ -838,6 +869,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           if (currentRecords.maxWeight && (!previousRecords.maxWeight || currentRecords.maxWeight.value > previousRecords.maxWeight.value)) prCount++;
           else if (currentRecords.maxReps && (!previousRecords.maxReps || currentRecords.maxReps.value > previousRecords.maxReps.value)) prCount++;
           else if (currentRecords.maxVolume && (!previousRecords.maxVolume || currentRecords.maxVolume.value > previousRecords.maxVolume.value)) prCount++;
+          
+          // Auto-update calculated 1RM
+          const maxSet = currentRecords.maxWeight?.set;
+          if (maxSet && maxSet.type === 'normal') {
+              const e1rm = calculate1RM(maxSet.weight, maxSet.reps);
+              updateOneRepMax(ex.exerciseId, e1rm, 'calculated');
+          }
       });
       completedWorkout.prCount = prCount;
 
@@ -853,7 +891,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setCollapsedSupersetIds([]);
       cancelTimerNotification('rest-timer-finished');
     }
-  }, [activeWorkout, setHistory, setUserRoutines, setActiveWorkout, setIsWorkoutMinimized, setActiveTimerInfo, setCollapsedExerciseIds, setCollapsedSupersetIds, setActiveTimedSet, history]);
+  }, [activeWorkout, setHistory, setUserRoutines, setActiveWorkout, setIsWorkoutMinimized, setActiveTimerInfo, setCollapsedExerciseIds, setCollapsedSupersetIds, setActiveTimedSet, history, updateOneRepMax]);
 
   const discardActiveWorkout = useCallback(() => {
     setActiveWorkout(null);
@@ -1143,6 +1181,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     triggerManualPlanReview,
     profile,
     updateProfileInfo,
+    updateOneRepMax,
     currentWeight,
     logWeight,
     logUnlock,

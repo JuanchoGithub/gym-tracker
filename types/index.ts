@@ -112,11 +112,19 @@ export interface UnlockEvent {
   toExercise: string;
 }
 
+export interface OneRepMaxEntry {
+  exerciseId: string;
+  weight: number; // in kg
+  date: number;
+  method: 'calculated' | 'tested'; // 'calculated' from e.g. a 5x5 set, 'tested' via the wizard
+}
+
 export interface Profile {
   gender?: 'male' | 'female';
   height?: number; // in cm
   weightHistory: WeightEntry[];
   unlocks?: UnlockEvent[];
+  oneRepMaxes?: Record<string, OneRepMaxEntry>; // Keyed by Exercise ID
 }
 
 export interface SupplementInfo {

@@ -18,7 +18,22 @@ export type PersonalRecords = {
 export const calculate1RM = (weight: number, reps: number): number => {
   if (reps === 0) return 0;
   if (reps === 1) return weight;
-  return weight * (1 + reps / 30);
+  // Cap reps at 12 for e1RM calculation accuracy, though the formula works higher, it gets less accurate.
+  // We use the raw input for now as standard Epley.
+  return Math.round(weight * (1 + reps / 30));
+};
+
+export const estimateRepsFromPercentage = (percentage: number): number => {
+    if (percentage >= 100) return 1;
+    if (percentage >= 95) return 2;
+    if (percentage >= 90) return 4;
+    if (percentage >= 85) return 6;
+    if (percentage >= 80) return 8;
+    if (percentage >= 75) return 10;
+    if (percentage >= 70) return 12;
+    if (percentage >= 65) return 15;
+    if (percentage >= 60) return 20;
+    return 25;
 };
 
 export const getExerciseHistory = (history: WorkoutSession[], exerciseId: string): ExerciseHistory => {
@@ -187,4 +202,50 @@ export const groupExercises = (exercises: WorkoutExercise[], supersets?: Record<
     }
 
     return grouped;
+};
+
+export interface ProtocolStep {
+    reps: number;
+    percentage: number;
+    rest: number;
+    labelKey: string;
+    instructionKey: string;
+    type: 'warmup' | 'attempt';
+}
+
+export const generate1RMProtocol = (target1RM: number): ProtocolStep[] => {
+    return [
+        {
+            reps: 10,
+            percentage: 0.5,
+            rest: 60,
+            labelKey: 'orm_wizard_step_warmup_1',
+            instructionKey: 'orm_wizard_instructions_warmup_1',
+            type: 'warmup'
+        },
+        {
+            reps: 5,
+            percentage: 0.75,
+            rest: 120,
+            labelKey: 'orm_wizard_step_warmup_2',
+            instructionKey: 'orm_wizard_instructions_warmup_2',
+            type: 'warmup'
+        },
+        {
+            reps: 1,
+            percentage: 0.9,
+            rest: 180,
+            labelKey: 'orm_wizard_step_warmup_3',
+            instructionKey: 'orm_wizard_instructions_warmup_3',
+            type: 'warmup'
+        },
+        {
+            reps: 1,
+            percentage: 1.0,
+            rest: 300,
+            labelKey: 'orm_wizard_step_attempt',
+            instructionKey: 'orm_wizard_instructions_attempt',
+            type: 'attempt'
+        }
+    ];
 };

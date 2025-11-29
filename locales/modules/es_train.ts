@@ -14,9 +14,9 @@ export const es_train = {
   train_sample_hiit: "Ejemplos HIIT",
   train_sample_workouts: "Ejemplos de Entrenamientos",
   train_quick_training: "Entrenamiento Rápido",
-  train_quick_hiit_name: "HIIT Rápido ({time} min)",
+  train_quick_hiit_name: "HIIT de {time} min",
   train_quick_hiit_desc: "{work}s trabajo / {rest}s descanso, {rounds} rondas",
-  train_quick_hiit_label: "Empezar HIIT Rápido",
+  train_quick_hiit_label: "HIIT Rápido",
   train_quick_hiit_desc_short: "Intensidad instantánea",
 
   // Active Workout

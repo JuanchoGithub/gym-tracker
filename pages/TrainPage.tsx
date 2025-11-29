@@ -18,6 +18,7 @@ import SupplementActionCard from '../components/train/SupplementActionCard';
 import { getDateString } from '../utils/timeUtils';
 import { getExplanationIdForSupplement } from '../services/explanationService';
 import Modal from '../components/common/Modal';
+import OneRepMaxHub from '../components/onerepmax/OneRepMaxHub';
 
 const timeKeywords = {
     morning: /morning|breakfast|am/i,
@@ -40,6 +41,7 @@ const TrainPage: React.FC = () => {
   const [isConfirmingNewWorkout, setIsConfirmingNewWorkout] = useState(false);
   const [routineToStart, setRoutineToStart] = useState<Routine | null>(null);
   const [isQuickTrainingOpen, setIsQuickTrainingOpen] = useLocalStorage('isQuickTrainingOpen', true);
+  const [isStrengthHubOpen, setIsStrengthHubOpen] = useState(false);
   
   // Recommendation State
   const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
@@ -349,6 +351,9 @@ const TrainPage: React.FC = () => {
     <div className="space-y-10 pb-8">
       <div className="flex items-center justify-between pt-2">
         <h1 className="text-3xl font-bold text-text-primary tracking-tight">{t('nav_train')}</h1>
+        <button onClick={() => setIsStrengthHubOpen(true)} className="p-2 bg-surface border border-white/10 rounded-xl text-text-secondary hover:text-white shadow-sm">
+            <Icon name="weight" className="w-6 h-6" />
+        </button>
       </div>
       
       <div className="space-y-8">
@@ -458,6 +463,11 @@ const TrainPage: React.FC = () => {
         onClose={handleCancelNewWorkout}
         onStartNew={handleConfirmStartNew}
         onContinue={handleConfirmContinue}
+      />
+      
+      <OneRepMaxHub 
+        isOpen={isStrengthHubOpen}
+        onClose={() => setIsStrengthHubOpen(false)}
       />
 
       {isOnboardingOpen && (

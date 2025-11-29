@@ -18,6 +18,7 @@ import UnlockHistory from '../components/profile/UnlockHistory';
 import StrengthProfile from '../components/profile/StrengthProfile';
 import MuscleHeatmap from '../components/insights/MuscleHeatmap';
 import { calculateMuscleFreshness } from '../utils/fatigueUtils';
+import OneRepMaxDetailView from '../components/onerepmax/OneRepMaxDetailView';
 
 const SettingsGroup: React.FC<{ title?: string, children: React.ReactNode }> = ({ title, children }) => (
   <div className="mb-8">
@@ -28,8 +29,11 @@ const SettingsGroup: React.FC<{ title?: string, children: React.ReactNode }> = (
   </div>
 );
 
-const SettingsItem: React.FC<{ children: React.ReactNode, className?: string }> = ({ children, className }) => (
-  <div className={`p-4 flex items-center justify-between hover:bg-white/5 transition-colors ${className || ''}`}>
+const SettingsItem: React.FC<{ children: React.ReactNode, className?: string, onClick?: () => void }> = ({ children, className, onClick }) => (
+  <div 
+    className={`p-4 flex items-center justify-between hover:bg-white/5 transition-colors ${className || ''} ${onClick ? 'cursor-pointer group' : ''}`}
+    onClick={onClick}
+  >
     {children}
   </div>
 );
@@ -99,7 +103,8 @@ const ProfilePage: React.FC = () => {
     currentWeight,
     logWeight,
     history,
-    exercises
+    exercises,
+    getExerciseById
   } = useContext(AppContext);
 
   const { displayWeight, getStoredWeight, weightUnit, measureUnit, setMeasureUnit } = useMeasureUnit();
@@ -109,6 +114,7 @@ const ProfilePage: React.FC = () => {
 
   const [feet, setFeet] = useState('');
   const [inches, setInches] = useState('');
+  const [selectedOrmExerciseId, setSelectedOrmExerciseId] = useState<string | null>(null);
 
   const [wakeLockPermission, setWakeLockPermission] = useState<'granted' | 'denied' | 'unsupported'>('granted');
 
@@ -197,7 +203,7 @@ const ProfilePage: React.FC = () => {
     }
     return 'denied';
   });
-
+  
   useEffect(() => {
     getAvailableVoices(locale).then(setVoices);
   }, [locale]);
@@ -284,6 +290,9 @@ const ProfilePage: React.FC = () => {
   const inputClass = "bg-background border border-white/10 rounded-lg p-2 text-right w-32 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-mono";
   const selectClass = "bg-background border border-white/10 rounded-lg p-2 text-right min-w-[120px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all";
 
+  // Big Lifts for 1RM
+  const bigLifts = ['ex-2', 'ex-1', 'ex-3', 'ex-4', 'ex-5']; // Squat, Bench, Deadlift, OHP, Row
+
   return (
     <div className="space-y-6 pb-8">
       <h1 className="text-3xl font-bold text-center mb-6">{t('profile_title')}</h1>
@@ -311,6 +320,31 @@ const ProfilePage: React.FC = () => {
 
             {/* Strength Profile Radar Chart */}
             <StrengthProfile />
+
+            {/* 1RM List */}
+            <SettingsGroup title={t('orm_current_max')}>
+                {bigLifts.map(id => {
+                    const exercise = getExerciseById(id);
+                    const ormEntry = profile.oneRepMaxes?.[id];
+                    const weight = ormEntry ? ormEntry.weight : 0;
+                    
+                    if (!exercise) return null;
+
+                    return (
+                        <SettingsItem key={id} onClick={() => setSelectedOrmExerciseId(id)}>
+                             <div className="flex items-center justify-between w-full">
+                                 <span className="text-text-primary font-medium">{exercise.name}</span>
+                                 <div className="flex items-center gap-2">
+                                    <span className="text-primary font-mono text-sm font-bold bg-primary/10 px-3 py-1.5 rounded-lg group-hover:bg-primary/20 transition-colors">
+                                        {weight > 0 ? displayWeight(weight) : '-'} <span className="text-xs opacity-70">{weight > 0 ? t(('workout_' + weightUnit) as TranslationKey) : ''}</span>
+                                    </span>
+                                    <Icon name="arrow-right" className="w-4 h-4 text-text-secondary/50 group-hover:text-text-primary transition-colors" />
+                                 </div>
+                             </div>
+                        </SettingsItem>
+                    );
+                })}
+            </SettingsGroup>
 
             {/* Recovery Heatmap */}
             <div>
@@ -554,6 +588,21 @@ const ProfilePage: React.FC = () => {
             <p className="text-text-secondary">{infoModalContent.message}</p>
         </Modal>
       )}
+      
+      <Modal 
+        isOpen={!!selectedOrmExerciseId} 
+        onClose={() => setSelectedOrmExerciseId(null)}
+        contentClassName="bg-[#0f172a] w-full h-full sm:h-[85vh] sm:max-w-2xl m-0 sm:m-4 sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-white/10"
+      >
+        {selectedOrmExerciseId && getExerciseById(selectedOrmExerciseId) && (
+             <div className="flex flex-col h-full p-6 overflow-y-auto">
+                <OneRepMaxDetailView 
+                    exercise={getExerciseById(selectedOrmExerciseId)!} 
+                    onBack={() => setSelectedOrmExerciseId(null)} 
+                />
+            </div>
+        )}
+      </Modal>
     </div>
   );
 };

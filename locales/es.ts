@@ -7,6 +7,7 @@ import { es_coach } from './modules/es_coach';
 import { es_templates } from './modules/es_templates';
 import { es_exercise_data } from './modules/es_exercise_data';
 import { es_supplements_ui } from './modules/es_supplements_ui';
+import { es_onerepmax } from './modules/es_onerepmax';
 
 export const es = {
   ...es_common,
@@ -17,4 +18,5 @@ export const es = {
   ...es_templates,
   ...es_exercise_data,
   ...es_supplements_ui,
+  ...es_onerepmax,
 };

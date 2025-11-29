@@ -1,8 +1,10 @@
-import React, { useContext } from 'react';
+
+import React, { useContext, useState } from 'react';
 import { useI18n } from '../../hooks/useI18n';
 import { AppContext } from '../../contexts/AppContext';
 import { Routine, WorkoutExercise } from '../../types';
 import { Icon } from '../common/Icon';
+import OneRepMaxHub from '../onerepmax/OneRepMaxHub';
 
 interface QuickTrainingSectionProps {
   isOpen: boolean;
@@ -12,6 +14,7 @@ interface QuickTrainingSectionProps {
 const QuickTrainingSection: React.FC<QuickTrainingSectionProps> = ({ isOpen, onToggle }) => {
     const { t } = useI18n();
     const { startQuickTimer, startHiitSession } = useContext(AppContext);
+    const [isOrmHubOpen, setIsOrmHubOpen] = useState(false);
 
     const quickTimeOptions = [
         { label: `5 ${t('timers_minute_abbreviation')}`, value: 300 },
@@ -70,8 +73,13 @@ const QuickTrainingSection: React.FC<QuickTrainingSectionProps> = ({ isOpen, onT
                         <span>{t('train_quick_hiit_label', { time: quickHiitTotalMinutes })}</span>
                         <span className="text-xs font-normal text-text-secondary">{t('train_quick_hiit_desc_short')}</span>
                     </button>
+                    <button onClick={() => setIsOrmHubOpen(true)} className="bg-surface hover:bg-slate-700 text-indigo-300 font-bold py-3 px-2 rounded-lg text-lg transition-colors flex flex-col items-center justify-center border border-indigo-500/30">
+                        <Icon name="weight" className="w-6 h-6 mb-1" />
+                        <span className="text-sm">{t('orm_title')}</span>
+                    </button>
                 </div>
             )}
+            <OneRepMaxHub isOpen={isOrmHubOpen} onClose={() => setIsOrmHubOpen(false)} />
         </div>
     );
 };
