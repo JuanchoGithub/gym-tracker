@@ -19,6 +19,9 @@ import { getDateString } from '../utils/timeUtils';
 import { getExplanationIdForSupplement } from '../services/explanationService';
 import Modal from '../components/common/Modal';
 import OneRepMaxHub from '../components/onerepmax/OneRepMaxHub';
+import CascadeUpdateModal from '../components/onerepmax/CascadeUpdateModal';
+import { useMeasureUnit } from '../hooks/useWeight';
+import { TranslationKey } from '../contexts/I18nContext';
 
 const timeKeywords = {
     morning: /morning|breakfast|am/i,
@@ -34,9 +37,10 @@ const TrainPage: React.FC = () => {
       startTemplateEdit, startHiitSession, startTemplateDuplicate,
       checkInState, handleCheckInResponse, history, exercises, upsertRoutine, upsertRoutines,
       currentWeight, logUnlock, supplementPlan, takenSupplements, toggleSupplementIntake, snoozedSupplements, snoozeSupplement,
-      profile
+      profile, updateOneRepMax, snoozeOneRepMaxUpdate, undoAutoUpdate, dismissAutoUpdate, getExerciseById
   } = useContext(AppContext);
   const { t } = useI18n();
+  const { displayWeight, weightUnit } = useMeasureUnit();
   const [selectedRoutine, setSelectedRoutine] = useState<Routine | null>(null);
   const [isConfirmingNewWorkout, setIsConfirmingNewWorkout] = useState(false);
   const [routineToStart, setRoutineToStart] = useState<Routine | null>(null);
@@ -59,6 +63,10 @@ const TrainPage: React.FC = () => {
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [isCreateOptionModalOpen, setIsCreateOptionModalOpen] = useState(false);
   
+  // Cascade Update State
+  const [isCascadeOpen, setIsCascadeOpen] = useState(false);
+  const [cascadeData, setCascadeData] = useState<{ id: string, max: number } | null>(null);
+
   const isNewUser = useMemo(() => {
       const hasHistory = history.length > 0;
       const hasCustomRoutines = routines.some(r => !r.id.startsWith('rt-'));
@@ -86,13 +94,14 @@ const TrainPage: React.FC = () => {
             relevantRoutineIds: onboardingRoutines.map(r => r.id),
           });
       } else {
-          // Check for imbalances first
+          // Priority 1: Imbalances
           const imbalanceRec = detectImbalances(history, routines, currentWeight, profile.gender);
           const now = Date.now();
           
           if (imbalanceRec && now > imbalanceSnoozedUntil) {
               setRecommendation(imbalanceRec);
           } else {
+              // Priority 2: Standard Workout Suggestion
               const rec = getWorkoutRecommendation(history, routines, exercises, t, currentWeight);
               setRecommendation(rec);
           }
@@ -331,6 +340,23 @@ const TrainPage: React.FC = () => {
       }
   };
   
+  const handleUpdate1RM = (data: NonNullable<Recommendation['update1RMData']>) => {
+      updateOneRepMax(data.exerciseId, data.newMax, 'calculated');
+      setCascadeData({ id: data.exerciseId, max: data.newMax });
+      setIsCascadeOpen(true);
+      // Refresh recommendation
+      const nextRec = getWorkoutRecommendation(history, routines, exercises, t, currentWeight);
+      setRecommendation(nextRec);
+  };
+
+  const handleSnooze1RM = (data: NonNullable<Recommendation['update1RMData']>) => {
+      const twoWeeks = 14 * 24 * 60 * 60 * 1000;
+      snoozeOneRepMaxUpdate(data.exerciseId, twoWeeks);
+      // Refresh recommendation
+      const nextRec = getWorkoutRecommendation(history, routines, exercises, t, currentWeight);
+      setRecommendation(nextRec);
+  };
+  
   const handleLogStack = (itemIds: string[]) => {
       const todayString = getDateString(new Date());
       itemIds.forEach(id => {
@@ -345,7 +371,10 @@ const TrainPage: React.FC = () => {
           });
       }
   }
-
+  
+  // Auto-Update Notification Logic
+  const autoUpdatedEntries = Object.entries(profile.autoUpdated1RMs || {});
+  const hasAutoUpdates = autoUpdatedEntries.length > 0;
 
   return (
     <div className="space-y-10 pb-8">
@@ -358,6 +387,44 @@ const TrainPage: React.FC = () => {
       
       <div className="space-y-8">
         
+        {/* Smart 1RM Update Notification */}
+        {hasAutoUpdates && (
+            <div className="bg-indigo-600/20 border border-indigo-500/30 p-4 rounded-2xl animate-fadeIn mb-4 shadow-lg">
+                 <div className="flex items-start gap-3 mb-3">
+                     <div className="bg-indigo-500/20 p-2 rounded-full flex-shrink-0">
+                         <Icon name="chart-line" className="w-5 h-5 text-indigo-300" />
+                     </div>
+                     <div>
+                         <h3 className="text-indigo-200 font-bold text-sm">{t('rec_type_strength_update')}</h3>
+                         <div className="text-xs text-indigo-200/70 mt-1 space-y-1">
+                             {autoUpdatedEntries.map(([id, entry]) => {
+                                 const ex = getExerciseById(id);
+                                 return (
+                                     <p key={id}>
+                                         {ex?.name}: <span className="font-mono">{displayWeight(entry.oldWeight)} → {displayWeight(entry.newWeight)} {t(`workout_${weightUnit}` as TranslationKey)}</span>
+                                     </p>
+                                 );
+                             })}
+                         </div>
+                     </div>
+                 </div>
+                 <div className="flex gap-3 pl-10">
+                     <button 
+                        onClick={() => autoUpdatedEntries.forEach(([id]) => undoAutoUpdate(id))}
+                        className="text-xs font-bold text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 px-3 py-1.5 rounded-lg border border-indigo-500/20 transition-colors"
+                    >
+                        {t('common_undo')}
+                     </button>
+                     <button 
+                        onClick={() => autoUpdatedEntries.forEach(([id]) => dismissAutoUpdate(id))}
+                        className="text-xs font-bold text-indigo-300/70 hover:text-white transition-colors px-2 py-1.5"
+                    >
+                        {t('common_dismiss')}
+                    </button>
+                 </div>
+            </div>
+        )}
+
         {/* Interactive Smart Stack Card */}
         {smartStack && (
             <SupplementActionCard 
@@ -392,6 +459,8 @@ const TrainPage: React.FC = () => {
                     if(recommendation.generatedRoutine) setSelectedRoutine(recommendation.generatedRoutine);
                 }}
                 onUpgrade={() => setIsUpgradeConfirmOpen(true)}
+                onUpdate1RM={handleUpdate1RM}
+                onSnooze1RM={handleSnooze1RM}
             />
         )}
 
@@ -486,6 +555,15 @@ const TrainPage: React.FC = () => {
               message={`This will replace ${recommendation.promotionData.fromName} with ${recommendation.promotionData.toName} in all your custom templates.`}
               confirmText="Upgrade All"
               confirmButtonClass="bg-amber-600 hover:bg-amber-700"
+          />
+      )}
+      
+      {cascadeData && (
+          <CascadeUpdateModal 
+             isOpen={isCascadeOpen}
+             onClose={() => setIsCascadeOpen(false)}
+             parentExerciseId={cascadeData.id}
+             newParentMax={cascadeData.max}
           />
       )}
 

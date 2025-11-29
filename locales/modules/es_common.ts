@@ -28,4 +28,6 @@ export const es_common = {
   common_new: "Nuevo",
   common_many: "muchos",
   common_next_session: "Próxima Sesión",
+  common_undo: "Deshacer",
+  common_dismiss: "Descartar",
 };

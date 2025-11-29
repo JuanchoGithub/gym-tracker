@@ -45,7 +45,7 @@ const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({ exercise, isO
       case 'description': return <DescriptionTab exercise={exercise} />;
       case 'history': return <HistoryTab history={exerciseHistory} />;
       case 'graphs': return <GraphsTab exercise={exercise} history={exerciseHistory} />;
-      case 'records': return <RecordsTab records={personalRecords} />;
+      case 'records': return <RecordsTab records={personalRecords} exerciseId={exercise.id} />;
       default: return null;
     }
   }

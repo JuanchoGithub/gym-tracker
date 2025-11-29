@@ -83,7 +83,7 @@ export interface WorkoutSession {
   id:string;
   routineId: string; // ID of the routine this session was started from
   routineName: string;
-  startTime: number; // timestamp
+  startTime: number;
   endTime: number; // timestamp
   exercises: WorkoutExercise[]; // This will store the completed sets
   supersets?: Record<string, SupersetDefinition>;
@@ -119,12 +119,20 @@ export interface OneRepMaxEntry {
   method: 'calculated' | 'tested'; // 'calculated' from e.g. a 5x5 set, 'tested' via the wizard
 }
 
+export interface AutoUpdateEntry {
+    oldWeight: number;
+    newWeight: number;
+    date: number;
+}
+
 export interface Profile {
   gender?: 'male' | 'female';
   height?: number; // in cm
   weightHistory: WeightEntry[];
   unlocks?: UnlockEvent[];
   oneRepMaxes?: Record<string, OneRepMaxEntry>; // Keyed by Exercise ID
+  oneRepMaxSnoozes?: Record<string, number>; // Keyed by Exercise ID, value is timestamp until which to snooze updates
+  autoUpdated1RMs?: Record<string, AutoUpdateEntry>; // Keyed by Exercise ID, tracks pending notifications for auto-updates
 }
 
 export interface SupplementInfo {

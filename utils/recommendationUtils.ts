@@ -1,17 +1,17 @@
 
-import { WorkoutSession, Routine, Exercise, BodyPart } from '../types';
+import { WorkoutSession, Routine, Exercise, BodyPart, Profile } from '../types';
 import { calculateMuscleFreshness, calculateSystemicFatigue } from './fatigueUtils';
 import { MUSCLES } from '../constants/muscles';
 import { generateSmartRoutine, RoutineFocus, RoutineLevel } from './routineGenerator';
 import { PREDEFINED_EXERCISES } from '../constants/exercises';
 import { PROGRESSION_PATHS } from '../constants/progression';
-import { getExerciseHistory, calculate1RM } from './workoutUtils';
+import { getExerciseHistory } from './workoutUtils';
 import { formatWeightDisplay } from './weightUtils';
 import { predictNextRoutine, getProtectedMuscles, generateGapSession } from './smartCoachUtils';
 import { inferUserProfile, MOVEMENT_PATTERNS, calculateMaxStrengthProfile, calculateMedianWorkoutDuration } from '../services/analyticsService';
 
 export interface Recommendation {
-  type: 'rest' | 'workout' | 'promotion' | 'active_recovery' | 'imbalance' | 'deload';
+  type: 'rest' | 'workout' | 'promotion' | 'active_recovery' | 'imbalance' | 'deload' | 'update_1rm';
   titleKey: string;
   titleParams?: Record<string, string | number>;
   reasonKey: string;
@@ -28,6 +28,12 @@ export interface Recommendation {
   systemicFatigue?: {
       score: number;
       level: 'Low' | 'Medium' | 'High';
+  };
+  update1RMData?: {
+      exerciseId: string;
+      exerciseName: string;
+      oldMax: number;
+      newMax: number;
   };
 }
 
@@ -91,6 +97,7 @@ const RATIOS = {
     BN_SQ: 1.33, // Squat (4) / Bench (3) = 1.33
     OH_BN: 0.66, // OHP (2) / Bench (3) = 0.66
 };
+
 
 export const detectImbalances = (history: WorkoutSession[], routines: Routine[], currentBodyWeight?: number, gender?: 'male' | 'female'): Recommendation | null => {
     const s = calculateMaxStrengthProfile(history);
@@ -326,6 +333,7 @@ export const getWorkoutRecommendation = (
 
   // Check if user is a "Rookie" (Very low history or explicitly beginner profile)
   const isRookie = history.length < 5 || (userProfile.experience === 'beginner' && history.length < 10);
+
 
   // --- PHASE 1: STICKY PLAN (Beginner / New User) ---
   // If user is new AND has custom routines (from wizard), stick to them.

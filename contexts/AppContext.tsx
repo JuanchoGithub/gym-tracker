@@ -109,6 +109,10 @@ interface AppContextType {
   profile: Profile;
   updateProfileInfo: (updates: Partial<Omit<Profile, 'weightHistory' | 'unlocks'>>) => void;
   updateOneRepMax: (exerciseId: string, weight: number, method: 'calculated' | 'tested') => void;
+  snoozeOneRepMaxUpdate: (exerciseId: string, durationMs: number) => void;
+  undoAutoUpdate: (exerciseId: string) => void;
+  dismissAutoUpdate: (exerciseId: string) => void;
+  applyCalculated1RM: (exerciseId: string, weight: number) => void;
   currentWeight?: number; // in kg
   logWeight: (weightInKg: number) => void;
   logUnlock: (fromExercise: string, toExercise: string) => void;
@@ -159,7 +163,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [takenSupplements, setTakenSupplements] = useLocalStorage<Record<string, string[]>>('takenSupplements', {});
   const [snoozedSupplements, setSnoozedSupplements] = useLocalStorage<Record<string, number>>('snoozedSupplements', {});
 
-  const [profile, setProfile] = useLocalStorage<Profile>('profile', { weightHistory: [], unlocks: [], oneRepMaxes: {} });
+  const [profile, setProfile] = useLocalStorage<Profile>('profile', { weightHistory: [], unlocks: [], oneRepMaxes: {}, oneRepMaxSnoozes: {}, autoUpdated1RMs: {} });
   const [activeTimerInfo, setActiveTimerInfo] = useLocalStorage<ActiveTimerInfo | null>('activeRestTimer', null);
   const [collapsedExerciseIds, setCollapsedExerciseIds] = useLocalStorage<string[]>('collapsedExerciseIds', []);
   const [collapsedSupersetIds, setCollapsedSupersetIds] = useLocalStorage<string[]>('collapsedSupersetIds', []);
@@ -172,10 +176,78 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Initialize oneRepMaxes if missing
   useEffect(() => {
-      if (!profile.oneRepMaxes) {
-          setProfile(prev => ({ ...prev, oneRepMaxes: {} }));
+      setProfile(prev => {
+          const updates: Partial<Profile> = {};
+          if (!prev.oneRepMaxes) updates.oneRepMaxes = {};
+          if (!prev.oneRepMaxSnoozes) updates.oneRepMaxSnoozes = {};
+          if (!prev.autoUpdated1RMs) updates.autoUpdated1RMs = {};
+          
+          if (Object.keys(updates).length > 0) {
+              return { ...prev, ...updates };
+          }
+          return prev;
+      });
+  }, [setProfile]);
+
+  const allTimeBestSets = useMemo(() => {
+    const bestSets: Record<string, PerformedSet> = {};
+    for (const exercise of rawExercises) {
+        const exerciseHistory = getExerciseHistory(history, exercise.id);
+        if (exerciseHistory.length > 0) {
+            let bestSet: PerformedSet | null = null;
+            let best1RM = -1;
+            for (const entry of exerciseHistory) {
+                for (const set of entry.exerciseData.sets) {
+                    if (set.type === 'normal' && set.isComplete) {
+                        const current1RM = calculate1RM(set.weight, set.reps);
+                        if (current1RM > best1RM) {
+                            best1RM = current1RM;
+                            bestSet = set;
+                        }
+                    }
+                }
+            }
+            if (bestSet) {
+                bestSets[exercise.id] = bestSet;
+            }
+        }
+    }
+    return bestSets;
+  }, [history, rawExercises]);
+  
+  // Auto-seed 1RM from history if profile is empty ("Don't force calibration")
+  useEffect(() => {
+      if (Object.keys(allTimeBestSets).length > 0) {
+          setProfile(prev => {
+              const currentMaxes = prev.oneRepMaxes || {};
+              let hasChanges = false;
+              const newMaxes = { ...currentMaxes };
+
+              // Core Lifts to prioritize seeding
+              const coreLifts = ['ex-1', 'ex-2', 'ex-3', 'ex-4']; // Bench, Squat, Deadlift, OHP
+
+              Object.entries(allTimeBestSets).forEach(([id, set]) => {
+                  if (!newMaxes[id]) {
+                      const e1rm = calculate1RM(set.weight, set.reps);
+                      if (e1rm > 0) {
+                          newMaxes[id] = {
+                              exerciseId: id,
+                              weight: e1rm,
+                              date: Date.now(),
+                              method: 'calculated' // Mark as calculated so we know it's not a hard test
+                          };
+                          hasChanges = true;
+                      }
+                  }
+              });
+
+              if (hasChanges) {
+                  return { ...prev, oneRepMaxes: newMaxes };
+              }
+              return prev;
+          });
       }
-  }, [profile.oneRepMaxes, setProfile]);
+  }, [allTimeBestSets, setProfile]);
 
   useEffect(() => {
     const oldWeightUnitRaw = window.localStorage.getItem('weightUnit');
@@ -234,26 +306,73 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   
   const updateOneRepMax = useCallback((exerciseId: string, weight: number, method: 'calculated' | 'tested') => {
       setProfile(prev => {
-          const current1RM = prev.oneRepMaxes?.[exerciseId];
-          
-          // Logic:
-          // 1. If tested, always update (assume new test result is intentional override)
-          // 2. If calculated, only update if greater than current stored max (calculated OR tested)
-          //    OR if current doesn't exist.
-          //    Exception: If current is 'tested' and much higher, maybe keep tested? 
-          //    But typically e1RM is a good proxy for progress. 
-          //    Let's say: Calculated only updates if > current. Tested always updates.
-          
-          if (method === 'tested' || !current1RM || weight > current1RM.weight) {
-              return {
-                  ...prev,
-                  oneRepMaxes: {
-                      ...prev.oneRepMaxes,
-                      [exerciseId]: { exerciseId, weight, date: Date.now(), method }
-                  }
-              };
+          return {
+              ...prev,
+              oneRepMaxes: {
+                  ...prev.oneRepMaxes,
+                  [exerciseId]: { exerciseId, weight, date: Date.now(), method }
+              }
+          };
+      });
+  }, [setProfile]);
+  
+  const snoozeOneRepMaxUpdate = useCallback((exerciseId: string, durationMs: number) => {
+      setProfile(prev => ({
+          ...prev,
+          oneRepMaxSnoozes: {
+              ...prev.oneRepMaxSnoozes,
+              [exerciseId]: Date.now() + durationMs
           }
-          return prev;
+      }));
+  }, [setProfile]);
+  
+  const undoAutoUpdate = useCallback((exerciseId: string) => {
+      setProfile(prev => {
+          const entry = prev.autoUpdated1RMs?.[exerciseId];
+          if (!entry) return prev;
+
+          const newOneRepMaxes = { ...prev.oneRepMaxes };
+          if (entry.oldWeight > 0) {
+              newOneRepMaxes[exerciseId] = {
+                  exerciseId,
+                  weight: entry.oldWeight,
+                  date: Date.now(),
+                  method: 'calculated'
+              };
+          } else {
+              delete newOneRepMaxes[exerciseId]; // Was initialized to 0
+          }
+
+          const newAutoUpdates = { ...prev.autoUpdated1RMs };
+          delete newAutoUpdates[exerciseId];
+
+          return { ...prev, oneRepMaxes: newOneRepMaxes, autoUpdated1RMs: newAutoUpdates };
+      });
+  }, [setProfile]);
+
+  const dismissAutoUpdate = useCallback((exerciseId: string) => {
+      setProfile(prev => {
+          const newAutoUpdates = { ...prev.autoUpdated1RMs };
+          delete newAutoUpdates[exerciseId];
+          return { ...prev, autoUpdated1RMs: newAutoUpdates };
+      });
+  }, [setProfile]);
+
+  const applyCalculated1RM = useCallback((exerciseId: string, weight: number) => {
+       setProfile(prev => {
+          const current = prev.oneRepMaxes?.[exerciseId];
+          // If there was a pending auto-update, clear it as user manually applied
+          const newAutoUpdates = { ...prev.autoUpdated1RMs };
+          delete newAutoUpdates[exerciseId];
+          
+          return {
+              ...prev,
+              oneRepMaxes: {
+                  ...prev.oneRepMaxes,
+                  [exerciseId]: { exerciseId, weight, date: Date.now(), method: 'calculated' }
+              },
+              autoUpdated1RMs: newAutoUpdates
+          };
       });
   }, [setProfile]);
 
@@ -602,9 +721,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       // Translate exercise notes if they are translation keys
       const translatedExercises = r.exercises.map(ex => {
           if (ex.note) {
-             // Try to translate the note. If it returns the key itself (and it looks like a key), we might want to keep it as is or handle gracefully.
-             // But 't' returns key if missing.
-             // We check if the note string matches our expected key pattern for anatoly notes or other keys
              if (ex.note.startsWith('anatoly_')) {
                  const translatedNote = t(ex.note as TranslationKey);
                  if (translatedNote !== ex.note) {
@@ -643,32 +759,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
     return rawExercises;
   }, [rawExercises, useLocalizedExerciseNames, locale, t]);
-
-  const allTimeBestSets = useMemo(() => {
-    const bestSets: Record<string, PerformedSet> = {};
-    for (const exercise of rawExercises) {
-        const exerciseHistory = getExerciseHistory(history, exercise.id);
-        if (exerciseHistory.length > 0) {
-            let bestSet: PerformedSet | null = null;
-            let best1RM = -1;
-            for (const entry of exerciseHistory) {
-                for (const set of entry.exerciseData.sets) {
-                    if (set.type === 'normal' && set.isComplete) {
-                        const current1RM = calculate1RM(set.weight, set.reps);
-                        if (current1RM > best1RM) {
-                            best1RM = current1RM;
-                            bestSet = set;
-                        }
-                    }
-                }
-            }
-            if (bestSet) {
-                bestSets[exercise.id] = bestSet;
-            }
-        }
-    }
-    return bestSets;
-  }, [history, rawExercises]);
 
 
   useEffect(() => {
@@ -856,6 +946,60 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setActiveWorkout(workout);
   }, [setActiveWorkout]);
 
+  // Check for automatic 1RM updates when workout ends
+  const checkAutomatic1RMUpdates = useCallback((completedWorkout: WorkoutSession) => {
+      const coreLifts = ['ex-2', 'ex-1', 'ex-3', 'ex-4']; // Squat, Bench, Deadlift, OHP
+      
+      setProfile(prev => {
+          const newOneRepMaxes = { ...prev.oneRepMaxes };
+          const newAutoUpdates = { ...prev.autoUpdated1RMs };
+          let hasChanges = false;
+
+          coreLifts.forEach(id => {
+              const snoozeUntil = prev.oneRepMaxSnoozes?.[id] || 0;
+              if (Date.now() < snoozeUntil) return;
+
+              // Calculate e1RM from *this* session only for immediate feedback/update
+              let sessionMaxE1RM = 0;
+              const exercisesInSession = completedWorkout.exercises.filter(ex => ex.exerciseId === id);
+              
+              exercisesInSession.forEach(ex => {
+                  ex.sets.forEach(set => {
+                       if (set.type === 'normal' && set.isComplete) {
+                           const e1rm = calculate1RM(set.weight, set.reps);
+                           if (e1rm > sessionMaxE1RM) sessionMaxE1RM = e1rm;
+                       }
+                  });
+              });
+
+              const currentStoredMax = newOneRepMaxes[id]?.weight || 0;
+              
+              // Only auto-update if improvement is significant (> 2.5kg) or first time setting it
+              if (sessionMaxE1RM > 0 && (sessionMaxE1RM > currentStoredMax + 2.5 || currentStoredMax === 0)) {
+                   hasChanges = true;
+                   newOneRepMaxes[id] = {
+                       exerciseId: id,
+                       weight: sessionMaxE1RM,
+                       date: Date.now(),
+                       method: 'calculated'
+                   };
+                   
+                   // Log the update so user can undo/dismiss
+                   newAutoUpdates[id] = {
+                       oldWeight: currentStoredMax,
+                       newWeight: sessionMaxE1RM,
+                       date: Date.now()
+                   };
+              }
+          });
+
+          if (hasChanges) {
+              return { ...prev, oneRepMaxes: newOneRepMaxes, autoUpdated1RMs: newAutoUpdates };
+          }
+          return prev;
+      });
+  }, [setProfile]);
+
   const endWorkout = useCallback(() => {
     if (activeWorkout) {
       const completedWorkout = { ...activeWorkout, endTime: Date.now() };
@@ -870,12 +1014,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           else if (currentRecords.maxReps && (!previousRecords.maxReps || currentRecords.maxReps.value > previousRecords.maxReps.value)) prCount++;
           else if (currentRecords.maxVolume && (!previousRecords.maxVolume || currentRecords.maxVolume.value > previousRecords.maxVolume.value)) prCount++;
           
-          // Auto-update calculated 1RM
-          const maxSet = currentRecords.maxWeight?.set;
-          if (maxSet && maxSet.type === 'normal') {
-              const e1rm = calculate1RM(maxSet.weight, maxSet.reps);
-              updateOneRepMax(ex.exerciseId, e1rm, 'calculated');
-          }
+          // Note: calculate1RM calls removed from here, handled by checkAutomatic1RMUpdates now
       });
       completedWorkout.prCount = prCount;
 
@@ -883,6 +1022,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       
       setUserRoutines(prev => prev.map(r => r.id === activeWorkout.routineId ? { ...r, lastUsed: Date.now() } : r));
       
+      // Check for 1RM updates
+      checkAutomatic1RMUpdates(completedWorkout);
+
       setActiveWorkout(null);
       setIsWorkoutMinimized(false);
       setActiveTimerInfo(null);
@@ -891,7 +1033,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setCollapsedSupersetIds([]);
       cancelTimerNotification('rest-timer-finished');
     }
-  }, [activeWorkout, setHistory, setUserRoutines, setActiveWorkout, setIsWorkoutMinimized, setActiveTimerInfo, setCollapsedExerciseIds, setCollapsedSupersetIds, setActiveTimedSet, history, updateOneRepMax]);
+  }, [activeWorkout, setHistory, setUserRoutines, setActiveWorkout, setIsWorkoutMinimized, setActiveTimerInfo, setCollapsedExerciseIds, setCollapsedSupersetIds, setActiveTimedSet, history, checkAutomatic1RMUpdates]);
 
   const discardActiveWorkout = useCallback(() => {
     setActiveWorkout(null);
@@ -1182,6 +1324,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     profile,
     updateProfileInfo,
     updateOneRepMax,
+    snoozeOneRepMaxUpdate,
+    undoAutoUpdate,
+    dismissAutoUpdate,
+    applyCalculated1RM,
     currentWeight,
     logWeight,
     logUnlock,

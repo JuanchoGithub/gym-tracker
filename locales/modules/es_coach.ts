@@ -45,6 +45,13 @@ export const es_coach = {
   rec_type_gap_title: "Recuperación Activa y Accesorios",
   rec_type_gap_desc: "Una sesión más ligera para mantenerte en movimiento sin fatigar los músculos clave para tu próximo entrenamiento pesado.",
   rec_type_imbalance: "Control de Simetría",
+  rec_type_strength_update: "Actualización de Fuerza",
+  rec_title_strength_gain: "¡Aumento de Fuerza!",
+  rec_title_strength_loss: "Regresión Detectada",
+  rec_reason_strength_gain: "Tu 1RM estimado para {exercise} subió de {old} a {new} basado en levantamientos recientes.",
+  rec_reason_strength_loss: "Tu rendimiento reciente en {exercise} sugiere que tu máximo bajó de {old} a {new}. Ajustar hacia abajo puede asegurar la intensidad correcta.",
+  rec_action_update_profile: "Actualizar Perfil",
+  rec_action_snooze: "Posponer (2 Semanas)",
 
   // Progression
   progression_reason_squat: "¡Tu Sentadilla Copa es fuerte! Pasá a Sentadilla con Barra.",

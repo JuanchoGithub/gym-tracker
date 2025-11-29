@@ -45,6 +45,13 @@ export const en_coach = {
   rec_type_gap_title: "Active Recovery & Accessories",
   rec_type_gap_desc: "A lighter session to keep you moving without fatiguing key muscles for your next heavy workout.",
   rec_type_imbalance: "Symmetry Check",
+  rec_type_strength_update: "Strength Update",
+  rec_title_strength_gain: "Strength Increase Detected",
+  rec_title_strength_loss: "Strength Regression Detected",
+  rec_reason_strength_gain: "Your estimated 1RM for {exercise} has increased from {old} to {new} based on recent lifts.",
+  rec_reason_strength_loss: "Your recent performance on {exercise} suggests your max has dropped from {old} to {new}. Adjusting down can help ensure proper training intensity.",
+  rec_action_update_profile: "Update Profile",
+  rec_action_snooze: "Snooze (2 Weeks)",
 
   // Progression
   progression_reason_squat: "Your Goblet Squat is strong! Upgrade to Barbell Squat.",

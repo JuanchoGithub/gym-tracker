@@ -14,6 +14,8 @@ interface SmartRecommendationCardProps {
   onRoutineSelect: (routine: Routine) => void;
   onViewSmartRoutine?: () => void;
   onUpgrade?: () => void;
+  onUpdate1RM?: (data: NonNullable<Recommendation['update1RMData']>) => void;
+  onSnooze1RM?: (data: NonNullable<Recommendation['update1RMData']>) => void;
 }
 
 const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({ 
@@ -22,7 +24,9 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
   onDismiss, 
   onRoutineSelect,
   onViewSmartRoutine, 
-  onUpgrade 
+  onUpgrade,
+  onUpdate1RM,
+  onSnooze1RM
 }) => {
   const { t } = useI18n();
   const { displayWeight, weightUnit } = useMeasureUnit();
@@ -65,20 +69,25 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
       gradientClass = 'from-rose-600/90 to-pink-700/90 border-rose-500/30';
       iconName = 'warning';
       cardTitle = t('smart_cns_overload');
+  } else if (recommendation.type === 'update_1rm') {
+      gradientClass = 'from-blue-600/90 to-cyan-700/90 border-blue-500/30';
+      iconName = 'chart-line';
+      cardTitle = t('rec_type_strength_update');
   }
 
   // Format parameters if this is an imbalance check (assuming keys map to weight values)
   const formattedParams = useMemo(() => {
       if (!recommendation.reasonParams) return undefined;
       
-      // Special handling for weight values in imbalance checks
-      if (recommendation.type === 'imbalance') {
+      // Special handling for weight values in imbalance checks or 1RM updates
+      if (recommendation.type === 'imbalance' || recommendation.type === 'update_1rm') {
           const newParams = { ...recommendation.reasonParams };
-          const weightKeys = ['squat', 'deadlift', 'bench', 'ohp'];
+          const weightKeys = ['squat', 'deadlift', 'bench', 'ohp', 'old', 'new'];
           
           weightKeys.forEach(key => {
               if (newParams[key] !== undefined) {
-                   const val = Number(newParams[key]);
+                   const valStr = newParams[key].toString().replace(/[^\d.]/g, '');
+                   const val = Number(valStr);
                    if (!isNaN(val)) {
                        const unitLabel = t(`workout_${weightUnit}` as TranslationKey) || weightUnit;
                        newParams[key] = `${displayWeight(val)} ${unitLabel}`; 
@@ -144,6 +153,23 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
                     <Icon name="arrow-up" className="w-4 h-4" />
                     <span>Upgrade Routines</span>
                 </button>
+            )}
+            
+            {recommendation.type === 'update_1rm' && recommendation.update1RMData && onUpdate1RM && onSnooze1RM && (
+                 <div className="flex gap-3 mt-2">
+                     <button
+                        onClick={() => onUpdate1RM(recommendation.update1RMData!)}
+                        className="flex-1 bg-white text-blue-600 font-bold py-3 px-4 rounded-xl shadow-md hover:bg-blue-50 transition-colors"
+                    >
+                        {t('rec_action_update_profile')}
+                    </button>
+                    <button
+                        onClick={() => onSnooze1RM(recommendation.update1RMData!)}
+                        className="flex-1 bg-white/20 text-white font-bold py-3 px-4 rounded-xl shadow-sm hover:bg-white/30 transition-colors border border-white/10"
+                    >
+                        {t('rec_action_snooze')}
+                    </button>
+                 </div>
             )}
 
             {recommendation.generatedRoutine && (
