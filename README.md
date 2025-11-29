@@ -7,6 +7,13 @@ Built with **React**, **TypeScript**, and **Tailwind CSS**.
 
 ## ✨ Key Features
 
+### 💪 Strength Command Center (New!)
+*   **1RM Hub:** Centralized dashboard for managing the "Core 4" lifts (Squat, Bench, Deadlift, OHP) and tracking accessory strength with "Tested" vs "Estimated" status.
+*   **"The Professor" Protocol:** A guided, step-by-step interactive wizard for testing 1RM. It manages warmup sets, percentages, and rest timers to ensure a safe and accurate max attempt.
+*   **Inference Engine:** Automatically detects when a main lift improves and suggests cascading weight updates for related accessory exercises (e.g., Bench Press increase -> Incline DB Press update) based on biomechanical ratios.
+*   **Live PR Detection:** Real-time notifications during active workouts when a performed set exceeds your current theoretical max.
+*   **Percentage Tools:** Instantly calculate and apply weight percentages (e.g., "Set to 75%") across your workout.
+
 ### 🏋️‍♂️ Training & Tracking
 *   **Active Workout Mode:** Real-time tracking with support for **Supersets**, Drop Sets, Warmups, and Timed Sets.
 *   **Smart Timers:** Auto-calculating rest timers based on set intensity (Warmup vs. Failure) with background notification support.
