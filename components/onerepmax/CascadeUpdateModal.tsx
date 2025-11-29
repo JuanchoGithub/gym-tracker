@@ -90,7 +90,7 @@ const CascadeUpdateModal: React.FC<CascadeUpdateModalProps> = ({ isOpen, onClose
                             <div className="text-left">
                                 <div className="font-bold text-white text-sm">{item.exercise.name}</div>
                                 <div className="text-xs text-text-secondary">
-                                    {displayWeight(item.currentMax)} -> <span className="text-success font-bold">{displayWeight(item.projectedMax)} {t(('workout_' + weightUnit) as TranslationKey)}</span>
+                                    {displayWeight(item.currentMax)} &rarr; <span className="text-success font-bold">{displayWeight(item.projectedMax)} {t(('workout_' + weightUnit) as TranslationKey)}</span>
                                 </div>
                             </div>
                             <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${selectedChildIds.has(item.exercise.id) ? 'bg-indigo-500 border-indigo-500' : 'border-white/30'}`}>
