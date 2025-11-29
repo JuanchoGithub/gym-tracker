@@ -17,24 +17,30 @@ Built with **React**, **TypeScript**, and **Tailwind CSS**.
 ### 🏋️‍♂️ Training & Tracking
 *   **Active Workout Mode:** Real-time tracking with support for **Supersets**, Drop Sets, Warmups, and Timed Sets.
 *   **Smart Timers:** Auto-calculating rest timers based on set intensity (Warmup vs. Failure) with background notification support.
+*   **Interactive Visual Database:** Detailed SVG animations for exercises and dynamic anatomical maps highlighting primary vs. secondary muscle targets.
 *   **Voice Coach:** Text-to-Speech (TTS) announcements for rounds, rest intervals, and upcoming exercises.
+*   **Procedural Audio:** Real-time synthesized sound effects (tocks, bells) for timers, ensuring lightweight performance without external assets.
 *   **Quick HIIT Mode:** Dedicated interval timer for high-intensity sessions with customizable work/rest ratios.
 *   **Routine Management:** Create custom templates or use built-in programs (StrongLifts, PPL, PHUL).
 *   **Superset Player:** A dedicated UI for managing complex superset transitions and rest periods.
+*   **Stale Session Guard:** Auto-detection of abandoned workouts (>3 hours) to prevent skewing duration analytics.
 
 ### 📊 Analytics & Insights
 *   **Muscle Heatmap:** Visualizes muscle freshness/fatigue based on your last 4 days of training volume.
 *   **Strength Symmetry:** Radar chart analysis comparing your major lifts (Squat, Bench, Deadlift, OHP, Row) against ideal ratios to detect structural imbalances.
 *   **Systemic Fatigue:** Monitors cumulative CNS (Central Nervous System) load to recommend deload weeks.
 *   **Lifter DNA:** Analyzes your training history to categorize your archetype (Powerbuilder, Bodybuilder, Hybrid) and score your Consistency, Volume, and Intensity.
+*   **Skill Milestones:** A gamified "Unlock" system that tracks specific strength milestones (e.g., mastering Goblet Squats) to graduate you to more complex compound movements.
 *   **Progression Tracking:** Automatic calculation of **e1RM** (Estimated 1-Rep Max) and volume trends per exercise.
+*   **Data Freedom:** Export your workout history and visualization charts as **CSV**, **JSON**, or **PNG** images to share your progress.
 *   **Smart Recommendations:** Suggests the optimal workout for the day (e.g., "Push Day" vs "Active Recovery") based on muscle recovery status.
 
 ### 💊 Nutrition & Health
 *   **Supplement Wizard:** Generates a personalized supplement schedule based on weight, gender, goals (cut/bulk), and medical conditions.
+*   **Proactive Supplement Coach:** An AI engine that actively reviews your training volume trends to suggest stack adjustments (e.g., "Add Creatine" if volume spikes, or "Remove Pre-workout" during injury deloads).
 *   **Context-Aware Scheduling:** Automatically adjusts supplement timing (e.g., moving Protein from Breakfast to Lunch) based on your workout schedule.
-*   **Smart Correlations:** Analyzes workout history against supplement logs to find correlations (e.g., "Levantás un 5% más de volumen cuando tomás Creatina").
-*   **Inventory Management:** Tracks stock levels and sends reminders.
+*   **Smart Correlations:** Analyzes workout history against supplement logs to find correlations (e.g., "You lift 5% more volume when taking Creatine").
+*   **In-App Stock Alerts:** Visual badges and reminders within the daily schedule when supplies run low.
 
 ---
 
@@ -222,7 +228,7 @@ graph LR
 │   ├── pages/           # Main Route Views
 │   ├── services/        # Logic (Analytics, Audio, Speech, Supplements)
 │   ├── utils/           # Helper functions (Math, Time, Colors)
-│   ├── App.tsx          # Main Router
+│   ├── App.tsx          # Router Principal
 │   └── index.tsx        # Entry Point
 └── public/              # Static Assets & Icons
 ```

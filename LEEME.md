@@ -17,24 +17,30 @@ Desarrollada con **React**, **TypeScript** y **Tailwind CSS**.
 ### 🏋️‍♂️ Entrenamiento y Seguimiento
 *   **Modo Entrenamiento Activo:** Registro en tiempo real con soporte nativo para **Superseries**, Drop Sets, Series de Aproximación y Series por Tiempo.
 *   **Temporizadores Inteligentes:** El tiempo de descanso se calcula solo según la intensidad de la serie (no es lo mismo descansar después de calentar que después de fallar) y corre en segundo plano.
+*   **Base de Datos Visual:** Animaciones SVG detalladas y mapas anatómicos dinámicos que resaltan qué músculos estás trabajando realmente (Motores vs. Estabilizadores).
 *   **Coach de Voz:** Anuncios Text-to-Speech (TTS) que te cantan las rondas, los intervalos de descanso y qué ejercicio sigue.
+*   **Audio Procedural:** Efectos de sonido sintetizados en tiempo real (ticks, campanas) para temporizadores, sin depender de archivos externos, asegurando un rendimiento ligero.
 *   **Modo HIIT Express:** Un timer de intervalos dedicado para sesiones de alta intensidad con ratios de trabajo/descanso totalmente configurables.
 *   **Gestión de Rutinas:** Creá tus propias plantillas o usá los programas pre-cargados (StrongLifts, PPL, PHUL).
 *   **Reproductor de Superseries:** Una interfaz específica para manejar las transiciones y descansos en bloques de ejercicios complejos sin perderte.
+*   **Guardián de Sesiones:** Detección automática de entrenamientos abandonados (>3 horas) para cerrar la sesión y que no te arruinen las estadísticas de tiempo.
 
 ### 📊 Analíticas e Insights
 *   **Mapa de Calor Muscular:** Visualizá qué tan frescos o fatigados están tus músculos basándose en el volumen de tus últimos 4 días.
 *   **Simetría de Fuerza:** Un gráfico de radar que compara tus levantamientos principales contra ratios ideales para detectar desequilibrios estructurales (ej: si tenés mucho pecho pero poca espalda).
 *   **Fatiga Sistémica:** Monitorea la carga acumulada en tu Sistema Nervioso Central (SNC) para recomendarte cuándo hacer una semana de descarga.
 *   **ADN del Atleta:** Analiza tu historial para categorizar tu arquetipo (Powerbuilder, Bodybuilder, Híbrido) y puntúa tu Constancia, Volumen e Intensidad.
+*   **Hitos y Desbloqueos:** Un sistema gamificado que rastrea hitos de fuerza específicos (ej: dominar la Sentadilla Copa) para "graduarte" y sugerirte pasar a movimientos compuestos más complejos.
 *   **Progreso Automático:** Cálculo automático del **e1RM** (1RM Estimado) y tendencias de volumen por ejercicio.
+*   **Libertad de Datos:** Exportá tu historial y gráficos de progreso como **CSV**, **JSON** o imágenes **PNG** para compartir tu progreso.
 *   **Recomendaciones Inteligentes:** El sistema te sugiere qué entrenar hoy (ej: "Día de Empuje" vs "Recuperación Activa") basándose en qué músculos ya se recuperaron.
 
 ### 💊 Nutrición y Salud
 *   **Asistente de Suplementación:** Genera un plan de suplementos a medida basándose en tu peso, género, objetivos (volumen/definición) y condiciones médicas.
+*   **Coach de Suplementación Proactivo:** Un motor de IA que revisa tus tendencias de volumen para sugerir ajustes al stack (ej: "Agregá Creatina" si el volumen semanal sube, o "Sacá el Pre-entreno" si estás lesionado).
 *   **Cronograma Inteligente:** Ajusta automáticamente los horarios de toma (ej: mueve la proteína del desayuno al almuerzo) si cambiás tu horario de entrenamiento.
 *   **Correlaciones:** Cruza los datos de tus entrenamientos con el registro de suplementos para encontrar patrones (ej: "Rendís un 5% más en volumen cuando tomás Creatina").
-*   **Control de Stock:** Llevá la cuenta de tus suplementos y recibí alertas cuando te estés quedando sin stock.
+*   **Alertas de Stock:** Indicadores visuales en tu agenda diaria cuando te quedan pocas porciones de algún producto.
 
 ---
 
