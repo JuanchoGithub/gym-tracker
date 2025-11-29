@@ -1,4 +1,5 @@
 
+
 import { Routine, PerformedSet, WorkoutExercise } from '../types';
 import { PREDEFINED_EXERCISES } from './exercises';
 
@@ -10,7 +11,7 @@ const createSets = (count: number, reps: number, isWarmup: boolean = false): Per
   isComplete: false
 }));
 
-const createWorkoutExercise = (exerciseId: string, sets: PerformedSet[], restTime: number): WorkoutExercise => {
+const createWorkoutExercise = (exerciseId: string, sets: PerformedSet[], restTime: number, note?: string): WorkoutExercise => {
     const exercise = PREDEFINED_EXERCISES.find(ex => ex.id === exerciseId);
     if (exercise && exercise.isTimed) {
         sets.forEach(set => {
@@ -26,6 +27,7 @@ const createWorkoutExercise = (exerciseId: string, sets: PerformedSet[], restTim
         id: `re-${Math.random()}`,
         exerciseId,
         sets,
+        note,
         restTime: {
             normal: restTime,
             warmup: 60,
@@ -216,8 +218,85 @@ const beginnerHiit: Routine = {
     originId: 'rt-hiit-beginner'
 };
 
+// --- Anatoly Inspired Routines ---
+
+const anatolySquat: Routine = {
+    id: 'rt-anatoly-squat',
+    name: 'Anatoly - Squat Focus (Day A)',
+    description: 'Focus on maximal leg strength and explosive power. Use ~80% 1RM for main lifts.',
+    exercises: [
+        createWorkoutExercise('ex-2', createSets(4, 5), 180, 'anatoly_squat_ex_1_note'),
+        createWorkoutExercise('ex-101', createSets(3, 8), 120, 'anatoly_squat_ex_2_note'),
+        createWorkoutExercise('ex-98', createSets(3, 8), 120, 'anatoly_squat_ex_3_note'),
+        createWorkoutExercise('ex-9', createSets(3, 10), 90, 'anatoly_squat_ex_4_note'),
+        createWorkoutExercise('ex-18', createSets(3, 12), 60),
+        createWorkoutExercise('ex-15', createSets(3, 1), 60), // Plank
+    ],
+    isTemplate: true,
+    originId: 'rt-anatoly-squat',
+    routineType: 'strength',
+    tags: ['powerbuilding', 'legs']
+};
+
+const anatolyBench: Routine = {
+    id: 'rt-anatoly-bench',
+    name: 'Anatoly - Bench Focus (Day B)',
+    description: 'Upper body pushing strength and hypertrophy. 80% 1RM on bench.',
+    exercises: [
+        createWorkoutExercise('ex-1', createSets(4, 5), 180, 'anatoly_bench_ex_1_note'),
+        createWorkoutExercise('ex-87', createSets(3, 8), 120, 'anatoly_bench_ex_2_note'),
+        createWorkoutExercise('ex-11', createSets(3, 10), 90, 'anatoly_bench_ex_3_note'),
+        createWorkoutExercise('ex-4', createSets(3, 8), 120, 'anatoly_bench_ex_4_note'),
+        createWorkoutExercise('ex-24', createSets(3, 10), 90), // Dips
+        createWorkoutExercise('ex-5', createSets(3, 8), 90, 'anatoly_bench_ex_6_note'),
+    ],
+    isTemplate: true,
+    originId: 'rt-anatoly-bench',
+    routineType: 'strength',
+    tags: ['powerbuilding', 'push']
+};
+
+const anatolyDeadlift: Routine = {
+    id: 'rt-anatoly-deadlift',
+    name: 'Anatoly - Deadlift Focus (Day C)',
+    description: 'Posterior chain power and back thickness. 80% 1RM on deadlifts.',
+    exercises: [
+        createWorkoutExercise('ex-3', createSets(4, 5), 180, 'anatoly_deadlift_ex_1_note'),
+        createWorkoutExercise('ex-3', createSets(3, 6), 150, 'anatoly_deadlift_ex_2_note'),
+        createWorkoutExercise('ex-104', createSets(3, 10), 90, 'anatoly_deadlift_ex_3_note'),
+        createWorkoutExercise('ex-6', createSets(3, 8), 120, 'anatoly_deadlift_ex_4_note'),
+        createWorkoutExercise('ex-41', createSets(3, 12), 60, 'anatoly_deadlift_ex_5_note'),
+        createWorkoutExercise('ex-156', createSets(3, 12), 60), // Hanging Leg Raise
+    ],
+    isTemplate: true,
+    originId: 'rt-anatoly-deadlift',
+    routineType: 'strength',
+    tags: ['powerbuilding', 'pull']
+};
+
+const anatolyAccessory: Routine = {
+    id: 'rt-anatoly-accessory',
+    name: 'Anatoly - Accessory (Day D)',
+    description: 'Explosive power and weak point training. Use ~70% 1RM for paused lifts.',
+    exercises: [
+        createWorkoutExercise('ex-1', createSets(4, 5), 150, 'anatoly_accessory_ex_1_note'),
+        createWorkoutExercise('ex-2', createSets(3, 5), 150, 'anatoly_accessory_ex_2_note'),
+        createWorkoutExercise('ex-40', createSets(3, 8), 90, 'anatoly_accessory_ex_3_note'),
+        createWorkoutExercise('ex-7', createSets(3, 12), 60, 'anatoly_accessory_ex_4_note'),
+        createWorkoutExercise('ex-85', createSets(3, 12), 60, 'anatoly_accessory_ex_5_note'),
+    ],
+    isTemplate: true,
+    originId: 'rt-anatoly-accessory',
+    routineType: 'strength',
+    tags: ['powerbuilding', 'accessory']
+};
+
 
 export const PREDEFINED_ROUTINES: Routine[] = [
+  anatolySquat,
+  anatolyBench,
+  anatolyDeadlift,
+  anatolyAccessory,
   strongLiftsA,
   strongLiftsB,
   phulUpper,

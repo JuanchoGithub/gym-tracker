@@ -1,4 +1,5 @@
 
+
 export const es_templates = {
   // Template Editor
   template_editor_edit_title: "Editar Plantilla",
@@ -49,6 +50,39 @@ export const es_templates = {
   create_template_mode_wizard_desc: "Generar plan basado en tus metas",
 
   // Routine Names & Descs
+  rt_anatoly_squat_name: "Anatoly - Sentadilla (Día A)",
+  rt_anatoly_squat_desc: "Fuerza máxima de piernas y potencia explosiva. Sentadillas al 80% 1RM.",
+  rt_anatoly_bench_name: "Anatoly - Banca (Día B)",
+  rt_anatoly_bench_desc: "Fuerza de empuje superior. Press de banca al 80% 1RM.",
+  rt_anatoly_deadlift_name: "Anatoly - Peso Muerto (Día C)",
+  rt_anatoly_deadlift_desc: "Potencia de cadena posterior. Peso muerto al 80% 1RM.",
+  rt_anatoly_accessory_name: "Anatoly - Accesorios (Día D)",
+  rt_anatoly_accessory_desc: "Potencia explosiva con levantamientos pausados y puntos débiles.",
+
+  // Anatoly Exercise Notes
+  anatoly_squat_ex_1_note: "Enfocarse en profundidad y tensión del core. 80% 1RM.",
+  anatoly_squat_ex_2_note: "Mantener torso erguido para quemar cuádriceps.",
+  anatoly_squat_ex_3_note: "Bisagra de cadera para estirar isquios.",
+  anatoly_squat_ex_4_note: "Casi al fallo.",
+  
+  anatoly_bench_ex_1_note: "Pausa breve en el pecho. 80% 1RM.",
+  anatoly_bench_ex_2_note: "Agarre cerrado para tríceps.",
+  anatoly_bench_ex_3_note: "Al fallo.",
+  anatoly_bench_ex_4_note: "Press Militar de pie.",
+  anatoly_bench_ex_6_note: "Remo con Barra para balance.",
+
+  anatoly_deadlift_ex_1_note: "Convencional o Sumo. 80% 1RM.",
+  anatoly_deadlift_ex_2_note: "Peso Muerto con Déficit (sobre disco).",
+  anatoly_deadlift_ex_3_note: "Puente de Glúteos con peso.",
+  anatoly_deadlift_ex_4_note: "Dominadas con peso o Jalón al pecho.",
+  anatoly_deadlift_ex_5_note: "Face Pulls para postura.",
+
+  anatoly_accessory_ex_1_note: "Press Banca Pausado (2-3s). 70% 1RM.",
+  anatoly_accessory_ex_2_note: "Sentadilla Pausada/Box. 70% 1RM.",
+  anatoly_accessory_ex_3_note: "Remo con Mancuerna Pesado.",
+  anatoly_accessory_ex_4_note: "Curl con Barra.",
+  anatoly_accessory_ex_5_note: "Pushdowns de Tríceps.",
+
   rt_1_name: "StrongLifts 5x5 - Entrenamiento A",
   rt_1_desc: "Programa clásico de fuerza enfocado en levantamientos compuestos.",
   rt_2_name: "StrongLifts 5x5 - Entrenamiento B",

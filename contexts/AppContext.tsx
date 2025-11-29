@@ -1,4 +1,6 @@
 
+
+
 import React, { createContext, useState, ReactNode, useMemo, useEffect, useCallback } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { Routine, WorkoutSession, Exercise, WorkoutExercise, PerformedSet, ActiveHiitSession, SupplementPlan, SupplementPlanItem, SupplementSuggestion, RejectedSuggestion, Profile, SupersetDefinition } from '../types';
@@ -565,10 +567,28 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const descKey = (r.id.replace(/-/g, '_') + '_desc') as TranslationKey;
       const translatedName = t(nameKey);
       const translatedDesc = t(descKey);
+      
+      // Translate exercise notes if they are translation keys
+      const translatedExercises = r.exercises.map(ex => {
+          if (ex.note) {
+             // Try to translate the note. If it returns the key itself (and it looks like a key), we might want to keep it as is or handle gracefully.
+             // But 't' returns key if missing.
+             // We check if the note string matches our expected key pattern for anatoly notes or other keys
+             if (ex.note.startsWith('anatoly_')) {
+                 const translatedNote = t(ex.note as TranslationKey);
+                 if (translatedNote !== ex.note) {
+                     return { ...ex, note: translatedNote };
+                 }
+             }
+          }
+          return ex;
+      });
+
       return {
         ...r,
         name: translatedName !== nameKey ? translatedName : r.name,
         description: translatedDesc !== descKey ? translatedDesc : r.description,
+        exercises: translatedExercises
       };
     });
 

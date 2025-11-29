@@ -1,4 +1,5 @@
 
+
 export const en_templates = {
   // Template Editor
   template_editor_edit_title: "Edit Template",
@@ -49,6 +50,39 @@ export const en_templates = {
   create_template_mode_wizard_desc: "Generate a plan based on your goals",
   
   // Routine Names & Descs
+  rt_anatoly_squat_name: "Anatoly - Squat (Day A)",
+  rt_anatoly_squat_desc: "Maximal leg strength and explosive power. Squats at 80% 1RM.",
+  rt_anatoly_bench_name: "Anatoly - Bench (Day B)",
+  rt_anatoly_bench_desc: "Upper body pushing strength. Bench press at 80% 1RM.",
+  rt_anatoly_deadlift_name: "Anatoly - Deadlift (Day C)",
+  rt_anatoly_deadlift_desc: "Posterior chain power. Deadlifts at 80% 1RM.",
+  rt_anatoly_accessory_name: "Anatoly - Accessory (Day D)",
+  rt_anatoly_accessory_desc: "Explosive power with paused lifts and weak point training.",
+
+  // Anatoly Exercise Notes
+  anatoly_squat_ex_1_note: "Focus on depth and core tension. 80% 1RM.",
+  anatoly_squat_ex_2_note: "Keep torso upright for quad burn.",
+  anatoly_squat_ex_3_note: "Hinge at hips for hamstring stretch.",
+  anatoly_squat_ex_4_note: "To near failure.",
+  
+  anatoly_bench_ex_1_note: "Pause briefly at chest. 80% 1RM.",
+  anatoly_bench_ex_2_note: "Close-grip for triceps.",
+  anatoly_bench_ex_3_note: "To failure.",
+  anatoly_bench_ex_4_note: "Standing Overhead Press.",
+  anatoly_bench_ex_6_note: "Barbell Rows for balance.",
+
+  anatoly_deadlift_ex_1_note: "Conventional or Sumo. 80% 1RM.",
+  anatoly_deadlift_ex_2_note: "Deficit Deadlift (stand on plate).",
+  anatoly_deadlift_ex_3_note: "Weighted Glute Bridges.",
+  anatoly_deadlift_ex_4_note: "Weighted Pull-ups or Lat Pulldown.",
+  anatoly_deadlift_ex_5_note: "Face Pulls for posture.",
+
+  anatoly_accessory_ex_1_note: "Paused Bench Press (2-3s). 70% 1RM.",
+  anatoly_accessory_ex_2_note: "Paused/Box Squat. 70% 1RM.",
+  anatoly_accessory_ex_3_note: "Heavy Dumbbell Rows.",
+  anatoly_accessory_ex_4_note: "Barbell Curls.",
+  anatoly_accessory_ex_5_note: "Tricep Pushdowns.",
+
   rt_1_name: "StrongLifts 5x5 - Workout A",
   rt_1_desc: "A classic strength program focusing on compound lifts.",
   rt_2_name: "StrongLifts 5x5 - Workout B",
