@@ -94,7 +94,22 @@ Imbalances are detected by comparing your estimated 1RMs against idealized struc
 *   **Overhead Press : Bench** $\approx$ 2:3
 *   **Push : Pull** $\approx$ 1:1
 
-### 6. The Smart Coach Decision Matrix
+### 6. Strength Inference Engine & Synthetic Anchors
+To predict performance on exercises you haven't maxed out recently, the app uses a **Biomechanical Ratio System**.
+
+*   **Concept:** Every exercise is mapped to a "Core 4" Anchor (Squat, Bench, Deadlift, OHP) via a leverage ratio ($R$).
+*   **Synthetic Anchor Calculation:** We normalize every set you perform to find your theoretical ceiling on the main lifts.
+    $$
+    \text{Theoretical Anchor Max} = \frac{\text{Accessory } e1RM}{R}
+    $$
+    *   *Example:* If you Leg Press 250kg for 10 reps ($e1RM \approx 333kg$) and the ratio is 2.5:
+        $$
+        \text{Theoretical Squat Max} = \frac{333}{2.5} = 133kg
+        $$
+*   **Inference:** If your stored Bench Press max is 0, but you Incline Bench 80kg ($R=0.8$), we infer your Bench Max is $80 / 0.8 = 100kg$.
+*   **Cascade Updates:** When you test a new true 1RM on a Main Lift, the system automatically suggests updating all child accessories based on $NewAnchor \times R$.
+
+### 7. The Smart Coach Decision Matrix
 The recommendation engine (`smartCoachUtils.ts`) uses a hierarchy of needs to determine the daily suggestion:
 
 1.  **Phase 0: Safety (CNS Override)**
