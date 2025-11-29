@@ -24,6 +24,7 @@ const timeKeywords = {
     lunch: /lunch|noon|midday/i,
     afternoon: /afternoon/i,
     evening: /evening|bed|night|sleep|pm/i,
+    pre_workout: /pre-workout|pre-entreno/i,
 };
 
 const TrainPage: React.FC = () => {
@@ -47,11 +48,10 @@ const TrainPage: React.FC = () => {
   const [onboardingRoutines, setOnboardingRoutines] = useState<Routine[]>([]);
   const [imbalanceSnoozedUntil, setImbalanceSnoozedUntil] = useLocalStorage('imbalanceSnooze', 0);
   
-  // Persistent dismissed missed supplements
+  // Persistent dismissed missed supplements (legacy, kept for cleanup if needed but logic moved to smart stack)
   const [dismissedHistory, setDismissedHistory] = useLocalStorage<Record<string, string[]>>('dismissedMissedSupplements', {});
   
   const todayStr = getDateString(new Date());
-  const dismissedMissedSupplements = useMemo(() => new Set(dismissedHistory[todayStr] || []), [dismissedHistory, todayStr]);
 
   // Onboarding State
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
@@ -120,55 +120,107 @@ const TrainPage: React.FC = () => {
       return routines.filter(r => recommendation.relevantRoutineIds.includes(r.id));
   }, [recommendation, routines, onboardingRoutines]);
   
-  // Supplement "Quick Intake" Logic
-  const { pendingSupplements, missedPreWorkouts } = useMemo(() => {
-      if (!supplementPlan) return { pendingSupplements: { items: [], timeLabel: '' }, missedPreWorkouts: [] };
+  // --- Smart Supplement Stack Logic ---
+  const { smartStack } = useMemo(() => {
+      if (!supplementPlan) return { smartStack: null };
       const now = new Date();
       const hour = now.getHours();
       const todayString = getDateString(now);
       const takenToday = takenSupplements[todayString] || [];
-      
-      let currentTimeBlock = 'daily';
-      let timeLabelKey = 'time_evening'; // Default fallback
-      
-      if (hour >= 4 && hour < 11) { currentTimeBlock = 'morning'; timeLabelKey = 'time_morning'; }
-      else if (hour >= 11 && hour < 14) { currentTimeBlock = 'lunch'; timeLabelKey = 'time_lunch'; }
-      else if (hour >= 14 && hour < 18) { currentTimeBlock = 'afternoon'; timeLabelKey = 'time_afternoon'; }
-      else if (hour >= 18 || hour < 4) { currentTimeBlock = 'evening'; timeLabelKey = 'time_evening'; }
 
-      const pending = supplementPlan.plan.filter(item => {
-          // Check if already taken
-          if (takenToday.includes(item.id)) return false;
-          // Check snooze
-          const snoozeTime = snoozedSupplements[item.id];
-          if (snoozeTime && snoozeTime > Date.now()) return false;
-          
-          // Check for Pre-Workout expiry logic: If workout is done today, hide pre-workout suggestions from pending list
-          const isPreWorkout = item.time.toLowerCase().includes('pre-workout') || item.time.toLowerCase().includes('pre-entreno') || getExplanationIdForSupplement(item.supplement) === 'caffeine';
-          if (workoutFinishedToday && isPreWorkout) return false;
+      // Helper to check if item is taken
+      const isTaken = (id: string) => takenToday.includes(id);
+      // Helper to check if item is snoozed
+      const isSnoozed = (id: string) => (snoozedSupplements[id] && snoozedSupplements[id] > Date.now());
 
-          // Check time match
-          if (currentTimeBlock === 'morning' && timeKeywords.morning.test(item.time)) return true;
-          if (currentTimeBlock === 'lunch' && timeKeywords.lunch.test(item.time)) return true;
-          if (currentTimeBlock === 'evening' && timeKeywords.evening.test(item.time)) return true;
-          
-          return false;
+      const allItems = supplementPlan.plan.filter(item => {
+        if (item.restDayOnly && workoutFinishedToday) return false; // Simple check, ideally check training plan
+        // Actually, let's include all items and filter later by context
+        return true;
       });
 
-      // Identify missed pre-workout supplements
-      let missed: SupplementPlanItem[] = [];
-      if (workoutFinishedToday) {
-          missed = supplementPlan.plan.filter(item => {
-              const isPreWorkout = item.time.toLowerCase().includes('pre-workout') || item.time.toLowerCase().includes('pre-entreno') || getExplanationIdForSupplement(item.supplement) === 'citrulline';
-              const isTaken = takenToday.includes(item.id);
-              const isDismissed = dismissedMissedSupplements.has(item.id);
-              return isPreWorkout && !isTaken && !isDismissed;
+      // 1. Check Post-Workout Context (High Priority)
+      const lastSession = history.length > 0 ? history[0] : null;
+      const nowTs = Date.now();
+      const isPostWorkoutWindow = lastSession && (nowTs - lastSession.endTime) < (2 * 60 * 60 * 1000) && (nowTs - lastSession.endTime) > 0; // 2 hours window
+
+      if (isPostWorkoutWindow) {
+          const postWorkoutItems = allItems.filter(i => (i.time.toLowerCase().includes('post-workout') || i.time.toLowerCase().includes('post-entreno')) && !isTaken(i.id));
+          
+          // Retroactive check: Pre-workout and Intra-workout items that were NOT taken
+          const preAndIntraItems = allItems.filter(i => {
+             const t = i.time.toLowerCase();
+             return (t.includes('pre-workout') || t.includes('pre-entreno') || t.includes('intra') || getExplanationIdForSupplement(i.supplement) === 'citrulline') && !isTaken(i.id) && !isSnoozed(i.id);
           });
+
+          if (postWorkoutItems.length > 0 || preAndIntraItems.length > 0) {
+              return {
+                  smartStack: {
+                      title: t('supplement_stack_post_workout'), 
+                      items: [...postWorkoutItems, ...preAndIntraItems],
+                  }
+              };
+          }
       }
+
+      // 2. Check Time-Based Contexts
+      let timeContext = 'daily';
+      if (hour >= 4 && hour < 11) timeContext = 'morning';
+      else if (hour >= 11 && hour < 14) timeContext = 'lunch';
+      else if (hour >= 14 && hour < 20) timeContext = 'afternoon'; // Expanded afternoon
+      else timeContext = 'evening';
+
+      let potentialItems = allItems.filter(item => {
+          if (isTaken(item.id) || isSnoozed(item.id)) return false;
+          const tLower = item.time.toLowerCase();
+          
+          if (timeContext === 'morning') {
+              if (timeKeywords.morning.test(tLower)) return true;
+              // Smart Stacking: If training time is morning, include pre-workout
+              if (supplementPlan.info.trainingTime === 'morning' && (timeKeywords.pre_workout.test(tLower))) return true;
+              if (tLower.includes('daily')) return true; // Catch-all
+          }
+          
+          if (timeContext === 'lunch') {
+               if (timeKeywords.lunch.test(tLower)) return true;
+          }
+
+          if (timeContext === 'evening') {
+               if (timeKeywords.evening.test(tLower)) return true;
+               if (supplementPlan.info.trainingTime === 'night' && (timeKeywords.pre_workout.test(tLower))) return true;
+          }
+          
+          if (timeContext === 'afternoon' && supplementPlan.info.trainingTime === 'afternoon' && (timeKeywords.pre_workout.test(tLower))) {
+               return true;
+          }
+
+          return false;
+      });
       
-      const timeLabel = t(timeLabelKey as any);
-      return { pendingSupplements: { items: pending.slice(0, 3), timeLabel }, missedPreWorkouts: missed };
-  }, [supplementPlan, takenSupplements, snoozedSupplements, t, workoutFinishedToday, dismissedMissedSupplements]);
+      // Filter out Pre-workout if workout is ALREADY done today (handled by post-workout check mostly, but as safety)
+      if (workoutFinishedToday) {
+          potentialItems = potentialItems.filter(i => !timeKeywords.pre_workout.test(i.time.toLowerCase()));
+      }
+
+      if (potentialItems.length > 0) {
+           let title = t('supplement_action_card_title', { time: t(`time_${timeContext}` as any) });
+           
+           if (timeContext === 'morning') {
+               if (supplementPlan.info.trainingTime === 'morning') title = t('supplement_stack_morning_training');
+               else title = t('supplement_stack_morning');
+           }
+
+           return {
+               smartStack: {
+                   title: title,
+                   items: potentialItems,
+               }
+           };
+      }
+
+      return { smartStack: null };
+
+  }, [supplementPlan, takenSupplements, snoozedSupplements, history, workoutFinishedToday, t]);
 
 
   const handleRoutineSelect = (routine: Routine) => {
@@ -277,18 +329,21 @@ const TrainPage: React.FC = () => {
       }
   };
   
-  const handleTakeSupplement = (id: string) => {
+  const handleLogStack = (itemIds: string[]) => {
       const todayString = getDateString(new Date());
-      toggleSupplementIntake(todayString, id);
-  };
-
-  const handleDismissMissedSupplement = (id: string) => {
-      setDismissedHistory(prev => {
-          const current = prev[todayStr] || [];
-          if (current.includes(id)) return prev;
-          return { ...prev, [todayStr]: [...current, id] };
+      itemIds.forEach(id => {
+          toggleSupplementIntake(todayString, id);
       });
   };
+  
+  const handleSnoozeStack = () => {
+      if (smartStack) {
+          smartStack.items.forEach(item => {
+              snoozeSupplement(item.id);
+          });
+      }
+  }
+
 
   return (
     <div className="space-y-10 pb-8">
@@ -298,42 +353,13 @@ const TrainPage: React.FC = () => {
       
       <div className="space-y-8">
         
-        {/* Missed Pre-Workout Check */}
-        {missedPreWorkouts.length > 0 && (
-            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4 mb-2 shadow-lg animate-fadeIn">
-                <div className="flex items-center gap-3 mb-3">
-                    <Icon name="warning" className="w-6 h-6 text-yellow-500" />
-                    <div>
-                        <h3 className="font-bold text-yellow-200">{t('supplement_missed_title')}</h3>
-                        <p className="text-xs text-yellow-200/70">
-                            {t('supplement_missed_message', { supplements: missedPreWorkouts.map(i => i.supplement).join(', ') })}
-                        </p>
-                    </div>
-                </div>
-                <div className="flex gap-2">
-                     <button 
-                        onClick={() => handleTakeSupplement(missedPreWorkouts[0].id)} // Take the first one for now, usually just one
-                        className="flex-1 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-200 text-sm font-bold py-2 rounded-lg transition-colors"
-                    >
-                        {t('supplement_missed_action_taken')}
-                    </button>
-                    <button 
-                        onClick={() => handleDismissMissedSupplement(missedPreWorkouts[0].id)}
-                        className="flex-1 bg-transparent border border-yellow-500/30 hover:bg-yellow-500/10 text-yellow-200/70 text-sm font-bold py-2 rounded-lg transition-colors"
-                    >
-                        {t('supplement_missed_action_dismiss')}
-                    </button>
-                </div>
-            </div>
-        )}
-
-        {/* Quick Supplement Intake Card */}
-        {pendingSupplements.items.length > 0 && (
+        {/* Interactive Smart Stack Card */}
+        {smartStack && (
             <SupplementActionCard 
-                items={pendingSupplements.items} 
-                timeLabel={pendingSupplements.timeLabel}
-                onTake={handleTakeSupplement}
-                onSnooze={snoozeSupplement}
+                title={smartStack.title}
+                items={smartStack.items}
+                onLog={handleLogStack}
+                onSnoozeAll={handleSnoozeStack}
             />
         )}
 

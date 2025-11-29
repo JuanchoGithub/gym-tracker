@@ -1,53 +1,101 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { SupplementPlanItem } from '../../types';
 import { Icon } from '../common/Icon';
 import { useI18n } from '../../hooks/useI18n';
 
 interface SupplementActionCardProps {
   items: SupplementPlanItem[];
-  timeLabel: string;
-  onTake: (itemId: string) => void;
-  onSnooze: (itemId: string) => void;
+  title: string;
+  onLog: (itemIds: string[]) => void;
+  onSnoozeAll: () => void;
 }
 
-const SupplementActionCard: React.FC<SupplementActionCardProps> = ({ items, timeLabel, onTake, onSnooze }) => {
+const SupplementActionCard: React.FC<SupplementActionCardProps> = ({ items, title, onLog, onSnoozeAll }) => {
   const { t } = useI18n();
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  // Reset selection when items change significantly (e.g. different time of day)
+  useEffect(() => {
+      setSelectedIds(items.map(i => i.id));
+  }, [items]);
+
+  const handleToggle = (id: string) => {
+      setSelectedIds(prev => 
+          prev.includes(id) ? prev.filter(itemId => itemId !== id) : [...prev, id]
+      );
+  };
+
+  const handleLog = () => {
+      if (selectedIds.length > 0) {
+          onLog(selectedIds);
+      }
+  };
+
   if (items.length === 0) return null;
 
   return (
-    <div className="bg-gradient-to-r from-sky-900/80 to-blue-900/80 border border-sky-500/30 rounded-xl p-4 mb-6 shadow-lg animate-fadeIn">
-        <div className="flex items-center justify-between mb-3">
-            <h3 className="font-bold text-white flex items-center gap-2">
-                <Icon name="capsule" className="w-5 h-5 text-sky-300" />
-                {t('supplement_action_card_title', { time: timeLabel })}
-            </h3>
-        </div>
-        <div className="space-y-3">
-            {items.map(item => (
-                <div key={item.id} className="flex items-center justify-between bg-black/20 p-3 rounded-lg">
-                    <div className="flex flex-col">
-                        <span className="font-bold text-white text-sm">{item.supplement}</span>
-                        <span className="text-xs text-sky-200/70">{item.dosage} • {item.time}</span>
+    <div className="bg-gradient-to-r from-sky-900/80 to-blue-900/80 border border-sky-500/30 rounded-2xl p-5 mb-6 shadow-lg animate-fadeIn overflow-hidden relative">
+        {/* Decorative glow */}
+        <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/5 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div className="relative z-10">
+            <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-white text-lg flex items-center gap-2.5">
+                    <div className="bg-white/10 p-1.5 rounded-lg">
+                        <Icon name="capsule" className="w-5 h-5 text-sky-300" />
                     </div>
-                    <div className="flex gap-2">
+                    {title}
+                </h3>
+            </div>
+            
+            <div className="space-y-2 mb-5">
+                {items.map(item => {
+                    const isSelected = selectedIds.includes(item.id);
+                    return (
                         <button 
-                            onClick={() => onSnooze(item.id)}
-                            className="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-sky-200 transition-colors"
-                            title="Snooze for 1 hour"
+                            key={item.id} 
+                            onClick={() => handleToggle(item.id)}
+                            className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all duration-200 group text-left ${
+                                isSelected 
+                                    ? 'bg-white/10 border-white/20' 
+                                    : 'bg-black/20 border-transparent opacity-70 hover:opacity-100'
+                            }`}
                         >
-                            <Icon name="history" className="w-5 h-5" />
+                            <div className="flex items-center gap-3 min-w-0">
+                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected ? 'bg-sky-400 border-sky-400' : 'border-sky-400/50 group-hover:border-sky-400'}`}>
+                                    {isSelected && <Icon name="check" className="w-3 h-3 text-black stroke-[4]" />}
+                                </div>
+                                <div className="flex flex-col min-w-0">
+                                    <span className={`text-sm font-medium truncate ${isSelected ? 'text-white' : 'text-sky-100/70'}`}>
+                                        {item.supplement}
+                                    </span>
+                                </div>
+                            </div>
+                            <span className={`text-xs font-mono flex-shrink-0 ml-2 ${isSelected ? 'text-sky-200' : 'text-sky-200/50'}`}>
+                                {item.dosage}
+                            </span>
                         </button>
-                        <button 
-                            onClick={() => onTake(item.id)}
-                            className="p-2 bg-success hover:bg-green-500 rounded-lg text-white shadow-md transition-colors"
-                            title="Mark as Taken"
-                        >
-                            <Icon name="check" className="w-5 h-5" />
-                        </button>
-                    </div>
-                </div>
-            ))}
+                    );
+                })}
+            </div>
+
+            <div className="flex gap-3">
+                <button 
+                    onClick={onSnoozeAll}
+                    className="flex-1 bg-white/5 hover:bg-white/10 text-sky-200 text-sm font-semibold py-3 rounded-xl transition-colors border border-white/5"
+                >
+                    {t('supplement_snooze_all')}
+                </button>
+                <button 
+                    onClick={handleLog}
+                    disabled={selectedIds.length === 0}
+                    className="flex-[2] bg-white text-sky-900 hover:bg-sky-50 text-sm font-bold py-3 rounded-xl shadow-md transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                    <Icon name="check" className="w-4 h-4" />
+                    <span>{t('supplement_log_action', { count: selectedIds.length })}</span>
+                </button>
+            </div>
         </div>
     </div>
   );
