@@ -98,10 +98,23 @@ const TrainPage: React.FC = () => {
   }, [history, routines, exercises, t, currentWeight, onboardingRoutines, imbalanceSnoozedUntil, profile.gender]);
 
   const { latestWorkouts, customTemplates, sampleWorkouts, sampleHiit } = useMemo(() => {
-    const latest = routines
-      .filter(r => !r.isTemplate)
-      .sort((a, b) => (b.lastUsed || 0) - (a.lastUsed || 0))
-      .slice(0, 7);
+    // Generate latest workouts from history (Last 10 distinct sessions)
+    const latest = history
+      .slice(0, 10)
+      .map(session => {
+          const originalRoutine = routines.find(r => r.id === session.routineId);
+          return {
+              id: session.id, // Use session ID to allow unique key and history management
+              name: session.routineName,
+              description: '', // Date is handled by lastUsed in RoutinePanel
+              exercises: session.exercises,
+              isTemplate: false,
+              lastUsed: session.startTime,
+              routineType: originalRoutine?.routineType || 'strength',
+              supersets: session.supersets,
+              originId: session.routineId 
+          } as Routine;
+      });
 
     const templates = routines.filter(r => r.isTemplate);
     const custom = templates.filter(r => !r.id.startsWith('rt-'));
@@ -109,7 +122,7 @@ const TrainPage: React.FC = () => {
     const hiit = templates.filter(r => r.routineType === 'hiit');
     
     return { latestWorkouts: latest, customTemplates: custom, sampleWorkouts: samples, sampleHiit: hiit };
-  }, [routines]);
+  }, [routines, history]);
 
   // Retrieve actual routine objects for the recommendation
   const recommendedRoutines = useMemo(() => {

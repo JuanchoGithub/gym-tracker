@@ -136,16 +136,20 @@ const SupplementPage: React.FC = () => {
 
       // Preserve IDs and Stock from previous plan to maintain history and tracking
       if (supplementPlan) {
+          const usedOldIds = new Set<string>();
+
           newPlan.plan = newPlan.plan.map(newItem => {
               if (newItem.isCustom) return newItem; // Custom items preserve ID via userSupplements
 
               const match = supplementPlan.plan.find(oldItem => 
                   !oldItem.isCustom &&
                   oldItem.supplement === newItem.supplement && 
-                  oldItem.time === newItem.time
+                  oldItem.time === newItem.time &&
+                  !usedOldIds.has(oldItem.id)
               );
               
               if (match) {
+                  usedOldIds.add(match.id);
                   // Preserve ID for history continuity
                   // Preserve Stock for tracking
                   return { ...newItem, id: match.id, stock: match.stock };
@@ -176,7 +180,8 @@ const SupplementPage: React.FC = () => {
         if (currentWeight) prefilledData.weight = Math.round(currentWeight);
         setFormData(prefilledData);
       }
-      // Do not clear the plan here, so user can cancel back to it
+      // IMPORTANT: Do not setSupplementPlan(null) here.
+      // This allows the user to cancel the wizard and return to their existing plan.
       setWizardActive(true);
       setCurrentStep(1);
   };

@@ -112,6 +112,7 @@ const ProfilePage: React.FC = () => {
   const [localWeight, setLocalWeight] = useState(() => currentWeight ? displayWeight(currentWeight) : '');
   const [isWeightChartOpen, setIsWeightChartOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'you' | 'options'>('you');
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   const [feet, setFeet] = useState('');
   const [inches, setInches] = useState('');
@@ -576,6 +577,16 @@ const ProfilePage: React.FC = () => {
                         </div>
                 </SettingsItem>
             </SettingsGroup>
+
+            <SettingsGroup title={t('profile_about')}>
+                <SettingsItem onClick={() => setIsShareModalOpen(true)}>
+                    <div className="flex flex-col">
+                        <span className="text-text-primary font-medium">{t('profile_share_app')}</span>
+                        <span className="text-xs text-text-secondary">{t('profile_share_desc')}</span>
+                    </div>
+                    <Icon name="share" className="w-5 h-5 text-text-secondary" />
+                </SettingsItem>
+            </SettingsGroup>
         </div>
       )}
 
@@ -606,6 +617,24 @@ const ProfilePage: React.FC = () => {
                 />
             </div>
         )}
+      </Modal>
+
+      <Modal isOpen={isShareModalOpen} onClose={() => setIsShareModalOpen(false)} title={t('profile_share_app')}>
+          <div className="flex flex-col items-center justify-center p-4 space-y-6">
+              <div className="bg-white p-3 rounded-2xl shadow-lg">
+                  <img 
+                      src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=https://fortachon.vercel.app" 
+                      alt="QR Code for Fortachon" 
+                      className="w-48 h-48 sm:w-56 sm:h-56"
+                  />
+              </div>
+              <div className="text-center">
+                <p className="text-white font-bold text-lg mb-1">{t('profile_scan_qr')}</p>
+                <p className="text-primary font-mono text-sm bg-primary/10 px-3 py-1 rounded-full inline-block border border-primary/20">
+                    https://fortachon.vercel.app
+                </p>
+              </div>
+          </div>
       </Modal>
     </div>
   );

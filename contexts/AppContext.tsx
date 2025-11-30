@@ -55,6 +55,7 @@ export interface AppContextType {
 
   history: WorkoutSession[];
   deleteHistorySession: (id: string) => void;
+  updateHistorySession: (id: string, updates: Partial<WorkoutSession>) => void;
   startHistoryEdit: (session: WorkoutSession) => void;
   endHistoryEdit: (session?: WorkoutSession) => void;
   editingHistorySession: WorkoutSession | null;
@@ -334,6 +335,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const deleteHistorySession = (id: string) => {
       setHistory(prev => prev.filter(h => h.id !== id));
+  };
+
+  const updateHistorySession = (id: string, updates: Partial<WorkoutSession>) => {
+      setHistory(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
   };
 
   const startTemplateEdit = (routine: Routine) => {
@@ -665,7 +670,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     isWorkoutMinimized, minimizeWorkout: () => setIsWorkoutMinimized(true), maximizeWorkout: () => setIsWorkoutMinimized(false),
     routines, upsertRoutine, upsertRoutines, deleteRoutine,
     exercises, setRawExercises, getExerciseById, startExerciseEdit, endExerciseEdit, editingExercise, startExerciseDuplicate,
-    history, deleteHistorySession, startHistoryEdit, endHistoryEdit, editingHistorySession,
+    history, deleteHistorySession, updateHistorySession, startHistoryEdit, endHistoryEdit, editingHistorySession,
     editingTemplate, startTemplateEdit, updateEditingTemplate, endTemplateEdit, startTemplateDuplicate,
     isAddingExercisesToWorkout, startAddExercisesToWorkout, endAddExercisesToWorkout,
     isAddingExercisesToTemplate, startAddExercisesToTemplate, endAddExercisesToTemplate,

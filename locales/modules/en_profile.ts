@@ -37,6 +37,12 @@ export const en_profile = {
   profile_unlock_history_title: "Unlock History",
   profile_unlock_message: "Unlocked {to} from {from}",
   
+  // Share
+  profile_about: "About",
+  profile_share_app: "Share App",
+  profile_share_desc: "Show QR Code to share Fortachon",
+  profile_scan_qr: "Scan to open Fortachon",
+
   // Check-In
   checkin_title: "Check In",
   checkin_message: "It's been a while. How's it going?",

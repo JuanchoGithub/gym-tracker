@@ -16,7 +16,7 @@ interface RoutinePanelProps {
 }
 
 const RoutinePanel: React.FC<RoutinePanelProps> = ({ routine, onClick, onEdit, onDuplicate }) => {
-  const { getExerciseById, deleteRoutine, upsertRoutine } = useContext(AppContext);
+  const { getExerciseById, deleteRoutine, upsertRoutine, deleteHistorySession, updateHistorySession } = useContext(AppContext);
   const { t } = useI18n();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
@@ -44,7 +44,11 @@ const RoutinePanel: React.FC<RoutinePanelProps> = ({ routine, onClick, onEdit, o
   };
   
   const handleConfirmDelete = () => {
-    deleteRoutine(routine.id);
+    if (routine.isTemplate) {
+        deleteRoutine(routine.id);
+    } else {
+        deleteHistorySession(routine.id);
+    }
     setIsConfirmingDelete(false);
   }
 
@@ -63,7 +67,11 @@ const RoutinePanel: React.FC<RoutinePanelProps> = ({ routine, onClick, onEdit, o
   const handleSaveRename = (e: React.FormEvent) => {
     e.preventDefault();
     if (newName.trim()) {
-        upsertRoutine({ ...routine, name: newName.trim() });
+        if (routine.isTemplate) {
+            upsertRoutine({ ...routine, name: newName.trim() });
+        } else {
+            updateHistorySession(routine.id, { routineName: newName.trim() });
+        }
     }
     setIsRenameModalOpen(false);
   };
