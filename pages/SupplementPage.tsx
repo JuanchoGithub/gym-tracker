@@ -133,6 +133,27 @@ const SupplementPage: React.FC = () => {
 
     try {
       const newPlan = generateSupplementPlan(formData as SupplementInfo, t, userSupplements);
+
+      // Preserve IDs and Stock from previous plan to maintain history and tracking
+      if (supplementPlan) {
+          newPlan.plan = newPlan.plan.map(newItem => {
+              if (newItem.isCustom) return newItem; // Custom items preserve ID via userSupplements
+
+              const match = supplementPlan.plan.find(oldItem => 
+                  !oldItem.isCustom &&
+                  oldItem.supplement === newItem.supplement && 
+                  oldItem.time === newItem.time
+              );
+              
+              if (match) {
+                  // Preserve ID for history continuity
+                  // Preserve Stock for tracking
+                  return { ...newItem, id: match.id, stock: match.stock };
+              }
+              return newItem;
+          });
+      }
+
       setSupplementPlan(newPlan);
       setWizardActive(false);
       setPlanJustGenerated(true);
@@ -155,7 +176,7 @@ const SupplementPage: React.FC = () => {
         if (currentWeight) prefilledData.weight = Math.round(currentWeight);
         setFormData(prefilledData);
       }
-      setSupplementPlan(null);
+      // Do not clear the plan here, so user can cancel back to it
       setWizardActive(true);
       setCurrentStep(1);
   };

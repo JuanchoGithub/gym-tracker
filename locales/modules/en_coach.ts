@@ -14,7 +14,7 @@ export const en_coach = {
   // Active View Buttons
   active_btn_coach: "Coach's Recommendation",
   active_btn_coach_desc: "Checks CNS & Recovery",
-  active_btn_aggressive: "Smart training",
+  active_btn_aggressive: "Smart Training",
   active_btn_aggressive_desc: "Focuses on muscle freshness",
 
   // Focus
