@@ -14,8 +14,8 @@ export const en_coach = {
   // Active View Buttons
   active_btn_coach: "Coach's Recommendation",
   active_btn_coach_desc: "Checks CNS & Recovery",
-  active_btn_aggressive: "Target Freshest",
-  active_btn_aggressive_desc: "Ignores CNS Fatigue",
+  active_btn_aggressive: "Smart training",
+  active_btn_aggressive_desc: "Focuses on muscle freshness",
 
   // Focus
   focus_push: "Push",
@@ -58,6 +58,8 @@ export const en_coach = {
   rec_reason_strength_loss: "Your recent performance on {exercise} suggests your max has dropped from {old} to {new}. Adjusting down can help ensure proper training intensity.",
   rec_action_update_profile: "Update Profile",
   rec_action_snooze: "Snooze (2 Weeks)",
+  
+  active_workout_suggestion_gap_override: "Generating a low-impact session to facilitate recovery while training.",
 
   // Progression
   progression_reason_squat: "Your Goblet Squat is strong! Upgrade to Barbell Squat.",

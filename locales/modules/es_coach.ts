@@ -13,9 +13,9 @@ export const es_coach = {
 
   // Active View Buttons
   active_btn_coach: "Recomendación del Coach",
-  active_btn_coach_desc: "Revisa SNC y Recuperación",
-  active_btn_aggressive: "Foco en Frescura",
-  active_btn_aggressive_desc: "Ignora Fatiga del SNC",
+  active_btn_coach_desc: "Se enfoca en Fatiga y Recuperación",
+  active_btn_aggressive: "Entrenamiento inteligente",
+  active_btn_aggressive_desc: "Se enfoca en los musculos mas frescos",
 
   // Focus
   focus_push: "Empuje",
@@ -58,6 +58,8 @@ export const es_coach = {
   rec_reason_strength_loss: "Tu rendimiento reciente en {exercise} sugiere que tu máximo bajó de {old} a {new}. Ajustar hacia abajo puede asegurar la intensidad correcta.",
   rec_action_update_profile: "Actualizar Perfil",
   rec_action_snooze: "Posponer (2 Semanas)",
+  
+  active_workout_suggestion_gap_override: "Generando una sesión de bajo impacto para facilitar la recuperación mientras entrenás.",
 
   // Progression
   progression_reason_squat: "¡Tu Sentadilla Copa es fuerte! Pasá a Sentadilla con Barra.",

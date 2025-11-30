@@ -26,6 +26,7 @@ import { TranslationKey } from '../contexts/I18nContext';
 import OnboardingWizard from '../components/onboarding/OnboardingWizard';
 import RoutinePreviewModal from '../components/modals/RoutinePreviewModal';
 import { generateGapSession, getProtectedMuscles } from '../utils/smartCoachUtils';
+import { getWorkoutRecommendation } from '../utils/recommendationUtils';
 
 const PUSH_MUSCLES = [MUSCLES.PECTORALS, MUSCLES.FRONT_DELTS, MUSCLES.TRICEPS];
 const PULL_MUSCLES = [MUSCLES.LATS, MUSCLES.TRAPS, MUSCLES.BICEPS];
@@ -629,7 +630,7 @@ const ActiveWorkoutPage: React.FC = () => {
     return groups[0];
   };
 
-  // --- Coach Logic (Considers CNS) ---
+  // --- Coach Logic (Considers CNS & Rotation - Unified with Dashboard) ---
   const handleCoachSuggest = () => {
       const customRoutines = routines.filter(r => !r.id.startsWith('rt-'));
       
@@ -639,35 +640,64 @@ const ActiveWorkoutPage: React.FC = () => {
           return;
       }
 
-      const systemicFatigue = calculateSystemicFatigue(history, exercises);
+      // 2. Get Recommendation using the main engine (Consistency with Dashboard)
+      const recommendation = getWorkoutRecommendation(history, routines, exercises, t, currentWeight);
       
-      // 2. High Fatigue -> Gap Session
-      if (systemicFatigue.score > 60) {
-           const durationProfile = calculateMedianWorkoutDuration(history);
-           // We use an empty protected list to let it pick based on weak points
-           const gapRoutine = generateGapSession([], exercises, history, t, 'gym', durationProfile);
-           gapRoutine.name = `Coach's Recovery: ${new Date().toLocaleDateString(undefined, {weekday: 'long'})}`;
-           
-           setSuggestedRoutine({
-               routine: gapRoutine,
-               focus: 'Recovery',
-               description: `Systemic Fatigue is ${systemicFatigue.level} (${systemicFatigue.score}). Reducing intensity to prevent burnout.`
-           });
-           return;
+      if (!recommendation) {
+          // Should rarely happen, fallback to freshness
+          handleAggressiveSuggest();
+          return;
       }
 
-      // 3. Normal Logic (Freshest)
-      const profile = inferUserProfile(history);
-      const winner = getFreshestMuscleGroup();
-      const generatedRoutine = generateSmartRoutine(winner.focus, profile, t);
+      let routineToSuggest: Routine | null = null;
+      let focusLabel = t('smart_coach_title');
       
-      generatedRoutine.name = `Coach's ${winner.label} Session`;
+      // Resolve parameters for the reason string
+      let params = recommendation.reasonParams || {};
+      // Fix potential missing params for generic keys if needed
       
-      setSuggestedRoutine({ 
-          routine: generatedRoutine, 
-          focus: winner.label,
-          description: `Systemic Fatigue is Optimal (${systemicFatigue.score}). ${winner.label} muscles are fresh.`
-      });
+      let reasonText = t(recommendation.reasonKey as any, params);
+
+      // Logic to handle "Rest" recommendations when the user explicitly wants to train
+      const isRestRecommendation = ['rest', 'active_recovery', 'deload'].includes(recommendation.type);
+
+      if (isRestRecommendation) {
+           // User wants to train despite advice to rest -> Force Gap Session
+           if (recommendation.generatedRoutine) {
+               routineToSuggest = recommendation.generatedRoutine;
+           } else {
+               // Generate one on the fly if not provided
+               const durationProfile = calculateMedianWorkoutDuration(history);
+               routineToSuggest = generateGapSession([], exercises, history, t, 'gym', durationProfile);
+               routineToSuggest.name = t('smart_gap_session');
+           }
+           
+           focusLabel = t('smart_recovery_mode');
+           // Append context: "Since you chose to train..."
+           reasonText += " " + t('active_workout_suggestion_gap_override');
+      } 
+      else if (recommendation.generatedRoutine) {
+          // Smart Routine (e.g. Push Day based on rotation)
+          routineToSuggest = recommendation.generatedRoutine;
+          focusLabel = routineToSuggest.name;
+      } 
+      else if (recommendation.relevantRoutineIds && recommendation.relevantRoutineIds.length > 0) {
+          // Existing Routine (e.g. Promotion, Sticky Plan)
+          const routineId = recommendation.relevantRoutineIds[0];
+          routineToSuggest = routines.find(r => r.id === routineId) || null;
+          if (routineToSuggest) focusLabel = routineToSuggest.name;
+      }
+
+      if (routineToSuggest) {
+          setSuggestedRoutine({ 
+              routine: routineToSuggest, 
+              focus: focusLabel, 
+              description: reasonText
+          });
+      } else {
+          // If engine failed to produce a routine (e.g. data error), fallback
+          handleAggressiveSuggest();
+      }
   };
 
   // --- Aggressive Logic (Ignores CNS) ---
