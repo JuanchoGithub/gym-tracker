@@ -1,7 +1,7 @@
 
 export const en_coach = {
   // Smart Coach & Card Headers
-  smart_coach_title: "Smart Coach",
+  smart_coach_title: "Coach's Workout",
   smart_gap_session: "Gap Session",
   smart_recovery_mode: "Recovery Mode",
   smart_rest_day: "Rest Day",
@@ -10,6 +10,12 @@ export const en_coach = {
   smart_cns_overload: "CNS Overload",
   smart_routine_name: "Smart {focus} Session",
   smart_routine_desc: "A personalized {focus} workout based on your recovery and history.",
+
+  // Active View Buttons
+  active_btn_coach: "Coach's Recommendation",
+  active_btn_coach_desc: "Checks CNS & Recovery",
+  active_btn_aggressive: "Target Freshest",
+  active_btn_aggressive_desc: "Ignores CNS Fatigue",
 
   // Focus
   focus_push: "Push",

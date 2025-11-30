@@ -15,7 +15,7 @@ import SmartRecommendationCard from '../components/train/SmartRecommendationCard
 import OnboardingWizard from '../components/onboarding/OnboardingWizard';
 import ConfirmModal from '../components/modals/ConfirmModal';
 import SupplementActionCard from '../components/train/SupplementActionCard';
-import { getDateString } from '../utils/timeUtils';
+import { getDateString, getEffectiveDate } from '../utils/timeUtils';
 import { getExplanationIdForSupplement } from '../services/explanationService';
 import Modal from '../components/common/Modal';
 import OneRepMaxHub from '../components/onerepmax/OneRepMaxHub';
@@ -30,6 +30,8 @@ const timeKeywords = {
     evening: /evening|bed|night|sleep|pm/i,
     pre_workout: /pre-workout|pre-entreno/i,
 };
+
+const daysOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
 const TrainPage: React.FC = () => {
   const { 
@@ -54,19 +56,6 @@ const TrainPage: React.FC = () => {
   const [onboardingRoutines, setOnboardingRoutines] = useState<Routine[]>([]);
   const [imbalanceSnoozedUntil, setImbalanceSnoozedUntil] = useLocalStorage('imbalanceSnooze', 0);
   
-  // Persistent dismissed missed supplements (legacy, kept for cleanup if needed but logic moved to smart stack)
-  const [dismissedHistory, setDismissedHistory] = useLocalStorage<Record<string, string[]>>('dismissedMissedSupplements', {});
-  
-  const todayStr = getDateString(new Date());
-
-  // Onboarding State
-  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
-  const [isCreateOptionModalOpen, setIsCreateOptionModalOpen] = useState(false);
-  
-  // Cascade Update State
-  const [isCascadeOpen, setIsCascadeOpen] = useState(false);
-  const [cascadeData, setCascadeData] = useState<{ id: string, max: number } | null>(null);
-
   const isNewUser = useMemo(() => {
       const hasHistory = history.length > 0;
       const hasCustomRoutines = routines.some(r => !r.id.startsWith('rt-'));
@@ -134,9 +123,16 @@ const TrainPage: React.FC = () => {
   // --- Smart Supplement Stack Logic ---
   const { smartStack } = useMemo(() => {
       if (!supplementPlan) return { smartStack: null };
-      const now = new Date();
-      const hour = now.getHours();
-      const todayString = getDateString(now);
+      
+      // Use effective date for logic (handle past midnight for night owls)
+      const effectiveNow = getEffectiveDate();
+      const hour = effectiveNow.getHours();
+      const todayString = getDateString(effectiveNow);
+      
+      // Determine Training Day based on effective date
+      const dayName = daysOfWeek[effectiveNow.getDay()];
+      const isTrainingDay = supplementPlan.info.trainingDays.includes(dayName);
+
       const takenToday = takenSupplements[todayString] || [];
 
       // Helper to check if item is taken
@@ -144,13 +140,9 @@ const TrainPage: React.FC = () => {
       // Helper to check if item is snoozed
       const isSnoozed = (id: string) => (snoozedSupplements[id] && snoozedSupplements[id] > Date.now());
 
-      const allItems = supplementPlan.plan.filter(item => {
-        if (item.restDayOnly && workoutFinishedToday) return false; // Simple check, ideally check training plan
-        // Actually, let's include all items and filter later by context
-        return true;
-      });
+      const allItems = supplementPlan.plan;
 
-      // 1. Check Post-Workout Context (High Priority)
+      // 1. Check Post-Workout Context (High Priority) - This relies on actual workout finish time, not effective date
       const lastSession = history.length > 0 ? history[0] : null;
       const nowTs = Date.now();
       const isPostWorkoutWindow = lastSession && (nowTs - lastSession.endTime) < (2 * 60 * 60 * 1000) && (nowTs - lastSession.endTime) > 0; // 2 hours window
@@ -175,14 +167,27 @@ const TrainPage: React.FC = () => {
       }
 
       // 2. Check Time-Based Contexts
+      // Logic uses effective date's hour, but effectively we want to bucket properly.
+      // If it's 00:30 (so effective date is yesterday), hour is 0. This falls into 'evening'.
+      // If it's 23:00, hour is 23. Falls into 'evening'.
+      // If it's 10:00, hour is 10. Falls into 'morning'.
+
       let timeContext = 'daily';
       if (hour >= 4 && hour < 11) timeContext = 'morning';
       else if (hour >= 11 && hour < 14) timeContext = 'lunch';
-      else if (hour >= 14 && hour < 20) timeContext = 'afternoon'; // Expanded afternoon
-      else timeContext = 'evening';
+      else if (hour >= 14 && hour < 20) timeContext = 'afternoon'; 
+      else timeContext = 'evening'; // Includes 20:00 - 03:59
 
       let potentialItems = allItems.filter(item => {
+          // Filter by completion status
           if (isTaken(item.id) || isSnoozed(item.id)) return false;
+          
+          // Strict Filtering based on Training Day preference
+          // If item is training only, and today isn't a training day -> Hide
+          if (item.trainingDayOnly && !isTrainingDay) return false;
+          // If item is rest only, and today IS a training day -> Hide
+          if (item.restDayOnly && isTrainingDay) return false;
+
           const tLower = item.time.toLowerCase();
           
           if (timeContext === 'morning') {
@@ -209,7 +214,8 @@ const TrainPage: React.FC = () => {
       });
       
       // Filter out Pre-workout if workout is ALREADY done today (handled by post-workout check mostly, but as safety)
-      if (workoutFinishedToday) {
+      // Note: workoutFinishedToday checks calendar day. For smart stacking late night, we trust the user context.
+      if (workoutFinishedToday && timeContext !== 'evening') {
           potentialItems = potentialItems.filter(i => !timeKeywords.pre_workout.test(i.time.toLowerCase()));
       }
 
@@ -358,9 +364,12 @@ const TrainPage: React.FC = () => {
   };
   
   const handleLogStack = (itemIds: string[]) => {
-      const todayString = getDateString(new Date());
+      // Use Effective Date for logging so night owls log to "Friday Night" instead of "Saturday Morning"
+      const effectiveDate = getEffectiveDate();
+      const dateString = getDateString(effectiveDate);
+      
       itemIds.forEach(id => {
-          toggleSupplementIntake(todayString, id);
+          toggleSupplementIntake(dateString, id);
       });
   };
   
@@ -375,6 +384,14 @@ const TrainPage: React.FC = () => {
   // Auto-Update Notification Logic
   const autoUpdatedEntries = Object.entries(profile.autoUpdated1RMs || {});
   const hasAutoUpdates = autoUpdatedEntries.length > 0;
+  
+  // Onboarding State
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
+  const [isCreateOptionModalOpen, setIsCreateOptionModalOpen] = useState(false);
+  
+  // Cascade Update State
+  const [isCascadeOpen, setIsCascadeOpen] = useState(false);
+  const [cascadeData, setCascadeData] = useState<{ id: string, max: number } | null>(null);
 
   return (
     <div className="space-y-10 pb-8">

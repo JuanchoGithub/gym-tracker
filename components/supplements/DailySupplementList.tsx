@@ -5,6 +5,7 @@ import { useI18n } from '../../hooks/useI18n';
 import { Icon } from '../common/Icon';
 import { SupplementPlanItem } from '../../types';
 import { getExplanationIdForSupplement } from '../../services/explanationService';
+import { getDateString, getEffectiveDate } from '../../utils/timeUtils';
 
 const timeKeywords = {
     en: {
@@ -43,17 +44,11 @@ interface DailySupplementListProps {
   date: Date;
   readOnly?: boolean;
   title?: React.ReactNode;
+  subTitle?: string;
   onOpenExplanation?: (id: string) => void;
 }
 
-const getDateString = (d: Date) => {
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-}
-
-const DailySupplementList: React.FC<DailySupplementListProps> = ({ date, readOnly = false, title, onOpenExplanation }) => {
+const DailySupplementList: React.FC<DailySupplementListProps> = ({ date, readOnly = false, title, subTitle, onOpenExplanation }) => {
   const { supplementPlan, takenSupplements, toggleSupplementIntake } = useContext(AppContext);
   const { t, locale } = useI18n();
   const [isSmartSortEnabled, setIsSmartSortEnabled] = useState(true);
@@ -141,17 +136,6 @@ const DailySupplementList: React.FC<DailySupplementListProps> = ({ date, readOnl
     return { groupedPlan: grouped, orderedGroups: ordered, isTrainingDay, scheduledCount: itemsForDay.length, changesDetected };
   }, [supplementPlan, getTimeKey, date, t, isSmartSortEnabled, trainingTime]);
 
-  // Effect to update the notification state without causing render loops
-  useEffect(() => {
-      // We only care if changes are detected on a training day
-      const dayOfWeek = daysOfWeek[date.getDay()];
-      const isDay = !!supplementPlan?.info?.trainingDays?.includes(dayOfWeek);
-      
-      if (isDay) {
-          // Just setting HasSmartSortChanges based on the result of the memo is fine here.
-      }
-  }, [date, supplementPlan, trainingTime, getTimeKey]);
-  
   // Use the memoized result to set the flag for rendering the banner
   useEffect(() => {
       setHasSmartSortChanges(groupedPlan && isTrainingDay && (trainingTime === 'morning' || trainingTime === 'night'));
@@ -161,6 +145,14 @@ const DailySupplementList: React.FC<DailySupplementListProps> = ({ date, readOnl
   return (
     <div className="space-y-6">
       {title}
+      
+      {subTitle && (
+        <div className="text-center -mt-4 mb-4 animate-fadeIn">
+             <span className="inline-block px-3 py-1 bg-white/5 rounded-full text-xs font-medium text-text-secondary/80 border border-white/5">
+                 {subTitle}
+             </span>
+        </div>
+      )}
       
       {/* Smart Schedule Notification */}
       {isSmartSortEnabled && hasSmartSortChanges && (

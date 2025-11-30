@@ -1,7 +1,7 @@
 
 export const es_coach = {
   // Smart Coach & Card Headers
-  smart_coach_title: "Entrenador Inteligente",
+  smart_coach_title: "Entrenamiento del Coach",
   smart_gap_session: "Sesión Puente",
   smart_recovery_mode: "Modo Recuperación",
   smart_rest_day: "Día de Descanso",
@@ -10,6 +10,12 @@ export const es_coach = {
   smart_cns_overload: "Sobrecarga del SNC",
   smart_routine_name: "Sesión Inteligente de {focus}",
   smart_routine_desc: "Un entrenamiento personalizado de {focus} basado en tu recuperación e historial.",
+
+  // Active View Buttons
+  active_btn_coach: "Recomendación del Coach",
+  active_btn_coach_desc: "Revisa SNC y Recuperación",
+  active_btn_aggressive: "Foco en Frescura",
+  active_btn_aggressive_desc: "Ignora Fatiga del SNC",
 
   // Focus
   focus_push: "Empuje",

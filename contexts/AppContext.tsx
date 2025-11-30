@@ -604,20 +604,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const applyPlanSuggestion = (suggestionId: string) => {
       const suggestion = newSuggestions.find(s => s.id === suggestionId);
       if (suggestion) {
-          if (suggestion.action.type === 'ADD') {
-              if (suggestion.action.item) {
-                  setUserSupplements(prev => [...prev, { ...suggestion.action.item, isCustom: true } as SupplementPlanItem]);
+          const action = suggestion.action;
+          if (action.type === 'ADD') {
+              if (action.item) {
+                  setUserSupplements(prev => [...prev, { ...action.item, isCustom: true } as SupplementPlanItem]);
               }
-          } else if (suggestion.action.type === 'REMOVE') {
-              const id = suggestion.action.itemId;
+          } else if (action.type === 'REMOVE') {
+              const id = action.itemId;
               updateSupplementPlanItem(id, { restDayOnly: undefined, trainingDayOnly: undefined }); // Reset flags if any
               // Actually remove
               if (supplementPlan) {
                   setSupplementPlan({ ...supplementPlan, plan: supplementPlan.plan.filter(i => i.id !== id) });
               }
               setUserSupplements(prev => prev.filter(i => i.id !== id));
-          } else if (suggestion.action.type === 'UPDATE') {
-              updateSupplementPlanItem(suggestion.action.itemId, suggestion.action.updates);
+          } else if (action.type === 'UPDATE') {
+              updateSupplementPlanItem(action.itemId, action.updates);
           }
           dismissSuggestion(suggestionId);
       }

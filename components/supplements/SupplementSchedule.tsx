@@ -12,6 +12,7 @@ import SupplementExplanationModal from './SupplementExplanationModal';
 import { generateSupplementExplanations, Explanation, getExplanationIdForSupplement } from '../../services/explanationService';
 import { Icon } from '../common/Icon';
 import DeleteSupplementModal from './DeleteSupplementModal';
+import { getEffectiveDate } from '../../utils/timeUtils';
 
 const timeKeywords = {
     en: {
@@ -60,12 +61,13 @@ const SupplementSchedule: React.FC<SupplementScheduleProps> = ({ onEditAnswers, 
     return supplementPlan.plan.find(item => item.id === deletingItemId);
   }, [deletingItemId, supplementPlan]);
 
-  const today = useMemo(() => new Date(), []);
-  const tomorrow = useMemo(() => {
-    const d = new Date();
+  // Calculate dates based on effective date for night owls
+  const effectiveToday = useMemo(() => getEffectiveDate(), []);
+  const effectiveTomorrow = useMemo(() => {
+    const d = new Date(effectiveToday);
     d.setDate(d.getDate() + 1);
     return d;
-  }, []);
+  }, [effectiveToday]);
   
   const getTimeKey = useCallback((time: string): string => {
     const keywords = timeKeywords[locale as keyof typeof timeKeywords];
@@ -225,11 +227,22 @@ const SupplementSchedule: React.FC<SupplementScheduleProps> = ({ onEditAnswers, 
 
   const renderView = () => {
     if (!supplementPlan) return null;
+    const dateOptions: Intl.DateTimeFormatOptions = { weekday: 'long', month: 'short', day: 'numeric' };
+
     switch(currentView) {
       case 'today':
-        return <DailySupplementList date={today} onOpenExplanation={handleOpenExplanation} />;
+        return <DailySupplementList 
+            date={effectiveToday} 
+            subTitle={effectiveToday.toLocaleDateString(undefined, dateOptions)}
+            onOpenExplanation={handleOpenExplanation} 
+        />;
       case 'tomorrow':
-        return <DailySupplementList date={tomorrow} readOnly={true} onOpenExplanation={handleOpenExplanation} />;
+        return <DailySupplementList 
+            date={effectiveTomorrow} 
+            subTitle={effectiveTomorrow.toLocaleDateString(undefined, dateOptions)}
+            readOnly={true} 
+            onOpenExplanation={handleOpenExplanation} 
+        />;
       case 'week':
         return <SupplementPlanOverview 
           plan={supplementPlan} 

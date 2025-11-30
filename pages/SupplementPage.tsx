@@ -1,5 +1,5 @@
 
-import React, { useState, useContext, FormEvent, useEffect } from 'react';
+import React, { useState, useContext, FormEvent, useEffect, useMemo } from 'react';
 import { AppContext } from '../contexts/AppContext';
 import { useI18n } from '../hooks/useI18n';
 import { SupplementInfo } from '../types';

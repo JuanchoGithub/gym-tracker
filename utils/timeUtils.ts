@@ -30,6 +30,20 @@ export const getDateString = (d: Date): string => {
     return `${year}-${month}-${day}`;
 };
 
+/**
+ * Returns the "Effective Date" for the user. 
+ * If the current time is before 4:00 AM, it returns the previous calendar day.
+ * This handles "Late Night" scenarios (e.g. 1 AM Saturday counts as Friday Night).
+ */
+export const getEffectiveDate = (date: Date = new Date()): Date => {
+    const d = new Date(date);
+    // If strictly before 4 AM, treat as previous day
+    if (d.getHours() < 4) {
+        d.setDate(d.getDate() - 1);
+    }
+    return d;
+};
+
 export const formatSecondsToMMSS = (totalSeconds: number): string => {
     if (isNaN(totalSeconds) || totalSeconds < 0) return '0:00';
     const minutes = Math.floor(totalSeconds / 60);
