@@ -281,8 +281,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const endWorkout = () => {
       if (activeWorkout) {
-          const finishedWorkout = { ...activeWorkout, endTime: Date.now() };
-          setHistory(prev => [finishedWorkout, ...prev]);
+          if (activeWorkout.exercises.length > 0) {
+              const finishedWorkout = { ...activeWorkout, endTime: Date.now() };
+              setHistory(prev => [finishedWorkout, ...prev]);
+          }
+          
           setActiveWorkout(null);
           setIsWorkoutMinimized(false);
           setActiveTimerInfo(null);

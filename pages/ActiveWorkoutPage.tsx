@@ -553,6 +553,10 @@ const ActiveWorkoutPage: React.FC = () => {
 
 
   const handleFinishWorkout = () => {
+    if (activeWorkout && activeWorkout.exercises.length === 0) {
+        endWorkout();
+        return;
+    }
     setIsConfirmingFinish(true);
   };
   
@@ -946,28 +950,28 @@ const ActiveWorkoutPage: React.FC = () => {
       >
         <div className="space-y-6">
           <p className="text-text-secondary">{t('finish_workout_confirm_message')}</p>
-          <div className="flex flex-col sm:flex-row justify-end gap-3">
-            <button
-              onClick={cancelFinishWorkout}
-              className="bg-secondary hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-lg transition-colors"
-            >
-              {t('finish_workout_confirm_cancel')}
-            </button>
+          <div className="grid grid-cols-2 gap-4">
             <button
               onClick={handleDiscardWorkout}
-              className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+              className="bg-red-600/20 text-red-500 border border-red-600/50 hover:bg-red-600 hover:text-white font-bold py-4 px-4 rounded-xl transition-all"
             >
               {t('finish_workout_confirm_discard')}
             </button>
             <button
               onClick={confirmFinishWorkout}
-              className="bg-success hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:bg-slate-500 disabled:cursor-not-allowed"
+              className="bg-success hover:bg-green-600 text-white font-bold py-4 px-4 rounded-xl transition-colors disabled:bg-slate-500 disabled:cursor-not-allowed shadow-lg shadow-green-500/20"
               disabled={hasInvalidCompletedSets}
               title={hasInvalidCompletedSets ? t('finish_workout_disabled_tooltip') : undefined}
             >
               {t('finish_workout_confirm_finish')}
             </button>
           </div>
+          <button
+              onClick={cancelFinishWorkout}
+              className="w-full text-text-secondary hover:text-white font-medium py-3 px-4 rounded-lg transition-colors hover:bg-white/5"
+          >
+              {t('finish_workout_confirm_cancel')}
+          </button>
         </div>
       </Modal>
 

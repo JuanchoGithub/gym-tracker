@@ -55,7 +55,7 @@ export const en_train = {
   workout_details_modal_end_before_start_alert: "End time cannot be before start time.",
   finish_workout_confirm_title: "Finish Workout?",
   finish_workout_confirm_message: "Are you sure you want to finish this workout?",
-  finish_workout_confirm_cancel: "Cancel",
+  finish_workout_confirm_cancel: "Return",
   finish_workout_confirm_discard: "Discard",
   finish_workout_confirm_finish: "Finish",
   finish_workout_disabled_tooltip: "Please fix invalid entries before finishing.",
