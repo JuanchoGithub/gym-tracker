@@ -7,6 +7,7 @@ import Modal from '../common/Modal';
 import { useI18n } from '../../hooks/useI18n';
 import ConfirmModal from '../modals/ConfirmModal';
 import { useClickOutside } from '../../hooks/useClickOutside';
+import { useExerciseName } from '../../hooks/useExerciseName';
 
 interface RoutinePanelProps {
   routine: Routine;
@@ -18,6 +19,7 @@ interface RoutinePanelProps {
 const RoutinePanel: React.FC<RoutinePanelProps> = ({ routine, onClick, onEdit, onDuplicate }) => {
   const { getExerciseById, deleteRoutine, upsertRoutine, deleteHistorySession, updateHistorySession } = useContext(AppContext);
   const { t } = useI18n();
+  const getExerciseName = useExerciseName();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
@@ -28,12 +30,24 @@ const RoutinePanel: React.FC<RoutinePanelProps> = ({ routine, onClick, onEdit, o
   const menuRef = useRef<HTMLDivElement>(null);
   useClickOutside(menuRef, () => setIsMenuOpen(false));
 
+  // Localization Logic for System Routines
+  const routineNameKey = `${routine.id.replace(/-/g, '_')}_name`;
+  const localizedName = t(routineNameKey as any);
+  const displayName = localizedName !== routineNameKey ? localizedName : routine.name;
+
+  const routineDescKey = `${routine.id.replace(/-/g, '_')}_desc`;
+  const localizedDesc = t(routineDescKey as any);
+  const displayDescription = localizedDesc !== routineDescKey ? localizedDesc : routine.description;
+
   const routineType = routine.routineType || 'strength';
   const typeLabel = routineType === 'hiit' ? t('template_editor_type_hiit') : t('template_editor_type_strength');
   const typeColor = routineType === 'hiit' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 'bg-primary/10 text-primary border-primary/20';
 
   const exerciseNames = routine.exercises
-    .map(ex => getExerciseById(ex.exerciseId)?.name)
+    .map(ex => {
+        const info = getExerciseById(ex.exerciseId);
+        return info ? getExerciseName(info) : null;
+    })
     .filter(Boolean)
     .join(', ');
 
@@ -112,7 +126,7 @@ const RoutinePanel: React.FC<RoutinePanelProps> = ({ routine, onClick, onEdit, o
       >
         <div>
           <div className="flex justify-between items-start gap-2">
-              <h3 className="font-bold text-lg text-text-primary mb-1 pr-6 leading-tight group-hover:text-primary transition-colors">{routine.name}</h3>
+              <h3 className="font-bold text-lg text-text-primary mb-1 pr-6 leading-tight group-hover:text-primary transition-colors">{displayName}</h3>
               {menuItems.length > 0 && (
                    <div className="relative" ref={menuRef}>
                       <button 
@@ -156,7 +170,7 @@ const RoutinePanel: React.FC<RoutinePanelProps> = ({ routine, onClick, onEdit, o
         onClose={() => setIsConfirmingDelete(false)}
         onConfirm={handleConfirmDelete}
         title={routine.isTemplate ? t('routine_panel_delete_confirm_title') : t('history_delete_confirm_title')}
-        message={t('routine_panel_delete_confirm', { name: routine.name })}
+        message={t('routine_panel_delete_confirm', { name: displayName })}
         confirmText={t('common_delete')}
         confirmButtonClass="bg-danger hover:bg-red-600"
       />

@@ -8,6 +8,7 @@ import { Icon } from '../common/Icon';
 import ExerciseDetailModal from '../exercise/ExerciseDetailModal';
 import { getBodyPartTKey, getCategoryTKey } from '../../utils/i18nUtils';
 import { getBodyPartColor, getCategoryColor } from '../../utils/colorUtils';
+import { useExerciseName } from '../../hooks/useExerciseName';
 
 interface RoutinePreviewModalProps {
   routine: Routine;
@@ -21,15 +22,25 @@ interface RoutinePreviewModalProps {
 const RoutinePreviewModal: React.FC<RoutinePreviewModalProps> = ({ routine, isOpen, onClose, onStart, actionLabel, description }) => {
   const { getExerciseById } = useContext(AppContext);
   const { t } = useI18n();
+  const getExerciseName = useExerciseName();
   const [viewingExercise, setViewingExercise] = useState<Exercise | null>(null);
 
   if (!isOpen) return null;
 
+  // Localization Logic for System Routines
+  const routineNameKey = `${routine.id.replace(/-/g, '_')}_name`;
+  const localizedName = t(routineNameKey as any);
+  const displayName = localizedName !== routineNameKey ? localizedName : routine.name;
+
+  const routineDescKey = `${routine.id.replace(/-/g, '_')}_desc`;
+  const localizedDesc = t(routineDescKey as any);
+  const displayDescription = description || (localizedDesc !== routineDescKey ? localizedDesc : routine.description);
+
   return (
     <>
-      <Modal isOpen={isOpen && !viewingExercise} onClose={onClose} title={routine.name}>
+      <Modal isOpen={isOpen && !viewingExercise} onClose={onClose} title={displayName}>
         <div className="flex flex-col h-full max-h-[60vh]">
-          <p className="text-text-secondary mb-4 flex-shrink-0">{description || routine.description}</p>
+          <p className="text-text-secondary mb-4 flex-shrink-0">{displayDescription}</p>
 
           <div className="flex-grow space-y-3 overflow-y-auto pr-2" style={{ overscrollBehaviorY: 'contain' }}>
             <h4 className="font-semibold text-lg">{t('routine_preview_exercises')}</h4>
@@ -42,7 +53,7 @@ const RoutinePreviewModal: React.FC<RoutinePreviewModalProps> = ({ routine, isOp
               return (
                 <div key={ex.id} className="bg-slate-900/50 p-3 rounded flex justify-between items-center">
                   <div>
-                    <p className="font-bold text-text-primary">{exerciseInfo.name}</p>
+                    <p className="font-bold text-text-primary">{getExerciseName(exerciseInfo)}</p>
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                         <span className="text-sm text-text-secondary">{normalSetsCount} {t('workout_sets')}</span>
                         <span className={`text-xs px-2 py-0.5 rounded-full ${getBodyPartColor(exerciseInfo.bodyPart)}`}>{t(getBodyPartTKey(exerciseInfo.bodyPart))}</span>
