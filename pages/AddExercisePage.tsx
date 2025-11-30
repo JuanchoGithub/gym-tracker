@@ -20,7 +20,8 @@ const AddExercisePage: React.FC = () => {
     endAddExercisesToWorkout, 
     isAddingExercisesToTemplate, 
     endAddExercisesToTemplate,
-    allTimeBestSets
+    allTimeBestSets,
+    useLocalizedExerciseNames
   } = useContext(AppContext);
   const { t } = useI18n();
   const { displayWeight, weightUnit } = useMeasureUnit();
@@ -43,7 +44,7 @@ const AddExercisePage: React.FC = () => {
   ], [t]);
 
   const filteredExercises = useMemo(() => {
-    let result = searchExercises(exercises, searchTerm, t);
+    let result = searchExercises(exercises, searchTerm, t, useLocalizedExerciseNames);
 
     if (selectedBodyPart !== 'All') {
       result = result.filter(ex => ex.bodyPart === selectedBodyPart);
@@ -54,7 +55,7 @@ const AddExercisePage: React.FC = () => {
     }
 
     return result.sort((a, b) => a.name.localeCompare(b.name));
-  }, [exercises, searchTerm, selectedBodyPart, selectedCategory, t]);
+  }, [exercises, searchTerm, selectedBodyPart, selectedCategory, t, useLocalizedExerciseNames]);
   
   useEffect(() => {
     if (newlyCreatedId) {

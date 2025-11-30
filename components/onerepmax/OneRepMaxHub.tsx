@@ -20,7 +20,7 @@ interface OneRepMaxHubProps {
 
 const OneRepMaxHub: React.FC<OneRepMaxHubProps> = ({ isOpen, onClose }) => {
     const { t } = useI18n();
-    const { profile, allTimeBestSets, getExerciseById, updateOneRepMax, history, exercises } = useContext(AppContext);
+    const { profile, allTimeBestSets, getExerciseById, updateOneRepMax, history, exercises, useLocalizedExerciseNames } = useContext(AppContext);
     const { displayWeight, weightUnit } = useMeasureUnit();
     const getExerciseName = useExerciseName();
     const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null);
@@ -98,14 +98,14 @@ const OneRepMaxHub: React.FC<OneRepMaxHubProps> = ({ isOpen, onClose }) => {
             // If searching, search against ALL exercises (excluding core ones)
             // This allows discovering inferred maxes for untracked exercises
             const allAccessories = exercises.filter(ex => !coreIds.includes(ex.id));
-            return searchExercises(allAccessories, searchTerm, t).map(ex => ex.id);
+            return searchExercises(allAccessories, searchTerm, t, useLocalizedExerciseNames).map(ex => ex.id);
         } else {
             // If not searching, show only exercises that are tracked in profile
             const trackedIds = Object.keys(profile.oneRepMaxes || {});
             // And exclude core IDs from this list as they have their own section
             return trackedIds.filter(id => !coreIds.includes(id));
         }
-    }, [searchTerm, exercises, profile.oneRepMaxes, t]);
+    }, [searchTerm, exercises, profile.oneRepMaxes, t, useLocalizedExerciseNames]);
 
     return (
         <Modal 

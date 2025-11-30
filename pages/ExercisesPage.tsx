@@ -15,7 +15,7 @@ import { searchExercises, getMatchedMuscles } from '../utils/searchUtils';
 import { useExerciseName } from '../hooks/useExerciseName';
 
 const ExercisesPage: React.FC = () => {
-  const { exercises, startExerciseEdit, allTimeBestSets } = useContext(AppContext);
+  const { exercises, startExerciseEdit, allTimeBestSets, useLocalizedExerciseNames } = useContext(AppContext);
   const { t } = useI18n();
   const { displayWeight, weightUnit } = useMeasureUnit();
   const getExerciseName = useExerciseName();
@@ -37,7 +37,7 @@ const ExercisesPage: React.FC = () => {
   ], [t]);
 
   const filteredExercises = useMemo(() => {
-    let result = searchExercises(exercises, searchTerm, t);
+    let result = searchExercises(exercises, searchTerm, t, useLocalizedExerciseNames);
     
     if (selectedBodyPart !== 'All') {
       result = result.filter(ex => ex.bodyPart === selectedBodyPart);
@@ -55,7 +55,7 @@ const ExercisesPage: React.FC = () => {
       }
       return nameB.localeCompare(nameA);
     });
-  }, [exercises, searchTerm, selectedBodyPart, selectedCategory, sortOrder, t, getExerciseName]);
+  }, [exercises, searchTerm, selectedBodyPart, selectedCategory, sortOrder, t, getExerciseName, useLocalizedExerciseNames]);
   
   const toggleSortOrder = () => {
     setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');

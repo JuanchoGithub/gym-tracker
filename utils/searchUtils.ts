@@ -12,7 +12,8 @@ const normalizeText = (text: string): string => {
 export const searchExercises = (
   exercises: Exercise[],
   searchTerm: string,
-  t: Translator
+  t: Translator,
+  useLocalizedNames: boolean = false
 ): Exercise[] => {
   const trimmedTerm = searchTerm.trim();
   if (!trimmedTerm) return exercises;
@@ -20,7 +21,15 @@ export const searchExercises = (
   const terms = normalizeText(trimmedTerm).split(/\s+/).filter(term => term.length > 0);
 
   return exercises.filter((exercise) => {
-    const name = normalizeText(exercise.name);
+    const englishName = normalizeText(exercise.name);
+    let localizedName = englishName;
+
+    if (useLocalizedNames) {
+        const translated = t(exercise.id);
+        if (translated !== exercise.id) {
+            localizedName = normalizeText(translated);
+        }
+    }
     
     // Get localized and raw values for flexible searching
     const bodyPartKey = getBodyPartTKey(exercise.bodyPart);
@@ -49,7 +58,8 @@ export const searchExercises = (
 
     // Every term in the search query must match at least one of the exercise's properties
     return terms.every(term => 
-      name.includes(term) || 
+      englishName.includes(term) || 
+      (useLocalizedNames && localizedName.includes(term)) ||
       bodyPartLocalized.includes(term) || 
       categoryLocalized.includes(term) ||
       bodyPartRaw.includes(term) ||

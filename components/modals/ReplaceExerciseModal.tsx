@@ -22,7 +22,7 @@ interface ReplaceExerciseModalProps {
 }
 
 const ReplaceExerciseModal: React.FC<ReplaceExerciseModalProps> = ({ isOpen, onClose, onSelectExercise, title, buttonText }) => {
-  const { exercises } = useContext(AppContext);
+  const { exercises, useLocalizedExerciseNames } = useContext(AppContext);
   const { t } = useI18n();
   const getExerciseName = useExerciseName();
   
@@ -42,7 +42,7 @@ const ReplaceExerciseModal: React.FC<ReplaceExerciseModalProps> = ({ isOpen, onC
   ], [t]);
 
   const filteredExercises = useMemo(() => {
-    let result = searchExercises(exercises, searchTerm, t);
+    let result = searchExercises(exercises, searchTerm, t, useLocalizedExerciseNames);
 
     if (selectedBodyPart !== 'All') {
       result = result.filter(ex => ex.bodyPart === selectedBodyPart);
@@ -53,7 +53,7 @@ const ReplaceExerciseModal: React.FC<ReplaceExerciseModalProps> = ({ isOpen, onC
     }
 
     return result.sort((a, b) => getExerciseName(a).localeCompare(getExerciseName(b)));
-  }, [exercises, searchTerm, selectedBodyPart, selectedCategory, t, getExerciseName]);
+  }, [exercises, searchTerm, selectedBodyPart, selectedCategory, t, getExerciseName, useLocalizedExerciseNames]);
 
   const handleSelectExercise = (exerciseId: string) => {
     onSelectExercise(exerciseId);

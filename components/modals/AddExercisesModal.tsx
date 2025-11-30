@@ -22,7 +22,7 @@ interface AddExercisesModalProps {
 }
 
 const AddExercisesModal: React.FC<AddExercisesModalProps> = ({ isOpen, onClose, onAdd }) => {
-  const { exercises, startExerciseEdit, allTimeBestSets } = useContext(AppContext);
+  const { exercises, startExerciseEdit, allTimeBestSets, useLocalizedExerciseNames } = useContext(AppContext);
   const { t } = useI18n();
   const { displayWeight, weightUnit } = useMeasureUnit();
   const getExerciseName = useExerciseName();
@@ -46,7 +46,7 @@ const AddExercisesModal: React.FC<AddExercisesModalProps> = ({ isOpen, onClose, 
   ], [t]);
 
   const filteredExercises = useMemo(() => {
-    let result = searchExercises(exercises, searchTerm, t);
+    let result = searchExercises(exercises, searchTerm, t, useLocalizedExerciseNames);
 
     if (selectedBodyPart !== 'All') {
       result = result.filter(ex => ex.bodyPart === selectedBodyPart);
@@ -61,7 +61,7 @@ const AddExercisesModal: React.FC<AddExercisesModalProps> = ({ isOpen, onClose, 
         const nameB = getExerciseName(b);
         return nameA.localeCompare(nameB);
     });
-  }, [exercises, searchTerm, selectedBodyPart, selectedCategory, t, getExerciseName]);
+  }, [exercises, searchTerm, selectedBodyPart, selectedCategory, t, getExerciseName, useLocalizedExerciseNames]);
   
   useEffect(() => {
     if (newlyCreatedId) {
