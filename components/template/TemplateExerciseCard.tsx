@@ -9,6 +9,7 @@ import { useI18n } from '../../hooks/useI18n';
 import { useMeasureUnit } from '../../hooks/useWeight';
 import { TranslationKey } from '../../contexts/I18nContext';
 import SelectSupersetModal from '../modals/SelectSupersetModal';
+import { useExerciseName } from '../../hooks/useExerciseName';
 
 interface TemplateExerciseCardProps {
   workoutExercise: WorkoutExercise;
@@ -36,6 +37,8 @@ const TemplateExerciseCard: React.FC<TemplateExerciseCardProps> = (props) => {
   } = props;
   const { t } = useI18n();
   const { weightUnit } = useMeasureUnit();
+  const getExerciseName = useExerciseName();
+
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNoteEditing, setIsNoteEditing] = useState(false);
   const [isDefaultsTimerModalOpen, setIsDefaultsTimerModalOpen] = useState(false);
@@ -184,7 +187,7 @@ const TemplateExerciseCard: React.FC<TemplateExerciseCardProps> = (props) => {
       <div className="p-4 border-b border-secondary/20 flex justify-between items-center">
         <button onClick={() => setIsCollapsed(p => !p)} className="flex-grow text-left truncate pr-2 flex items-center gap-3">
           {isCollapsed && <Icon name="sort" className="w-6 h-6 text-text-secondary flex-shrink-0" />}
-          <h3 className="font-bold text-lg text-primary truncate">{exerciseInfo.name}</h3>
+          <h3 className="font-bold text-lg text-primary truncate">{getExerciseName(exerciseInfo)}</h3>
         </button>
         <div className="relative">
           <button onClick={() => setIsMenuOpen(p => !p)} className="p-2 text-text-secondary hover:text-primary">

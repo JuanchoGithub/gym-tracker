@@ -11,6 +11,7 @@ import { TranslationKey } from '../../contexts/I18nContext';
 import AddExercisesModal from '../modals/AddExercisesModal';
 import { calculateSyntheticAnchors, getInferredMax } from '../../services/analyticsService';
 import { searchExercises } from '../../utils/searchUtils';
+import { useExerciseName } from '../../hooks/useExerciseName';
 
 interface OneRepMaxHubProps {
     isOpen: boolean;
@@ -21,6 +22,7 @@ const OneRepMaxHub: React.FC<OneRepMaxHubProps> = ({ isOpen, onClose }) => {
     const { t } = useI18n();
     const { profile, allTimeBestSets, getExerciseById, updateOneRepMax, history, exercises } = useContext(AppContext);
     const { displayWeight, weightUnit } = useMeasureUnit();
+    const getExerciseName = useExerciseName();
     const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -60,7 +62,7 @@ const OneRepMaxHub: React.FC<OneRepMaxHubProps> = ({ isOpen, onClose }) => {
                 )}
                 
                 <div>
-                    <h4 className={`font-bold text-text-primary ${isCore ? 'text-lg min-h-[3.5rem] line-clamp-2 leading-7' : 'text-sm'}`}>{exercise.name}</h4>
+                    <h4 className={`font-bold text-text-primary ${isCore ? 'text-lg min-h-[3.5rem] line-clamp-2 leading-7' : 'text-sm'}`}>{getExerciseName(exercise)}</h4>
                     <div className="flex gap-2 mt-1">
                         {storedMax > 0 ? (
                              <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${isTested ? 'text-green-400 border-green-500/30 bg-green-500/10' : 'text-yellow-400 border-yellow-500/30 bg-yellow-500/10'}`}>

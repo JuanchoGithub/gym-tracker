@@ -12,11 +12,14 @@ import { useMeasureUnit } from '../hooks/useWeight';
 import { getBodyPartColor, getCategoryColor } from '../utils/colorUtils';
 import { TranslationKey } from '../contexts/I18nContext';
 import { searchExercises, getMatchedMuscles } from '../utils/searchUtils';
+import { useExerciseName } from '../hooks/useExerciseName';
 
 const ExercisesPage: React.FC = () => {
   const { exercises, startExerciseEdit, allTimeBestSets } = useContext(AppContext);
   const { t } = useI18n();
   const { displayWeight, weightUnit } = useMeasureUnit();
+  const getExerciseName = useExerciseName();
+
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBodyPart, setSelectedBodyPart] = useState<BodyPart | 'All'>('All');
@@ -45,12 +48,14 @@ const ExercisesPage: React.FC = () => {
     }
 
     return result.sort((a, b) => {
+      const nameA = getExerciseName(a);
+      const nameB = getExerciseName(b);
       if (sortOrder === 'asc') {
-        return a.name.localeCompare(b.name);
+        return nameA.localeCompare(nameB);
       }
-      return b.name.localeCompare(a.name);
+      return nameB.localeCompare(nameA);
     });
-  }, [exercises, searchTerm, selectedBodyPart, selectedCategory, sortOrder, t]);
+  }, [exercises, searchTerm, selectedBodyPart, selectedCategory, sortOrder, t, getExerciseName]);
   
   const toggleSortOrder = () => {
     setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
@@ -148,7 +153,9 @@ const ExercisesPage: React.FC = () => {
               
               <div className="p-5">
                 <div className="flex justify-between items-start gap-3 mb-3">
-                    <h3 className="font-bold text-lg text-white group-hover:text-primary transition-colors line-clamp-2 leading-snug">{exercise.name}</h3>
+                    <h3 className="font-bold text-lg text-white group-hover:text-primary transition-colors line-clamp-2 leading-snug">
+                      {getExerciseName(exercise)}
+                    </h3>
                     <span className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wide border border-white/5 whitespace-nowrap ${getBodyPartColor(exercise.bodyPart)}`}>
                         {t(getBodyPartTKey(exercise.bodyPart))}
                     </span>

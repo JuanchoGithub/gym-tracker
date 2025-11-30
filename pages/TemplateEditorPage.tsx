@@ -8,10 +8,12 @@ import ConfirmModal from '../components/modals/ConfirmModal';
 import { useI18n } from '../hooks/useI18n';
 import { groupExercises } from '../utils/workoutUtils';
 import SupersetCard from '../components/workout/SupersetCard';
+import { useExerciseName } from '../hooks/useExerciseName';
 
 const TemplateEditorPage: React.FC = () => {
     const { editingTemplate, updateEditingTemplate, endTemplateEdit, getExerciseById, startAddExercisesToTemplate } = useContext(AppContext);
     const { t } = useI18n();
+    const getExerciseName = useExerciseName();
     const [originalTemplate] = useState<Routine | null>(() => JSON.parse(JSON.stringify(editingTemplate)));
     const [isConfirmingBack, setIsConfirmingBack] = useState(false);
     
@@ -26,9 +28,12 @@ const TemplateEditorPage: React.FC = () => {
             name: superset.name,
             exercises: editingTemplate.exercises
                 .filter(ex => ex.supersetId === superset.id)
-                .map(ex => getExerciseById(ex.exerciseId)?.name || 'Unknown')
+                .map(ex => {
+                    const info = getExerciseById(ex.exerciseId);
+                    return info ? getExerciseName(info) : 'Unknown';
+                })
         }));
-    }, [editingTemplate, getExerciseById]);
+    }, [editingTemplate, getExerciseById, getExerciseName]);
 
     const handleBack = () => {
         if (JSON.stringify(editingTemplate) !== JSON.stringify(originalTemplate)) {
@@ -413,7 +418,7 @@ const TemplateEditorPage: React.FC = () => {
                                             title={t('template_editor_drag_to_reorder')}
                                         >
                                             <Icon name="sort" className="w-5 h-5 text-text-secondary/50 flex-shrink-0" />
-                                            <span className="font-semibold text-text-primary flex-grow">{exerciseInfo.name}</span>
+                                            <span className="font-semibold text-text-primary flex-grow">{getExerciseName(exerciseInfo)}</span>
                                             <button onClick={() => handleRemoveExercise(we.id)} className="p-2 text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-lg transition-colors">
                                                 <Icon name="trash" className="w-5 h-5" />
                                             </button>

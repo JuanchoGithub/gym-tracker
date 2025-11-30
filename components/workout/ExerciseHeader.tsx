@@ -16,6 +16,7 @@ import SelectSupersetModal from '../modals/SelectSupersetModal';
 import PercentageCalculatorModal from '../modals/PercentageCalculatorModal';
 import OneRepMaxTestRunner from '../onerepmax/OneRepMaxTestRunner';
 import CascadeUpdateModal from '../onerepmax/CascadeUpdateModal';
+import { useExerciseName } from '../../hooks/useExerciseName';
 
 interface ExerciseHeaderProps {
     workoutExercise: WorkoutExercise;
@@ -47,6 +48,7 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = (props) => {
     const { history: allHistory, profile, updateOneRepMax } = useContext(AppContext);
     const { t } = useI18n();
     const { weightUnit, displayWeight, getStoredWeight } = useMeasureUnit();
+    const getExerciseName = useExerciseName();
 
     const [isFocusMenuOpen, setIsFocusMenuOpen] = useState(false);
     const [isOptionsMenuOpen, setIsOptionsMenuOpen] = useState(false);
@@ -198,7 +200,7 @@ const ExerciseHeader: React.FC<ExerciseHeaderProps> = (props) => {
         <div className="flex justify-between items-center relative">
             <div className="flex items-center gap-2 flex-grow min-w-0 pr-2">
                 <button onClick={onToggleCollapse} className="text-left truncate min-w-0">
-                    <h3 className="font-bold text-xl text-primary truncate">{exerciseInfo.name}</h3>
+                    <h3 className="font-bold text-xl text-primary truncate">{getExerciseName(exerciseInfo)}</h3>
                 </button>
                 {hasNewPotential && (
                     <button 

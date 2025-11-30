@@ -13,6 +13,7 @@ import { getBodyPartColor, getCategoryColor } from '../../utils/colorUtils';
 import { useMeasureUnit } from '../../hooks/useWeight';
 import { TranslationKey } from '../../contexts/I18nContext';
 import { searchExercises, getMatchedMuscles } from '../../utils/searchUtils';
+import { useExerciseName } from '../../hooks/useExerciseName';
 
 interface AddExercisesModalProps {
   isOpen: boolean;
@@ -24,6 +25,8 @@ const AddExercisesModal: React.FC<AddExercisesModalProps> = ({ isOpen, onClose, 
   const { exercises, startExerciseEdit, allTimeBestSets } = useContext(AppContext);
   const { t } = useI18n();
   const { displayWeight, weightUnit } = useMeasureUnit();
+  const getExerciseName = useExerciseName();
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBodyPart, setSelectedBodyPart] = useState<BodyPart | 'All'>('All');
   const [selectedCategory, setSelectedCategory] = useState<ExerciseCategory | 'All'>('All');
@@ -53,8 +56,12 @@ const AddExercisesModal: React.FC<AddExercisesModalProps> = ({ isOpen, onClose, 
       result = result.filter(ex => ex.category === selectedCategory);
     }
 
-    return result.sort((a, b) => a.name.localeCompare(b.name));
-  }, [exercises, searchTerm, selectedBodyPart, selectedCategory, t]);
+    return result.sort((a, b) => {
+        const nameA = getExerciseName(a);
+        const nameB = getExerciseName(b);
+        return nameA.localeCompare(nameB);
+    });
+  }, [exercises, searchTerm, selectedBodyPart, selectedCategory, t, getExerciseName]);
   
   useEffect(() => {
     if (newlyCreatedId) {
@@ -67,13 +74,7 @@ const AddExercisesModal: React.FC<AddExercisesModalProps> = ({ isOpen, onClose, 
   }, [newlyCreatedId, filteredExercises]);
 
   const handleToggleSelect = (id: string) => {
-    setSelectedIds(prev => {
-        if (prev.includes(id)) {
-            return prev.filter(i => i !== id);
-        } else {
-            return [...prev, id];
-        }
-    });
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   };
 
   const handleClose = () => {
@@ -114,6 +115,17 @@ const AddExercisesModal: React.FC<AddExercisesModalProps> = ({ isOpen, onClose, 
         setSelectedIds(prev => [...new Set([...prev, createdExercise.id])]);
         setNewlyCreatedId(createdExercise.id);
     });
+  };
+
+  const handleAddFromButton = () => {
+      handleAdd();
+  }
+
+  const getAddButtonText = () => {
+    const count = selectedIds.length;
+    if (count === 0) return t('add_exercises_button_empty');
+    if (count === 1) return t('add_exercises_button_single');
+    return t('add_exercises_button_plural', { count });
   };
 
   return (
@@ -207,7 +219,7 @@ const AddExercisesModal: React.FC<AddExercisesModalProps> = ({ isOpen, onClose, 
                               <div className="flex-grow min-w-0">
                                   <div className="flex justify-between items-start mb-1">
                                     <h3 className={`font-bold text-base truncate pr-2 transition-colors ${isSelected ? 'text-primary' : 'text-text-primary'}`}>
-                                        {exercise.name}
+                                        {getExerciseName(exercise)}
                                     </h3>
                                     <button
                                         onClick={(e) => { e.stopPropagation(); setViewingExercise(exercise); }}
@@ -276,11 +288,11 @@ const AddExercisesModal: React.FC<AddExercisesModalProps> = ({ isOpen, onClose, 
                       {t('common_create')} {t('common_new')}
                   </button>
                   <button
-                      onClick={handleAdd}
+                      onClick={handleAddFromButton}
                       disabled={selectedIds.length === 0}
                       className="flex-[2] bg-primary hover:bg-primary-content text-white font-bold py-3.5 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary/20 active:scale-[0.98]"
                   >
-                      {selectedIds.length > 0 ? `${t('common_add')} (${selectedIds.length})` : t('common_add')}
+                      {getAddButtonText()}
                   </button>
               </div>
           </div>

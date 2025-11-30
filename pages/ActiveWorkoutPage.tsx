@@ -27,6 +27,7 @@ import OnboardingWizard from '../components/onboarding/OnboardingWizard';
 import RoutinePreviewModal from '../components/modals/RoutinePreviewModal';
 import { generateGapSession, getProtectedMuscles } from '../utils/smartCoachUtils';
 import { getWorkoutRecommendation } from '../utils/recommendationUtils';
+import { useExerciseName } from '../hooks/useExerciseName';
 
 const PUSH_MUSCLES = [MUSCLES.PECTORALS, MUSCLES.FRONT_DELTS, MUSCLES.TRICEPS];
 const PULL_MUSCLES = [MUSCLES.LATS, MUSCLES.TRAPS, MUSCLES.BICEPS];
@@ -43,6 +44,7 @@ const ActiveWorkoutPage: React.FC = () => {
   const { activeWorkout, updateActiveWorkout, endWorkout, discardActiveWorkout, maximizeWorkout, getExerciseById, minimizeWorkout, keepScreenAwake, activeTimerInfo, setActiveTimerInfo, startAddExercisesToWorkout, collapsedExerciseIds, setCollapsedExerciseIds, collapsedSupersetIds, setCollapsedSupersetIds, currentWeight, logWeight, activeTimedSet, setActiveTimedSet, history, exercises, routines, upsertRoutines } = useContext(AppContext);
   const { t } = useI18n();
   const elapsedTime = useWorkoutTimer(activeWorkout?.startTime);
+  const getExerciseName = useExerciseName();
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isConfirmingFinish, setIsConfirmingFinish] = useState(false);
   const [viewingExercise, setViewingExercise] = useState<Exercise | null>(null);
@@ -112,9 +114,12 @@ const ActiveWorkoutPage: React.FC = () => {
           name: superset.name,
           exercises: activeWorkout.exercises
             .filter(ex => ex.supersetId === superset.id)
-            .map(ex => getExerciseById(ex.exerciseId)?.name || 'Unknown')
+            .map(ex => {
+                const info = getExerciseById(ex.exerciseId);
+                return info ? getExerciseName(info) : 'Unknown';
+            })
       }));
-  }, [activeWorkout, getExerciseById]);
+  }, [activeWorkout, getExerciseById, getExerciseName]);
 
   const handleShowExerciseDetails = (exerciseId: string) => {
     const ex = getExerciseById(exerciseId);

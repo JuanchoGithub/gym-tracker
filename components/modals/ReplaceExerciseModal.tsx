@@ -11,6 +11,7 @@ import { getBodyPartTKey, getCategoryTKey, getMuscleTKey } from '../../utils/i18
 import ExerciseDetailModal from '../exercise/ExerciseDetailModal';
 import { getBodyPartColor, getCategoryColor } from '../../utils/colorUtils';
 import { searchExercises, getMatchedMuscles } from '../../utils/searchUtils';
+import { useExerciseName } from '../../hooks/useExerciseName';
 
 interface ReplaceExerciseModalProps {
   isOpen: boolean;
@@ -23,6 +24,8 @@ interface ReplaceExerciseModalProps {
 const ReplaceExerciseModal: React.FC<ReplaceExerciseModalProps> = ({ isOpen, onClose, onSelectExercise, title, buttonText }) => {
   const { exercises } = useContext(AppContext);
   const { t } = useI18n();
+  const getExerciseName = useExerciseName();
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBodyPart, setSelectedBodyPart] = useState<BodyPart | 'All'>('All');
   const [selectedCategory, setSelectedCategory] = useState<ExerciseCategory | 'All'>('All');
@@ -49,8 +52,8 @@ const ReplaceExerciseModal: React.FC<ReplaceExerciseModalProps> = ({ isOpen, onC
       result = result.filter(ex => ex.category === selectedCategory);
     }
 
-    return result.sort((a, b) => a.name.localeCompare(b.name));
-  }, [exercises, searchTerm, selectedBodyPart, selectedCategory, t]);
+    return result.sort((a, b) => getExerciseName(a).localeCompare(getExerciseName(b)));
+  }, [exercises, searchTerm, selectedBodyPart, selectedCategory, t, getExerciseName]);
 
   const handleSelectExercise = (exerciseId: string) => {
     onSelectExercise(exerciseId);
@@ -107,7 +110,7 @@ const ReplaceExerciseModal: React.FC<ReplaceExerciseModalProps> = ({ isOpen, onC
                                   <Icon name="question-mark-circle" className="w-5 h-5" />
                               </button>
                               <div className="truncate">
-                                  <h3 className="font-semibold text-text-primary truncate">{exercise.name}</h3>
+                                  <h3 className="font-semibold text-text-primary truncate">{getExerciseName(exercise)}</h3>
                                   <div className="flex items-center gap-2 mt-1 flex-wrap">
                                       <span className={`text-xs px-2 py-0.5 rounded-full ${getBodyPartColor(exercise.bodyPart)}`}>{t(getBodyPartTKey(exercise.bodyPart))}</span>
                                       <span className={`text-xs px-2 py-0.5 rounded-full ${getCategoryColor(exercise.category)}`}>{t(getCategoryTKey(exercise.category))}</span>

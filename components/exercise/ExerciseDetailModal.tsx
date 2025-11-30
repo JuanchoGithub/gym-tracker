@@ -13,6 +13,7 @@ import HistoryTab from './HistoryTab';
 import GraphsTab from './GraphsTab';
 import RecordsTab from './RecordsTab';
 import { getBodyPartColor, getCategoryColor } from '../../utils/colorUtils';
+import { useExerciseName } from '../../hooks/useExerciseName';
 
 interface ExerciseDetailModalProps {
   exercise: Exercise;
@@ -28,6 +29,7 @@ type Tab = 'description' | 'history' | 'graphs' | 'records';
 const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({ exercise, isOpen, onClose, onSelectForAdd, onAddAndClose, onExerciseCreated }) => {
   const { t } = useI18n();
   const { history: allHistory, startExerciseEdit, startExerciseDuplicate } = useContext(AppContext);
+  const getExerciseName = useExerciseName();
   const [activeTab, setActiveTab] = useState<Tab>('description');
 
   const exerciseHistory = useMemo(() => getExerciseHistory(allHistory, exercise.id), [allHistory, exercise.id]);
@@ -89,7 +91,7 @@ const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({ exercise, isO
 
             <div className="text-center px-2 mb-4">
                 <h2 className="text-2xl font-bold text-white mb-2 leading-tight">
-                    {exercise.name}
+                    {getExerciseName(exercise)}
                 </h2>
                 <div className="flex items-center justify-center gap-2 flex-wrap">
                     <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md border border-white/5 uppercase tracking-wide ${getBodyPartColor(exercise.bodyPart)}`}>

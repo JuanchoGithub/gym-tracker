@@ -11,6 +11,7 @@ import { formatSecondsToMMSS } from '../../utils/timeUtils';
 import { AppContext } from '../../contexts/AppContext';
 import { getExerciseHistory } from '../../utils/workoutUtils';
 import { TranslationKey } from '../../contexts/I18nContext';
+import { useExerciseName } from '../../hooks/useExerciseName';
 
 interface ExerciseCardProps {
   workoutExercise: WorkoutExercise;
@@ -48,6 +49,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
   const { t } = useI18n();
   const { weightUnit } = useMeasureUnit();
   const { history: allHistory, activeTimerInfo } = useContext(AppContext);
+  const getExerciseName = useExerciseName();
   const [completedSets, setCompletedSets] = useState(workoutExercise.sets.filter(s => s.isComplete).length);
   const [isNoteEditing, setIsNoteEditing] = useState(false);
   const [note, setNote] = useState(workoutExercise.note || '');
@@ -188,7 +190,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
   const handleAddSet = () => {
     const lastSet = workoutExercise.sets[workoutExercise.sets.length - 1] || { reps: 8, weight: 0 };
     const newSet: PerformedSet = {
-      id: `set-${Date.now()}`,
+      id: `set-${Date.now()}-${Math.random()}`,
       reps: lastSet.reps,
       weight: lastSet.weight,
       type: 'normal',
@@ -225,7 +227,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
         >
           {isBeingDraggedOver && <div className="absolute -top-1 left-0 w-full h-1 bg-primary rounded-full animate-pulse"></div>}
           <Icon name="sort" className="w-6 h-6 text-text-secondary flex-shrink-0" />
-          <span className="font-bold text-lg text-text-primary truncate flex-grow">{exerciseInfo.name}</span>
+          <span className="font-bold text-lg text-text-primary truncate flex-grow">{getExerciseName(exerciseInfo)}</span>
       </div>
     );
   }
