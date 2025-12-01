@@ -38,7 +38,32 @@ const App: React.FC = () => {
   }, [activeWorkout]);
 
   const handleCloseStale = () => {
-    endWorkout();
+    // Find the timestamp of the very last set completed by the user.
+    // If the workout was left open, we don't want to log the close time as the end time, 
+    // creating a 3+ hour workout. We want the time they actually stopped lifting.
+    let lastCompletedAt = activeWorkout?.startTime || Date.now();
+    let hasCompletedSets = false;
+
+    if (activeWorkout) {
+        activeWorkout.exercises.forEach(ex => {
+            ex.sets.forEach(set => {
+                if (set.isComplete && set.completedAt) {
+                    if (set.completedAt > lastCompletedAt) {
+                        lastCompletedAt = set.completedAt;
+                        hasCompletedSets = true;
+                    }
+                }
+            });
+        });
+    }
+    
+    // If the user completed sets, use the timestamp of the last one.
+    // If NO sets were completed (user started an empty workout and left it), 
+    // default to the start time. This results in a 0-second duration workout, 
+    // effectively neutralizing the idle time in stats.
+    const finalEndTime = hasCompletedSets ? lastCompletedAt : (activeWorkout?.startTime || Date.now());
+
+    endWorkout(finalEndTime);
     setIsStaleModalOpen(false);
   };
 

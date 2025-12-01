@@ -68,7 +68,8 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
   
   const handleComplete = () => {
     unlockAudioContext();
-    onUpdateSet({ ...set, isComplete: !set.isComplete });
+    const isComplete = !set.isComplete;
+    onUpdateSet({ ...set, isComplete, completedAt: isComplete ? Date.now() : undefined });
   };
 
   const handleSelectSetType = (type: SetType) => {

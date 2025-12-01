@@ -33,7 +33,7 @@ export interface AppContextType {
   activeWorkout: WorkoutSession | null;
   startWorkout: (routine: Routine) => void;
   updateActiveWorkout: (workout: WorkoutSession) => void;
-  endWorkout: () => void;
+  endWorkout: (endTime?: number) => void;
   discardActiveWorkout: () => void;
   isWorkoutMinimized: boolean;
   minimizeWorkout: () => void;
@@ -280,10 +280,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setActiveWorkout(workout);
   };
 
-  const endWorkout = () => {
+  const endWorkout = (endTime?: number) => {
       if (activeWorkout) {
           if (activeWorkout.exercises.length > 0) {
-              const finishedWorkout = { ...activeWorkout, endTime: Date.now() };
+              const finishedWorkout = { ...activeWorkout, endTime: endTime || Date.now() };
               setHistory(prev => [finishedWorkout, ...prev]);
           }
           

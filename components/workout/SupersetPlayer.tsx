@@ -202,6 +202,7 @@ const SupersetPlayer: React.FC<SupersetPlayerProps> = ({
         const updatedSet: PerformedSet = {
             ...set,
             isComplete: true,
+            completedAt: Date.now(), // Record completion time
             weight: set.type === 'timed' ? 0 : getStoredWeight(val1),
             time: set.type === 'timed' ? val1 : set.time,
             reps: val2,

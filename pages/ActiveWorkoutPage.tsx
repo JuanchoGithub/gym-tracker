@@ -597,7 +597,7 @@ const ActiveWorkoutPage: React.FC = () => {
         if (ex.id === exercise.id) {
             return {
                 ...ex,
-                sets: ex.sets.map(s => s.id === set.id ? { ...s, isComplete: true } : s)
+                sets: ex.sets.map(s => s.id === set.id ? { ...s, isComplete: true, completedAt: Date.now() } : s)
             };
         }
         return ex;

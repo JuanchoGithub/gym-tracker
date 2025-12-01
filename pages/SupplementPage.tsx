@@ -1,8 +1,7 @@
-
-import React, { useState, useContext, FormEvent, useEffect, useMemo } from 'react';
+import React, { useState, useContext, FormEvent, useEffect } from 'react';
 import { AppContext } from '../contexts/AppContext';
 import { useI18n } from '../hooks/useI18n';
-import { SupplementInfo } from '../types';
+import { SupplementInfo, SupplementPlanItem } from '../types';
 import { generateSupplementPlan } from '../services/supplementService';
 import { Icon } from '../components/common/Icon';
 import SupplementSchedule from '../components/supplements/SupplementSchedule';
@@ -15,9 +14,9 @@ const daysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'sat
 
 const SupplementPage: React.FC = () => {
   const { 
-    supplementPlan, setSupplementPlan, userSupplements,
+    supplementPlan, setSupplementPlan, userSupplements, setUserSupplements,
     newSuggestions, applyPlanSuggestion, applyAllPlanSuggestions, dismissSuggestion, dismissAllSuggestions, clearNewSuggestions, triggerManualPlanReview,
-    profile, currentWeight, activeWorkout, isWorkoutMinimized, history, takenSupplements
+    profile, currentWeight, activeWorkout, isWorkoutMinimized, history, takenSupplements, updateSupplementPlanItem
   } = useContext(AppContext);
   const { t } = useI18n();
   const { measureUnit, weightUnit } = useMeasureUnit();
@@ -184,6 +183,7 @@ const SupplementPage: React.FC = () => {
       // This allows the user to cancel the wizard and return to their existing plan.
       setWizardActive(true);
       setCurrentStep(1);
+      setIsReviewViewOpen(false); // Close review view if open
   };
 
   const handleManualReview = () => {
@@ -199,6 +199,34 @@ const SupplementPage: React.FC = () => {
   const handleApplyAll = () => {
     applyAllPlanSuggestions();
     setIsReviewViewOpen(false);
+  };
+
+  const handleAddItem = (newItemData: Omit<SupplementPlanItem, 'id' | 'isCustom'>) => {
+      const newItem: SupplementPlanItem = {
+          ...newItemData,
+          id: `custom-${Date.now()}`,
+          isCustom: true
+      };
+      
+      const newCustomSupplements = [...userSupplements, newItem];
+      setUserSupplements(newCustomSupplements);
+  
+      if (supplementPlan) {
+          const newPlanItems = [...supplementPlan.plan, newItem];
+          setSupplementPlan({ ...supplementPlan, plan: newPlanItems });
+      }
+  };
+
+  const handleRemoveItem = (itemId: string) => {
+      if (userSupplements.some(s => s.id === itemId)) {
+          setUserSupplements(prev => prev.filter(s => s.id !== itemId));
+      }
+      if (supplementPlan) {
+          setSupplementPlan({ 
+              ...supplementPlan, 
+              plan: supplementPlan.plan.filter(p => p.id !== itemId) 
+          });
+      }
   };
 
   const renderStep = () => {
@@ -411,6 +439,10 @@ const SupplementPage: React.FC = () => {
             onApplyAll={handleApplyAll}
             onDismiss={dismissSuggestion}
             onDismissAll={handleDismissAll}
+            onRecalculate={handleEditAnswers}
+            onAddItem={handleAddItem}
+            onUpdateItem={updateSupplementPlanItem}
+            onRemoveItem={handleRemoveItem}
           />
       );
   }

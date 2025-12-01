@@ -1,4 +1,3 @@
-
 import React, { useMemo, useCallback, useState, useContext } from 'react';
 import { SupplementPlan, SupplementPlanItem } from '../../types';
 import { useI18n } from '../../hooks/useI18n';
@@ -135,9 +134,6 @@ const SupplementItemCard: React.FC<{
             <button onClick={(e) => { e.stopPropagation(); onEdit(); }} className="p-1 text-text-secondary hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity" aria-label={`Edit ${item.supplement}`}>
                  <Icon name="edit" className="w-4 h-4" />
             </button>
-            <button onClick={(e) => { e.stopPropagation(); onRemove(); }} className="p-1 text-red-400/70 hover:text-red-400 flex-shrink-0" aria-label={`Remove ${item.supplement}`}>
-                <Icon name="trash" className="w-4 h-4" />
-            </button>
         </div>
       </div>
       <div className="flex items-center gap-2 mb-2 flex-wrap">
@@ -219,10 +215,6 @@ const SupplementPlanOverview: React.FC<SupplementPlanOverviewProps> = ({ plan, o
                 <span>{t('supplements_review_plan')}</span>
             </button>
         )}
-        <button onClick={onEditAnswers} className="bg-secondary hover:bg-slate-500 text-white font-bold py-2 px-3 rounded-lg transition-colors flex items-center justify-center space-x-2 text-sm">
-            <Icon name="edit" className="w-4 h-4" />
-            <span>{t('supplements_edit_plan')}</span>
-        </button>
       </div>
 
       {plan.warnings && plan.warnings.length > 0 && (
@@ -299,14 +291,6 @@ const SupplementPlanOverview: React.FC<SupplementPlanOverviewProps> = ({ plan, o
           </div>
         );
       })}
-      
-      <button
-          onClick={onAddItemClick}
-          className="w-full flex items-center justify-center space-x-2 bg-secondary/50 text-text-primary font-medium py-3 rounded-lg hover:bg-secondary transition-colors"
-        >
-          <Icon name="plus" className="w-5 h-5" />
-          <span>{t('supplements_add_custom')}</span>
-      </button>
 
       {plan.general_tips && plan.general_tips.length > 0 && (
         <div className="bg-sky-500/10 p-4 rounded-lg">
@@ -327,6 +311,7 @@ const SupplementPlanOverview: React.FC<SupplementPlanOverviewProps> = ({ plan, o
             onClose={() => setItemToEdit(null)}
             item={itemToEdit}
             onSave={handleSaveEdit}
+            isGenerated={!itemToEdit.isCustom}
         />
       )}
     </div>

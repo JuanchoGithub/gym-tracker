@@ -60,7 +60,7 @@ export const es_exercise_data = {
   category_cable: "Cable",
   category_bodyweight: "Calistenia",
   category_assisted_bodyweight: "Calistenia Asistida",
-  category_kettlebell: "Kettlebell (pesa rusa)",
+  category_kettlebell: "Kettlebell",
   category_plyometrics: "Pliometría",
   category_reps_only: "Solo Reps",
   category_cardio: "Cardio",

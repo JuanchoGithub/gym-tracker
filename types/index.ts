@@ -28,6 +28,7 @@ export interface PerformedSet {
   time?: number; // duration in seconds for timed sets
   type: SetType;
   isComplete?: boolean; // Added for tracking during workout
+  completedAt?: number; // Timestamp when the set was marked complete
   rest?: number; // Optional override for rest time in seconds
   isWeightInherited?: boolean;
   isRepsInherited?: boolean;

@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import { useI18n } from '../../hooks/useI18n';
 import { SupplementPlanItem } from '../../types';
@@ -8,15 +7,40 @@ interface AddSupplementModalProps {
     isOpen: boolean;
     onClose: () => void;
     onAdd: (newItem: Omit<SupplementPlanItem, 'id' | 'isCustom'>) => void;
+    initialData?: SupplementPlanItem | null;
 }
 
-const AddSupplementModal: React.FC<AddSupplementModalProps> = ({ isOpen, onClose, onAdd }) => {
+const AddSupplementModal: React.FC<AddSupplementModalProps> = ({ isOpen, onClose, onAdd, initialData }) => {
     const { t } = useI18n();
     const [supplement, setSupplement] = useState('');
     const [dosage, setDosage] = useState('');
     const [time, setTime] = useState('');
     const [notes, setNotes] = useState('');
     const [stock, setStock] = useState('');
+    const [frequency, setFrequency] = useState<'everyday' | 'training' | 'rest'>('everyday');
+
+    useEffect(() => {
+        if (isOpen) {
+            if (initialData) {
+                setSupplement(initialData.supplement);
+                setDosage(initialData.dosage);
+                setTime(initialData.time);
+                setNotes(initialData.notes);
+                setStock(initialData.stock !== undefined ? initialData.stock.toString() : '');
+                if (initialData.trainingDayOnly) setFrequency('training');
+                else if (initialData.restDayOnly) setFrequency('rest');
+                else setFrequency('everyday');
+            } else {
+                // Reset form for fresh add
+                setSupplement('');
+                setDosage('');
+                setTime('');
+                setNotes('');
+                setStock('');
+                setFrequency('everyday');
+            }
+        }
+    }, [isOpen, initialData]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -27,13 +51,17 @@ const AddSupplementModal: React.FC<AddSupplementModalProps> = ({ isOpen, onClose
         
         const stockVal = stock ? parseInt(stock, 10) : undefined;
 
-        onAdd({ supplement, dosage, time, notes, stock: stockVal });
-        // Reset form
-        setSupplement('');
-        setDosage('');
-        setTime('');
-        setNotes('');
-        setStock('');
+        const newItem: Omit<SupplementPlanItem, 'id' | 'isCustom'> = { 
+            supplement, 
+            dosage, 
+            time, 
+            notes, 
+            stock: stockVal,
+            trainingDayOnly: frequency === 'training',
+            restDayOnly: frequency === 'rest'
+        };
+
+        onAdd(newItem);
         onClose();
     };
 
@@ -64,6 +92,45 @@ const AddSupplementModal: React.FC<AddSupplementModalProps> = ({ isOpen, onClose
                     />
                 </div>
                 <div>
+                    <label htmlFor="supplement-time" className="block text-sm font-medium text-text-secondary">{t('supplements_add_time_label')}</label>
+                    <input
+                        id="supplement-time"
+                        type="text"
+                        value={time}
+                        onChange={(e) => setTime(e.target.value)}
+                        className="w-full bg-slate-900 border border-secondary/50 rounded-lg p-2 mt-1"
+                        placeholder={t('supplements_add_time_placeholder')}
+                    />
+                </div>
+                
+                <div>
+                    <label className="block text-sm font-medium text-text-secondary mb-1">{t('supplements_add_frequency_label')}</label>
+                    <div className="flex gap-2">
+                        <button 
+                            type="button"
+                            onClick={() => setFrequency('everyday')}
+                            className={`flex-1 py-2 rounded-lg text-xs font-bold border transition-colors ${frequency === 'everyday' ? 'bg-primary/20 text-primary border-primary' : 'bg-surface border-white/10 text-text-secondary'}`}
+                        >
+                            {t('supplements_frequency_everyday')}
+                        </button>
+                        <button 
+                            type="button"
+                            onClick={() => setFrequency('training')}
+                            className={`flex-1 py-2 rounded-lg text-xs font-bold border transition-colors ${frequency === 'training' ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500' : 'bg-surface border-white/10 text-text-secondary'}`}
+                        >
+                            {t('supplements_frequency_training')}
+                        </button>
+                        <button 
+                            type="button"
+                            onClick={() => setFrequency('rest')}
+                            className={`flex-1 py-2 rounded-lg text-xs font-bold border transition-colors ${frequency === 'rest' ? 'bg-teal-500/20 text-teal-300 border-teal-500' : 'bg-surface border-white/10 text-text-secondary'}`}
+                        >
+                            {t('supplements_frequency_rest')}
+                        </button>
+                    </div>
+                </div>
+
+                <div>
                     <label htmlFor="supplement-stock" className="block text-sm font-medium text-text-secondary">{t('supplements_add_stock_label')}</label>
                     <input
                         id="supplement-stock"
@@ -75,17 +142,7 @@ const AddSupplementModal: React.FC<AddSupplementModalProps> = ({ isOpen, onClose
                         placeholder={t('supplements_add_stock_placeholder')}
                     />
                 </div>
-                <div>
-                    <label htmlFor="supplement-time" className="block text-sm font-medium text-text-secondary">{t('supplements_add_time_label')}</label>
-                    <input
-                        id="supplement-time"
-                        type="text"
-                        value={time}
-                        onChange={(e) => setTime(e.target.value)}
-                        className="w-full bg-slate-900 border border-secondary/50 rounded-lg p-2 mt-1"
-                        placeholder={t('supplements_add_time_placeholder')}
-                    />
-                </div>
+
                 <div>
                     <label htmlFor="supplement-notes" className="block text-sm font-medium text-text-secondary">{t('supplements_add_notes_label')}</label>
                     <textarea

@@ -1,5 +1,3 @@
-
-
 export const en_supplements = {
   // Supplements Page
   supplements_title: 'Supplement Plan',
@@ -88,8 +86,13 @@ export const en_supplements = {
   supplements_add_time_placeholder: 'e.g., Before bed',
   supplements_add_notes_label: 'Notes (optional)',
   supplements_add_notes_placeholder: 'e.g., For recovery and sleep',
+  supplements_add_frequency_label: 'Frequency',
+  supplements_frequency_everyday: 'Every Day',
+  supplements_frequency_training: 'Training Days Only',
+  supplements_frequency_rest: 'Rest Days Only',
   supplements_add_name_required: 'Supplement name is required.',
   supplements_edit_save: 'Save Changes',
+  supplements_edit_generated_locked: 'Generated plan item: Only stock can be edited.',
   supplements_delete_confirm_title: 'Delete Supplement?',
   supplements_delete_confirm_message: 'Are you sure you want to remove "{supplementName}" from your plan?',
   supplements_delete_complex_message: '"{supplementName}" is scheduled for all days. How would you like to remove it?',
@@ -122,6 +125,10 @@ export const en_supplements = {
   supplements_review_dismiss_one: 'Dismiss',
   supplements_review_apply: 'Apply',
   supplements_review_notification_banner: 'We have {count} new suggestions for your plan!',
+  supplements_recalculate_plan: 'Recalculate Plan',
+  supplements_recalculate_desc: 'Update your answers to generate a new plan.',
+  supplements_manage_add: 'Add Supplement',
+  supplements_manage_copy: 'Copy',
   
   notification_supplement_title: 'Supplement Plan Update',
   notification_supplement_body: 'We have new suggestions for your supplement plan based on your recent activity.',
