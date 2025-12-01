@@ -569,7 +569,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const updateSupplementStock = (itemId: string, amountToAdd: number) => {
       if (userSupplements.some(s => s.id === itemId)) {
           setUserSupplements(prev => prev.map(s => s.id === itemId ? { ...s, stock: (s.stock || 0) + amountToAdd } : s));
-      } else if (supplementPlan) {
+      }
+      if (supplementPlan && supplementPlan.plan.some(s => s.id === itemId)) {
           setSupplementPlan({
               ...supplementPlan,
               plan: supplementPlan.plan.map(s => s.id === itemId ? { ...s, stock: (s.stock || 0) + amountToAdd } : s)
@@ -580,7 +581,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const updateSupplementPlanItem = (itemId: string, updates: Partial<SupplementPlanItem>) => {
       if (userSupplements.some(s => s.id === itemId)) {
           setUserSupplements(prev => prev.map(s => s.id === itemId ? { ...s, ...updates } : s));
-      } else if (supplementPlan) {
+      }
+      if (supplementPlan && supplementPlan.plan.some(s => s.id === itemId)) {
           setSupplementPlan({
               ...supplementPlan,
               plan: supplementPlan.plan.map(s => s.id === itemId ? { ...s, ...updates } : s)

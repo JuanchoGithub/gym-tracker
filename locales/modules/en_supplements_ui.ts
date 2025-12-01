@@ -18,4 +18,12 @@ export const en_supplements_ui = {
 
   supplements_tab_suggestions: "Suggestions",
   supplements_tab_analysis: "Insights",
+
+  // Supplement History Modal
+  supplements_history_date: "Date",
+  supplements_history_status: "Status",
+  supplements_history_taken: "Taken",
+  supplements_history_missed: "Missed",
+  supplements_history_skipped: "Not Scheduled",
+  supplements_history_disclaimer: "History is calculated based on your actual logged workouts for training/rest days.",
 };

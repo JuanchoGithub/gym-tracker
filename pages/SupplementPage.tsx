@@ -1,3 +1,4 @@
+
 import React, { useState, useContext, FormEvent, useEffect } from 'react';
 import { AppContext } from '../contexts/AppContext';
 import { useI18n } from '../hooks/useI18n';
@@ -60,6 +61,7 @@ const SupplementPage: React.FC = () => {
 
   const handleInputChange = (field: keyof SupplementInfo, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    if (error) setError(null);
   };
 
   const handleHeightChangeImperial = (ft: string, inc: string) => {
@@ -87,8 +89,26 @@ const SupplementPage: React.FC = () => {
     }
   };
 
-  const handleNext = () => setCurrentStep(prev => prev + 1);
-  const handleBack = () => setCurrentStep(prev => prev - 1);
+  const handleNext = () => {
+    if (currentStep === 1) {
+        if (!formData.dob) {
+          setError(t('supplements_step1_error_dob'));
+          return;
+        }
+        if (!formData.weight) {
+          setError(t('supplements_step1_error_weight'));
+          return;
+        }
+    }
+    
+    setError(null);
+    setCurrentStep(prev => prev + 1);
+  };
+
+  const handleBack = () => {
+    setError(null);
+    setCurrentStep(prev => prev - 1);
+  };
 
   const handleStartWizard = () => {
     const prefilledData: Partial<SupplementInfo> = { ...formData };
@@ -104,6 +124,7 @@ const SupplementPage: React.FC = () => {
     setFormData(prefilledData);
     setWizardActive(true);
     setCurrentStep(1);
+    setError(null);
   };
 
   const handleGeneratePlan = async (e: FormEvent) => {
@@ -183,6 +204,7 @@ const SupplementPage: React.FC = () => {
       // This allows the user to cancel the wizard and return to their existing plan.
       setWizardActive(true);
       setCurrentStep(1);
+      setError(null);
       setIsReviewViewOpen(false); // Close review view if open
   };
 
@@ -235,12 +257,16 @@ const SupplementPage: React.FC = () => {
             <div className="space-y-4">
                 <h3 className="text-xl font-semibold text-center">{t('supplements_step_1_title')}</h3>
                 <div>
-                    <label className="block text-sm font-medium text-text-secondary">{t('supplements_dob_label')}</label>
+                    <label className="block text-sm font-medium text-text-secondary">
+                        {t('supplements_dob_label')} <span className="text-primary">*</span>
+                    </label>
                     <input type="date" required value={formData.dob || ''} onChange={e => handleInputChange('dob', e.target.value)} className="w-full bg-surface border border-secondary/50 rounded-lg p-2 mt-1" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-text-secondary">{t('supplements_weight_label')}</label>
+                        <label className="block text-sm font-medium text-text-secondary">
+                            {t('supplements_weight_label')} <span className="text-primary">*</span>
+                        </label>
                         <div className="relative mt-1">
                           <input type="number" required value={formData.weight || ''} onChange={e => handleInputChange('weight', parseFloat(e.target.value))} className="w-full bg-surface border border-secondary/50 rounded-lg p-2 pr-12" />
                           <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-text-secondary">{t(`workout_${weightUnit}` as TranslationKey)}</span>
@@ -434,7 +460,7 @@ const SupplementPage: React.FC = () => {
             suggestions={newSuggestions}
             history={history}
             takenSupplements={takenSupplements}
-            allSupplements={[...(supplementPlan?.plan || []), ...userSupplements]}
+            allSupplements={supplementPlan ? supplementPlan.plan : userSupplements}
             onApply={applyPlanSuggestion}
             onApplyAll={handleApplyAll}
             onDismiss={dismissSuggestion}
@@ -497,13 +523,26 @@ const SupplementPage: React.FC = () => {
                          </button>
                     )}
                 </div>
-                {error && <p className="text-red-400 text-center mt-4">{error}</p>}
+                {error && <p className="text-red-400 text-center mt-4 text-sm font-medium bg-red-500/10 p-2 rounded border border-red-500/20">{error}</p>}
             </form>
         </div>
       )}
 
-      {!wizardActive && supplementPlan && (
-          <SupplementSchedule onEditAnswers={handleEditAnswers} onReviewPlan={handleManualReview} />
+      {!wizardActive && (
+          // Ensure we render even if plan is null (using userSupplements)
+          // The main SupplementSchedule component handles the null check for plan-specific features if needed,
+          // but since we moved manage logic there, it needs to be rendered.
+          // If no plan AND no user supplements, SupplementSchedule should ideally handle the empty state or show wizard prompt.
+          // For now, if plan exists OR user has supplements OR just generated, show schedule.
+          (supplementPlan || userSupplements.length > 0 || planJustGenerated) && (
+            <SupplementSchedule 
+                onEditAnswers={handleEditAnswers} 
+                onReviewPlan={handleManualReview}
+                onAddItem={handleAddItem}
+                onUpdateItem={updateSupplementPlanItem}
+                onRemoveItem={handleRemoveItem}
+            />
+          )
       )}
 
         {!wizardActive && newSuggestions.length > 0 && !isReviewViewOpen && (

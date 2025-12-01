@@ -5,7 +5,8 @@ import { useI18n } from '../../hooks/useI18n';
 import { Icon } from '../common/Icon';
 import { SupplementPlanItem } from '../../types';
 import { getExplanationIdForSupplement } from '../../services/explanationService';
-import { getDateString, getEffectiveDate } from '../../utils/timeUtils';
+import { getDateString } from '../../utils/timeUtils';
+import SupplementHistoryModal from '../modals/SupplementHistoryModal';
 
 const timeKeywords = {
     en: {
@@ -49,10 +50,11 @@ interface DailySupplementListProps {
 }
 
 const DailySupplementList: React.FC<DailySupplementListProps> = ({ date, readOnly = false, title, subTitle, onOpenExplanation }) => {
-  const { supplementPlan, takenSupplements, toggleSupplementIntake } = useContext(AppContext);
+  const { supplementPlan, userSupplements, takenSupplements, toggleSupplementIntake } = useContext(AppContext);
   const { t, locale } = useI18n();
   const [isSmartSortEnabled, setIsSmartSortEnabled] = useState(true);
   const [hasSmartSortChanges, setHasSmartSortChanges] = useState(false);
+  const [historyItem, setHistoryItem] = useState<SupplementPlanItem | null>(null);
 
   const dateString = getDateString(date);
   const takenIds = takenSupplements[dateString] || [];
@@ -70,21 +72,29 @@ const DailySupplementList: React.FC<DailySupplementListProps> = ({ date, readOnl
     return 'daily';
   }, [locale]);
 
-  const handleToggleTaken = (itemId: string) => {
+  const handleToggleTaken = (e: React.MouseEvent, itemId: string) => {
+    e.stopPropagation();
     if (readOnly) return;
     toggleSupplementIntake(dateString, itemId);
+  };
+
+  const handleItemClick = (item: SupplementPlanItem) => {
+      setHistoryItem(item);
   };
 
   const { groupedPlan, orderedGroups, isTrainingDay, scheduledCount } = useMemo(() => {
     const dayOfWeek = daysOfWeek[date.getDay()];
     const isTrainingDay = !!supplementPlan?.info?.trainingDays?.includes(dayOfWeek);
+    
+    // Combine plan items + user items if no plan, or just plan items if plan exists
+    const itemsSource = supplementPlan ? supplementPlan.plan : userSupplements;
 
-    if (!supplementPlan?.plan) {
+    if (!itemsSource || itemsSource.length === 0) {
       return { groupedPlan: {}, orderedGroups: [], isTrainingDay, scheduledCount: 0 };
     }
     
     // 1. Filter items for today
-    const itemsForDay = supplementPlan.plan.filter(item => {
+    const itemsForDay = itemsSource.filter(item => {
         if (item.restDayOnly) return !isTrainingDay;
         if (item.trainingDayOnly) return isTrainingDay;
         return true;
@@ -134,7 +144,7 @@ const DailySupplementList: React.FC<DailySupplementListProps> = ({ date, readOnl
     const ordered = Object.keys(grouped).sort((a, b) => (timeOrder[a] || 99) - (timeOrder[b] || 99));
     
     return { groupedPlan: grouped, orderedGroups: ordered, isTrainingDay, scheduledCount: itemsForDay.length, changesDetected };
-  }, [supplementPlan, getTimeKey, date, t, isSmartSortEnabled, trainingTime]);
+  }, [supplementPlan, userSupplements, getTimeKey, date, t, isSmartSortEnabled, trainingTime]);
 
   // Use the memoized result to set the flag for rendering the banner
   useEffect(() => {
@@ -188,14 +198,6 @@ const DailySupplementList: React.FC<DailySupplementListProps> = ({ date, readOnl
            </div>
       )}
 
-      {supplementPlan && (
-        <div className="text-center p-3 bg-surface rounded-lg">
-            <p className={`font-bold text-lg ${isTrainingDay ? 'text-primary' : 'text-text-secondary'}`}>
-            {isTrainingDay ? t('supplements_workout_day') : t('supplements_rest_day')}
-            </p>
-        </div>
-      )}
-
       {orderedGroups.length === 0 ? (
         <div className="text-center text-text-secondary py-10">
             <Icon name="capsule" className="w-12 h-12 mx-auto mb-2 opacity-50" />
@@ -215,36 +217,30 @@ const DailySupplementList: React.FC<DailySupplementListProps> = ({ date, readOnl
                     {groupedPlan[groupName].map(item => {
                         const isTaken = takenIds.includes(item.id);
                         return (
-                            <button
+                            <div
                                 key={item.id}
-                                onClick={() => handleToggleTaken(item.id)}
-                                disabled={readOnly}
-                                className={`bg-surface p-4 rounded-lg shadow-md flex items-start gap-4 transition-opacity text-left w-full ${isTaken ? 'opacity-50' : 'opacity-100'} ${readOnly ? 'cursor-default' : ''}`}
-                                aria-label={`Mark ${item.supplement} as ${isTaken ? 'not taken' : 'taken'}`}
+                                className={`bg-surface rounded-lg shadow-md flex items-stretch transition-opacity w-full overflow-hidden border border-white/5 ${isTaken ? 'opacity-50' : 'opacity-100'}`}
                             >
-                                <div
-                                    className="flex-shrink-0 mt-1"
-                                    aria-hidden="true"
+                                {/* Checkbox Area */}
+                                <button
+                                    onClick={(e) => handleToggleTaken(e, item.id)}
+                                    disabled={readOnly}
+                                    className={`px-4 flex items-center justify-center transition-colors hover:bg-black/10 active:bg-black/20 ${readOnly ? 'cursor-default' : 'cursor-pointer'}`}
+                                    aria-label={`Mark ${item.supplement} as ${isTaken ? 'not taken' : 'taken'}`}
                                 >
                                     <div className={`w-6 h-6 rounded-md flex items-center justify-center border-2 transition-colors ${isTaken ? 'bg-primary border-primary' : 'border-secondary'}`}>
                                         {isTaken && <Icon name="check" className="w-4 h-4 text-white" />}
                                     </div>
-                                </div>
-                                <div className="flex-grow">
+                                </button>
+
+                                {/* Content Area - Click for History */}
+                                <button 
+                                    onClick={() => handleItemClick(item)}
+                                    className="flex-grow p-4 pl-0 text-left hover:bg-white/5 transition-colors group"
+                                >
                                     <div className="flex items-center gap-2">
                                         <h4 className={`font-bold text-lg transition-colors ${isTaken ? 'line-through text-text-secondary' : 'text-primary'}`}>{item.supplement}</h4>
-                                        {onOpenExplanation && getExplanationIdForSupplement(item.supplement) && (
-                                            <button 
-                                                onClick={(e) => { 
-                                                    e.stopPropagation(); 
-                                                    const id = getExplanationIdForSupplement(item.supplement);
-                                                    if (id) onOpenExplanation(id);
-                                                }}
-                                                className="text-text-secondary/60 hover:text-primary"
-                                            >
-                                                <Icon name="question-mark-circle" className="w-5 h-5" />
-                                            </button>
-                                        )}
+                                        
                                         {item.stock !== undefined && item.stock <= 5 && !isTaken && (
                                             <span className="text-[10px] font-bold bg-red-500/20 text-red-400 border border-red-500/30 px-1.5 py-0.5 rounded">
                                                 Low: {item.stock}
@@ -255,14 +251,35 @@ const DailySupplementList: React.FC<DailySupplementListProps> = ({ date, readOnl
                                         <span className={`font-mono text-base px-3 py-1 rounded-full transition-colors ${isTaken ? 'bg-slate-700 text-text-secondary line-through' : 'bg-secondary/50'}`}>{item.dosage}</span>
                                         <p className={`text-sm font-semibold transition-colors ${isTaken ? 'line-through text-text-secondary/70' : 'text-text-secondary'}`}>{item.time}</p>
                                     </div>
-                                    <p className={`text-sm transition-colors whitespace-pre-wrap ${isTaken ? 'line-through text-text-secondary/70' : 'text-text-primary'}`}>{item.notes}</p>
-                                </div>
-                            </button>
+                                    {item.notes && <p className={`text-sm transition-colors whitespace-pre-wrap ${isTaken ? 'line-through text-text-secondary/70' : 'text-text-primary'}`}>{item.notes}</p>}
+                                </button>
+                                
+                                {onOpenExplanation && getExplanationIdForSupplement(item.supplement) && (
+                                     <button 
+                                         onClick={(e) => { 
+                                             e.stopPropagation(); 
+                                             const id = getExplanationIdForSupplement(item.supplement);
+                                             if (id) onOpenExplanation(id);
+                                         }}
+                                         className="px-3 flex items-center justify-center text-text-secondary/30 hover:text-primary hover:bg-white/5 transition-colors border-l border-white/5"
+                                     >
+                                         <Icon name="question-mark-circle" className="w-5 h-5" />
+                                     </button>
+                                 )}
+                            </div>
                         );
                     })}
                 </div>
             </div>
         ))
+      )}
+
+      {historyItem && (
+        <SupplementHistoryModal 
+            isOpen={!!historyItem}
+            onClose={() => setHistoryItem(null)}
+            item={historyItem}
+        />
       )}
     </div>
   );

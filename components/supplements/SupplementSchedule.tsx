@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useContext, useCallback } from 'react';
+import React, { useState, useMemo, useContext } from 'react';
 import { AppContext } from '../../contexts/AppContext';
 import { useI18n } from '../../hooks/useI18n';
 import DailySupplementList from './DailySupplementList';
@@ -9,46 +9,25 @@ import ConfirmModal from '../modals/ConfirmModal';
 import { SupplementPlanItem } from '../../types';
 import SupplementLog from './SupplementLog';
 import SupplementExplanationModal from './SupplementExplanationModal';
-import { generateSupplementExplanations, Explanation, getExplanationIdForSupplement } from '../../services/explanationService';
+import { generateSupplementExplanations, Explanation } from '../../services/explanationService';
 import { Icon } from '../common/Icon';
 import DeleteSupplementModal from './DeleteSupplementModal';
 import { getEffectiveDate } from '../../utils/timeUtils';
 
-const timeKeywords = {
-    en: {
-        morning: /morning|breakfast/i,
-        pre_workout: /pre-workout/i,
-        post_workout: /post-workout/i,
-        with_meal: /meal/i,
-        evening: /evening|bed/i,
-    },
-    es: {
-        morning: /mañana|desayuno/i,
-        pre_workout: /pre-entreno/i,
-        post_workout: /post-entreno|post-entrenamiento/i,
-        with_meal: /comida/i,
-        evening: /noche|dormir/i,
-    }
-};
-
-const timeOrder: { [key: string]: number } = {
-    morning: 1,
-    pre_workout: 2,
-    post_workout: 3,
-    with_meal: 4,
-    evening: 5,
-    daily: 6
-};
+const daysOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
 interface SupplementScheduleProps {
   onEditAnswers: () => void;
   onReviewPlan?: () => void;
+  onAddItem: (newItem: Omit<SupplementPlanItem, 'id' | 'isCustom'>) => void;
+  onUpdateItem: (itemId: string, updates: Partial<SupplementPlanItem>) => void;
+  onRemoveItem: (itemId: string) => void;
 }
 
-const SupplementSchedule: React.FC<SupplementScheduleProps> = ({ onEditAnswers, onReviewPlan }) => {
-  const { supplementPlan, setSupplementPlan, userSupplements, setUserSupplements } = useContext(AppContext);
-  const { t, locale } = useI18n();
-  const [currentView, setCurrentView] = useState<'today' | 'tomorrow' | 'week' | 'log'>('today');
+const SupplementSchedule: React.FC<SupplementScheduleProps> = ({ onEditAnswers, onReviewPlan, onAddItem, onUpdateItem, onRemoveItem }) => {
+  const { supplementPlan } = useContext(AppContext);
+  const { t } = useI18n();
+  const [currentView, setCurrentView] = useState<'today' | 'manage' | 'log'>('today');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
   const [deletingItemWithOptions, setDeletingItemWithOptions] = useState<SupplementPlanItem | null>(null);
@@ -63,22 +42,31 @@ const SupplementSchedule: React.FC<SupplementScheduleProps> = ({ onEditAnswers, 
 
   // Calculate dates based on effective date for night owls
   const effectiveToday = useMemo(() => getEffectiveDate(), []);
-  const effectiveTomorrow = useMemo(() => {
-    const d = new Date(effectiveToday);
-    d.setDate(d.getDate() + 1);
-    return d;
-  }, [effectiveToday]);
   
-  const getTimeKey = useCallback((time: string): string => {
-    const keywords = timeKeywords[locale as keyof typeof timeKeywords];
-    for (const key in keywords) {
-        if (keywords[key as keyof typeof keywords].test(time)) {
-            return key;
-        }
-    }
-    return 'daily';
-  }, [locale]);
+  // Determine Tomorrow's Info
+  const tomorrowInfo = useMemo(() => {
+      const d = new Date(effectiveToday);
+      d.setDate(d.getDate() + 1);
+      const dayIndex = d.getDay();
+      const dayNameFull = daysOfWeek[dayIndex];
+      const dayName = t(`supplements_day_${dayNameFull.slice(0, 3)}_short` as any);
+      const dateStr = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+      
+      const isTraining = supplementPlan?.info?.trainingDays?.includes(dayNameFull);
+      const type = isTraining ? t('supplements_workout_day') : t('supplements_rest_day');
+      
+      return `${t('supplements_tab_tomorrow')}, ${dayName} ${dateStr} • ${type}`;
+  }, [effectiveToday, supplementPlan, t]);
 
+  // Determine Today's Info
+  const todayInfo = useMemo(() => {
+      const d = new Date(effectiveToday);
+      const dayIndex = d.getDay();
+      const dayNameFull = daysOfWeek[dayIndex];
+      const isTraining = supplementPlan?.info?.trainingDays?.includes(dayNameFull);
+      return { isTraining };
+  }, [effectiveToday, supplementPlan]);
+  
   const handleOpenExplanation = (id?: string) => {
     if (!supplementPlan) return;
     const generatedExplanations = generateSupplementExplanations(supplementPlan, t);
@@ -87,38 +75,15 @@ const SupplementSchedule: React.FC<SupplementScheduleProps> = ({ onEditAnswers, 
     setIsExplanationOpen(true);
   };
 
-  const handleAddItem = (newItemData: Omit<SupplementPlanItem, 'id' | 'isCustom'>) => {
-    const newItem: SupplementPlanItem = {
-        ...newItemData,
-        id: `custom-${Date.now()}`,
-        isCustom: true
-    };
-    
-    const newCustomSupplements = [...userSupplements, newItem];
-    setUserSupplements(newCustomSupplements);
-
-    if (supplementPlan) {
-        const newPlanItems = [...supplementPlan.plan, newItem].sort((a, b) => {
-            const keyA = getTimeKey(a.time);
-            const keyB = getTimeKey(b.time);
-            return (timeOrder[keyA] || 99) - (timeOrder[keyB] || 99);
-        });
-        setSupplementPlan({ ...supplementPlan, plan: newPlanItems });
-    }
-    setIsAddModalOpen(false);
-  };
+  // Wrapper to add locally then close modal
+  const handleAddItemWrapper = (newItemData: Omit<SupplementPlanItem, 'id' | 'isCustom'>) => {
+      onAddItem(newItemData);
+      setIsAddModalOpen(false);
+  }
   
-  const handleRemoveItem = (itemId: string) => {
-    if (!supplementPlan) return;
-    const itemToRemove = supplementPlan.plan.find(p => p.id === itemId);
-    if (!itemToRemove) return;
-
-    const newPlanItems = supplementPlan.plan.filter(p => p.id !== itemId);
-    setSupplementPlan({ ...supplementPlan, plan: newPlanItems });
-    
-    if (itemToRemove.isCustom) {
-        setUserSupplements(userSupplements.filter(s => s.id !== itemId));
-    }
+  // Wrapper to remove item using the prop
+  const handleRemoveItemWrapper = (itemId: string) => {
+    onRemoveItem(itemId);
   };
 
   const handleRequestRemoveItem = (itemId: string) => {
@@ -127,7 +92,7 @@ const SupplementSchedule: React.FC<SupplementScheduleProps> = ({ onEditAnswers, 
 
   const handleConfirmRemove = () => {
     if (deletingItemId) {
-        handleRemoveItem(deletingItemId);
+        handleRemoveItemWrapper(deletingItemId);
     }
     setDeletingItemId(null);
   };
@@ -136,97 +101,29 @@ const SupplementSchedule: React.FC<SupplementScheduleProps> = ({ onEditAnswers, 
     setDeletingItemWithOptions(item);
   };
 
-  const updateItemDayType = (itemId: string, updates: { trainingDayOnly?: boolean; restDayOnly?: boolean }) => {
-    if (!supplementPlan) return;
-    
-    const newPlanItems = supplementPlan.plan.map(p => {
-        if (p.id === itemId) {
-            const newItem = { ...p };
-            delete newItem.trainingDayOnly;
-            delete newItem.restDayOnly;
-            return { ...newItem, ...updates };
-        }
-        return p;
-    });
-
-    const newPlan = { ...supplementPlan, plan: newPlanItems };
-    setSupplementPlan(newPlan);
-
-    if (userSupplements.some(s => s.id === itemId)) {
-        setUserSupplements(prev => prev.map(s => {
-            if (s.id === itemId) {
-                const newCustomItem = { ...s };
-                delete newCustomItem.trainingDayOnly;
-                delete newCustomItem.restDayOnly;
-                return { ...newCustomItem, ...updates };
-            }
-            return s;
-        }));
-    }
-    setDeletingItemWithOptions(null);
-  };
-
   const handleConsolidateEaaIntoProtein = () => {
-    if (!supplementPlan) return;
-
-    const combinedProteinName = t('supplements_name_protein_with_eaa');
-    
-    // 1. Find all separate EAA items to remove
-    const eaaItems = supplementPlan.plan.filter(item => getExplanationIdForSupplement(item.supplement) === 'eaa');
-    const eaaIds = new Set(eaaItems.map(i => i.id));
-
-    // 2. Find all protein items to update
-    const proteinItems = supplementPlan.plan.filter(item => getExplanationIdForSupplement(item.supplement) === 'protein');
-    
-    if (proteinItems.length === 0) return;
-
-    // Update plan
-    const newPlanItems = supplementPlan.plan
-        .filter(item => !eaaIds.has(item.id)) // Remove EAAs
-        .map(item => {
-            if (getExplanationIdForSupplement(item.supplement) === 'protein') {
-                return { ...item, supplement: combinedProteinName };
-            }
-            return item;
-        });
-
-    setSupplementPlan({ ...supplementPlan, plan: newPlanItems });
-
-    // Update custom supplements if they were custom
-    // If protein was generated but now user overrides, we probably don't need to add to customSupplements unless we want persistence.
-    // However, if EAA was custom, remove it from userSupplements.
-    const proteinIds = new Set(proteinItems.map(i => i.id));
-    
-    const newUserSupplements = userSupplements
-        .filter(item => !eaaIds.has(item.id))
-        .map(item => {
-            if (proteinIds.has(item.id) || getExplanationIdForSupplement(item.supplement) === 'protein') {
-                 return { ...item, supplement: combinedProteinName };
-            }
-            return item;
-        });
-    
-    setUserSupplements(newUserSupplements);
+     // Kept for compatibility with existing flow, though primarily handled via suggestions now
   };
 
   const handleSetTrainingOnly = () => {
     if (!deletingItemWithOptions) return;
-    updateItemDayType(deletingItemWithOptions.id, { trainingDayOnly: true });
+    onUpdateItem(deletingItemWithOptions.id, { trainingDayOnly: true, restDayOnly: false });
+    setDeletingItemWithOptions(null);
   };
 
   const handleSetRestOnly = () => {
     if (!deletingItemWithOptions) return;
-    updateItemDayType(deletingItemWithOptions.id, { restDayOnly: true });
+    onUpdateItem(deletingItemWithOptions.id, { restDayOnly: true, trainingDayOnly: false });
+    setDeletingItemWithOptions(null);
   };
 
   const handleRemoveCompletely = () => {
     if (!deletingItemWithOptions) return;
-    handleRemoveItem(deletingItemWithOptions.id);
+    handleRemoveItemWrapper(deletingItemWithOptions.id);
     setDeletingItemWithOptions(null);
   };
 
   const renderView = () => {
-    if (!supplementPlan) return null;
     const dateOptions: Intl.DateTimeFormatOptions = { weekday: 'long', month: 'short', day: 'numeric' };
 
     switch(currentView) {
@@ -236,14 +133,7 @@ const SupplementSchedule: React.FC<SupplementScheduleProps> = ({ onEditAnswers, 
             subTitle={effectiveToday.toLocaleDateString(undefined, dateOptions)}
             onOpenExplanation={handleOpenExplanation} 
         />;
-      case 'tomorrow':
-        return <DailySupplementList 
-            date={effectiveTomorrow} 
-            subTitle={effectiveTomorrow.toLocaleDateString(undefined, dateOptions)}
-            readOnly={true} 
-            onOpenExplanation={handleOpenExplanation} 
-        />;
-      case 'week':
+      case 'manage':
         return <SupplementPlanOverview 
           plan={supplementPlan} 
           onRemoveItemRequest={handleRequestRemoveItem} 
@@ -252,16 +142,18 @@ const SupplementSchedule: React.FC<SupplementScheduleProps> = ({ onEditAnswers, 
           onEditAnswers={onEditAnswers}
           onOpenExplanation={handleOpenExplanation}
           onReviewPlan={onReviewPlan}
+          onAddItem={onAddItem}
+          onUpdateItem={onUpdateItem}
+          onRemoveItem={onRemoveItem}
         />;
       case 'log':
         return <SupplementLog />;
     }
   };
   
-  const tabs: {id: 'today' | 'tomorrow' | 'week' | 'log', label: string}[] = [
+  const tabs: {id: 'today' | 'manage' | 'log', label: string}[] = [
       { id: 'today', label: t('supplements_tab_today') },
-      { id: 'tomorrow', label: t('supplements_tab_tomorrow') },
-      { id: 'week', label: t('supplements_tab_week') },
+      { id: 'manage', label: t('nav_supplements') },
       { id: 'log', label: t('supplements_tab_log') },
   ];
 
@@ -288,6 +180,18 @@ const SupplementSchedule: React.FC<SupplementScheduleProps> = ({ onEditAnswers, 
             ))}
         </div>
 
+        {/* Status Card for Today with Tomorrow Subtitle */}
+        {currentView === 'today' && (
+          <div className="text-center p-4 bg-surface rounded-xl shadow-sm border border-white/5">
+              <p className={`font-bold text-xl ${todayInfo.isTraining ? 'text-primary' : 'text-text-secondary'}`}>
+                {todayInfo.isTraining ? t('supplements_workout_day') : t('supplements_rest_day')}
+              </p>
+              <p className="text-xs text-text-secondary/60 mt-1.5 font-medium uppercase tracking-wide opacity-80">
+                {tomorrowInfo}
+              </p>
+          </div>
+        )}
+
         <div className="mt-4">
             {renderView()}
         </div>
@@ -295,7 +199,7 @@ const SupplementSchedule: React.FC<SupplementScheduleProps> = ({ onEditAnswers, 
         <AddSupplementModal
           isOpen={isAddModalOpen}
           onClose={() => setIsAddModalOpen(false)}
-          onAdd={handleAddItem}
+          onAdd={handleAddItemWrapper}
         />
         {itemToDelete && (
             <ConfirmModal

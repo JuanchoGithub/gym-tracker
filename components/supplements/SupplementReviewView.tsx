@@ -1,10 +1,9 @@
+
 import React, { useState, useMemo } from 'react';
 import { SupplementSuggestion, WorkoutSession, SupplementPlanItem } from '../../types';
 import { useI18n } from '../../hooks/useI18n';
 import { Icon } from '../common/Icon';
 import { SupplementCorrelation, analyzeCorrelations } from '../../services/analyticsService';
-import AddSupplementModal from './AddSupplementModal';
-import EditSupplementModal from './EditSupplementModal';
 
 interface SupplementReviewViewProps {
     onBack: () => void;
@@ -71,39 +70,14 @@ const SupplementReviewView: React.FC<SupplementReviewViewProps> = ({
     onApplyAll, 
     onDismiss, 
     onDismissAll,
-    onRecalculate,
-    onAddItem,
-    onUpdateItem,
-    onRemoveItem
+    onRecalculate
 }) => {
     const { t } = useI18n();
-    const [activeTab, setActiveTab] = useState<'suggestions' | 'analysis' | 'manage'>('suggestions');
-    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-    const [itemToEdit, setItemToEdit] = useState<SupplementPlanItem | null>(null);
-    // State for copy pre-fill
-    const [itemToCopy, setItemToCopy] = useState<SupplementPlanItem | null>(null);
+    const [activeTab, setActiveTab] = useState<'suggestions' | 'analysis'>('suggestions');
 
     const insights = useMemo(() => {
         return analyzeCorrelations(history, takenSupplements, allSupplements);
     }, [history, takenSupplements, allSupplements]);
-
-    const handleCopy = (item: SupplementPlanItem) => {
-        setItemToCopy(item);
-        setIsAddModalOpen(true);
-    };
-
-    const handleAddSubmit = (newItem: Omit<SupplementPlanItem, 'id' | 'isCustom'>) => {
-        onAddItem(newItem);
-        setItemToCopy(null);
-        setIsAddModalOpen(false);
-    };
-
-    const handleEditSubmit = (updates: Partial<SupplementPlanItem>) => {
-        if (itemToEdit) {
-            onUpdateItem(itemToEdit.id, updates);
-            setItemToEdit(null);
-        }
-    };
 
     return (
         <div className="fixed inset-0 bg-background z-50 flex flex-col overflow-hidden animate-fadeIn">
@@ -126,13 +100,6 @@ const SupplementReviewView: React.FC<SupplementReviewViewProps> = ({
                         <span className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full"></span>
                     )}
                     {activeTab === 'suggestions' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary"></div>}
-                </button>
-                <button
-                    onClick={() => setActiveTab('manage')}
-                    className={`flex-1 py-3 font-medium transition-colors relative ${activeTab === 'manage' ? 'text-primary' : 'text-text-secondary hover:text-white'}`}
-                >
-                    Supplements
-                    {activeTab === 'manage' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary"></div>}
                 </button>
                 <button
                     onClick={() => setActiveTab('analysis')}
@@ -193,62 +160,6 @@ const SupplementReviewView: React.FC<SupplementReviewViewProps> = ({
                         )}
                     </>
                 )}
-                
-                {activeTab === 'manage' && (
-                    <div className="space-y-4">
-                        <div className="flex justify-between items-center mb-2">
-                            <h3 className="text-lg font-bold text-white">Your Stack</h3>
-                            <button 
-                                onClick={() => { setItemToCopy(null); setIsAddModalOpen(true); }}
-                                className="bg-primary hover:bg-primary-content text-white font-bold py-2 px-4 rounded-lg text-sm transition-colors flex items-center gap-2"
-                            >
-                                <Icon name="plus" className="w-4 h-4" />
-                                {t('supplements_manage_add')}
-                            </button>
-                        </div>
-                        
-                        {allSupplements.length === 0 ? (
-                             <p className="text-center text-text-secondary py-10">No supplements in your plan.</p>
-                        ) : (
-                            <div className="space-y-3">
-                                {allSupplements.map(item => (
-                                    <div key={item.id} className="bg-surface border border-white/5 p-4 rounded-xl flex flex-col gap-2">
-                                        <div className="flex justify-between items-start">
-                                            <div>
-                                                <h4 className="font-bold text-white text-lg">{item.supplement}</h4>
-                                                <p className="text-sm text-text-secondary">{item.dosage} • {item.time}</p>
-                                                <div className="flex gap-2 mt-1">
-                                                    {item.trainingDayOnly && <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded border border-indigo-500/30">Training Only</span>}
-                                                    {item.restDayOnly && <span className="text-[10px] bg-teal-500/20 text-teal-300 px-2 py-0.5 rounded border border-teal-500/30">Rest Only</span>}
-                                                    {!item.isCustom && <span className="text-[10px] bg-white/5 text-text-secondary px-2 py-0.5 rounded border border-white/10">Generated</span>}
-                                                </div>
-                                            </div>
-                                            <div className="flex gap-1">
-                                                <button onClick={() => handleCopy(item)} className="p-2 text-text-secondary hover:text-white rounded-lg hover:bg-white/5" title={t('supplements_manage_copy')}>
-                                                    <Icon name="duplicate" className="w-5 h-5" />
-                                                </button>
-                                                <button onClick={() => setItemToEdit(item)} className="p-2 text-primary hover:text-white rounded-lg hover:bg-white/5" title="Edit">
-                                                    <Icon name="edit" className="w-5 h-5" />
-                                                </button>
-                                                {item.isCustom && (
-                                                    <button onClick={() => onRemoveItem(item.id)} className="p-2 text-red-400 hover:text-red-300 rounded-lg hover:bg-red-500/10" title="Delete">
-                                                        <Icon name="trash" className="w-5 h-5" />
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-                                        {item.notes && <p className="text-xs text-text-secondary/70 italic">{item.notes}</p>}
-                                        {item.stock !== undefined && (
-                                            <div className="text-xs font-mono text-text-secondary mt-1">
-                                                Stock: <span className={item.stock <= 5 ? "text-red-400 font-bold" : "text-white"}>{item.stock}</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                )}
 
                 {activeTab === 'analysis' && (
                     <div className="space-y-6">
@@ -288,23 +199,6 @@ const SupplementReviewView: React.FC<SupplementReviewViewProps> = ({
                         </button>
                     )}
                 </div>
-            )}
-
-            <AddSupplementModal 
-                isOpen={isAddModalOpen}
-                onClose={() => { setIsAddModalOpen(false); setItemToCopy(null); }}
-                onAdd={handleAddSubmit}
-                initialData={itemToCopy}
-            />
-            
-            {itemToEdit && (
-                <EditSupplementModal
-                    isOpen={!!itemToEdit}
-                    onClose={() => setItemToEdit(null)}
-                    item={itemToEdit}
-                    onSave={handleEditSubmit}
-                    isGenerated={!itemToEdit.isCustom}
-                />
             )}
         </div>
     );

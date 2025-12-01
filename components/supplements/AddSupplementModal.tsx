@@ -1,7 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import { useI18n } from '../../hooks/useI18n';
 import { SupplementPlanItem } from '../../types';
+import { TranslationKey } from '../../contexts/I18nContext';
 
 interface AddSupplementModalProps {
     isOpen: boolean;
@@ -10,11 +12,22 @@ interface AddSupplementModalProps {
     initialData?: SupplementPlanItem | null;
 }
 
+const TIME_OPTIONS = [
+    'supplements_time_morning',
+    'supplements_time_lunch',
+    'supplements_time_evening',
+    'supplements_time_pre_workout',
+    'supplements_time_intra_workout',
+    'supplements_time_post_workout',
+    'supplements_time_daily',
+    'supplements_time_with_meal'
+];
+
 const AddSupplementModal: React.FC<AddSupplementModalProps> = ({ isOpen, onClose, onAdd, initialData }) => {
     const { t } = useI18n();
     const [supplement, setSupplement] = useState('');
     const [dosage, setDosage] = useState('');
-    const [time, setTime] = useState('');
+    const [time, setTime] = useState(TIME_OPTIONS[0]); // Key
     const [notes, setNotes] = useState('');
     const [stock, setStock] = useState('');
     const [frequency, setFrequency] = useState<'everyday' | 'training' | 'rest'>('everyday');
@@ -24,7 +37,12 @@ const AddSupplementModal: React.FC<AddSupplementModalProps> = ({ isOpen, onClose
             if (initialData) {
                 setSupplement(initialData.supplement);
                 setDosage(initialData.dosage);
-                setTime(initialData.time);
+                
+                // Try to match initial time string to a key, or default if custom
+                // This simple check assumes the string matches the translation of one of the keys
+                const matchedKey = TIME_OPTIONS.find(key => t(key as TranslationKey) === initialData.time) || TIME_OPTIONS[6]; // Daily default
+                setTime(matchedKey);
+
                 setNotes(initialData.notes);
                 setStock(initialData.stock !== undefined ? initialData.stock.toString() : '');
                 if (initialData.trainingDayOnly) setFrequency('training');
@@ -34,13 +52,13 @@ const AddSupplementModal: React.FC<AddSupplementModalProps> = ({ isOpen, onClose
                 // Reset form for fresh add
                 setSupplement('');
                 setDosage('');
-                setTime('');
+                setTime(TIME_OPTIONS[0]);
                 setNotes('');
                 setStock('');
                 setFrequency('everyday');
             }
         }
-    }, [isOpen, initialData]);
+    }, [isOpen, initialData, t]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -54,7 +72,7 @@ const AddSupplementModal: React.FC<AddSupplementModalProps> = ({ isOpen, onClose
         const newItem: Omit<SupplementPlanItem, 'id' | 'isCustom'> = { 
             supplement, 
             dosage, 
-            time, 
+            time: t(time as TranslationKey), // Save the translated string
             notes, 
             stock: stockVal,
             trainingDayOnly: frequency === 'training',
@@ -93,14 +111,16 @@ const AddSupplementModal: React.FC<AddSupplementModalProps> = ({ isOpen, onClose
                 </div>
                 <div>
                     <label htmlFor="supplement-time" className="block text-sm font-medium text-text-secondary">{t('supplements_add_time_label')}</label>
-                    <input
+                    <select
                         id="supplement-time"
-                        type="text"
                         value={time}
                         onChange={(e) => setTime(e.target.value)}
-                        className="w-full bg-slate-900 border border-secondary/50 rounded-lg p-2 mt-1"
-                        placeholder={t('supplements_add_time_placeholder')}
-                    />
+                        className="w-full bg-slate-900 border border-secondary/50 rounded-lg p-2 mt-1 text-white"
+                    >
+                        {TIME_OPTIONS.map(key => (
+                            <option key={key} value={key}>{t(key as TranslationKey)}</option>
+                        ))}
+                    </select>
                 </div>
                 
                 <div>
@@ -133,7 +153,7 @@ const AddSupplementModal: React.FC<AddSupplementModalProps> = ({ isOpen, onClose
                 <div>
                     <label htmlFor="supplement-stock" className="block text-sm font-medium text-text-secondary">{t('supplements_add_stock_label')}</label>
                     <input
-                        id="supplement-stock"
+                        id="edit-supplement-stock"
                         type="number"
                         inputMode="numeric"
                         value={stock}

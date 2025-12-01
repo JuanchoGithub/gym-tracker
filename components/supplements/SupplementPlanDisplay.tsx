@@ -1,4 +1,5 @@
-import React, { useMemo, useCallback, useState, useContext } from 'react';
+
+import React, { useMemo, useState, useContext } from 'react';
 import { SupplementPlan, SupplementPlanItem } from '../../types';
 import { useI18n } from '../../hooks/useI18n';
 import { Icon } from '../common/Icon';
@@ -6,46 +7,45 @@ import { getExplanationIdForSupplement } from '../../services/explanationService
 import Modal from '../common/Modal';
 import { AppContext } from '../../contexts/AppContext';
 import EditSupplementModal from './EditSupplementModal';
+import AddSupplementModal from './AddSupplementModal';
+import { TranslationKey } from '../../contexts/I18nContext';
+
+// --- Library of Potential Supplements (Keys for translation) ---
+const SUPPLEMENT_LIBRARY_DEF = [
+    { key: 'supplements_name_creatine', category: 'supplements_category_performance', descriptionKey: 'supplements_desc_creatine', defaultDose: '5g', defaultTime: 'supplements_time_daily' },
+    { key: 'supplements_name_whey', category: 'supplements_category_protein', descriptionKey: 'supplements_desc_whey', defaultDose: '30g', defaultTime: 'supplements_time_post_workout' },
+    { key: 'supplements_name_caffeine', category: 'supplements_category_performance', descriptionKey: 'supplements_desc_caffeine', defaultDose: '200mg', defaultTime: 'supplements_time_pre_workout' },
+    { key: 'supplements_name_multivitamin', category: 'supplements_category_health', descriptionKey: 'supplements_desc_multivitamin', defaultDose: '1 tablet', defaultTime: 'supplements_time_morning' },
+    { key: 'supplements_name_omega_fish', category: 'supplements_category_health', descriptionKey: 'supplements_desc_omega', defaultDose: '2g', defaultTime: 'supplements_time_with_meal' },
+    { key: 'supplements_name_vit_d3', category: 'supplements_category_health', descriptionKey: 'supplements_desc_vit_d3', defaultDose: '2000 IU', defaultTime: 'supplements_time_morning' },
+    { key: 'supplements_name_magnesium', category: 'supplements_category_recovery', descriptionKey: 'supplements_desc_magnesium', defaultDose: '400mg', defaultTime: 'supplements_time_before_bed' },
+    { key: 'supplements_name_zma', category: 'supplements_category_recovery', descriptionKey: 'supplements_desc_zma', defaultDose: '1 capsule', defaultTime: 'supplements_time_before_bed' },
+    { key: 'supplements_name_bcaa', category: 'supplements_category_recovery', descriptionKey: 'supplements_desc_bcaa', defaultDose: '10g', defaultTime: 'supplements_time_intra_workout' },
+    { key: 'supplements_name_beta_alanine', category: 'supplements_category_performance', descriptionKey: 'supplements_desc_beta_alanine', defaultDose: '3g', defaultTime: 'supplements_time_pre_workout' },
+    { key: 'supplements_name_citrulline', category: 'supplements_category_performance', descriptionKey: 'supplements_desc_citrulline', defaultDose: '6g', defaultTime: 'supplements_time_pre_workout' },
+    { key: 'supplements_name_glutamine', category: 'supplements_category_recovery', descriptionKey: 'supplements_desc_glutamine', defaultDose: '5g', defaultTime: 'supplements_time_post_workout' },
+    { key: 'supplements_name_casein', category: 'supplements_category_protein', descriptionKey: 'supplements_desc_casein', defaultDose: '30g', defaultTime: 'supplements_time_before_bed' },
+    { key: 'supplements_name_electrolytes', category: 'supplements_category_hydration', descriptionKey: 'supplements_desc_electrolytes', defaultDose: '1 serving', defaultTime: 'supplements_time_intra_workout' },
+    { key: 'supplements_name_ashwagandha', category: 'supplements_category_health', descriptionKey: 'supplements_desc_ashwagandha', defaultDose: '600mg', defaultTime: 'supplements_time_evening' },
+    { key: 'supplements_name_melatonin', category: 'supplements_category_recovery', descriptionKey: 'supplements_desc_melatonin', defaultDose: '3mg', defaultTime: 'supplements_time_before_bed' },
+    { key: 'supplements_name_l_carnitine', category: 'supplements_category_fat_loss', descriptionKey: 'supplements_desc_l_carnitine', defaultDose: '2g', defaultTime: 'supplements_time_morning' },
+    { key: 'supplements_name_collagen', category: 'supplements_category_health', descriptionKey: 'supplements_desc_collagen', defaultDose: '10g', defaultTime: 'supplements_time_daily' },
+    { key: 'supplements_name_iron', category: 'supplements_category_health', descriptionKey: 'supplements_desc_iron', defaultDose: '1 tablet', defaultTime: 'supplements_time_morning' },
+    { key: 'supplements_name_pre_workout_blend', category: 'supplements_category_performance', descriptionKey: 'supplements_desc_pre_workout', defaultDose: '1 scoop', defaultTime: 'supplements_time_pre_workout' },
+];
 
 interface SupplementPlanOverviewProps {
-  plan: SupplementPlan;
+  plan: SupplementPlan | null;
   onRemoveItemRequest: (itemId: string) => void;
   onComplexRemoveRequest: (item: SupplementPlanItem) => void;
   onAddItemClick: () => void;
   onEditAnswers: () => void;
   onOpenExplanation: (id: string) => void;
   onReviewPlan?: () => void;
+  onAddItem: (newItem: Omit<SupplementPlanItem, 'id' | 'isCustom'>) => void;
+  onUpdateItem: (itemId: string, updates: Partial<SupplementPlanItem>) => void;
+  onRemoveItem: (itemId: string) => void;
 }
-
-const timeKeywords = {
-    en: {
-        morning: /morning|breakfast/i,
-        pre_workout: /pre-workout/i,
-        post_workout: /post-workout/i,
-        lunch: /lunch/i,
-        with_meal: /meal/i,
-        evening: /evening|bed/i,
-    },
-    es: {
-        morning: /mañana|desayuno/i,
-        pre_workout: /pre-entreno/i,
-        post_workout: /post-entreno|post-entrenamiento/i,
-        lunch: /almuerzo/i,
-        with_meal: /comida/i,
-        evening: /noche|dormir/i,
-    }
-};
-
-const timeOrder: { [key: string]: number } = {
-    pre_workout: 0.5, // Explicitly before morning
-    morning: 1,
-    intra_workout: 2.5,
-    post_workout: 3,
-    lunch: 3.5,
-    with_meal: 4,
-    evening: 5,
-    daily: 6
-};
 
 const StockBadge: React.FC<{ item: SupplementPlanItem }> = ({ item }) => {
     const { t } = useI18n();
@@ -74,10 +74,10 @@ const StockBadge: React.FC<{ item: SupplementPlanItem }> = ({ item }) => {
         <>
             <button 
                 onClick={(e) => { e.stopPropagation(); setIsRestockModalOpen(true); }}
-                className={`px-2 py-0.5 rounded-full text-xs font-bold border flex items-center gap-1 ${bgColor} hover:brightness-110 transition-all`}
+                className={`px-2 py-0.5 rounded-full text-[10px] font-bold border flex items-center gap-1 ${bgColor} hover:brightness-110 transition-all`}
             >
                 <Icon name="capsule" className="w-3 h-3" />
-                {t('supplements_stock_label')} {stock}
+                {stock}
             </button>
             {isRestockModalOpen && (
                 <Modal isOpen={isRestockModalOpen} onClose={() => setIsRestockModalOpen(false)} title={t('supplements_stock_update_title')}>
@@ -105,95 +105,82 @@ const StockBadge: React.FC<{ item: SupplementPlanItem }> = ({ item }) => {
     );
 };
 
-const SupplementItemCard: React.FC<{ 
-    item: SupplementPlanItem; 
-    onRemove: () => void; 
-    onOpenExplanation: (id: string) => void;
-    onEdit: () => void;
-}> = ({ item, onRemove, onOpenExplanation, onEdit }) => {
-  return (
-    <div key={item.id} className="bg-surface p-4 rounded-lg shadow-md cursor-pointer hover:bg-surface-highlight/30 transition-colors group" onClick={onEdit}>
-      <div className="flex items-start justify-between mb-2">
-        <div className="flex items-center gap-2 flex-wrap">
-          <h4 className="font-bold text-lg text-primary">{item.supplement}</h4>
-          {getExplanationIdForSupplement(item.supplement) && (
-            <button 
-                onClick={(e) => {
-                    e.stopPropagation();
-                    const id = getExplanationIdForSupplement(item.supplement);
-                    if (id) onOpenExplanation(id);
-                }}
-                className="text-text-secondary/60 hover:text-primary p-1"
-            >
-                <Icon name="question-mark-circle" className="w-5 h-5" />
-            </button>
-          )}
-          <StockBadge item={item} />
-        </div>
-        <div className="flex items-center gap-1">
-            <button onClick={(e) => { e.stopPropagation(); onEdit(); }} className="p-1 text-text-secondary hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity" aria-label={`Edit ${item.supplement}`}>
-                 <Icon name="edit" className="w-4 h-4" />
-            </button>
-        </div>
-      </div>
-      <div className="flex items-center gap-2 mb-2 flex-wrap">
-          <span className="font-mono text-base bg-secondary/50 px-3 py-1 rounded-full">{item.dosage}</span>
-          <p className="text-sm text-text-secondary font-semibold">{item.time}</p>
-      </div>
-      <p className="text-sm text-text-primary whitespace-pre-wrap">{item.notes}</p>
-    </div>
-  );
-};
-
-const SupplementPlanOverview: React.FC<SupplementPlanOverviewProps> = ({ plan, onRemoveItemRequest, onComplexRemoveRequest, onAddItemClick, onEditAnswers, onOpenExplanation, onReviewPlan }) => {
-  const { t, locale } = useI18n();
-  const { updateSupplementPlanItem } = useContext(AppContext);
+const SupplementPlanOverview: React.FC<SupplementPlanOverviewProps> = ({ 
+    plan, 
+    onRemoveItemRequest, 
+    onComplexRemoveRequest, 
+    onEditAnswers, 
+    onOpenExplanation, 
+    onReviewPlan,
+    onAddItem,
+    onUpdateItem,
+    onRemoveItem
+}) => {
+  const { t } = useI18n();
+  const { userSupplements } = useContext(AppContext);
   const [itemToEdit, setItemToEdit] = useState<SupplementPlanItem | null>(null);
+  const [itemToCopy, setItemToCopy] = useState<SupplementPlanItem | null>(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
-  const handleRemoveClick = (item: SupplementPlanItem) => {
-    if (item.trainingDayOnly || item.restDayOnly) {
-        onRemoveItemRequest(item.id);
-    } else {
-        onComplexRemoveRequest(item);
-    }
-  };
+  // 1. Determine current stack items
+  const activeItems = plan ? plan.plan : userSupplements;
 
-  const getTimeKey = useCallback((time: string): string => {
-    const keywords = timeKeywords[locale as keyof typeof timeKeywords];
-    for (const key in keywords) {
-        if (keywords[key as keyof typeof keywords].test(time)) {
-            return key;
-        }
-    }
-    return 'daily';
-  }, [locale]);
+  // 2. Build the unified list
+  const unifiedList = useMemo(() => {
+      const list = [];
+      const activeNames = new Set<string>();
+      const activeExplanationIds = new Set<string>();
 
-  const groupedPlan = useMemo(() => {
-    if (!plan?.plan) return { groupedPlan: {}, orderedGroups: [] };
+      // Add Active Items
+      activeItems.forEach(item => {
+          list.push({
+              type: 'active',
+              id: item.id,
+              name: item.supplement,
+              data: item,
+              category: null, // active items store category implicitly or could act as custom
+              description: item.notes,
+          });
+          activeNames.add(item.supplement.toLowerCase().trim());
+          
+          const explanationId = getExplanationIdForSupplement(item.supplement);
+          if (explanationId) {
+              activeExplanationIds.add(explanationId);
+          }
+      });
 
-    const groupedByTime = plan.plan.reduce((acc, item) => {
-        const key = getTimeKey(item.time);
-        if (!acc[key]) {
-            acc[key] = [];
-        }
-        acc[key].push(item);
-        return acc;
-    }, {} as Record<string, SupplementPlanItem[]>);
-    
-    const finalGrouped = Object.keys(groupedByTime).reduce((acc, timeGroupKey) => {
-        const items = groupedByTime[timeGroupKey];
-        acc[timeGroupKey] = {
-            allDays: items.filter(item => !item.trainingDayOnly && !item.restDayOnly),
-            workoutOnly: items.filter(item => !!item.trainingDayOnly),
-            restOnly: items.filter(item => !!item.restDayOnly),
-        };
-        return acc;
-    }, {} as Record<string, { allDays: SupplementPlanItem[], workoutOnly: SupplementPlanItem[], restOnly: SupplementPlanItem[] }>);
+      // Add Library Items (that are NOT in active list)
+      SUPPLEMENT_LIBRARY_DEF.forEach(libItem => {
+          const name = t(libItem.key as TranslationKey);
+          
+          // Check if this item is already active either by direct name match
+          // OR by underlying explanation ID (e.g. "Creatine" vs "Creatine Monohydrate")
+          // This aligns existing user history with new library items.
+          const libExplanationId = getExplanationIdForSupplement(name);
+          const isAlreadyActive = activeNames.has(name.toLowerCase().trim()) || (libExplanationId && activeExplanationIds.has(libExplanationId));
 
-    const orderedGroups = Object.keys(finalGrouped).sort((a, b) => (timeOrder[a] || 99) - (timeOrder[b] || 99));
+          if (!isAlreadyActive) {
+              list.push({
+                  type: 'library',
+                  id: libItem.key,
+                  name: name,
+                  data: libItem,
+                  category: t(libItem.category as TranslationKey),
+                  description: t(libItem.descriptionKey as TranslationKey),
+              });
+          }
+      });
 
-    return { groupedPlan: finalGrouped, orderedGroups };
-  }, [plan, getTimeKey]);
+      // Sort alphabetically
+      return list.sort((a, b) => a.name.localeCompare(b.name));
+  }, [activeItems, t]);
+
+  const filteredList = useMemo(() => {
+      if (!searchTerm) return unifiedList;
+      const lowerTerm = searchTerm.toLowerCase();
+      return unifiedList.filter(item => item.name.toLowerCase().includes(lowerTerm));
+  }, [unifiedList, searchTerm]);
 
   const handleEdit = (item: SupplementPlanItem) => {
       setItemToEdit(item);
@@ -201,108 +188,165 @@ const SupplementPlanOverview: React.FC<SupplementPlanOverviewProps> = ({ plan, o
 
   const handleSaveEdit = (updates: Partial<SupplementPlanItem>) => {
       if (itemToEdit) {
-          updateSupplementPlanItem(itemToEdit.id, updates);
+          onUpdateItem(itemToEdit.id, updates);
           setItemToEdit(null);
       }
   };
+  
+  const handleAddLibraryItem = (libItem: any) => {
+      const template: SupplementPlanItem = {
+          id: '', 
+          supplement: libItem.name,
+          dosage: libItem.defaultDose,
+          time: t(libItem.defaultTime as TranslationKey),
+          notes: libItem.description || '',
+          stock: 30,
+          trainingDayOnly: false,
+          restDayOnly: false,
+          isCustom: true
+      };
+      setItemToCopy(template);
+      setIsAddModalOpen(true);
+  };
+
+  const handleAddSubmit = (newItem: Omit<SupplementPlanItem, 'id' | 'isCustom'>) => {
+    onAddItem(newItem);
+    setItemToCopy(null);
+    setIsAddModalOpen(false);
+  };
+  
+  const handleRemoveClick = (item: SupplementPlanItem) => {
+     if (item.trainingDayOnly || item.restDayOnly) {
+        onRemoveItemRequest(item.id);
+    } else {
+        onComplexRemoveRequest(item);
+    }
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-end gap-2 flex-wrap">
-        {onReviewPlan && (
-            <button onClick={onReviewPlan} className="bg-surface-highlight/80 hover:bg-surface-highlight text-text-primary font-bold py-2 px-3 rounded-lg transition-colors flex items-center justify-center space-x-2 text-sm border border-white/10">
-                <Icon name="sparkles" className="w-4 h-4 text-yellow-400" />
-                <span>{t('supplements_review_plan')}</span>
-            </button>
+    <div className="space-y-4 pb-10">
+      {/* Action Bar & Search */}
+      <div className="flex flex-col gap-3">
+        <div className="flex justify-between items-center">
+            <h3 className="text-lg font-bold text-white">{t('supplements_plan_subtitle')}</h3>
+            <div className="flex gap-2">
+                {onReviewPlan && (
+                    <button onClick={onReviewPlan} className="bg-surface-highlight/80 hover:bg-surface-highlight text-text-primary font-bold py-2 px-3 rounded-lg transition-colors flex items-center justify-center space-x-2 text-xs border border-white/10">
+                        <Icon name="sparkles" className="w-4 h-4 text-yellow-400" />
+                        <span>{t('supplements_review_plan')}</span>
+                    </button>
+                )}
+                <button 
+                    onClick={() => { setItemToCopy(null); setIsAddModalOpen(true); }}
+                    className="bg-primary hover:bg-primary-content text-white font-bold py-2 px-3 rounded-lg transition-colors flex items-center justify-center space-x-2 text-xs shadow-md"
+                >
+                    <Icon name="plus" className="w-4 h-4" />
+                    <span>{t('common_add')}</span>
+                </button>
+            </div>
+        </div>
+        
+        <div className="relative">
+            <input
+                type="text"
+                placeholder={t('search_placeholder')}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-surface border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm text-white placeholder-text-secondary/50 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+            />
+            <Icon name="search" className="w-4 h-4 text-text-secondary absolute left-3.5 top-3.5" />
+        </div>
+      </div>
+
+      {/* Unified List */}
+      <div className="space-y-2 animate-fadeIn">
+        {filteredList.length > 0 ? filteredList.map((entry) => {
+            if (entry.type === 'active') {
+                const item = entry.data as SupplementPlanItem;
+                return (
+                    <div 
+                        key={item.id} 
+                        className="bg-surface/80 border border-primary/30 p-4 rounded-xl flex flex-col gap-2 hover:bg-surface transition-all shadow-sm"
+                    >
+                        <div className="flex justify-between items-start">
+                            <div className="flex-grow min-w-0 pr-2">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <h4 className="font-bold text-base truncate text-white">
+                                        {item.supplement}
+                                    </h4>
+                                    <StockBadge item={item} />
+                                    {getExplanationIdForSupplement(item.supplement) && (
+                                        <button 
+                                            onClick={(e) => { 
+                                                e.stopPropagation(); 
+                                                const id = getExplanationIdForSupplement(item.supplement);
+                                                if (id) onOpenExplanation(id);
+                                            }}
+                                            className="text-text-secondary/60 hover:text-primary p-1"
+                                        >
+                                            <Icon name="question-mark-circle" className="w-4 h-4" />
+                                        </button>
+                                    )}
+                                </div>
+                                
+                                <div className="flex flex-col gap-1">
+                                    <p className="text-xs text-text-secondary font-medium">{item.dosage} • <span className="text-primary/80">{item.time}</span></p>
+                                    <div className="flex gap-2 mt-1 flex-wrap">
+                                        {item.trainingDayOnly && <span className="text-[9px] font-bold uppercase tracking-wide bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded border border-indigo-500/30">{t('supplements_frequency_training')}</span>}
+                                        {item.restDayOnly && <span className="text-[9px] font-bold uppercase tracking-wide bg-teal-500/20 text-teal-300 px-1.5 py-0.5 rounded border border-teal-500/30">{t('supplements_frequency_rest')}</span>}
+                                    </div>
+                                    {item.notes && <p className="text-xs text-text-secondary/50 italic mt-0.5 line-clamp-1">{item.notes}</p>}
+                                </div>
+                            </div>
+                            
+                            <div className="flex gap-2 flex-shrink-0">
+                                <button onClick={() => handleEdit(item)} className="p-2 text-primary hover:text-white rounded-lg hover:bg-white/5" title="Edit">
+                                    <Icon name="edit" className="w-5 h-5" />
+                                </button>
+                                <button onClick={() => handleRemoveClick(item)} className="p-2 text-red-400 hover:text-red-300 rounded-lg hover:bg-red-500/10" title="Delete">
+                                    <Icon name="trash" className="w-5 h-5" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            } else {
+                const item = entry.data;
+                return (
+                    <div key={entry.id} className="bg-surface/30 border border-white/5 p-3 rounded-xl flex items-center justify-between hover:bg-surface/50 transition-colors group">
+                        <div className="flex-grow pr-2 min-w-0">
+                            <div className="flex items-center gap-2">
+                                <p className="font-semibold text-text-secondary group-hover:text-white transition-colors">{entry.name}</p>
+                                {entry.category && <span className="text-[9px] bg-white/5 px-1.5 py-0.5 rounded uppercase tracking-wide text-text-secondary/70">{entry.category}</span>}
+                            </div>
+                            <p className="text-[10px] text-text-secondary/50 line-clamp-1 mt-0.5">{entry.description}</p>
+                        </div>
+                        <button 
+                            onClick={() => handleAddLibraryItem({ ...item, name: entry.name, description: entry.description })}
+                            className="bg-white/5 hover:bg-white/10 text-text-secondary hover:text-primary border border-white/10 font-bold py-1.5 px-3 rounded-lg text-xs transition-all flex items-center gap-1 whitespace-nowrap flex-shrink-0"
+                        >
+                            <Icon name="plus" className="w-3 h-3" />
+                            {t('supplements_add_to_plan')}
+                        </button>
+                    </div>
+                );
+            }
+        }) : (
+            <div className="text-center py-8 text-text-secondary/60 border-2 border-dashed border-white/5 rounded-xl">
+                <Icon name="search" className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p>{t('exercises_no_match')}</p>
+            </div>
         )}
       </div>
 
-      {plan.warnings && plan.warnings.length > 0 && (
-        <div className="bg-yellow-500/10 border-l-4 border-yellow-400 p-4 rounded-r-lg">
-            <h3 className="font-bold text-lg text-yellow-400 mb-2 flex items-center gap-2">
-                <Icon name="warning" className="w-5 h-5" />
-                {t('supplements_warnings')}
-            </h3>
-            <ul className="list-disc list-inside space-y-1 text-yellow-200">
-                {plan.warnings.map((warning, i) => <li key={i}>{warning}</li>)}
-            </ul>
-        </div>
-      )}
-
-      {groupedPlan.orderedGroups.map(groupName => {
-        const group = groupedPlan.groupedPlan[groupName];
-        const hasAllDaysItems = group.allDays.length > 0;
-        const hasWorkoutOnlyItems = group.workoutOnly.length > 0;
-        const hasRestOnlyItems = group.restOnly.length > 0;
-        if (!hasAllDaysItems && !hasWorkoutOnlyItems && !hasRestOnlyItems) return null;
-
-        return (
-          <div key={groupName} className="bg-surface/50 p-4 rounded-lg">
-            <h3 className="text-xl font-semibold text-text-primary mb-3 border-b border-secondary/20 pb-2 capitalize">
-              {['morning', 'lunch', 'evening', 'pre_workout', 'post_workout', 'intra_workout'].includes(groupName) 
-                  ? t(`supplements_timegroup_${groupName}` as any) 
-                  : t(`supplements_timegroup_${groupName}` as any) || groupName
-              }
-            </h3>
-            <div className="space-y-4">
-              {hasAllDaysItems && (
-                <div className="space-y-3">
-                  {(hasWorkoutOnlyItems || hasRestOnlyItems) && <h4 className="font-bold text-text-secondary">{t('supplements_all_days')}</h4>}
-                  {group.allDays.map(item => (
-                    <SupplementItemCard 
-                        item={item} 
-                        onRemove={() => handleRemoveClick(item)} 
-                        key={item.id} 
-                        onOpenExplanation={onOpenExplanation}
-                        onEdit={() => handleEdit(item)} 
-                    />
-                  ))}
-                </div>
-              )}
-              {hasWorkoutOnlyItems && (
-                <div className="space-y-3">
-                  <h4 className="font-bold text-primary">{t('supplements_workout_day')}</h4>
-                  {group.workoutOnly.map(item => (
-                    <SupplementItemCard 
-                        item={item} 
-                        onRemove={() => handleRemoveClick(item)} 
-                        key={item.id} 
-                        onOpenExplanation={onOpenExplanation} 
-                        onEdit={() => handleEdit(item)}
-                    />
-                  ))}
-                </div>
-              )}
-              {hasRestOnlyItems && (
-                <div className="space-y-3">
-                  <h4 className="font-bold text-sky-400">{t('supplements_rest_day')}</h4>
-                  {group.restOnly.map(item => (
-                    <SupplementItemCard 
-                        item={item} 
-                        onRemove={() => handleRemoveClick(item)} 
-                        key={item.id} 
-                        onOpenExplanation={onOpenExplanation} 
-                        onEdit={() => handleEdit(item)}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      })}
-
-      {plan.general_tips && plan.general_tips.length > 0 && (
-        <div className="bg-sky-500/10 p-4 rounded-lg">
-            <h3 className="font-bold text-lg text-sky-400 mb-2">{t('supplements_general_tips')}</h3>
-            <ul className="list-disc list-inside space-y-1 text-sky-200">
-                {plan.general_tips.map((tip, i) => <li key={i}>{tip}</li>)}
-            </ul>
-        </div>
-      )}
-
-      <div className="text-center text-xs text-text-secondary/70 p-4 border-t border-secondary/20 mt-4">
-        <p>{t('supplements_disclaimer')}</p>
+      {/* Recalculate Button */}
+      <div className="flex justify-center mt-8">
+          <button 
+              onClick={onEditAnswers}
+              className="text-sm text-text-secondary hover:text-white underline decoration-white/20 hover:decoration-white transition-all"
+          >
+              {t('supplements_edit_plan')}
+          </button>
       </div>
 
       {itemToEdit && (
@@ -314,6 +358,13 @@ const SupplementPlanOverview: React.FC<SupplementPlanOverviewProps> = ({ plan, o
             isGenerated={!itemToEdit.isCustom}
         />
       )}
+      
+      <AddSupplementModal 
+            isOpen={isAddModalOpen}
+            onClose={() => { setIsAddModalOpen(false); setItemToCopy(null); }}
+            onAdd={handleAddSubmit}
+            initialData={itemToCopy}
+      />
     </div>
   );
 };
