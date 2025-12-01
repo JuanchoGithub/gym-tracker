@@ -79,10 +79,10 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
   const formattedParams = useMemo(() => {
       if (!recommendation.reasonParams) return undefined;
       
-      // Special handling for weight values in imbalance checks or 1RM updates
-      if (recommendation.type === 'imbalance' || recommendation.type === 'update_1rm') {
+      // Special handling for weight values in imbalance checks, 1RM updates, or workout complete volume
+      if (recommendation.type === 'imbalance' || recommendation.type === 'update_1rm' || recommendation.type === 'active_recovery') {
           const newParams = { ...recommendation.reasonParams };
-          const weightKeys = ['squat', 'deadlift', 'bench', 'ohp', 'old', 'new'];
+          const weightKeys = ['squat', 'deadlift', 'bench', 'ohp', 'old', 'new', 'volume'];
           
           weightKeys.forEach(key => {
               if (newParams[key] !== undefined) {

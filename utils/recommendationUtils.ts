@@ -6,7 +6,6 @@ import { generateSmartRoutine, RoutineFocus, RoutineLevel } from './routineGener
 import { PREDEFINED_EXERCISES } from '../constants/exercises';
 import { PROGRESSION_PATHS } from '../constants/progression';
 import { getExerciseHistory } from './workoutUtils';
-import { formatWeightDisplay } from './weightUtils';
 import { predictNextRoutine, getProtectedMuscles, generateGapSession } from './smartCoachUtils';
 import { inferUserProfile, MOVEMENT_PATTERNS, calculateMaxStrengthProfile, calculateMedianWorkoutDuration } from '../services/analyticsService';
 
@@ -284,7 +283,7 @@ export const getWorkoutRecommendation = (
          type: 'active_recovery',
          titleKey: "rec_title_workout_complete",
          reasonKey: "rec_reason_workout_complete",
-         reasonParams: { volume: formatWeightDisplay(volume, 'kg') + ' kg' }, // Default to kg, will be formatted in UI if needed
+         reasonParams: { volume: volume.toString() },
          suggestedBodyParts: ['Mobility'],
          relevantRoutineIds: routines.filter(r => r.name.includes('Mobility') || r.exercises.some(ex => {
              const def = exercises.find(e => e.id === ex.exerciseId);
