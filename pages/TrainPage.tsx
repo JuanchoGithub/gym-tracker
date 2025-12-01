@@ -24,11 +24,12 @@ import { useMeasureUnit } from '../hooks/useWeight';
 import { TranslationKey } from '../contexts/I18nContext';
 
 const timeKeywords = {
-    morning: /morning|breakfast|am/i,
-    lunch: /lunch|noon|midday/i,
-    afternoon: /afternoon/i,
-    evening: /evening|bed|night|sleep|pm/i,
+    morning: /morning|breakfast|am|mañana|desayuno/i,
+    lunch: /lunch|noon|midday|almuerzo/i,
+    afternoon: /afternoon|tarde/i,
+    evening: /evening|bed|night|sleep|pm|noche|cena|dormir/i,
     pre_workout: /pre-workout|pre-entreno/i,
+    post_workout: /post-workout|post-entreno/i,
 };
 
 const daysOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
@@ -161,19 +162,51 @@ const TrainPage: React.FC = () => {
       const isPostWorkoutWindow = lastSession && (nowTs - lastSession.endTime) < (2 * 60 * 60 * 1000) && (nowTs - lastSession.endTime) > 0; // 2 hours window
 
       if (isPostWorkoutWindow) {
-          const postWorkoutItems = allItems.filter(i => (i.time.toLowerCase().includes('post-workout') || i.time.toLowerCase().includes('post-entreno')) && !isTaken(i.id));
+          // A. Strictly Post-Workout items (Protein etc)
+          const postItems = allItems.filter(i => (timeKeywords.post_workout.test(i.time.toLowerCase())) && !isTaken(i.id) && !isSnoozed(i.id));
           
-          // Retroactive check: Pre-workout and Intra-workout items that were NOT taken
-          const preAndIntraItems = allItems.filter(i => {
-             const t = i.time.toLowerCase();
-             return (t.includes('pre-workout') || t.includes('pre-entreno') || t.includes('intra') || getExplanationIdForSupplement(i.supplement) === 'citrulline') && !isTaken(i.id) && !isSnoozed(i.id);
+          // B. Retroactive check: Pre-workout and Intra-workout items that were NOT taken
+          const missedWorkoutItems = allItems.filter(i => {
+             const tLower = i.time.toLowerCase();
+             return (timeKeywords.pre_workout.test(tLower) || tLower.includes('intra') || getExplanationIdForSupplement(i.supplement) === 'citrulline') && !isTaken(i.id) && !isSnoozed(i.id);
           });
 
-          if (postWorkoutItems.length > 0 || preAndIntraItems.length > 0) {
+          // C. Catch-up Items: Daily/Morning items not yet taken
+          // If user is in post-workout window, they might want to take their daily stuff now for convenience
+          const isEveningNow = hour >= 19;
+          
+          const catchUpItems = allItems.filter(i => {
+              if (isTaken(i.id) || isSnoozed(i.id)) return false;
+              // Prevent duplicates
+              if (postItems.includes(i) || missedWorkoutItems.includes(i)) return false;
+              // Don't show rest-day specific items since we just worked out
+              if (i.restDayOnly) return false;
+
+              const tLower = i.time.toLowerCase();
+              
+              // Filter out Evening/Bedtime items if it's not evening (don't take ZMA at 10am)
+              if (!isEveningNow && (timeKeywords.evening.test(tLower))) return false;
+
+              // Include Daily & Morning (Always valid to catch up)
+              if (tLower.includes('daily') || tLower.includes('diario')) return true;
+              if (timeKeywords.morning.test(tLower)) return true;
+              
+              // Include Lunch if it's close to lunch or later
+              if (timeKeywords.lunch.test(tLower) && hour >= 11) return true;
+              
+              // Include Afternoon if it's afternoon or later
+              if (timeKeywords.afternoon.test(tLower) && hour >= 14) return true;
+
+              return false;
+          });
+
+          const finalStack = [...postItems, ...missedWorkoutItems, ...catchUpItems];
+
+          if (finalStack.length > 0) {
               return {
                   smartStack: {
                       title: t('supplement_stack_post_workout'), 
-                      items: [...postWorkoutItems, ...preAndIntraItems],
+                      items: finalStack,
                   }
               };
           }
@@ -181,9 +214,6 @@ const TrainPage: React.FC = () => {
 
       // 2. Check Time-Based Contexts
       // Logic uses effective date's hour, but effectively we want to bucket properly.
-      // If it's 00:30 (so effective date is yesterday), hour is 0. This falls into 'evening'.
-      // If it's 23:00, hour is 23. Falls into 'evening'.
-      // If it's 10:00, hour is 10. Falls into 'morning'.
 
       let timeContext = 'daily';
       if (hour >= 4 && hour < 11) timeContext = 'morning';
@@ -207,7 +237,7 @@ const TrainPage: React.FC = () => {
               if (timeKeywords.morning.test(tLower)) return true;
               // Smart Stacking: If training time is morning, include pre-workout
               if (supplementPlan.info.trainingTime === 'morning' && (timeKeywords.pre_workout.test(tLower))) return true;
-              if (tLower.includes('daily')) return true; // Catch-all
+              if (tLower.includes('daily') || tLower.includes('diario')) return true; // Catch-all
           }
           
           if (timeContext === 'lunch') {
@@ -219,8 +249,9 @@ const TrainPage: React.FC = () => {
                if (supplementPlan.info.trainingTime === 'night' && (timeKeywords.pre_workout.test(tLower))) return true;
           }
           
-          if (timeContext === 'afternoon' && supplementPlan.info.trainingTime === 'afternoon' && (timeKeywords.pre_workout.test(tLower))) {
-               return true;
+          if (timeContext === 'afternoon') {
+             if (timeKeywords.afternoon.test(tLower)) return true;
+             if (supplementPlan.info.trainingTime === 'afternoon' && (timeKeywords.pre_workout.test(tLower))) return true;
           }
 
           return false;

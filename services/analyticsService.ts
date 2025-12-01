@@ -16,7 +16,7 @@ export const MOVEMENT_PATTERNS = {
     VERTICAL_PULL: ['ex-10', 'ex-50', 'ex-52', 'ex-6', 'ex-44'] // Vertical Pull (Pull Up, Lat Pulldown)
 };
 
-export const calculateMaxStrengthProfile = (history: WorkoutSession[]) => {
+export const calculateMaxStrengthProfile = (history: WorkoutSession[], cutoffDate: number = Date.now()) => {
     const profile: Record<string, number> = {
         SQUAT: 0,
         DEADLIFT: 0,
@@ -26,8 +26,8 @@ export const calculateMaxStrengthProfile = (history: WorkoutSession[]) => {
         VERTICAL_PULL: 0
     };
     
-    // Look at last 6 months only to ensure relevance
-    const sixMonthsAgo = Date.now() - (180 * 24 * 60 * 60 * 1000);
+    // Look at last 6 months from the cutoff date to ensure relevance
+    const sixMonthsBeforeCutoff = cutoffDate - (180 * 24 * 60 * 60 * 1000);
     
     Object.entries(MOVEMENT_PATTERNS).forEach(([patternName, ids]) => {
         let maxE1RM = 0;
@@ -35,7 +35,11 @@ export const calculateMaxStrengthProfile = (history: WorkoutSession[]) => {
         ids.forEach(id => {
             const exHistory = getExerciseHistory(history, id);
             exHistory.forEach(entry => {
-                if (entry.session.startTime < sixMonthsAgo) return;
+                // Ignore sessions that happened AFTER the cutoff date (future relative to snapshot)
+                if (entry.session.startTime > cutoffDate) return;
+                
+                // Ignore sessions that are too old relative to the snapshot
+                if (entry.session.startTime < sixMonthsBeforeCutoff) return;
                 
                 entry.exerciseData.sets.forEach(set => {
                     if (set.type === 'normal' && set.isComplete) {

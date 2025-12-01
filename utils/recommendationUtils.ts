@@ -100,124 +100,104 @@ const RATIOS = {
 
 
 export const detectImbalances = (history: WorkoutSession[], routines: Routine[], currentBodyWeight?: number, gender?: 'male' | 'female'): Recommendation | null => {
-    const s = calculateMaxStrengthProfile(history);
+    const currentProfile = calculateMaxStrengthProfile(history);
     const MIN_STRENGTH_THRESHOLD = 40; // kg, ignore very beginners for ratios
-    const max1RM = Math.max(s.SQUAT, s.DEADLIFT, s.BENCH);
+    const max1RM = Math.max(currentProfile.SQUAT, currentProfile.DEADLIFT, currentProfile.BENCH);
 
     // Need at least one significant lift to perform analysis
     if (max1RM < MIN_STRENGTH_THRESHOLD) {
         return null;
     }
 
+    // Calculate historical profile (14 days ago) to check for trends
+    const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
+    const historicalDate = Date.now() - TWO_WEEKS_MS;
+    const historicalProfile = calculateMaxStrengthProfile(history, historicalDate);
+
     let worstImbalance: Recommendation | null = null;
     let maxDeviation = 0.15; // Threshold: 15% deviation initiates a warning
 
     // --- CHECK 1: RATIOS (SYMMETRY & STRUCTURAL) ---
 
-    // 1a: Squat vs Deadlift (4:5 Ratio)
-    if (s.SQUAT > MIN_STRENGTH_THRESHOLD && s.DEADLIFT > 0) {
-        const targetDL = s.SQUAT * RATIOS.SQ_DL;
-        if (s.DEADLIFT < targetDL) {
-            const deviation = (targetDL - s.DEADLIFT) / targetDL;
-            if (deviation > maxDeviation) {
-                maxDeviation = deviation;
-                worstImbalance = {
-                    type: 'imbalance',
-                    titleKey: 'imbalance_squat_deadlift_title',
-                    reasonKey: 'imbalance_squat_deadlift_desc',
-                    reasonParams: { squat: Math.round(s.SQUAT), deadlift: Math.round(s.DEADLIFT) },
-                    suggestedBodyParts: ['Back', 'Legs'], // Focus on posterior chain
-                    relevantRoutineIds: routines.filter(r => 
-                        r.exercises.some(e => MOVEMENT_PATTERNS.DEADLIFT.includes(e.exerciseId))
-                    ).map(r => r.id)
-                };
+    const analyzePair = (
+        liftA: keyof typeof currentProfile, 
+        liftB: keyof typeof currentProfile, 
+        ratio: number, 
+        titleKey: string, 
+        reasonKey: string, 
+        bodyParts: BodyPart[],
+        targetPatterns: string[]
+    ) => {
+        const valA = currentProfile[liftA];
+        const valB = currentProfile[liftB];
+
+        if (valA > MIN_STRENGTH_THRESHOLD && valB > 0) {
+            const targetB = valA * ratio;
+            // Check if Lift B is lagging behind Lift A (e.g., DL lagging behind Squat)
+            if (valB < targetB) {
+                const currentDiff = targetB - valB;
+                const currentDeviation = currentDiff / targetB;
+
+                if (currentDeviation > maxDeviation) {
+                    // TREND CHECK: Was it bad 2 weeks ago?
+                    const histValA = historicalProfile[liftA] || 0;
+                    const histValB = historicalProfile[liftB] || 0;
+
+                    // If historically untrained in one, it's a new imbalance -> ignore (allow time to settle)
+                    if (histValA < MIN_STRENGTH_THRESHOLD || histValB < MIN_THRESHOLD_FOR_RATIO_CHECK(MIN_STRENGTH_THRESHOLD)) {
+                         return null;
+                    }
+
+                    const histTargetB = histValA * ratio;
+                    const histDiff = histTargetB - histValB;
+                    const histDeviation = histDiff / histTargetB;
+
+                    // Logic:
+                    // 1. If historical deviation was small (< 10%), this is a new spike -> Ignore (could be cycle phase).
+                    // 2. If current deviation is LESS than historical deviation, we are improving -> Ignore.
+                    // 3. Only flag if it persisted (was high before) AND is stable or getting worse.
+                    
+                    if (histDeviation > 0.10 && currentDeviation >= histDeviation) {
+                        return {
+                            type: 'imbalance' as const,
+                            titleKey,
+                            reasonKey,
+                            reasonParams: { [liftA.toLowerCase()]: Math.round(valA), [liftB.toLowerCase()]: Math.round(valB) },
+                            suggestedBodyParts: bodyParts,
+                            relevantRoutineIds: routines.filter(r => 
+                                r.exercises.some(e => targetPatterns.includes(e.exerciseId))
+                            ).map(r => r.id)
+                        };
+                    }
+                }
             }
         }
-    }
+        return null;
+    };
+
+    // Lower threshold for historical check to avoid filtering out legitimate beginners who are progressing
+    const MIN_THRESHOLD_FOR_RATIO_CHECK = (base: number) => base * 0.5;
+
+    // 1a: Squat vs Deadlift (4:5 Ratio)
+    const sqDl = analyzePair('SQUAT', 'DEADLIFT', RATIOS.SQ_DL, 'imbalance_squat_deadlift_title', 'imbalance_squat_deadlift_desc', ['Back', 'Legs'], MOVEMENT_PATTERNS.DEADLIFT);
+    if (sqDl) { worstImbalance = sqDl; maxDeviation = (sqDl.reasonParams?.deadlift as number / sqDl.reasonParams?.squat as number); }
 
     // 1b: Bench vs Squat (3:4 Ratio)
-    if (s.BENCH > MIN_STRENGTH_THRESHOLD && s.SQUAT > 0) {
-        const targetSquat = s.BENCH * RATIOS.BN_SQ;
-        if (s.SQUAT < targetSquat) {
-            const deviation = (targetSquat - s.SQUAT) / targetSquat;
-            if (deviation > maxDeviation) {
-                maxDeviation = deviation;
-                worstImbalance = {
-                    type: 'imbalance',
-                    titleKey: 'imbalance_bench_squat_title',
-                    reasonKey: 'imbalance_bench_squat_desc',
-                    reasonParams: { bench: Math.round(s.BENCH), squat: Math.round(s.SQUAT) },
-                    suggestedBodyParts: ['Legs'],
-                    relevantRoutineIds: routines.filter(r => 
-                        r.exercises.some(e => MOVEMENT_PATTERNS.SQUAT.includes(e.exerciseId))
-                    ).map(r => r.id)
-                };
-            }
-        }
-    }
+    const bnSq = analyzePair('BENCH', 'SQUAT', RATIOS.BN_SQ, 'imbalance_bench_squat_title', 'imbalance_bench_squat_desc', ['Legs'], MOVEMENT_PATTERNS.SQUAT);
+    if (bnSq) { worstImbalance = bnSq; }
 
     // 1c: OHP vs Bench (2:3 Ratio)
-    if (s.BENCH > MIN_STRENGTH_THRESHOLD && s.OHP > 0) {
-        const targetOHP = s.BENCH * RATIOS.OH_BN;
-        if (s.OHP < targetOHP) {
-            const deviation = (targetOHP - s.OHP) / targetOHP;
-            if (deviation > maxDeviation) {
-                maxDeviation = deviation;
-                worstImbalance = {
-                    type: 'imbalance',
-                    titleKey: 'imbalance_ohp_bench_title',
-                    reasonKey: 'imbalance_ohp_bench_desc',
-                    reasonParams: { bench: Math.round(s.BENCH), ohp: Math.round(s.OHP) },
-                    suggestedBodyParts: ['Shoulders'],
-                    relevantRoutineIds: routines.filter(r => 
-                        r.exercises.some(e => MOVEMENT_PATTERNS.OHP.includes(e.exerciseId))
-                    ).map(r => r.id)
-                };
-            }
-        }
-    }
+    const ohBn = analyzePair('BENCH', 'OHP', RATIOS.OH_BN, 'imbalance_ohp_bench_title', 'imbalance_ohp_bench_desc', ['Shoulders'], MOVEMENT_PATTERNS.OHP);
+    if (ohBn) { worstImbalance = ohBn; }
 
     // 1d: Horizontal Push (Bench) vs Pull (Row) (~1:1 Ratio)
-    if (s.BENCH > MIN_STRENGTH_THRESHOLD && s.ROW > 0) {
-        const targetRow = s.BENCH;
-        if (s.ROW < targetRow * 0.85) { // Allow 15% variance
-             const deviation = (targetRow - s.ROW) / targetRow;
-             if (deviation > maxDeviation) {
-                 maxDeviation = deviation;
-                 worstImbalance = {
-                     type: 'imbalance',
-                     titleKey: 'imbalance_push_pull_title',
-                     reasonKey: 'imbalance_push_pull_desc',
-                     reasonParams: { push: Math.round(s.BENCH), pull: Math.round(s.ROW) },
-                     suggestedBodyParts: ['Back', 'Shoulders'],
-                     relevantRoutineIds: routines.filter(r => 
-                        r.exercises.some(e => MOVEMENT_PATTERNS.ROW.includes(e.exerciseId))
-                    ).map(r => r.id)
-                 };
-             }
-        }
-    }
-
+    // Allow 15% variance, so target is 0.85
+    const pushPull = analyzePair('BENCH', 'ROW', 0.85, 'imbalance_push_pull_title', 'imbalance_push_pull_desc', ['Back', 'Shoulders'], MOVEMENT_PATTERNS.ROW);
+    if (pushPull) { worstImbalance = pushPull; }
+    
     // 1e: Vertical Push (OHP) vs Vertical Pull (~1:1 Ratio)
-    if (s.OHP > MIN_STRENGTH_THRESHOLD && s.VERTICAL_PULL > 0) {
-        const targetPull = s.OHP;
-        if (s.VERTICAL_PULL < targetPull * 0.85) {
-            const deviation = (targetPull - s.VERTICAL_PULL) / targetPull;
-             if (deviation > maxDeviation) {
-                 maxDeviation = deviation;
-                 worstImbalance = {
-                     type: 'imbalance',
-                     titleKey: 'imbalance_vertical_balance_title',
-                     reasonKey: 'imbalance_vertical_balance_desc',
-                     reasonParams: { push: Math.round(s.OHP), pull: Math.round(s.VERTICAL_PULL) },
-                     suggestedBodyParts: ['Back'],
-                     relevantRoutineIds: routines.filter(r => 
-                        r.exercises.some(e => MOVEMENT_PATTERNS.VERTICAL_PULL.includes(e.exerciseId))
-                    ).map(r => r.id)
-                 };
-             }
-        }
-    }
+    const vertBal = analyzePair('OHP', 'VERTICAL_PULL', 0.85, 'imbalance_vertical_balance_title', 'imbalance_vertical_balance_desc', ['Back'], MOVEMENT_PATTERNS.VERTICAL_PULL);
+    if (vertBal) { worstImbalance = vertBal; }
     
     // --- CHECK 2: PROFICIENCY GAPS (STANDARDIZATION) ---
     if (currentBodyWeight && currentBodyWeight > 0 && gender && worstImbalance === null) {
@@ -225,10 +205,10 @@ export const detectImbalances = (history: WorkoutSession[], routines: Routine[],
         // We assume 'male' as default for physiology if not specified, but typically gender is required for this.
         const profGender = gender;
 
-        const levelSquat = getProficiency('SQUAT', s.SQUAT, currentBodyWeight, profGender);
-        const levelBench = getProficiency('BENCH', s.BENCH, currentBodyWeight, profGender);
-        const levelDeadlift = getProficiency('DEADLIFT', s.DEADLIFT, currentBodyWeight, profGender);
-        const levelOhp = getProficiency('OHP', s.OHP, currentBodyWeight, profGender);
+        const levelSquat = getProficiency('SQUAT', currentProfile.SQUAT, currentBodyWeight, profGender);
+        const levelBench = getProficiency('BENCH', currentProfile.BENCH, currentBodyWeight, profGender);
+        const levelDeadlift = getProficiency('DEADLIFT', currentProfile.DEADLIFT, currentBodyWeight, profGender);
+        const levelOhp = getProficiency('OHP', currentProfile.OHP, currentBodyWeight, profGender);
 
         const scoreUpper = Math.max(LEVEL_SCORES[levelBench], LEVEL_SCORES[levelOhp]);
         const scoreLower = Math.max(LEVEL_SCORES[levelSquat], LEVEL_SCORES[levelDeadlift]);
