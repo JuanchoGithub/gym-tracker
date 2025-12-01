@@ -35,7 +35,7 @@ export const es_onerepmax = {
   orm_step_1_action: "Barra Vacía x 10 reps",
   orm_step_1_why: "Marcá el patrón de movimiento sin fatiga. Concentrate en la técnica perfecta.",
   
-  orm_step_2_title: "El Despertar",
+  orm_step_2_title: "El Inicio",
   orm_step_2_action: "{weight} x 5 reps",
   orm_step_2_why: "Llevá sangre a los músculos específicos que vas a usar. Mové el peso con control.",
   
@@ -43,7 +43,7 @@ export const es_onerepmax = {
   orm_step_3_action: "{weight} x 3 reps",
   orm_step_3_why: "Mové este peso RÁPIDO. Estamos preparando tu sistema nervioso para la potencia.",
   
-  orm_step_4_title: "El Calentamiento",
+  orm_step_4_title: "Calentamiento",
   orm_step_4_action: "{weight} x 1 rep",
   orm_step_4_why: "Sentí el peso pesado, pero no te canses. Solo una repetición limpia y segura.",
   

@@ -103,7 +103,7 @@ export const es_train = {
   set_type_drop_desc_title: "Drop Set",
   set_type_drop_desc: "Reducir peso inmediatamente después de una serie para continuar.",
   set_type_failure_desc_title: "Serie al Fallo",
-  set_type_failure_desc: "Ir hasta que no puedas realizar otra repetición.",
+  set_type_failure_desc: "Segui hasta que no puedas realizar otra repetición.",
   set_type_timed_desc_title: "Serie por Tiempo",
   set_type_timed_desc: "Realizada por una duración específica.",
 
@@ -115,13 +115,13 @@ export const es_train = {
   
   // Misc Inputs
   bar_type: "Tipo de Barra",
-  weight_input_modal_title: "Registrar Peso Corporal",
-  weight_input_modal_message: "Ingresá tu peso corporal para este ejercicio.",
+  weight_input_modal_title: "Registrar Peso",
+  weight_input_modal_message: "Ingresá tu peso para este ejercicio.",
   weight_input_save: "Guardar",
 
   // Stale Workout
   stale_workout_title: "Entrenamiento Activo",
-  stale_workout_message: "Tenés un entrenamiento activo por más de 3 horas. ¿Te olvidaste de terminarlo?",
+  stale_workout_message: "Tenés un entrenamiento activo hace más de 3 horas. ¿Te olvidaste de terminarlo?",
   stale_workout_confirm: "Sí, terminarlo",
   stale_workout_cancel: "No, continuar",
 
