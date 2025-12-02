@@ -13,6 +13,7 @@ interface SupersetViewProps {
   exercises: WorkoutExercise[];
   isReorganizeMode: boolean;
   onUpdateExercise: (updatedExercise: WorkoutExercise) => void;
+  onUpdateExercises?: (updatedExercises: WorkoutExercise[]) => void;
   onRemoveExercise: (exerciseId: string) => void;
   onMoveExercise: (fromIndex: number, toIndex: number) => void; // Global indices
   onStartTimedSet: (ex: WorkoutExercise, set: PerformedSet) => void;
@@ -29,6 +30,7 @@ const SupersetView: React.FC<SupersetViewProps> = ({
   exercises,
   isReorganizeMode,
   onUpdateExercise,
+  onUpdateExercises,
   onRemoveExercise,
   onMoveExercise,
   onStartTimedSet,
@@ -142,19 +144,28 @@ const SupersetView: React.FC<SupersetViewProps> = ({
   };
 
   const handleAddRound = () => {
-    exercises.forEach(ex => {
-        const lastSet = ex.sets[ex.sets.length - 1] || { reps: 8, weight: 0 };
+    const updatedExercises = exercises.map(ex => {
+        const lastSet = ex.sets[ex.sets.length - 1] || { reps: 8, weight: 0, type: 'normal', time: 0 };
         const newSet: PerformedSet = {
             id: `set-${Date.now()}-${Math.random()}`,
             reps: lastSet.reps,
             weight: lastSet.weight,
-            type: 'normal',
+            time: lastSet.time,
+            type: lastSet.type,
             isComplete: false,
             isRepsInherited: true,
             isWeightInherited: true,
+            isTimeInherited: true,
         };
-        onUpdateExercise({ ...ex, sets: [...ex.sets, newSet] });
+        return { ...ex, sets: [...ex.sets, newSet] };
     });
+
+    if (onUpdateExercises) {
+        onUpdateExercises(updatedExercises);
+    } else {
+        // Fallback if parent doesn't support bulk update
+        updatedExercises.forEach(ex => onUpdateExercise(ex));
+    }
   };
 
   // Determine max sets to render rows

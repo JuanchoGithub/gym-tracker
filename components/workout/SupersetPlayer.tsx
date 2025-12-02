@@ -59,6 +59,7 @@ const SupersetPlayer: React.FC<SupersetPlayerProps> = ({
     const [repsInput, setRepsInput] = useState('');
 
     const intervalRef = useRef<number | null>(null);
+    const targetTimeRef = useRef<number>(0);
 
     // Derived state
     const currentWorkoutExercise = exercises[currentExerciseIndex];
@@ -158,27 +159,43 @@ const SupersetPlayer: React.FC<SupersetPlayerProps> = ({
     useEffect(() => {
         if (phase === 'transition') {
             unlockAudioContext();
+            
+            // Initialize target time based on the initial 10s
+            // We use a ref for targetTime to make it robust against renders
+            targetTimeRef.current = Date.now() + 10000;
+
             intervalRef.current = window.setInterval(() => {
+                const now = Date.now();
+                const remaining = Math.ceil((targetTimeRef.current - now) / 1000);
+                
                 setTimeLeft((prev) => {
-                    if (prev <= 1) {
-                        // If it's the final rest, we don't auto-advance to a non-existent round.
-                        // We just stop the timer and wait for user input (One Moar or Finish)
-                        if (isFinalRest) {
+                    // Only update state if it changes visually to prevent excessive renders, 
+                    // though for a timer every second is expected.
+                    if (remaining <= 0) {
+                         if (isFinalRest) {
                             if (intervalRef.current) clearInterval(intervalRef.current);
                             return 0;
                         }
                         handleTransitionComplete();
                         return 0;
                     }
-                    if (prev <= 4) playTickSound();
-                    return prev - 1;
+                    
+                    if (remaining <= 4 && remaining < prev) playTickSound();
+                    return remaining;
                 });
-            }, 1000);
+            }, 200); // Check more frequently to be accurate
         }
         return () => {
             if (intervalRef.current) clearInterval(intervalRef.current);
         };
-    }, [phase, isFinalRest]);
+    }, [phase, isFinalRest]); // Re-run only when phase changes
+
+    const handleAddTime = () => {
+        // Add 10 seconds to the target time
+        targetTimeRef.current += 10000;
+        // Optimistically update UI immediately so it doesn't wait for next interval tick
+        setTimeLeft(prev => prev + 10);
+    };
 
     const handleTransitionComplete = () => {
         if (intervalRef.current) clearInterval(intervalRef.current);
@@ -296,7 +313,7 @@ const SupersetPlayer: React.FC<SupersetPlayerProps> = ({
                             {!isFinalRest && (
                                 <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden max-w-xs mx-auto">
                                     <div 
-                                        className="h-full bg-yellow-400 transition-all duration-1000 ease-linear"
+                                        className="h-full bg-yellow-400 transition-all duration-200 linear"
                                         style={{ width: `${(timeLeft / 10) * 100}%` }}
                                     />
                                 </div>
@@ -337,7 +354,7 @@ const SupersetPlayer: React.FC<SupersetPlayerProps> = ({
                         ) : (
                             <div className="flex gap-4 w-full max-w-sm">
                                 <button 
-                                    onClick={() => setTimeLeft(prev => prev + 10)}
+                                    onClick={handleAddTime}
                                     className="flex-1 bg-surface border border-white/10 py-4 rounded-xl font-bold text-text-primary active:scale-95 transition-transform"
                                 >
                                     +10s

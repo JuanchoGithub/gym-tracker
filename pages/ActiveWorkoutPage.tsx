@@ -339,6 +339,16 @@ const ActiveWorkoutPage: React.FC = () => {
     updateActiveWorkout({ ...activeWorkout, exercises: updatedExercises });
   };
 
+  // New Bulk Update Handler for Supersets
+  const handleUpdateExercises = (updatedExercises: WorkoutExercise[]) => {
+      if (!activeWorkout) return;
+      const newExercisesList = activeWorkout.exercises.map(ex => {
+          const updated = updatedExercises.find(u => u.id === ex.id);
+          return updated || ex;
+      });
+      updateActiveWorkout({ ...activeWorkout, exercises: newExercisesList });
+  };
+
   const handleUpdateExercise = (updatedExercise: WorkoutExercise) => {
     if (!activeWorkout) return;
 
@@ -899,6 +909,7 @@ const ActiveWorkoutPage: React.FC = () => {
                                 indices={group.indices}
                                 isReorganizeMode={isReorganizeMode}
                                 onUpdateExercise={handleUpdateExercise}
+                                onUpdateExercises={handleUpdateExercises}
                                 onRemoveExercise={handleRemoveExercise}
                                 onMoveExercise={handleMoveExercise}
                                 onStartTimedSet={handleStartTimedSet}

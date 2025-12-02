@@ -42,7 +42,7 @@ export const calculateMaxStrengthProfile = (history: WorkoutSession[], cutoffDat
                 if (entry.session.startTime < sixMonthsBeforeCutoff) return;
                 
                 entry.exerciseData.sets.forEach(set => {
-                    if (set.type === 'normal' && set.isComplete) {
+                    if (set.type === 'normal' && set.isComplete && set.reps <= 12) {
                          const e1rm = calculate1RM(set.weight, set.reps);
                          if (e1rm > maxE1RM) maxE1RM = e1rm;
                     }
