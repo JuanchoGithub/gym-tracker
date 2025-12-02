@@ -34,7 +34,7 @@ const HistoryChartsTab: React.FC<HistoryChartsTabProps> = ({ history }) => {
         // 1. Total Volume Over Time
         const totalVolumeData: ChartDataPoint[] = chronologicalHistory.map(session => {
             const totalVolume = session.exercises.reduce((total, ex) => {
-                return total + ex.sets.reduce((exTotal, set) => exTotal + (set.weight * set.reps), 0);
+                return total + ex.sets.reduce((exTotal, set) => exTotal + (set.isComplete ? (set.weight * set.reps) : 0), 0);
             }, 0);
             return {
                 date: session.startTime,
@@ -66,7 +66,7 @@ const HistoryChartsTab: React.FC<HistoryChartsTabProps> = ({ history }) => {
             chronologicalHistory.forEach(session => {
                 const exerciseInSession = session.exercises.find(ex => ex.exerciseId === exerciseId);
                 if (exerciseInSession) {
-                    const exerciseVolume = exerciseInSession.sets.reduce((sum, set) => sum + set.weight * set.reps, 0);
+                    const exerciseVolume = exerciseInSession.sets.reduce((sum, set) => sum + (set.isComplete ? (set.weight * set.reps) : 0), 0);
                     data.push({
                         date: session.startTime,
                         label: new Date(session.startTime).toLocaleDateString(undefined, dateFormat),

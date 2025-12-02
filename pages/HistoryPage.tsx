@@ -108,7 +108,7 @@ const HistoryPage: React.FC = () => {
         {activeTab === 'list' && history.map((session: WorkoutSession) => {
           const totalTime = session.endTime > 0 ? formatTime(Math.round((session.endTime - session.startTime) / 1000)) : 'N/A';
           const totalVolume = session.exercises.reduce((total, ex) => {
-            return total + ex.sets.reduce((exTotal, set) => exTotal + (set.weight * set.reps), 0);
+            return total + ex.sets.reduce((exTotal, set) => exTotal + (set.isComplete ? (set.weight * set.reps) : 0), 0);
           }, 0);
           
           return (

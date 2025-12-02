@@ -34,7 +34,7 @@ const HistoryDetailModal: React.FC<HistoryDetailModalProps> = ({ session, isOpen
 
     const totalTime = session.endTime > 0 ? formatTime(Math.round((session.endTime - session.startTime) / 1000)) : 'N/A';
     const totalVolume = session.exercises.reduce((total, ex) => {
-        return total + ex.sets.reduce((exTotal, set) => exTotal + (set.weight * set.reps), 0);
+        return total + ex.sets.reduce((exTotal, set) => exTotal + (set.isComplete ? (set.weight * set.reps) : 0), 0);
     }, 0);
 
     const exercisePerformances = useMemo(() => {
@@ -113,9 +113,10 @@ const HistoryDetailModal: React.FC<HistoryDetailModalProps> = ({ session, isOpen
                                         const prevVolume = prevSet ? prevSet.weight * prevSet.reps : undefined;
                                         const est1RM = calculate1RM(set.weight, set.reps);
                                         const prevEst1RM = prevSet ? calculate1RM(prevSet.weight, prevSet.reps) : undefined;
+                                        const isCompleteStyle = set.isComplete ? '' : 'opacity-50 line-through text-text-secondary';
 
                                         return (
-                                            <div key={set.id} className={`grid grid-cols-12 gap-2 items-center text-sm py-1.5 rounded px-1 ${getSetTypeStyles(set.type)}`}>
+                                            <div key={set.id} className={`grid grid-cols-12 gap-2 items-center text-sm py-1.5 rounded px-1 ${getSetTypeStyles(set.type)} ${isCompleteStyle}`}>
                                                 <div className="col-span-1 font-bold text-text-secondary text-center">{setIndex + 1}</div>
                                                 <div className="col-span-5 font-mono font-medium text-text-primary whitespace-nowrap">
                                                     {displayWeight(set.weight)}<span className="text-xs text-text-secondary/50 ml-px mr-1">{t(`workout_${weightUnit}` as TranslationKey)}</span>
