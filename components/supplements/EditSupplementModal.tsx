@@ -108,6 +108,7 @@ const EditSupplementModal: React.FC<EditSupplementModalProps> = ({ isOpen, onClo
                             type="text"
                             value={dosage}
                             onChange={(e) => setDosage(e.target.value)}
+                            onFocus={(e) => e.target.select()}
                             className="w-full bg-slate-900 border border-secondary/50 rounded-lg p-2 mt-1"
                             placeholder={t('supplements_add_dosage_placeholder')}
                         />
@@ -163,6 +164,7 @@ const EditSupplementModal: React.FC<EditSupplementModalProps> = ({ isOpen, onClo
                         inputMode="numeric"
                         value={stock}
                         onChange={(e) => setStock(e.target.value)}
+                        onFocus={(e) => e.target.select()}
                         className="w-full bg-slate-900 border border-secondary/50 rounded-lg p-2 mt-1"
                         placeholder={t('supplements_add_stock_placeholder')}
                     />

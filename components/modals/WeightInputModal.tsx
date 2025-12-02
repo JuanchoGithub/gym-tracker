@@ -1,51 +1,111 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import { useI18n } from '../../hooks/useI18n';
 import { useMeasureUnit } from '../../hooks/useWeight';
-import { convertCmToFtIn, convertFtInToCm } from '../../utils/weightUtils';
 import { TranslationKey } from '../../contexts/I18nContext';
 
 interface WeightInputModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (weightInKg: number) => void;
+  onSave: (bodyWeightKg: number, totalLoadKg: number) => void;
+  initialBodyWeight?: number;
+  initialExtraWeight?: number;
 }
 
-const WeightInputModal: React.FC<WeightInputModalProps> = ({ isOpen, onClose, onSave }) => {
+const WeightInputModal: React.FC<WeightInputModalProps> = ({ isOpen, onClose, onSave, initialBodyWeight, initialExtraWeight }) => {
     const { t } = useI18n();
-    const { measureUnit, getStoredWeight, weightUnit } = useMeasureUnit();
-    const [weightInput, setWeightInput] = useState('');
+    const { measureUnit, getStoredWeight, displayWeight, weightUnit } = useMeasureUnit();
+    
+    const [bodyWeightInput, setBodyWeightInput] = useState('');
+    const [extraWeightInput, setExtraWeightInput] = useState('');
+
+    useEffect(() => {
+        if (isOpen) {
+            // Pre-fill values if provided. Convert stored kg to display unit if necessary.
+            if (initialBodyWeight) {
+                setBodyWeightInput(displayWeight(initialBodyWeight));
+            } else {
+                setBodyWeightInput('');
+            }
+
+            if (initialExtraWeight) {
+                setExtraWeightInput(displayWeight(initialExtraWeight));
+            } else {
+                setExtraWeightInput('');
+            }
+        }
+    }, [isOpen, initialBodyWeight, initialExtraWeight, displayWeight]);
 
     const handleSave = (e: React.FormEvent) => {
         e.preventDefault();
-        const weight = parseFloat(weightInput);
-        if (isNaN(weight) || weight <= 0) return;
+        const bw = parseFloat(bodyWeightInput);
+        const extra = parseFloat(extraWeightInput) || 0;
+
+        if (isNaN(bw) || bw <= 0) {
+            alert("Please enter a valid bodyweight.");
+            return;
+        }
         
-        const weightInKg = getStoredWeight(weight);
-        onSave(weightInKg);
-        onClose();
+        const bwKg = getStoredWeight(bw);
+        const extraKg = getStoredWeight(extra);
+        const totalKg = bwKg + extraKg;
+
+        onSave(bwKg, totalKg);
     };
+
+    // Calculate preview of total
+    const currentBw = parseFloat(bodyWeightInput) || 0;
+    const currentExtra = parseFloat(extraWeightInput) || 0;
+    const totalDisplay = currentBw + currentExtra;
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={t('weight_input_modal_title')}>
             <form onSubmit={handleSave} className="space-y-6">
-                <p className="text-text-secondary">{t('weight_input_modal_message')}</p>
+                <p className="text-text-secondary text-sm">{t('weight_input_modal_message')}</p>
                 
-                <div className="relative">
-                    <input
-                        type="number"
-                        step="0.1"
-                        value={weightInput}
-                        onChange={(e) => setWeightInput(e.target.value)}
-                        className="w-full bg-slate-900 border border-secondary/50 rounded-lg p-3 pr-12 text-xl text-center focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-                        placeholder="0.0"
-                        autoFocus
-                        required
-                    />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-text-secondary font-bold">
-                        {t(`workout_${weightUnit}` as TranslationKey)}
-                    </span>
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-xs font-bold text-text-secondary uppercase tracking-wider mb-1">
+                            {t('profile_weight')} ({t(`workout_${weightUnit}` as TranslationKey)})
+                        </label>
+                        <input
+                            type="number"
+                            step="0.1"
+                            value={bodyWeightInput}
+                            onChange={(e) => setBodyWeightInput(e.target.value)}
+                            onFocus={(e) => e.target.select()}
+                            className="w-full bg-slate-900 border border-secondary/50 rounded-lg p-3 text-xl font-bold text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                            placeholder="e.g. 75"
+                            autoFocus
+                            required
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-bold text-text-secondary uppercase tracking-wider mb-1">
+                            Extra / Assisted (+/-)
+                        </label>
+                        <input
+                            type="number"
+                            step="0.1"
+                            value={extraWeightInput}
+                            onChange={(e) => setExtraWeightInput(e.target.value)}
+                            onFocus={(e) => e.target.select()}
+                            className="w-full bg-slate-900 border border-secondary/50 rounded-lg p-3 text-lg text-text-secondary focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                            placeholder="0"
+                        />
+                        <p className="text-[10px] text-text-secondary/60 mt-1">
+                            Use negative numbers (e.g. -20) for assisted machines.
+                        </p>
+                    </div>
+
+                    <div className="bg-surface-highlight/30 p-3 rounded-xl border border-white/5 flex justify-between items-center">
+                        <span className="text-sm font-semibold text-text-secondary">Total Effective Load:</span>
+                        <span className="text-xl font-mono font-bold text-primary">
+                            {totalDisplay.toFixed(1)} {t(`workout_${weightUnit}` as TranslationKey)}
+                        </span>
+                    </div>
                 </div>
 
                 <div className="flex justify-end space-x-3">

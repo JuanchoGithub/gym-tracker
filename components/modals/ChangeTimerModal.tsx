@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import { useI18n } from '../../hooks/useI18n';
@@ -97,6 +98,7 @@ const ChangeTimerModal: React.FC<ChangeTimerModalProps> = ({ isOpen, onClose, cu
                                         onChange={handleInputChange}
                                         onBlur={handleBlur}
                                         onKeyDown={handleKeyDown}
+                                        onFocus={(e) => e.target.select()}
                                         autoFocus
                                         className="bg-slate-900 border border-primary rounded-lg p-2 w-28 text-center"
                                         placeholder="m:ss or secs"

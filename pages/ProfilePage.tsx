@@ -390,6 +390,7 @@ const ProfilePage: React.FC = () => {
                             type="number"
                             value={profile.height || ''}
                             onChange={(e) => updateProfileInfo({ height: parseInt(e.target.value) || undefined })}
+                            onFocus={(e) => e.target.select()}
                             className={`${inputClass} pr-10 w-full`}
                             placeholder="175"
                         />
@@ -398,11 +399,11 @@ const ProfilePage: React.FC = () => {
                     ) : (
                         <div className="flex gap-2 items-center">
                             <div className="relative">
-                                <input id="height-input-ft" type="number" value={feet} onChange={(e) => { setFeet(e.target.value); handleHeightChangeImperial(e.target.value, inches); }} placeholder="5" className="bg-background border border-white/10 rounded-lg p-2 w-16 text-center focus:border-primary outline-none" />
+                                <input id="height-input-ft" type="number" value={feet} onChange={(e) => { setFeet(e.target.value); handleHeightChangeImperial(e.target.value, inches); }} onFocus={(e) => e.target.select()} placeholder="5" className="bg-background border border-white/10 rounded-lg p-2 w-16 text-center focus:border-primary outline-none" />
                                 <span className="absolute right-2 top-2 text-text-secondary text-xs pointer-events-none">{t('profile_height_unit_ft')}</span>
                             </div>
                             <div className="relative">
-                                <input id="height-input-in" type="number" value={inches} onChange={(e) => { setInches(e.target.value); handleHeightChangeImperial(feet, e.target.value); }} placeholder="9" className="bg-background border border-white/10 rounded-lg p-2 w-16 text-center focus:border-primary outline-none" />
+                                <input id="height-input-in" type="number" value={inches} onChange={(e) => { setInches(e.target.value); handleHeightChangeImperial(feet, e.target.value); }} onFocus={(e) => e.target.select()} placeholder="9" className="bg-background border border-white/10 rounded-lg p-2 w-16 text-center focus:border-primary outline-none" />
                                 <span className="absolute right-2 top-2 text-text-secondary text-xs pointer-events-none">{t('profile_height_unit_in')}</span>
                             </div>
                         </div>
@@ -418,6 +419,7 @@ const ProfilePage: React.FC = () => {
                                 type="number"
                                 value={localWeight}
                                 onChange={(e) => setLocalWeight(e.target.value)}
+                                onFocus={(e) => e.target.select()}
                                 onBlur={handleWeightBlur}
                                 className={`${inputClass} pr-10 w-full`}
                                 placeholder="70.5"
@@ -502,6 +504,7 @@ const ProfilePage: React.FC = () => {
                                     onChange={handleTimerInputChange}
                                     onBlur={handleTimerBlur}
                                     onKeyDown={handleTimerKeyDown}
+                                    onFocus={(e) => e.target.select()}
                                     autoFocus
                                     className="bg-background border border-primary rounded-lg p-1.5 w-24 text-center text-sm outline-none"
                                     placeholder="m:ss"

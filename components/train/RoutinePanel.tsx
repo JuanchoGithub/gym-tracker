@@ -109,11 +109,11 @@ const RoutinePanel: React.FC<RoutinePanelProps> = ({ routine, onClick, onEdit, o
   if (isCustomTemplate) {
     menuItems.push({ id: 'edit', label: t('routine_panel_edit_exercises'), action: handleEdit, className: 'text-text-primary', icon: 'edit' });
     menuItems.push({ id: 'duplicate', label: t('common_duplicate'), action: handleDuplicate, className: 'text-text-primary', icon: 'duplicate' });
-    menuItems.push({ id: 'note', label: t('routine_panel_edit_note'), action: (e: React.MouseEvent) => { e.stopPropagation(); setIsNoteModalOpen(true); setNewNote(routine.description); setIsMenuOpen(false); }, className: 'text-text-primary', icon: 'clipboard-list' });
+    menuItems.push({ id: 'note', label: t('routine_panel_edit_note'), action: (e: React.MouseEvent) => { e.stopPropagation(); setIsNoteModalOpen(true); setNewNote(displayDescription); setIsMenuOpen(false); }, className: 'text-text-primary', icon: 'clipboard-list' });
   }
 
   if (isCustomTemplate || isLatestWorkout) {
-    menuItems.push({ id: 'rename', label: t('common_rename'), action: (e: React.MouseEvent) => { e.stopPropagation(); setIsRenameModalOpen(true); setNewName(routine.name); setIsMenuOpen(false); }, className: 'text-text-primary', icon: 'edit' });
+    menuItems.push({ id: 'rename', label: t('common_rename'), action: (e: React.MouseEvent) => { e.stopPropagation(); setIsRenameModalOpen(true); setNewName(displayName); setIsMenuOpen(false); }, className: 'text-text-primary', icon: 'edit' });
     menuItems.push({ id: 'delete', label: t('common_delete'), action: handleOpenDeleteConfirm, className: 'text-danger', icon: 'trash' });
   }
 

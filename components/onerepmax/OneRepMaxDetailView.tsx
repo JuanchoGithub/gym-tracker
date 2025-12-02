@@ -121,6 +121,7 @@ const OneRepMaxDetailView: React.FC<OneRepMaxDetailViewProps> = ({ exercise, onB
                             className="bg-black/20 border border-white/30 rounded-lg px-3 py-1 w-20 text-center text-white outline-none focus:border-white"
                             value={manualInput}
                             onChange={(e) => setManualInput(e.target.value)}
+                            onFocus={(e) => e.target.select()}
                         />
                         <button onClick={handleManualUpdate} className="text-sm underline font-medium">{t('orm_detail_rookie_action_manual')}</button>
                     </div>
@@ -189,6 +190,7 @@ const OneRepMaxDetailView: React.FC<OneRepMaxDetailViewProps> = ({ exercise, onB
                                     className="bg-surface border border-white/10 rounded-lg px-3 py-1.5 w-24 text-center text-white outline-none focus:border-primary"
                                     value={manualInput}
                                     onChange={(e) => setManualInput(e.target.value)}
+                                    onFocus={(e) => e.target.select()}
                                     placeholder={displayWeight(storedMax)}
                                 />
                                 <button onClick={handleManualUpdate} className="bg-surface hover:bg-white/10 p-2 rounded-lg text-primary">

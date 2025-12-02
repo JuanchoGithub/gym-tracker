@@ -4,7 +4,7 @@ import Modal from '../common/Modal';
 import { useI18n } from '../../hooks/useI18n';
 import { AppContext } from '../../contexts/AppContext';
 import { useMeasureUnit } from '../../hooks/useWeight';
-import { calculate1RM, generate1RMProtocol, ProtocolStep } from '../../utils/workoutUtils';
+import { generate1RMProtocol, ProtocolStep } from '../../utils/workoutUtils';
 import { Icon } from '../common/Icon';
 import { formatSecondsToMMSS } from '../../utils/timeUtils';
 import { TranslationKey } from '../../contexts/I18nContext';
@@ -28,16 +28,19 @@ const OneRepMaxWizardModal: React.FC<OneRepMaxWizardModalProps> = ({ isOpen, onC
     const [restTimer, setRestTimer] = useState<number | null>(null);
     const [testResult, setTestResult] = useState<number | null>(null);
     const [failureCount, setFailureCount] = useState(0);
+    const [attemptWeight, setAttemptWeight] = useState(initialWeight);
 
     useEffect(() => {
-        if (isOpen && target1RM > 0) {
+        // Only initialize protocol if it hasn't been set yet for this open session
+        if (isOpen && target1RM > 0 && protocol.length === 0) {
             setProtocol(generate1RMProtocol(target1RM));
+            setAttemptWeight(target1RM);
             setCurrentStepIndex(0);
             setRestTimer(null);
             setTestResult(null);
             setFailureCount(0);
         }
-    }, [isOpen, target1RM]);
+    }, [isOpen, target1RM, protocol.length]);
 
     useEffect(() => {
         let interval: number;
@@ -63,8 +66,7 @@ const OneRepMaxWizardModal: React.FC<OneRepMaxWizardModalProps> = ({ isOpen, onC
                             className="w-full bg-slate-900 border border-secondary/50 rounded-lg p-3 text-center text-xl font-bold"
                             placeholder={`0 ${t(('workout_' + weightUnit) as TranslationKey)}`}
                             onChange={(e) => {
-                                const val = parseFloat(e.target.value);
-                                // Don't set state immediately to avoid re-render loop or partial inputs
+                                // Logic handled onBlur to avoid state thrashing
                             }}
                             onBlur={(e) => {
                                  const val = parseFloat(e.target.value);
@@ -72,11 +74,12 @@ const OneRepMaxWizardModal: React.FC<OneRepMaxWizardModalProps> = ({ isOpen, onC
                                      setTarget1RM(getStoredWeight(val));
                                  }
                             }}
+                            onFocus={(e) => e.target.select()}
                             autoFocus
                         />
                     </div>
                      <button 
-                        onClick={() => { /* Logic handled by onBlur mostly, but button ensures focus out */ }}
+                        onClick={() => { /* Logic handled by onBlur mostly */ }}
                         className="w-full bg-primary text-white font-bold py-3 rounded-lg"
                         disabled={target1RM === 0}
                     >
@@ -88,12 +91,16 @@ const OneRepMaxWizardModal: React.FC<OneRepMaxWizardModalProps> = ({ isOpen, onC
     }
 
     const currentStep = protocol[currentStepIndex];
+    if (!currentStep) return null;
+
     const isLastStep = currentStep?.type === 'attempt';
-    const currentWeight = Math.round(target1RM * currentStep?.percentage / 2.5) * 2.5;
+    // If it's the last step, use the adjustable attemptWeight, otherwise calculate based on target1RM
+    const calculatedWeight = Math.round(target1RM * currentStep?.percentage / 2.5) * 2.5;
+    const currentWeight = isLastStep ? attemptWeight : calculatedWeight;
 
     const handleSuccess = () => {
         if (isLastStep) {
-            setTestResult(target1RM);
+            setTestResult(attemptWeight);
         } else {
             // Start rest timer
             setRestTimer(currentStep.rest);
@@ -106,19 +113,11 @@ const OneRepMaxWizardModal: React.FC<OneRepMaxWizardModalProps> = ({ isOpen, onC
     };
 
     const handleFail = () => {
-        // Only relevant on the attempt step usually, or maybe heavy warmup
         if (isLastStep) {
-            // Failed the max attempt.
             setFailureCount(prev => prev + 1);
-            // Suggest lower weight? Or just end?
-            // For simplicity, let's say 1RM is the previous warmup's weight or calculate based on failure.
-            // But in a protocol, usually you retry with lower weight.
-            
-            // Decrease target by 5-10%
-             const newTarget = target1RM * 0.95;
-             setTarget1RM(newTarget);
-             // Regenerate protocol? No, just stay on attempt step with new weight.
-             // Actually, simpler to just allow manual adjustment or Retry button.
+            // Decrease attempt weight by 5%
+             const newTarget = Math.round(attemptWeight * 0.95 / 2.5) * 2.5;
+             setAttemptWeight(newTarget);
         }
     };
     
@@ -150,10 +149,10 @@ const OneRepMaxWizardModal: React.FC<OneRepMaxWizardModalProps> = ({ isOpen, onC
         <Modal isOpen={isOpen} onClose={onClose} title={t('orm_wizard_title')}>
              {restTimer !== null ? (
                  <div className="text-center space-y-6 py-6">
-                     <h3 className="text-2xl font-bold text-text-primary">Rest</h3>
+                     <h3 className="text-2xl font-bold text-text-primary">{t('orm_prof_rest')}</h3>
                      <div className="text-6xl font-mono font-bold text-primary">{formatSecondsToMMSS(restTimer)}</div>
                      <button onClick={handleRestComplete} className="bg-secondary hover:bg-slate-600 text-white font-bold py-2 px-6 rounded-lg">
-                         {t('timer_skip')}
+                         {t('orm_prof_skip_rest')}
                      </button>
                  </div>
              ) : (
@@ -184,6 +183,24 @@ const OneRepMaxWizardModal: React.FC<OneRepMaxWizardModalProps> = ({ isOpen, onC
                                 {t('orm_wizard_success')}
                             </button>
                         </div>
+
+                        {isLastStep && (
+                             <div className="mt-4 flex justify-center items-center gap-2">
+                                <span className="text-sm text-text-secondary">{t('orm_weight_label')}:</span>
+                                <input 
+                                    type="number" 
+                                    value={displayWeight(attemptWeight)} 
+                                    onChange={(e) => {
+                                        const val = parseFloat(e.target.value);
+                                        if (!isNaN(val) && val > 0) {
+                                            setAttemptWeight(getStoredWeight(val));
+                                        }
+                                    }}
+                                    onFocus={(e) => e.target.select()}
+                                    className="bg-transparent text-xl font-bold text-white text-center w-24 outline-none border-b border-white/20 focus:border-primary"
+                                />
+                             </div>
+                        )}
                     </div>
                 </div>
              )}

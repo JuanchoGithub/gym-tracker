@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import { formatSecondsToMMSS, parseTimerInput } from '../../utils/timeUtils';
@@ -55,6 +56,7 @@ const EditSetTimerModal: React.FC<EditSetTimerModalProps> = ({ isOpen, onClose, 
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value.replace(/\D/g, ''))}
                     onKeyDown={handleKeyDown}
+                    onFocus={(e) => e.target.select()}
                     autoFocus
                     className="w-full bg-slate-900 border border-primary rounded-lg p-3 text-center text-2xl font-mono"
                     placeholder="m:ss or secs"

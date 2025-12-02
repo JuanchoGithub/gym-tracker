@@ -359,6 +359,7 @@ const TemplateEditorPage: React.FC = () => {
                                     type="number" 
                                     value={editingTemplate.hiitConfig?.workTime || 0} 
                                     onChange={e => handleHiitConfigChange('workTime', e.target.value)} 
+                                    onFocus={(e) => e.target.select()}
                                     className="w-full bg-transparent text-center text-xl sm:text-2xl font-mono font-bold text-rose-400 outline-none"
                                 />
                             </div>
@@ -368,6 +369,7 @@ const TemplateEditorPage: React.FC = () => {
                                     type="number" 
                                     value={editingTemplate.hiitConfig?.restTime || 0} 
                                     onChange={e => handleHiitConfigChange('restTime', e.target.value)} 
+                                    onFocus={(e) => e.target.select()}
                                     className="w-full bg-transparent text-center text-xl sm:text-2xl font-mono font-bold text-green-400 outline-none"
                                 />
                             </div>
@@ -377,6 +379,7 @@ const TemplateEditorPage: React.FC = () => {
                                     type="number" 
                                     value={editingTemplate.hiitConfig?.prepareTime || 0} 
                                     onChange={e => handleHiitConfigChange('prepareTime', e.target.value)} 
+                                    onFocus={(e) => e.target.select()}
                                     className="w-full bg-transparent text-center text-xl sm:text-2xl font-mono font-bold text-yellow-400 outline-none"
                                 />
                             </div>

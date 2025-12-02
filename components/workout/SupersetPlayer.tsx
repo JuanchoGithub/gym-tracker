@@ -398,6 +398,7 @@ const SupersetPlayer: React.FC<SupersetPlayerProps> = ({
                                              type="number" 
                                              value={weightInput}
                                              onChange={(e) => setWeightInput(e.target.value)}
+                                             onFocus={(e) => e.target.select()}
                                              className="w-32 sm:w-40 bg-transparent text-center text-5xl sm:text-6xl font-bold text-white outline-none font-mono"
                                              placeholder={lastPerformance ? (isTimed ? lastPerformance.time?.toString() : displayWeight(lastPerformance.weight)) : '-'}
                                          />
@@ -416,6 +417,7 @@ const SupersetPlayer: React.FC<SupersetPlayerProps> = ({
                                              type="number" 
                                              value={repsInput}
                                              onChange={(e) => setRepsInput(e.target.value)}
+                                             onFocus={(e) => e.target.select()}
                                              className="w-32 sm:w-40 bg-transparent text-center text-5xl sm:text-6xl font-bold text-white outline-none font-mono"
                                              placeholder={lastPerformance ? lastPerformance.reps.toString() : '-'}
                                          />

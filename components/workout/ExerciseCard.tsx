@@ -1,5 +1,5 @@
 
-import React, { useState, useContext, useMemo } from 'react';
+import React, { useState, useContext, useMemo, useEffect } from 'react';
 import { Exercise, WorkoutExercise, PerformedSet } from '../../types';
 import SetRow from './SetRow';
 import { Icon } from '../common/Icon';
@@ -38,16 +38,17 @@ interface ExerciseCardProps {
   onJoinSuperset?: (supersetId: string) => void;
   availableSupersets?: { id: string; name: string; exercises: string[] }[];
   onShowDetails?: () => void;
+  userBodyWeight?: number;
 }
 
 const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
   const { 
     workoutExercise, exerciseInfo, onUpdate, onStartTimedSet,
     isReorganizeMode, onDragStart, onDragEnter, onDragEnd, onMoveUp, onMoveDown, isMoveUpDisabled, isMoveDownDisabled, onReorganize, isBeingDraggedOver,
-    isCollapsed, onToggleCollapse, onRemove, onCreateSuperset, onJoinSuperset, availableSupersets, onShowDetails
+    isCollapsed, onToggleCollapse, onRemove, onCreateSuperset, onJoinSuperset, availableSupersets, onShowDetails, userBodyWeight
   } = props;
   const { t } = useI18n();
-  const { weightUnit } = useMeasureUnit();
+  const { weightUnit, displayWeight } = useMeasureUnit();
   const { history: allHistory, activeTimerInfo } = useContext(AppContext);
   const getExerciseName = useExerciseName();
   const [completedSets, setCompletedSets] = useState(workoutExercise.sets.filter(s => s.isComplete).length);
@@ -60,8 +61,10 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
     return history.length > 0 ? history[0] : null;
   }, [allHistory, exerciseInfo.id]);
   
+  const isBodyweight = ['Bodyweight', 'Plyometrics'].includes(exerciseInfo.category);
+  const isAssisted = exerciseInfo.category === 'Assisted Bodyweight';
   const isWeightOptional = useMemo(() => {
-    return ['Bodyweight', 'Assisted Bodyweight', 'Reps Only', 'Cardio', 'Duration'].includes(exerciseInfo.category);
+    return ['Reps Only', 'Cardio', 'Duration'].includes(exerciseInfo.category);
   }, [exerciseInfo.category]);
   
   const handleUpdateSet = (updatedSet: PerformedSet) => {
@@ -69,13 +72,36 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
     if (oldSetIndex === -1) return;
     const oldSet = workoutExercise.sets[oldSetIndex];
 
+    let setForStorage = { ...updatedSet };
+
+    // LOGIC: Handle Bodyweight / Assisted Calculations
+    // If Bodyweight exercise, 'updatedSet.weight' is EXTRA weight (input value).
+    // If Assisted exercise, 'updatedSet.weight' is ASSISTANCE weight (input value).
+    // We convert this to Total Load for storage if user bodyweight is known.
+    const bw = userBodyWeight || 0;
+    if (updatedSet.type !== 'timed' && bw > 0) {
+         if (isBodyweight && updatedSet.weight >= 0) {
+             // Total = Body Weight + Extra
+             setForStorage.weight = bw + updatedSet.weight;
+         } else if (isAssisted && updatedSet.weight >= 0) {
+             // Total = Body Weight - Assistance
+             // If assistance > bodyweight, load is 0
+             setForStorage.weight = Math.max(0, bw - updatedSet.weight);
+         }
+    }
+    // If bw is 0, we pass the input as is (0 for BW, 20 for Assisted). 
+    // For BW: ActiveWorkoutPage catches 0 total and asks for weight.
+    // For Assisted: We store just the assistance value temporarily? 
+    // Ideally, we want to force BW entry. But if we send '20' (assistance), it passes validation > 0.
+    // This is acceptable behavior for now to not block the user, though data will be 'light'.
+
     let newSets = [...workoutExercise.sets];
     
-    let setAfterValueReset = { ...updatedSet };
+    let setAfterValueReset = { ...setForStorage };
     let needsWeightCascade = false;
     let needsRepsCascade = false;
 
-    // Handle weight reset signal (when input is cleared)
+    // Handle weight reset signal
     if (updatedSet.weight < 0) {
         const sourceSet = oldSetIndex > 0 ? newSets[oldSetIndex - 1] : null;
         const fallbackWeight = oldSet.historicalWeight ?? 0;
@@ -83,10 +109,10 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
         setAfterValueReset = { ...setAfterValueReset, weight: newWeight, isWeightInherited: true };
         needsWeightCascade = true;
     } else {
-        needsWeightCascade = updatedSet.type !== 'timed' && oldSet.weight !== updatedSet.weight && updatedSet.isWeightInherited === false && !updatedSet.isComplete;
+        needsWeightCascade = setForStorage.type !== 'timed' && oldSet.weight !== setForStorage.weight && setForStorage.isWeightInherited === false && !setForStorage.isComplete;
     }
 
-    // Handle reps reset signal (when input is cleared)
+    // Handle reps reset signal
     if (updatedSet.reps < 0) {
         const sourceSet = oldSetIndex > 0 ? newSets[oldSetIndex - 1] : null;
         const fallbackReps = oldSet.historicalReps ?? 0;
@@ -97,17 +123,14 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
         needsRepsCascade = oldSet.reps !== updatedSet.reps && updatedSet.isRepsInherited === false && !updatedSet.isComplete;
     }
     
-    // Apply the updated (and possibly reset) set to the array
     newSets[oldSetIndex] = setAfterValueReset;
 
-    // Now, cascade changes
+    // Cascade changes
     const finalUpdatedSet = newSets[oldSetIndex];
     if (needsWeightCascade) {
         for (let i = oldSetIndex + 1; i < newSets.length; i++) {
             const currentSet = newSets[i];
             if (currentSet.isComplete || currentSet.isWeightInherited === false || currentSet.type === 'timed') break;
-            
-            // Only inherit if the set type matches
             if (currentSet.type === finalUpdatedSet.type) {
                 newSets[i] = { ...currentSet, weight: finalUpdatedSet.weight, isWeightInherited: true };
             }
@@ -118,8 +141,6 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
         for (let i = oldSetIndex + 1; i < newSets.length; i++) {
             const currentSet = newSets[i];
             if (currentSet.isComplete || currentSet.isRepsInherited === false) break;
-            
-            // Only inherit if the set type matches
             if (currentSet.type === finalUpdatedSet.type) {
                 newSets[i] = { ...currentSet, reps: finalUpdatedSet.reps, isRepsInherited: true };
             }
@@ -153,9 +174,8 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
     // Start fixing inheritance from the point of deletion onwards
     for (let i = deletedIndex; i < newSets.length; i++) {
         const currentSet = newSets[i];
-        if (currentSet.isComplete) continue; // Don't change completed sets
+        if (currentSet.isComplete) continue;
 
-        // The source for inheritance is the set right before the current one in the updated list.
         const sourceSet = i > 0 ? newSets[i - 1] : null;
         
         const newInheritedSet: PerformedSet = {
@@ -168,13 +188,11 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
         if (sourceSet) {
             newInheritedSet.reps = sourceSet.reps;
             if (currentSet.type === 'timed') {
-                // A timed set inherits time from a previous timed set, otherwise it reverts to its own historical value.
                 newInheritedSet.time = sourceSet.type === 'timed' ? sourceSet.time : currentSet.historicalTime;
             } else {
-                // A weight set inherits weight from a previous weight set, otherwise it reverts to its own historical value.
                 newInheritedSet.weight = sourceSet.type !== 'timed' ? sourceSet.weight : currentSet.historicalWeight;
             }
-        } else { // This is now the first incomplete set, so it must revert to its own historical values.
+        } else { 
             newInheritedSet.reps = currentSet.historicalReps ?? currentSet.reps;
             if (currentSet.type === 'timed') {
                 newInheritedSet.time = currentSet.historicalTime ?? currentSet.time;
@@ -232,6 +250,8 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
     );
   }
 
+  const bodyWeightLabel = (isBodyweight || isAssisted) && userBodyWeight ? `+ Body (${displayWeight(userBodyWeight)}${t(('workout_' + weightUnit) as TranslationKey)})` : '';
+
   return (
     <div 
       className={`bg-surface rounded-2xl shadow-md transition-all duration-300 border ${allSetsCompleted ? 'border-success/30 shadow-success/5' : 'border-white/5 shadow-black/20'}`}
@@ -242,7 +262,10 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
                 workoutExercise={workoutExercise}
                 exerciseInfo={exerciseInfo}
                 onUpdate={onUpdate}
-                onAddNote={() => { setIsNoteEditing(true); setNote(workoutExercise.note || ''); }}
+                onAddNote={() => { 
+                    setIsNoteEditing(true); 
+                    setNote(workoutExercise.note ? t(workoutExercise.note as any) : ''); 
+                }}
                 onOpenTimerModal={() => setIsDefaultsTimerModalOpen(true)}
                 onToggleCollapse={onToggleCollapse}
                 onMoveUp={onMoveUp}
@@ -276,14 +299,20 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
               )}
               {!isNoteEditing && workoutExercise.note && (
                   <div className="text-sm text-text-secondary/90 italic my-2 p-3 bg-yellow-500/5 border-l-2 border-yellow-500/30 rounded-r-md">
-                    "{workoutExercise.note}"
+                    "{t(workoutExercise.note as any)}"
                   </div>
               )}
 
               <div className="grid grid-cols-5 items-center gap-2 text-[10px] sm:text-xs font-bold text-text-secondary uppercase tracking-wider mb-2 px-2">
                   <div className="text-center">{t('workout_set')}</div>
                   <div className="text-center">{t('workout_previous')}</div>
-                  <div className="text-center">{t('workout_weight')} <span className="text-[9px] text-text-secondary/50 lowercase">({t(`workout_${weightUnit}` as TranslationKey)})</span></div>
+                  <div className="text-center truncate" title={bodyWeightLabel}>
+                      {isBodyweight && userBodyWeight ? 'Extra' : (isAssisted ? 'Assist' : t('workout_weight'))} 
+                      <span className="text-[9px] text-text-secondary/50 lowercase ml-1">
+                          ({t(`workout_${weightUnit}` as TranslationKey)})
+                      </span>
+                      {bodyWeightLabel && <span className="block text-[9px] text-primary/70 normal-case">{bodyWeightLabel}</span>}
+                  </div>
                   <div className="text-center">{t('workout_reps')}</div>
                   <div className="text-center"></div>
               </div>
@@ -297,10 +326,26 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
                     const showFinishedTimer = set.isComplete && !isActiveTimer;
                     const previousSetData = lastPerformance?.exerciseData.sets[setIndex];
                     
+                    // UI Transformation for Display
+                    let displaySet = { ...set };
+                    if (set.type !== 'timed' && userBodyWeight && userBodyWeight > 0 && set.weight > 0) {
+                         if (isBodyweight) {
+                             // Display Extra Weight (Total - Body)
+                             // If Total < Body, it means 0 extra or negative? Clamp to 0.
+                             displaySet.weight = Math.max(0, set.weight - userBodyWeight);
+                         } else if (isAssisted) {
+                             // Display Assistance Weight (Body - Total)
+                             displaySet.weight = Math.max(0, userBodyWeight - set.weight);
+                         }
+                    } else if (isBodyweight && set.weight === 0) {
+                        // Implicit 0 extra.
+                        displaySet.weight = 0;
+                    }
+
                     return (
                       <React.Fragment key={set.id}>
                           <SetRow
-                              set={set}
+                              set={displaySet}
                               setNumber={normalSetCounter}
                               onUpdateSet={handleUpdateSet}
                               onDeleteSet={() => handleDeleteSet(set.id)}

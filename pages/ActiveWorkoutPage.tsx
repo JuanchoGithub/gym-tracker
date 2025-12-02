@@ -70,7 +70,8 @@ const ActiveWorkoutPage: React.FC = () => {
   const [draggedOverIndices, setDraggedOverIndices] = useState<number[] | null>(null);
   
   const [isWeightInputModalOpen, setIsWeightInputModalOpen] = useState(false);
-  const [pendingExerciseUpdate, setPendingExerciseUpdate] = useState<WorkoutExercise | null>(null);
+  const [pendingExerciseUpdate, setPendingExerciseUpdate] = useState<{ exercise: WorkoutExercise, setIndex: number } | null>(null);
+  const [weightModalDefaults, setWeightModalDefaults] = useState<{ bodyWeight?: number, extraWeight?: number }>({});
   
   const [activeSupersetPlayerId, setActiveSupersetPlayerId] = useState<string | null>(null);
   
@@ -86,9 +87,9 @@ const ActiveWorkoutPage: React.FC = () => {
     if (!activeWorkout) return false;
     for (const ex of activeWorkout.exercises) {
       const exerciseInfo = getExerciseById(ex.exerciseId);
-      const isWeightOptional = exerciseInfo?.category === 'Bodyweight' || 
-                             exerciseInfo?.category === 'Assisted Bodyweight' || 
-                             exerciseInfo?.category === 'Reps Only' || 
+      // Removed 'Bodyweight' and 'Assisted Bodyweight' to enforce recording Total Load (User + Extra)
+      // This ensures 1RM calcs are valid. 0 weight (no user weight recorded) will flag as invalid.
+      const isWeightOptional = exerciseInfo?.category === 'Reps Only' || 
                              exerciseInfo?.category === 'Duration' || 
                              exerciseInfo?.category === 'Cardio';
 
@@ -372,13 +373,32 @@ const ActiveWorkoutPage: React.FC = () => {
         }
     }
 
-    // Intercept completion for bodyweight exercises if user weight is missing
-    if (justCompletedSet && (!currentWeight || currentWeight <= 0) && justCompletedSet.weight === 0) {
+    // Intercept completion for bodyweight exercises if user weight is missing or ambiguous.
+    if (justCompletedSet) {
       const exerciseInfo = getExerciseById(updatedExercise.exerciseId);
       const isBodyweight = exerciseInfo && ['Bodyweight', 'Assisted Bodyweight', 'Plyometrics'].includes(exerciseInfo.category);
       
-      if (isBodyweight) {
-          setPendingExerciseUpdate(updatedExercise);
+      if (isBodyweight && !currentWeight) {
+          // Heuristic Logic:
+          // 1. User entered nothing or 0 -> Ask (BW empty, Extra 0)
+          // 2. User entered <= 40kg -> Probably "Added Weight" (Assist or weighted vest). Ask for BW. Pre-fill Extra.
+          // 3. User entered > 40kg -> Probably "Total Body Weight". Ask for BW. Pre-fill BW, Extra 0.
+          
+          const inputVal = justCompletedSet.weight; // This comes from the input (passed through ExerciseCard)
+          
+          let initBW = undefined;
+          let initExtra = 0;
+          
+          if (inputVal > 0 && inputVal <= 40) {
+              // Assume it's extra
+              initExtra = inputVal;
+          } else if (inputVal > 40) {
+              // Assume it's total BW
+              initBW = inputVal;
+          }
+          
+          setPendingExerciseUpdate({ exercise: updatedExercise, setIndex: justCompletedSetIndex });
+          setWeightModalDefaults({ bodyWeight: initBW, extraWeight: initExtra });
           setIsWeightInputModalOpen(true);
           return;
       }
@@ -406,7 +426,6 @@ const ActiveWorkoutPage: React.FC = () => {
     workoutToUpdate = { ...workoutToUpdate, exercises: updatedExercises };
 
     // Set new timer or clear existing one
-    // Note: The SupersetPlayer handles its own timer, so we skip this if playing
     if (!activeSupersetPlayerId) {
         if (justCompletedSet) {
             const duration = getTimerDuration(justCompletedSet, updatedExercise, justCompletedSetIndex);
@@ -548,20 +567,24 @@ const ActiveWorkoutPage: React.FC = () => {
       setActiveSupersetPlayerId(supersetId);
   };
   
-  const handleWeightModalSave = (weightInKg: number) => {
-    logWeight(weightInKg);
+  const handleWeightModalSave = (bodyWeightKg: number, totalLoadKg: number) => {
+    logWeight(bodyWeightKg);
     
     if (pendingExerciseUpdate) {
-      const adjustedExercise = { ...pendingExerciseUpdate };
-      adjustedExercise.sets = adjustedExercise.sets.map(s => {
-          if (s.isComplete && s.weight === 0) {
-              return { ...s, weight: weightInKg };
-          }
-          return s;
-      });
-      
-      handleUpdateExercise(adjustedExercise);
-      setPendingExerciseUpdate(null);
+        const { exercise, setIndex } = pendingExerciseUpdate;
+        const adjustedExercise = { ...exercise };
+        const adjustedSets = [...adjustedExercise.sets];
+        
+        const set = adjustedSets[setIndex];
+        if (set && set.isComplete) {
+            // Set total load calculated from modal
+            adjustedSets[setIndex] = { ...set, weight: totalLoadKg };
+        }
+
+        adjustedExercise.sets = adjustedSets;
+        
+        handleUpdateExercise(adjustedExercise);
+        setPendingExerciseUpdate(null);
     }
     
     setIsWeightInputModalOpen(false);
@@ -809,6 +832,7 @@ const ActiveWorkoutPage: React.FC = () => {
                 onJoinSuperset={!exercise.supersetId ? (supersetId) => handleJoinSuperset(exercise.id, supersetId) : undefined}
                 availableSupersets={availableSupersets}
                 onShowDetails={() => handleShowExerciseDetails(exercise.exerciseId)}
+                userBodyWeight={currentWeight}
             />
           </div>
       ) : null;
@@ -1025,6 +1049,8 @@ const ActiveWorkoutPage: React.FC = () => {
         isOpen={isWeightInputModalOpen}
         onClose={() => setIsWeightInputModalOpen(false)}
         onSave={handleWeightModalSave}
+        initialBodyWeight={weightModalDefaults.bodyWeight}
+        initialExtraWeight={weightModalDefaults.extraWeight}
       />
       
       {viewingExercise && (

@@ -204,7 +204,11 @@ const TemplateExerciseCard: React.FC<TemplateExerciseCardProps> = (props) => {
                 <div className="h-px bg-secondary/50 my-1"></div>
                 </>
               )}
-              <button onClick={() => { setIsNoteEditing(true); setIsMenuOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">{t('template_card_add_edit_note')}</button>
+              <button onClick={() => { 
+                  setIsNoteEditing(true); 
+                  setNote(workoutExercise.note ? t(workoutExercise.note as any) : '');
+                  setIsMenuOpen(false); 
+              }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">{t('template_card_add_edit_note')}</button>
               <button onClick={() => { setIsDefaultsTimerModalOpen(true); setIsMenuOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600">{t('template_card_edit_timers')}</button>
               <button onClick={() => { onMoveUp(); setIsMenuOpen(false); }} disabled={isMoveUpDisabled} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed">{t('template_card_move_up')}</button>
               <button onClick={() => { onMoveDown(); setIsMenuOpen(false); }} disabled={isMoveDownDisabled} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed">{t('template_card_move_down')}</button>
@@ -225,7 +229,7 @@ const TemplateExerciseCard: React.FC<TemplateExerciseCardProps> = (props) => {
               </div>
             </div>
           )}
-          {!isNoteEditing && workoutExercise.note && <p className="text-sm text-text-secondary italic my-2 p-2 bg-slate-900/50 rounded-md">"{workoutExercise.note}"</p>}
+          {!isNoteEditing && workoutExercise.note && <p className="text-sm text-text-secondary italic my-2 p-2 bg-slate-900/50 rounded-md">"{t(workoutExercise.note as any)}"</p>}
           
           <div className="grid grid-cols-12 items-center gap-2 text-xs text-text-secondary">
             <div className="col-span-2 text-center font-semibold">{t('workout_set')}</div>
