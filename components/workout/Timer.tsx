@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { playWarningSound, playEndSound, playTickSound } from '../../services/audioService';
+import { playWarningSound, playEndSound, playTickSound, unlockAudioContext } from '../../services/audioService';
 import { Icon } from '../common/Icon';
 import { useI18n } from '../../hooks/useI18n';
 import { formatTime, formatSecondsToMMSS } from '../../utils/timeUtils';
@@ -69,10 +69,15 @@ const Timer: React.FC<TimerProps> = ({ timerInfo, effortTime, failureTime, onFin
 
 
   const togglePause = () => {
+    if (timerInfo.isPaused) {
+      // Resuming - unlock audio with silent buffer
+      unlockAudioContext();
+    }
     onTogglePause(!timerInfo.isPaused, timeLeft);
   };
 
   const modifyTime = (amount: number) => {
+    unlockAudioContext();
     const newTimeLeft = Math.max(0, timeLeft + amount);
     const newTotalDuration = Math.max(0, timerInfo.totalDuration + amount);
     onTimeUpdate({ newTimeLeft, newTotalDuration });
@@ -82,6 +87,8 @@ const Timer: React.FC<TimerProps> = ({ timerInfo, effortTime, failureTime, onFin
   };
 
   const handleReset = () => {
+    // User gesture - unlock audio
+    unlockAudioContext();
     const newTimeLeft = timerInfo.initialDuration;
     // The total duration should also be reset for the progress bar.
     onTimeUpdate({ newTimeLeft, newTotalDuration: timerInfo.initialDuration });
@@ -89,6 +96,12 @@ const Timer: React.FC<TimerProps> = ({ timerInfo, effortTime, failureTime, onFin
         onTogglePause(false, newTimeLeft);
     }
   };
+  
+  const handleChangeDurationWrapper = (duration: number) => {
+      // User gesture - unlock audio
+      unlockAudioContext();
+      onChangeDuration(duration);
+  }
 
   const handleSkip = () => {
     onFinishRef.current();
@@ -149,14 +162,14 @@ const Timer: React.FC<TimerProps> = ({ timerInfo, effortTime, failureTime, onFin
                         <span>{t('timer_reset')}</span>
                         <span className="font-mono">{formatSecondsToMMSS(timerInfo.initialDuration)}</span>
                     </button>
-                    <button onClick={() => onChangeDuration(effortTime)} className={`${presetButtonClass} relative`}>
+                    <button onClick={() => handleChangeDurationWrapper(effortTime)} className={`${presetButtonClass} relative`}>
                         <span>{t('timer_effort')}</span>
                         <span className="font-mono">{formatSecondsToMMSS(effortTime)}</span>
                         <div className={infoButtonClass} onClick={(e) => { e.stopPropagation(); setInfoModalContent({title: t('timer_effort_desc_title'), message: t('timer_effort_desc')})}}>
                             <Icon name="question-mark-circle" className="w-4 h-4" />
                         </div>
                     </button>
-                    <button onClick={() => onChangeDuration(failureTime)} className={`${presetButtonClass} relative`}>
+                    <button onClick={() => handleChangeDurationWrapper(failureTime)} className={`${presetButtonClass} relative`}>
                         <span>{t('timer_failure')}</span>
                         <span className="font-mono">{formatSecondsToMMSS(failureTime)}</span>
                         <div className={infoButtonClass} onClick={(e) => { e.stopPropagation(); setInfoModalContent({title: t('timer_failure_desc_title'), message: t('timer_failure_desc')})}}>

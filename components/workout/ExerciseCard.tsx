@@ -83,17 +83,17 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
          if (isBodyweight && updatedSet.weight >= 0) {
              // Total = Body Weight + Extra
              setForStorage.weight = bw + updatedSet.weight;
+             // Snapshot bodyweight to prevent historical drift
+             setForStorage.storedBodyWeight = bw;
          } else if (isAssisted && updatedSet.weight >= 0) {
              // Total = Body Weight - Assistance
              // If assistance > bodyweight, load is 0
              setForStorage.weight = Math.max(0, bw - updatedSet.weight);
+             setForStorage.storedBodyWeight = bw;
          }
     }
     // If bw is 0, we pass the input as is (0 for BW, 20 for Assisted). 
     // For BW: ActiveWorkoutPage catches 0 total and asks for weight.
-    // For Assisted: We store just the assistance value temporarily? 
-    // Ideally, we want to force BW entry. But if we send '20' (assistance), it passes validation > 0.
-    // This is acceptable behavior for now to not block the user, though data will be 'light'.
 
     let newSets = [...workoutExercise.sets];
     
@@ -328,14 +328,17 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
                     
                     // UI Transformation for Display
                     let displaySet = { ...set };
-                    if (set.type !== 'timed' && userBodyWeight && userBodyWeight > 0 && set.weight > 0) {
+                    
+                    // FIX: Use storedBodyWeight for consistent historical data if available, otherwise fall back to current userBodyWeight
+                    const referenceBodyWeight = set.storedBodyWeight ?? userBodyWeight;
+                    
+                    if (set.type !== 'timed' && referenceBodyWeight && referenceBodyWeight > 0 && set.weight > 0) {
                          if (isBodyweight) {
                              // Display Extra Weight (Total - Body)
-                             // If Total < Body, it means 0 extra or negative? Clamp to 0.
-                             displaySet.weight = Math.max(0, set.weight - userBodyWeight);
+                             displaySet.weight = Math.max(0, set.weight - referenceBodyWeight);
                          } else if (isAssisted) {
                              // Display Assistance Weight (Body - Total)
-                             displaySet.weight = Math.max(0, userBodyWeight - set.weight);
+                             displaySet.weight = Math.max(0, referenceBodyWeight - set.weight);
                          }
                     } else if (isBodyweight && set.weight === 0) {
                         // Implicit 0 extra.

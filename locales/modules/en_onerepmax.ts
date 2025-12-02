@@ -9,6 +9,7 @@ export const en_onerepmax = {
   orm_needs_calibration: "Needs Calibration",
   orm_calibrate: "Calibrate",
   orm_search_placeholder: "Search lift...",
+  orm_search_empty_state: "Search any exercise to see estimated 1RM based on your main lifts.",
   
   // Detail View
   orm_detail_rookie_title: "What is a 1-Rep Max?",

@@ -9,6 +9,7 @@ export const es_onerepmax = {
   orm_needs_calibration: "Requiere Calibración",
   orm_calibrate: "Calibrar",
   orm_search_placeholder: "Buscar ejercicio...",
+  orm_search_empty_state: "Buscá cualquier ejercicio para ver el 1RM estimado basado en tus levantamientos principales.",
   
   // Detail View
   orm_detail_rookie_title: "¿Qué es el 1RM?",

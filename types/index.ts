@@ -37,6 +37,7 @@ export interface PerformedSet {
   historicalWeight?: number;
   historicalReps?: number;
   historicalTime?: number;
+  storedBodyWeight?: number; // Snapshot of user bodyweight when set was completed
 }
 
 export interface WorkoutExercise {

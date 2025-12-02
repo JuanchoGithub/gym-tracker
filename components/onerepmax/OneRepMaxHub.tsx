@@ -167,7 +167,7 @@ const OneRepMaxHub: React.FC<OneRepMaxHubProps> = ({ isOpen, onClose }) => {
                                         {searchTerm ? t('exercises_no_match') : 
                                             <span className="flex flex-col items-center gap-2">
                                                 <Icon name="search" className="w-8 h-8 opacity-50" />
-                                                <span>Search any exercise to see estimated 1RM based on your main lifts.</span>
+                                                <span>{t('orm_search_empty_state')}</span>
                                             </span>
                                         }
                                     </div>

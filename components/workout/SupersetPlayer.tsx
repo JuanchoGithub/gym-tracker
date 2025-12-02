@@ -158,8 +158,6 @@ const SupersetPlayer: React.FC<SupersetPlayerProps> = ({
     // Timer Logic
     useEffect(() => {
         if (phase === 'transition') {
-            unlockAudioContext();
-            
             // Initialize target time based on the initial 10s
             // We use a ref for targetTime to make it robust against renders
             targetTimeRef.current = Date.now() + 10000;
@@ -191,6 +189,8 @@ const SupersetPlayer: React.FC<SupersetPlayerProps> = ({
     }, [phase, isFinalRest]); // Re-run only when phase changes
 
     const handleAddTime = () => {
+        // Unlock audio on user gesture
+        unlockAudioContext();
         // Add 10 seconds to the target time
         targetTimeRef.current += 10000;
         // Optimistically update UI immediately so it doesn't wait for next interval tick
@@ -210,6 +210,8 @@ const SupersetPlayer: React.FC<SupersetPlayerProps> = ({
     };
 
     const handleCompleteSet = () => {
+        // Unlock audio on user gesture
+        unlockAudioContext();
         const set = currentWorkoutExercise.sets[currentRoundIndex];
         if (!set) return;
 
@@ -236,6 +238,8 @@ const SupersetPlayer: React.FC<SupersetPlayerProps> = ({
     };
 
     const handleOneMoar = () => {
+        // Unlock audio on user gesture
+        unlockAudioContext();
         // 1. Add a new set to ALL exercises in this superset
         exercises.forEach(ex => {
             const lastSet = ex.sets[ex.sets.length - 1] || { reps: 10, weight: 0, type: 'normal', time: 0 };

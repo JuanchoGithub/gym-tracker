@@ -160,7 +160,21 @@ const ActiveWorkoutPage: React.FC = () => {
 
   const handleExitReorganizeMode = (save: boolean) => {
     if (save && activeWorkout) {
-      updateActiveWorkout({ ...activeWorkout, exercises: tempExercises });
+        // Fix Data Loss Race Condition:
+        // Merge the new ORDER and SUPERSET_ID from tempExercises with the LATEST DATA from activeWorkout.
+        // This ensures that if a timer finished while the user was reorganizing (updating activeWorkout.exercises[i].sets[j].actualRest),
+        // we don't overwrite that data with the stale snapshot from tempExercises.
+        const mergedExercises = tempExercises.map(tempEx => {
+            const latestEx = activeWorkout.exercises.find(e => e.id === tempEx.id);
+            if (!latestEx) return tempEx; // Fallback
+            
+            return {
+                ...latestEx, // Persist latest set data, notes, timers
+                supersetId: tempEx.supersetId // Persist structural changes from reorganize
+            };
+        });
+
+        updateActiveWorkout({ ...activeWorkout, exercises: mergedExercises });
     }
     setIsReorganizeMode(false);
     setTempExercises([]);

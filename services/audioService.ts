@@ -13,8 +13,16 @@ export const unlockAudioContext = () => {
   try {
     const ctx = getAudioContext();
     if (ctx.state === 'suspended') {
-      ctx.resume();
+      ctx.resume().catch(e => console.error("Resume failed", e));
     }
+    
+    // Play a silent buffer to force the audio engine to wake up on iOS/Mobile
+    // This is crucial because just calling resume() isn't always enough if not triggered directly by a click event stack
+    const buffer = ctx.createBuffer(1, 1, 22050);
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(ctx.destination);
+    source.start(0);
   } catch (e) {
     console.error("Failed to unlock AudioContext:", e);
   }
@@ -23,8 +31,9 @@ export const unlockAudioContext = () => {
 const playSound = (createSound: (ctx: AudioContext, time: number) => void) => {
   try {
     const ctx = getAudioContext();
+    // We still try to resume here, but relying on unlockAudioContext being called during user gesture is safer
     if (ctx.state === 'suspended') {
-      ctx.resume();
+      ctx.resume().catch(() => {});
     }
     createSound(ctx, ctx.currentTime);
   } catch (e) {
