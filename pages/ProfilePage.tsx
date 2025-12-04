@@ -122,6 +122,11 @@ const ProfilePage: React.FC = () => {
   const [inches, setInches] = useState('');
   const [selectedOrmExerciseId, setSelectedOrmExerciseId] = useState<string | null>(null);
 
+  // Import Flow State
+  const [pendingImportData, setPendingImportData] = useState<any>(null);
+  const [isImportConfirmOpen, setIsImportConfirmOpen] = useState(false);
+  const [importStatusMsg, setImportStatusMsg] = useState<{title: string, msg: string} | null>(null);
+
   const [wakeLockPermission, setWakeLockPermission] = useState<'granted' | 'denied' | 'unsupported'>('granted');
 
   const lifterStats = useMemo(() => calculateLifterDNA(history, currentWeight || 70), [history, currentWeight]);
@@ -291,6 +296,9 @@ const ProfilePage: React.FC = () => {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
+      // Reset the input value immediately so the same file can be selected again if needed
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      
       if (!file) return;
       
       const reader = new FileReader();
@@ -299,18 +307,29 @@ const ProfilePage: React.FC = () => {
               const result = event.target?.result;
               if (typeof result === 'string') {
                   const data = JSON.parse(result);
-                  if (confirm(t('profile_import_confirm'))) {
-                      importData(data);
-                      alert(t('profile_import_success'));
+                  // Basic validation
+                  if (data && (Array.isArray(data.history) || Array.isArray(data.routines))) {
+                      setPendingImportData(data);
+                      setIsImportConfirmOpen(true);
+                  } else {
+                      setImportStatusMsg({ title: t('profile_import_error'), msg: t('profile_import_error_invalid') });
                   }
               }
           } catch (err) {
               console.error(err);
-              alert(t('profile_import_error'));
+              setImportStatusMsg({ title: t('profile_import_error'), msg: t('profile_import_error_parse') });
           }
-          if (fileInputRef.current) fileInputRef.current.value = '';
       };
       reader.readAsText(file);
+  };
+
+  const confirmImport = () => {
+      if (pendingImportData) {
+          importData(pendingImportData);
+          setIsImportConfirmOpen(false);
+          setPendingImportData(null);
+          setImportStatusMsg({ title: t('common_success'), msg: t('profile_import_success') });
+      }
   };
 
   const timerInputs: { key: keyof typeof defaultRestTimes; labelKey: TranslationKey, infoKey?: {title: TranslationKey, message: TranslationKey} }[] = [
@@ -707,6 +726,72 @@ const ProfilePage: React.FC = () => {
               </div>
           </div>
       </Modal>
+
+      <Modal 
+        isOpen={isImportConfirmOpen} 
+        onClose={() => { setIsImportConfirmOpen(false); setPendingImportData(null); }}
+        title={t('common_import')}
+      >
+        <div className="space-y-4">
+             <div className="flex items-start gap-3 text-warning bg-warning/10 p-3 rounded-lg border border-warning/20">
+                 <Icon name="warning" className="w-6 h-6 flex-shrink-0 mt-0.5" />
+                 <div>
+                    <p className="font-bold text-sm text-warning mb-1">{t('profile_import_confirm')}</p>
+                    <p className="text-xs text-text-secondary/80">{t('profile_import_confirm_details')}</p>
+                 </div>
+             </div>
+             
+             {pendingImportData && (
+                 <div className="bg-surface-highlight/30 rounded-xl p-4 text-sm space-y-2 border border-white/5">
+                     <p className="text-white font-semibold border-b border-white/10 pb-2 mb-2">{t('profile_import_summary_title')}</p>
+                     <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-xs">
+                        <div className="flex justify-between">
+                            <span className="text-text-secondary">{t('profile_import_summary_workouts')}:</span>
+                            <span className="text-white font-mono font-bold">{pendingImportData.history?.length || 0}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-text-secondary">{t('profile_import_summary_templates')}:</span>
+                            <span className="text-white font-mono font-bold">{pendingImportData.routines?.length || 0}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-text-secondary">{t('profile_import_summary_exercises')}:</span>
+                            <span className="text-white font-mono font-bold">{pendingImportData.exercises?.length || 0}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-text-secondary">{t('profile_import_summary_supplements')}:</span>
+                            <span className="text-white font-mono font-bold">{(pendingImportData.supplementPlan?.plan?.length || 0) + (pendingImportData.userSupplements?.length || 0)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-text-secondary">{t('profile_import_summary_settings')}:</span>
+                            <span className="text-white font-mono font-bold">{pendingImportData.settings ? t('common_yes') : t('common_no')}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-text-secondary">{t('profile_import_summary_profile')}:</span>
+                            <span className="text-white font-mono font-bold">{pendingImportData.profile ? t('common_yes') : t('common_no')}</span>
+                        </div>
+                     </div>
+                 </div>
+             )}
+             
+             <div className="flex justify-end gap-3 pt-2">
+                 <button onClick={() => { setIsImportConfirmOpen(false); setPendingImportData(null); }} className="bg-secondary hover:bg-slate-600 text-white px-4 py-2 rounded-lg transition-colors">
+                     {t('common_cancel')}
+                 </button>
+                 <button onClick={confirmImport} className="bg-primary hover:bg-sky-600 text-white font-bold px-4 py-2 rounded-lg shadow-lg transition-colors">
+                     {t('common_confirm')}
+                 </button>
+             </div>
+        </div>
+      </Modal>
+
+      {importStatusMsg && (
+          <Modal isOpen={!!importStatusMsg} onClose={() => setImportStatusMsg(null)} title={importStatusMsg.title}>
+              <p className="text-text-secondary mb-4">{importStatusMsg.msg}</p>
+              <button onClick={() => setImportStatusMsg(null)} className="w-full bg-primary text-white font-bold py-2 rounded-lg">
+                  {t('common_close')}
+              </button>
+          </Modal>
+      )}
     </div>
   );
 };

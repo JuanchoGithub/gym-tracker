@@ -32,4 +32,7 @@ export const es_common = {
   common_dismiss: "Descartar",
   common_export: "Exportar",
   common_import: "Importar",
+  common_yes: "Sí",
+  common_no: "No",
+  common_success: "Éxito",
 };

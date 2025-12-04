@@ -577,8 +577,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       
       // Routines: Merge Imported Custom with Current Predefined
       if (Array.isArray(data.routines)) {
-          setRoutines(prev => {
-              const customImported = data.routines.filter((r: Routine) => !r.id.startsWith('rt-'));
+          setRoutines(() => {
               // Also include modified stock routines if any were exported (depends on export logic)
               // But since we filter out unmodified stock routines on export, we can just merge.
               // Safe strategy: Keep PREDEFINED, overwrite with imported if ID matches, append others.
@@ -600,7 +599,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       // Exercises: Merge Imported Custom with Current Predefined
       if (Array.isArray(data.exercises)) {
-          setRawExercises(prev => {
+          setRawExercises(() => {
               const merged = [...PREDEFINED_EXERCISES];
               const importedExercises = data.exercises as Exercise[];
               
