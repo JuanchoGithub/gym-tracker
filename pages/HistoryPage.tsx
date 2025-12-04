@@ -1,6 +1,7 @@
 
 import React, { useContext, useState } from 'react';
 import { AppContext } from '../contexts/AppContext';
+import { ActiveWorkoutContext } from '../contexts/ActiveWorkoutContext';
 import { useI18n } from '../hooks/useI18n';
 import { Routine, WorkoutSession } from '../types';
 import { useMeasureUnit } from '../hooks/useWeight';
@@ -14,7 +15,8 @@ import HistoryChartsTab from '../components/history/HistoryChartsTab';
 import { TranslationKey } from '../contexts/I18nContext';
 
 const HistoryPage: React.FC = () => {
-  const { history, getExerciseById, deleteHistorySession, upsertRoutine, startWorkout, startHistoryEdit, routines } = useContext(AppContext);
+  const { history, getExerciseById, deleteHistorySession, upsertRoutine, startHistoryEdit, routines } = useContext(AppContext);
+  const { startWorkout } = useContext(ActiveWorkoutContext);
   const { t } = useI18n();
   const { displayWeight, weightUnit } = useMeasureUnit();
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);

@@ -1,5 +1,6 @@
 
 
+
 export const es_supplements = {
   // Supplements Page
   supplements_title: 'Plan de Suplementos',
@@ -176,6 +177,9 @@ export const es_supplements = {
   
   suggestion_restock_title: 'Alerta de Stock Bajo: {supplement}',
   suggestion_restock_reason: 'Te quedan {count} porciones. ¡Es hora de comprar más!',
+
+  suggestion_drift_title: 'Actualizar Horario',
+  suggestion_drift_reason: 'Constantemente tomás {supplement} en el {time} en lugar de tu horario programado. ¿Te gustaría actualizar el plan?',
 
   // Months
   month_january: 'Enero',

@@ -1,6 +1,7 @@
 
 import React, { useState, useContext, FormEvent, useEffect } from 'react';
 import { AppContext } from '../contexts/AppContext';
+import { ActiveWorkoutContext } from '../contexts/ActiveWorkoutContext';
 import { useI18n } from '../hooks/useI18n';
 import { SupplementInfo, SupplementPlanItem } from '../types';
 import { generateSupplementPlan } from '../services/supplementService';
@@ -17,10 +18,11 @@ const SupplementPage: React.FC = () => {
   const { 
     supplementPlan, setSupplementPlan, userSupplements, setUserSupplements,
     newSuggestions, applyPlanSuggestion, applyAllPlanSuggestions, dismissSuggestion, dismissAllSuggestions, clearNewSuggestions, triggerManualPlanReview,
-    profile, currentWeight, activeWorkout, isWorkoutMinimized, history, takenSupplements, updateSupplementPlanItem
+    profile, currentWeight, history, takenSupplements, updateSupplementPlanItem
   } = useContext(AppContext);
+  const { activeWorkout, isWorkoutMinimized } = useContext(ActiveWorkoutContext);
   const { t } = useI18n();
-  const { measureUnit, weightUnit } = useMeasureUnit();
+  const { measureUnit, weightUnit, displayWeight, getStoredWeight } = useMeasureUnit();
 
   const [wizardActive, setWizardActive] = useState(false);
   const [planJustGenerated, setPlanJustGenerated] = useState(false);
@@ -268,7 +270,13 @@ const SupplementPage: React.FC = () => {
                             {t('supplements_weight_label')} <span className="text-primary">*</span>
                         </label>
                         <div className="relative mt-1">
-                          <input type="number" required value={formData.weight || ''} onChange={e => handleInputChange('weight', parseFloat(e.target.value))} className="w-full bg-surface border border-secondary/50 rounded-lg p-2 pr-12" />
+                          <input 
+                              type="number" 
+                              required 
+                              value={formData.weight ? displayWeight(formData.weight) : ''} 
+                              onChange={e => handleInputChange('weight', getStoredWeight(parseFloat(e.target.value)))} 
+                              className="w-full bg-surface border border-secondary/50 rounded-lg p-2 pr-12" 
+                          />
                           <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-text-secondary">{t(`workout_${weightUnit}` as TranslationKey)}</span>
                         </div>
                     </div>
@@ -530,10 +538,6 @@ const SupplementPage: React.FC = () => {
 
       {!wizardActive && (
           // Ensure we render even if plan is null (using userSupplements)
-          // The main SupplementSchedule component handles the null check for plan-specific features if needed,
-          // but since we moved manage logic there, it needs to be rendered.
-          // If no plan AND no user supplements, SupplementSchedule should ideally handle the empty state or show wizard prompt.
-          // For now, if plan exists OR user has supplements OR just generated, show schedule.
           (supplementPlan || userSupplements.length > 0 || planJustGenerated) && (
             <SupplementSchedule 
                 onEditAnswers={handleEditAnswers} 

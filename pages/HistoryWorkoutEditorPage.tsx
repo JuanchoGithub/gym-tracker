@@ -116,7 +116,9 @@ const HistoryWorkoutEditorPage: React.FC = () => {
                 reps: 0,
                 weight: 0,
                 type: 'normal',
-                isComplete: true, // New sets in history edit should be complete by default
+                // Fix: Set isComplete to false by default to prevent 0-stat pollution.
+                // User must explicitly confirm sets in history editor.
+                isComplete: false, 
             }
         ],
         restTime: { ...defaultRestTimes },

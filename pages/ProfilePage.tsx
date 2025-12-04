@@ -1,5 +1,5 @@
 
-import React, { useContext, useState, useEffect, useMemo } from 'react';
+import React, { useContext, useState, useEffect, useMemo, useRef } from 'react';
 import { I18nContext, TranslationKey } from '../contexts/I18nContext';
 import { useI18n } from '../hooks/useI18n';
 import { AppContext } from '../contexts/AppContext';
@@ -105,14 +105,18 @@ const ProfilePage: React.FC = () => {
     logWeight,
     history,
     exercises,
-    getExerciseById
+    getExerciseById,
+    measureUnit,
+    importData,
+    exportData
   } = useContext(AppContext);
 
-  const { displayWeight, getStoredWeight, weightUnit, measureUnit, setMeasureUnit } = useMeasureUnit();
+  const { displayWeight, getStoredWeight, weightUnit, setMeasureUnit } = useMeasureUnit();
   const [localWeight, setLocalWeight] = useState(() => currentWeight ? displayWeight(currentWeight) : '');
   const [isWeightChartOpen, setIsWeightChartOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'you' | 'options'>('you');
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [feet, setFeet] = useState('');
   const [inches, setInches] = useState('');
@@ -281,6 +285,34 @@ const ProfilePage: React.FC = () => {
     speak(sampleText, selectedVoiceURI, locale);
   };
 
+  const handleImportClick = () => {
+      fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = (event) => {
+          try {
+              const result = event.target?.result;
+              if (typeof result === 'string') {
+                  const data = JSON.parse(result);
+                  if (confirm(t('profile_import_confirm'))) {
+                      importData(data);
+                      alert(t('profile_import_success'));
+                  }
+              }
+          } catch (err) {
+              console.error(err);
+              alert(t('profile_import_error'));
+          }
+          if (fileInputRef.current) fileInputRef.current.value = '';
+      };
+      reader.readAsText(file);
+  };
+
   const timerInputs: { key: keyof typeof defaultRestTimes; labelKey: TranslationKey, infoKey?: {title: TranslationKey, message: TranslationKey} }[] = [
     { key: 'normal', labelKey: 'timer_normal', infoKey: {title: 'timer_normal_desc_title', message: 'timer_normal_desc'} },
     { key: 'warmup', labelKey: 'timer_warmup', infoKey: {title: 'timer_warmup_desc_title', message: 'timer_warmup_desc'} },
@@ -361,6 +393,42 @@ const ProfilePage: React.FC = () => {
             
             {/* Unlock History */}
             <UnlockHistory unlocks={profile.unlocks || []} />
+
+            {/* Data Management */}
+            <div className="bg-surface border border-white/10 rounded-2xl p-5 shadow-lg mb-6">
+                <div className="flex items-center gap-3 mb-4 border-b border-white/5 pb-4">
+                    <div className="p-2 rounded-full bg-slate-700 text-text-secondary">
+                        <Icon name="save" className="w-6 h-6" />
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-bold text-white">{t('profile_data_title')}</h3>
+                        <p className="text-xs text-text-secondary">{t('profile_data_desc')}</p>
+                    </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <button 
+                        onClick={exportData}
+                        className="flex items-center justify-center gap-2 bg-surface-highlight hover:bg-white/10 text-text-primary font-bold py-3 px-4 rounded-xl transition-colors border border-white/5"
+                    >
+                        <Icon name="export" className="w-5 h-5" />
+                        <span>{t('common_export')}</span>
+                    </button>
+                    <button 
+                        onClick={handleImportClick}
+                        className="flex items-center justify-center gap-2 bg-surface-highlight hover:bg-white/10 text-text-primary font-bold py-3 px-4 rounded-xl transition-colors border border-white/5"
+                    >
+                        <Icon name="import" className="w-5 h-5" />
+                        <span>{t('common_import')}</span>
+                    </button>
+                    <input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        onChange={handleFileChange} 
+                        accept=".json" 
+                        className="hidden" 
+                    />
+                </div>
+            </div>
         </div>
       )}
 

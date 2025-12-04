@@ -14,13 +14,24 @@ export type PersonalRecords = {
   maxVolume: { value: number; set: PerformedSet; session: WorkoutSession } | null;
 };
 
-// Epley formula for estimating 1 Rep Max
-export const calculate1RM = (weight: number, reps: number): number => {
+// Lombardi formula for estimating 1 Rep Max
+// This is chosen over Epley for better accuracy at higher rep ranges (preventing overestimation).
+export const calculate1RM = (weight: number, reps: number, bodyWeight: number = 0): number => {
   if (reps === 0) return 0;
-  if (reps === 1) return weight;
-  // Cap reps at 12 for e1RM calculation accuracy, though the formula works higher, it gets less accurate.
-  // We use the raw input for now as standard Epley.
-  return Math.round(weight * (1 + reps / 30));
+  
+  // If weight is 0 (e.g. bodyweight exercise), use provided bodyweight if available.
+  const load = weight + bodyWeight;
+  
+  if (load === 0) return 0;
+
+  if (reps === 1) return load;
+  
+  // Cap reps at 20. While Lombardi is better than Epley for high reps, 
+  // calculating a strength max from >20 reps (cardio/endurance) is statistically invalid.
+  const effectiveReps = Math.min(reps, 20);
+  
+  // Formula: Weight * Reps ^ 0.10
+  return Math.round(load * Math.pow(effectiveReps, 0.10));
 };
 
 export const estimateRepsFromPercentage = (percentage: number): number => {

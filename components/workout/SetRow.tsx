@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { PerformedSet, SetType } from '../../types';
 import { Icon } from '../common/Icon';
 import SetTypeModal from '../modals/SetTypeModal';
@@ -21,55 +21,95 @@ interface SetRowProps {
 const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSet, onStartTimedSet, previousSetData, isWeightOptional }) => {
   const { displayWeight, getStoredWeight } = useMeasureUnit();
   const { t } = useI18n();
+  
+  // Local state for inputs to prevent cursor jumping/decimal issues
   const [weight, setWeight] = useState(set.weight > 0 ? displayWeight(set.weight) : '');
   const [reps, setReps] = useState(set.reps > 0 ? set.reps.toString() : '');
   const [time, setTime] = useState(set.time ? formatSecondsToMMSS(set.time) : '0:00');
+  
   const [isTypeModalOpen, setIsTypeModalOpen] = useState(false);
   const [isWeightFocused, setIsWeightFocused] = useState(false);
   const [isRepsFocused, setIsRepsFocused] = useState(false);
   const [isTimeFocused, setIsTimeFocused] = useState(false);
-  
+
+  // Refs to track previous props to avoid overwriting local state on unrelated re-renders
+  // or preventing the "reset on blur" race condition.
+  const prevPropWeight = useRef(set.weight);
+  const prevPropReps = useRef(set.reps);
+  const prevPropTime = useRef(set.time);
+
+  // Sync props to state only when props actually change from outside
   useEffect(() => {
-    if (!isWeightFocused) {
-      setWeight(set.weight > 0 ? displayWeight(set.weight) : '');
+    if (!isWeightFocused && set.weight !== prevPropWeight.current) {
+       setWeight(set.weight > 0 ? displayWeight(set.weight) : '');
+       prevPropWeight.current = set.weight;
     }
-    if (!isRepsFocused) {
-      setReps(set.reps > 0 ? set.reps.toString() : '');
-    }
-    if (!isTimeFocused) {
-        setTime(set.time ? formatSecondsToMMSS(set.time) : '0:00');
-    }
-  }, [set, displayWeight, isWeightFocused, isRepsFocused, isTimeFocused]);
+  }, [set.weight, isWeightFocused, displayWeight]);
 
-  const handleWeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newWeightStr = e.target.value;
-    setWeight(newWeightStr);
-    const parsedWeight = parseFloat(newWeightStr);
-    const weightValue = isNaN(parsedWeight) ? -1 : parsedWeight;
-    onUpdateSet({ 
-        ...set, 
-        weight: getStoredWeight(weightValue), 
-        isWeightInherited: false 
-    });
-  };
+  useEffect(() => {
+    if (!isRepsFocused && set.reps !== prevPropReps.current) {
+       setReps(set.reps > 0 ? set.reps.toString() : '');
+       prevPropReps.current = set.reps;
+    }
+  }, [set.reps, isRepsFocused]);
+
+  useEffect(() => {
+    if (!isTimeFocused && set.time !== prevPropTime.current) {
+       setTime(set.time ? formatSecondsToMMSS(set.time) : '0:00');
+       prevPropTime.current = set.time;
+    }
+  }, [set.time, isTimeFocused]);
+
+  const handleWeightChange = (e: React.ChangeEvent<HTMLInputElement>) => setWeight(e.target.value);
+  const handleRepsChange = (e: React.ChangeEvent<HTMLInputElement>) => setReps(e.target.value);
+  const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => setTime(e.target.value);
   
-  const handleRepsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newRepsStr = e.target.value;
-    setReps(newRepsStr);
-    const parsedReps = parseInt(newRepsStr, 10);
-    const repsValue = isNaN(parsedReps) ? -1 : parsedReps;
-    onUpdateSet({ ...set, reps: repsValue, isRepsInherited: false });
+  const commitChanges = (overrides: Partial<PerformedSet> = {}) => {
+      const parsedWeight = parseFloat(weight);
+      const finalWeight = isNaN(parsedWeight) ? 0 : getStoredWeight(parsedWeight);
+      
+      const parsedReps = parseInt(reps, 10);
+      const finalReps = isNaN(parsedReps) ? 0 : parsedReps;
+
+      const finalTime = parseTimerInput(time);
+
+      const updatedSet = {
+          ...set,
+          weight: finalWeight,
+          reps: finalReps,
+          time: finalTime,
+          ...overrides
+      };
+
+      // Break inheritance if values changed explicitly
+      if (finalWeight !== set.weight) updatedSet.isWeightInherited = false;
+      if (finalReps !== set.reps) updatedSet.isRepsInherited = false;
+      if (finalTime !== set.time) updatedSet.isTimeInherited = false;
+
+      onUpdateSet(updatedSet);
   };
 
-  const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setTime(e.target.value);
-    onUpdateSet({ ...set, time: parseTimerInput(e.target.value), isTimeInherited: false });
+  const handleWeightBlur = () => {
+    setIsWeightFocused(false);
+    commitChanges();
   };
-  
+
+  const handleRepsBlur = () => {
+    setIsRepsFocused(false);
+    commitChanges();
+  };
+
+  const handleTimeBlur = () => {
+    setIsTimeFocused(false);
+    const seconds = parseTimerInput(time);
+    setTime(formatSecondsToMMSS(seconds));
+    commitChanges({ time: seconds });
+  };
+
   const handleComplete = () => {
     unlockAudioContext();
     const isComplete = !set.isComplete;
-    onUpdateSet({ ...set, isComplete, completedAt: isComplete ? Date.now() : undefined });
+    commitChanges({ isComplete, completedAt: isComplete ? Date.now() : undefined });
   };
 
   const handleSelectSetType = (type: SetType) => {
@@ -115,8 +155,8 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
     disabled:opacity-50 disabled:cursor-not-allowed
   `;
   
-  const activeInputClass = "bg-black/20 border border-white/10 text-text-primary placeholder-text-secondary/30 hover:bg-black/30";
-  const inheritedInputClass = "bg-transparent border border-transparent text-text-secondary/50 placeholder-text-secondary/20 hover:bg-white/5";
+  const activeInputClass = "bg-black/20 border border-white/10 text-text-primary placeholder-slate-600 hover:bg-black/30";
+  const inheritedInputClass = "bg-transparent border border-transparent text-slate-400 placeholder-slate-600 hover:bg-white/5";
   const invalidInputClass = "border-danger bg-danger/10 text-danger";
   const completedInputClass = "bg-transparent border-transparent text-success font-bold";
 
@@ -143,7 +183,7 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
             </button>
           </div>
           
-          <div className="col-span-1 text-center text-text-secondary text-xs font-mono truncate px-1 opacity-70">
+          <div className="col-span-1 text-center text-slate-400 text-xs font-mono truncate px-1 opacity-70">
             {set.type !== 'timed' && (previousSetData ? `${displayWeight(previousSetData.weight)}x${previousSetData.reps}` : '-')}
           </div>
 
@@ -156,7 +196,7 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
                         value={time}
                         onChange={handleTimeChange}
                         onFocus={(e) => { setIsTimeFocused(true); e.target.select(); }}
-                        onBlur={() => { setIsTimeFocused(false); setTime(formatSecondsToMMSS(parseTimerInput(time))) }}
+                        onBlur={handleTimeBlur}
                         className={`${inputClasses} ${getInputStyle(!!set.isTimeInherited, isTimeFocused, isTimeInvalid, !!set.isComplete)}`}
                         disabled={!!set.isComplete}
                         placeholder="m:ss"
@@ -171,7 +211,7 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
                         value={reps}
                         onChange={handleRepsChange}
                         onFocus={(e) => { setIsRepsFocused(true); e.target.select(); }}
-                        onBlur={() => setIsRepsFocused(false)}
+                        onBlur={handleRepsBlur}
                         className={`${inputClasses} ${getInputStyle(!!set.isRepsInherited, isRepsFocused, isRepsInvalid, !!set.isComplete)}`}
                         disabled={!!set.isComplete}
                     />
@@ -182,14 +222,9 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
                             <Icon name="check" className="w-6 h-6" />
                         </button>
                     ) : (
-                        <>
-                            <button onClick={() => { unlockAudioContext(); onStartTimedSet?.(set); }} className="w-10 h-10 rounded-xl bg-surface-highlight text-primary hover:bg-surface-highlight/80 transition-colors flex items-center justify-center border border-white/5">
-                                <Icon name="play" className="w-5 h-5" />
-                            </button>
-                             <button onClick={onDeleteSet} className="w-10 h-10 rounded-xl text-text-secondary hover:text-danger hover:bg-danger/10 transition-colors flex items-center justify-center">
-                                <Icon name="trash" className="w-5 h-5" />
-                            </button>
-                        </>
+                        <button onClick={() => { unlockAudioContext(); onStartTimedSet?.(set); }} className="w-10 h-10 rounded-xl bg-surface-highlight text-primary hover:bg-surface-highlight/80 transition-colors flex items-center justify-center border border-white/5">
+                            <Icon name="play" className="w-5 h-5" />
+                        </button>
                     )}
                 </div>
               </>
@@ -204,7 +239,7 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
                         value={weight}
                         onChange={handleWeightChange}
                         onFocus={(e) => { setIsWeightFocused(true); e.target.select(); }}
-                        onBlur={() => setIsWeightFocused(false)}
+                        onBlur={handleWeightBlur}
                         className={`${inputClasses} ${getInputStyle(!!set.isWeightInherited, isWeightFocused, isWeightInvalid, !!set.isComplete)}`}
                         disabled={!!set.isComplete}
                         placeholder="-"
@@ -220,7 +255,7 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
                         value={reps}
                         onChange={handleRepsChange}
                         onFocus={(e) => { setIsRepsFocused(true); e.target.select(); }}
-                        onBlur={() => setIsRepsFocused(false)}
+                        onBlur={handleRepsBlur}
                         className={`${inputClasses} ${getInputStyle(!!set.isRepsInherited, isRepsFocused, isRepsInvalid, !!set.isComplete)}`}
                         disabled={!!set.isComplete}
                         placeholder="-"
@@ -238,11 +273,6 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
                     >
                         <Icon name="check" className="w-6 h-6" />
                     </button>
-                    {!set.isComplete && (
-                        <button onClick={onDeleteSet} className="w-10 h-10 rounded-xl text-text-secondary hover:text-danger hover:bg-danger/10 transition-colors flex items-center justify-center">
-                            <Icon name="trash" className="w-5 h-5" />
-                        </button>
-                    )}
                 </div>
               </>
           )}
@@ -252,6 +282,7 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
           onClose={() => setIsTypeModalOpen(false)}
           currentType={set.type}
           onSelectType={handleSelectSetType}
+          onDelete={onDeleteSet}
       />
     </>
   );

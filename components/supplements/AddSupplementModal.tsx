@@ -38,9 +38,18 @@ const AddSupplementModal: React.FC<AddSupplementModalProps> = ({ isOpen, onClose
                 setSupplement(initialData.supplement);
                 setDosage(initialData.dosage);
                 
-                // Try to match initial time string to a key, or default if custom
-                // This simple check assumes the string matches the translation of one of the keys
-                const matchedKey = TIME_OPTIONS.find(key => t(key as TranslationKey) === initialData.time) || TIME_OPTIONS[6]; // Daily default
+                // Correctly set the time key. If the stored time is a key, use it. 
+                // If it's a legacy translated string, try to find the matching key.
+                let matchedKey = TIME_OPTIONS[6]; // Default to Daily
+                
+                if (TIME_OPTIONS.includes(initialData.time)) {
+                    matchedKey = initialData.time;
+                } else {
+                    // Legacy check: Try to reverse lookup translation
+                    const found = TIME_OPTIONS.find(key => t(key as TranslationKey) === initialData.time);
+                    if (found) matchedKey = found;
+                }
+                
                 setTime(matchedKey);
 
                 setNotes(initialData.notes);
@@ -72,7 +81,7 @@ const AddSupplementModal: React.FC<AddSupplementModalProps> = ({ isOpen, onClose
         const newItem: Omit<SupplementPlanItem, 'id' | 'isCustom'> = { 
             supplement, 
             dosage, 
-            time: t(time as TranslationKey), // Save the translated string
+            time: time, // Save the key directly
             notes, 
             stock: stockVal,
             trainingDayOnly: frequency === 'training',

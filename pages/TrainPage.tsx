@@ -1,6 +1,8 @@
 
-import React, { useContext, useState, useMemo, useEffect } from 'react';
+import React, { useContext, useState, useMemo } from 'react';
 import { AppContext } from '../contexts/AppContext';
+import { ActiveWorkoutContext } from '../contexts/ActiveWorkoutContext';
+import { StatsContext } from '../contexts/StatsContext';
 import { useI18n } from '../hooks/useI18n';
 import { Routine, SupplementPlanItem, AutoUpdateEntry } from '../types';
 import RoutinePreviewModal from '../components/modals/RoutinePreviewModal';
@@ -10,7 +12,7 @@ import RoutineSection from '../components/train/RoutineSection';
 import QuickTrainingSection from '../components/train/QuickTrainingSection';
 import CheckInCard from '../components/train/CheckInCard';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import { getWorkoutRecommendation, Recommendation, detectImbalances } from '../utils/recommendationUtils';
+import { Recommendation } from '../utils/recommendationUtils';
 import SmartRecommendationCard from '../components/train/SmartRecommendationCard';
 import OnboardingWizard from '../components/onboarding/OnboardingWizard';
 import ConfirmModal from '../components/modals/ConfirmModal';
@@ -22,26 +24,30 @@ import OneRepMaxHub from '../components/onerepmax/OneRepMaxHub';
 import CascadeUpdateModal from '../components/onerepmax/CascadeUpdateModal';
 import { useMeasureUnit } from '../hooks/useWeight';
 import { TranslationKey } from '../contexts/I18nContext';
+import { TimerContext } from '../contexts/TimerContext';
 
+// Updated Regex to catch both translation keys and plain text words
 const timeKeywords = {
     morning: /morning|breakfast|am|mañana|desayuno/i,
     lunch: /lunch|noon|midday|almuerzo/i,
     afternoon: /afternoon|tarde/i,
     evening: /evening|bed|night|sleep|pm|noche|cena|dormir/i,
-    pre_workout: /pre-workout|pre-entreno/i,
-    post_workout: /post-workout|post-entreno/i,
+    pre_workout: /pre-workout|pre-entreno|pre_workout/i, // added pre_workout for key
+    post_workout: /post-workout|post-entreno|post_workout/i, // added post_workout for key
 };
 
 const daysOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
 const TrainPage: React.FC = () => {
   const { 
-      routines, startWorkout, activeWorkout, discardActiveWorkout, maximizeWorkout, 
-      startTemplateEdit, startHiitSession, startTemplateDuplicate,
-      checkInState, handleCheckInResponse, history, exercises, upsertRoutine, upsertRoutines,
+      routines, checkInState, handleCheckInResponse, history, upsertRoutines,
       currentWeight, logUnlock, supplementPlan, takenSupplements, toggleSupplementIntake, snoozedSupplements, snoozeSupplement,
-      profile, updateOneRepMax, snoozeOneRepMaxUpdate, undoAutoUpdate, dismissAutoUpdate, getExerciseById
+      profile, updateOneRepMax, snoozeOneRepMaxUpdate, undoAutoUpdate, dismissAutoUpdate, getExerciseById, startTemplateEdit, startTemplateDuplicate
   } = useContext(AppContext);
+  const { activeWorkout, startWorkout, discardActiveWorkout, maximizeWorkout } = useContext(ActiveWorkoutContext);
+  const { stats, refreshStats } = useContext(StatsContext);
+
+  const { startHiitSession } = useContext(TimerContext);
   const { t } = useI18n();
   const { displayWeight, weightUnit } = useMeasureUnit();
   const [selectedRoutine, setSelectedRoutine] = useState<Routine | null>(null);
@@ -51,7 +57,6 @@ const TrainPage: React.FC = () => {
   const [isStrengthHubOpen, setIsStrengthHubOpen] = useState(false);
   
   // Recommendation State
-  const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
   const [isRecDismissed, setIsRecDismissed] = useState(false);
   const [isUpgradeConfirmOpen, setIsUpgradeConfirmOpen] = useState(false);
   const [onboardingRoutines, setOnboardingRoutines] = useState<Routine[]>([]);
@@ -74,29 +79,28 @@ const TrainPage: React.FC = () => {
       );
   }, [history]);
 
-  useEffect(() => {
+  // Use Cached Statistics instead of calculating on every render
+  const recommendation = useMemo(() => {
       if (onboardingRoutines.length > 0) {
-          setRecommendation({
+          return {
             type: 'workout',
             titleKey: 'rec_title_onboarding_complete',
             reasonKey: 'rec_reason_onboarding_complete',
             suggestedBodyParts: [],
             relevantRoutineIds: onboardingRoutines.map(r => r.id),
-          });
-      } else {
-          // Priority 1: Imbalances
-          const imbalanceRec = detectImbalances(history, routines, currentWeight, profile.gender);
-          const now = Date.now();
-          
-          if (imbalanceRec && now > imbalanceSnoozedUntil) {
-              setRecommendation(imbalanceRec);
-          } else {
-              // Priority 2: Standard Workout Suggestion
-              const rec = getWorkoutRecommendation(history, routines, exercises, t, currentWeight);
-              setRecommendation(rec);
-          }
+          } as Recommendation;
       }
-  }, [history, routines, exercises, t, currentWeight, onboardingRoutines, imbalanceSnoozedUntil, profile.gender]);
+      
+      const now = Date.now();
+      
+      // Priority 1: Imbalances
+      if (stats.imbalanceRecommendation && now > imbalanceSnoozedUntil) {
+          return stats.imbalanceRecommendation;
+      } else {
+          // Priority 2: Standard Workout Suggestion
+          return stats.recommendation;
+      }
+  }, [stats.recommendation, stats.imbalanceRecommendation, onboardingRoutines, imbalanceSnoozedUntil]);
 
   const { latestWorkouts, customTemplates, sampleWorkouts, sampleHiit } = useMemo(() => {
     // Generate latest workouts from history (Last 10 distinct sessions)
@@ -353,6 +357,7 @@ const TrainPage: React.FC = () => {
       setOnboardingRoutines(newRoutines);
       setIsOnboardingOpen(false);
       setIsRecDismissed(false); // Ensure recommendation card shows up
+      refreshStats(); // Force refresh stats to update recommendations
   };
 
   const handleUpgradeRoutines = () => {
@@ -381,34 +386,22 @@ const TrainPage: React.FC = () => {
       if (recommendation?.type === 'imbalance') {
           // Snooze imbalance warnings for 7 days
           setImbalanceSnoozedUntil(Date.now() + 7 * 24 * 60 * 60 * 1000);
-          
-          // After snoozing, try to get a new standard workout recommendation
-          const nextRec = getWorkoutRecommendation(history, routines, exercises, t, currentWeight);
-          setRecommendation(nextRec);
-      } else {
-          setIsRecDismissed(true);
-      }
+      } 
+      setIsRecDismissed(true);
   };
   
   const handleUpdate1RM = (data: NonNullable<Recommendation['update1RMData']>) => {
       updateOneRepMax(data.exerciseId, data.newMax, 'calculated');
       setCascadeData({ id: data.exerciseId, max: data.newMax });
       setIsCascadeOpen(true);
-      // Refresh recommendation
-      const nextRec = getWorkoutRecommendation(history, routines, exercises, t, currentWeight);
-      setRecommendation(nextRec);
   };
 
   const handleSnooze1RM = (data: NonNullable<Recommendation['update1RMData']>) => {
       const twoWeeks = 14 * 24 * 60 * 60 * 1000;
       snoozeOneRepMaxUpdate(data.exerciseId, twoWeeks);
-      // Refresh recommendation
-      const nextRec = getWorkoutRecommendation(history, routines, exercises, t, currentWeight);
-      setRecommendation(nextRec);
   };
   
   const handleLogStack = (itemIds: string[]) => {
-      // Use Effective Date for logging so night owls log to "Friday Night" instead of "Saturday Morning"
       const effectiveDate = getEffectiveDate();
       const dateString = getDateString(effectiveDate);
       
@@ -425,15 +418,11 @@ const TrainPage: React.FC = () => {
       }
   }
   
-  // Auto-Update Notification Logic
   const autoUpdatedEntries = Object.entries(profile.autoUpdated1RMs || {});
   const hasAutoUpdates = autoUpdatedEntries.length > 0;
   
-  // Onboarding State
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [isCreateOptionModalOpen, setIsCreateOptionModalOpen] = useState(false);
-  
-  // Cascade Update State
   const [isCascadeOpen, setIsCascadeOpen] = useState(false);
   const [cascadeData, setCascadeData] = useState<{ id: string, max: number } | null>(null);
 

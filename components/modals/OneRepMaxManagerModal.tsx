@@ -3,6 +3,7 @@ import React, { useState, useContext, useEffect, useMemo } from 'react';
 import Modal from '../common/Modal';
 import { useI18n } from '../../hooks/useI18n';
 import { AppContext } from '../../contexts/AppContext';
+import { ActiveWorkoutContext } from '../../contexts/ActiveWorkoutContext';
 import { useMeasureUnit } from '../../hooks/useWeight';
 import OneRepMaxWizardModal from './OneRepMaxWizardModal';
 import ReplaceExerciseModal from './ReplaceExerciseModal';
@@ -18,7 +19,8 @@ interface OneRepMaxManagerModalProps {
 
 const OneRepMaxManagerModal: React.FC<OneRepMaxManagerModalProps> = ({ isOpen, onClose }) => {
     const { t } = useI18n();
-    const { exercises, profile, allTimeBestSets, startWorkout, defaultRestTimes } = useContext(AppContext);
+    const { exercises, profile, allTimeBestSets, defaultRestTimes } = useContext(AppContext);
+    const { startWorkout } = useContext(ActiveWorkoutContext);
     const { displayWeight, weightUnit, getStoredWeight } = useMeasureUnit();
     
     const [selectedExerciseId, setSelectedExerciseId] = useState<string>('ex-2'); // Default to Squat

@@ -3,6 +3,7 @@ import React, { useState, useContext } from 'react';
 import { Routine } from '../../types';
 import Modal from '../common/Modal';
 import { AppContext } from '../../contexts/AppContext';
+import { ActiveWorkoutContext } from '../../contexts/ActiveWorkoutContext';
 
 interface WorkoutSetupModalProps {
   isOpen: boolean;
@@ -13,7 +14,7 @@ interface WorkoutSetupModalProps {
 }
 
 const WorkoutSetupModal: React.FC<WorkoutSetupModalProps> = ({ isOpen, onClose, routine }) => {
-  const { startWorkout } = useContext(AppContext);
+  const { startWorkout } = useContext(ActiveWorkoutContext);
   const [workoutName, setWorkoutName] = useState(routine?.name || 'New Workout');
 
   const handleStart = () => {

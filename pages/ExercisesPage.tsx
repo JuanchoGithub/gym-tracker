@@ -14,6 +14,8 @@ import { TranslationKey } from '../contexts/I18nContext';
 import { searchExercises, getMatchedMuscles } from '../utils/searchUtils';
 import { useExerciseName } from '../hooks/useExerciseName';
 
+const PAGE_SIZE = 20;
+
 const ExercisesPage: React.FC = () => {
   const { exercises, startExerciseEdit, allTimeBestSets, useLocalizedExerciseNames } = useContext(AppContext);
   const { t } = useI18n();
@@ -25,6 +27,7 @@ const ExercisesPage: React.FC = () => {
   const [selectedBodyPart, setSelectedBodyPart] = useState<BodyPart | 'All'>('All');
   const [selectedCategory, setSelectedCategory] = useState<ExerciseCategory | 'All'>('All');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const bodyPartFilterOptions = useMemo(() => [
     { value: 'All' as const, label: t('body_part_all') },
@@ -56,6 +59,14 @@ const ExercisesPage: React.FC = () => {
       return nameB.localeCompare(nameA);
     });
   }, [exercises, searchTerm, selectedBodyPart, selectedCategory, sortOrder, t, getExerciseName, useLocalizedExerciseNames]);
+
+  const visibleExercises = useMemo(() => {
+      return filteredExercises.slice(0, visibleCount);
+  }, [filteredExercises, visibleCount]);
+  
+  const handleLoadMore = () => {
+      setVisibleCount(prev => prev + PAGE_SIZE);
+  };
   
   const toggleSortOrder = () => {
     setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
@@ -139,7 +150,7 @@ const ExercisesPage: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {filteredExercises.length > 0 ? filteredExercises.map(exercise => {
+        {visibleExercises.length > 0 ? visibleExercises.map(exercise => {
           const bestSet = allTimeBestSets[exercise.id];
           const matchedMuscles = getMatchedMuscles(exercise, searchTerm, t);
 
@@ -203,6 +214,17 @@ const ExercisesPage: React.FC = () => {
                     <Icon name="search" className="w-10 h-10 opacity-50" />
                 </div>
                 <p className="text-lg font-medium">{t('exercises_no_match')}</p>
+            </div>
+        )}
+        
+        {visibleCount < filteredExercises.length && (
+            <div className="col-span-full flex justify-center mt-4">
+                <button 
+                    onClick={handleLoadMore}
+                    className="bg-surface hover:bg-surface-highlight text-primary font-bold py-3 px-8 rounded-xl transition-colors shadow-sm"
+                >
+                    Load More
+                </button>
             </div>
         )}
       </div>

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import Modal from '../common/Modal';
 import { useI18n } from '../../hooks/useI18n';
@@ -10,9 +11,10 @@ interface SetTypeModalProps {
   onClose: () => void;
   currentType: SetType;
   onSelectType: (type: SetType) => void;
+  onDelete?: () => void;
 }
 
-const SetTypeModal: React.FC<SetTypeModalProps> = ({ isOpen, onClose, currentType, onSelectType }) => {
+const SetTypeModal: React.FC<SetTypeModalProps> = ({ isOpen, onClose, currentType, onSelectType, onDelete }) => {
   const { t } = useI18n();
   const [explanationType, setExplanationType] = useState<'warmup' | 'drop' | 'failure' | 'timed' | null>(null);
 
@@ -64,6 +66,19 @@ const SetTypeModal: React.FC<SetTypeModalProps> = ({ isOpen, onClose, currentTyp
               )}
             </button>
           ))}
+
+          {onDelete && (
+            <>
+                <div className="h-px bg-white/10 my-2"></div>
+                <button
+                    onClick={() => { onDelete(); onClose(); }}
+                    className="w-full flex items-center justify-center gap-2 p-4 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors font-bold"
+                >
+                    <Icon name="trash" className="w-5 h-5" />
+                    <span>{t('common_delete')}</span>
+                </button>
+            </>
+          )}
         </div>
       </Modal>
       {explanationType && (

@@ -332,8 +332,9 @@ export const calculateLifterDNA = (history: WorkoutSession[], currentBodyWeight:
     let totalRawVolume = 0;
     
     const muscleCounts: Record<string, number> = {};
+    const analyzedHistory = history.slice(0, 20); // Analyze last 20 sessions for archetype
 
-    history.slice(0, 20).forEach(s => { // Analyze last 20 sessions for archetype
+    analyzedHistory.forEach(s => { 
         s.exercises.forEach(ex => {
             const def = PREDEFINED_EXERCISES.find(p => p.id === ex.exerciseId);
             if (def) {
@@ -380,7 +381,8 @@ export const calculateLifterDNA = (history: WorkoutSession[], currentBodyWeight:
     else if (avgReps > 13) archetype = 'endurance';
 
     // 3. Volume Score (Average session volume. 10,000kg/session = 100)
-    const avgSessionVolume = history.length > 0 ? totalRawVolume / history.length : 0;
+    // Fix: Use analyzedHistory.length to ensure consistent average
+    const avgSessionVolume = analyzedHistory.length > 0 ? totalRawVolume / analyzedHistory.length : 0;
     const volumeScore = Math.min(100, Math.round((avgSessionVolume / 10000) * 100));
 
     // 4. Intensity Score (Heuristic based on avg reps)

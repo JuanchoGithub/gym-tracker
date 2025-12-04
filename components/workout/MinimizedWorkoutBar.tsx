@@ -1,6 +1,6 @@
 
 import React, { useContext } from 'react';
-import { AppContext } from '../../contexts/AppContext';
+import { ActiveWorkoutContext } from '../../contexts/ActiveWorkoutContext';
 import { useWorkoutTimer } from '../../hooks/useWorkoutTimer';
 import { Icon } from '../common/Icon';
 import WorkoutRestTimer from './WorkoutRestTimer';
@@ -10,7 +10,7 @@ interface MinimizedWorkoutBarProps {
 }
 
 const MinimizedWorkoutBar: React.FC<MinimizedWorkoutBarProps> = ({ withBottomNav }) => {
-    const { activeWorkout, maximizeWorkout } = useContext(AppContext);
+    const { activeWorkout, maximizeWorkout } = useContext(ActiveWorkoutContext);
     const elapsedTime = useWorkoutTimer(activeWorkout?.startTime);
 
     if (!activeWorkout) return null;

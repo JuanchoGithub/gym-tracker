@@ -1,6 +1,7 @@
 
 import React, { useState, useContext, useMemo, useRef, useEffect } from 'react';
 import { AppContext } from '../contexts/AppContext';
+import { ActiveWorkoutContext } from '../contexts/ActiveWorkoutContext';
 import { useI18n } from '../hooks/useI18n';
 import { BodyPart, ExerciseCategory, Exercise } from '../types';
 import { Icon } from '../components/common/Icon';
@@ -12,19 +13,21 @@ import { getBodyPartColor, getCategoryColor } from '../utils/colorUtils';
 import { useMeasureUnit } from '../hooks/useWeight';
 import { TranslationKey } from '../contexts/I18nContext';
 import { searchExercises, getMatchedMuscles } from '../utils/searchUtils';
+import { useExerciseName } from '../hooks/useExerciseName';
 
 const AddExercisePage: React.FC = () => {
   const { 
     exercises, 
     startExerciseEdit, 
-    endAddExercisesToWorkout, 
     isAddingExercisesToTemplate, 
     endAddExercisesToTemplate,
     allTimeBestSets,
     useLocalizedExerciseNames
   } = useContext(AppContext);
+  const { endAddExercisesToWorkout } = useContext(ActiveWorkoutContext);
   const { t } = useI18n();
   const { displayWeight, weightUnit } = useMeasureUnit();
+  const getExerciseName = useExerciseName();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBodyPart, setSelectedBodyPart] = useState<BodyPart | 'All'>('All');
   const [selectedCategory, setSelectedCategory] = useState<ExerciseCategory | 'All'>('All');
@@ -54,8 +57,8 @@ const AddExercisePage: React.FC = () => {
       result = result.filter(ex => ex.category === selectedCategory);
     }
 
-    return result.sort((a, b) => a.name.localeCompare(b.name));
-  }, [exercises, searchTerm, selectedBodyPart, selectedCategory, t, useLocalizedExerciseNames]);
+    return result.sort((a, b) => getExerciseName(a).localeCompare(getExerciseName(b)));
+  }, [exercises, searchTerm, selectedBodyPart, selectedCategory, t, useLocalizedExerciseNames, getExerciseName]);
   
   useEffect(() => {
     if (newlyCreatedId) {
@@ -198,7 +201,7 @@ const AddExercisePage: React.FC = () => {
                     <div className="flex-grow min-w-0">
                         <div className="flex justify-between items-start mb-1">
                           <h3 className={`font-bold text-base truncate pr-2 transition-colors ${isSelected ? 'text-primary' : 'text-text-primary'}`}>
-                              {exercise.name}
+                              {getExerciseName(exercise)}
                           </h3>
                           <button
                               onClick={(e) => { e.stopPropagation(); setViewingExercise(exercise); }}

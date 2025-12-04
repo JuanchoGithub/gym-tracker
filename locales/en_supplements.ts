@@ -177,6 +177,9 @@ export const en_supplements = {
   suggestion_restock_title: 'Low Stock Alert: {supplement}',
   suggestion_restock_reason: 'You have {count} servings left. Time to buy more!',
 
+  suggestion_drift_title: 'Update Schedule',
+  suggestion_drift_reason: 'You consistently take {supplement} in the {time} instead of your scheduled time. Would you like to update the plan?',
+
   // Months
   month_january: 'January',
   month_february: 'February',

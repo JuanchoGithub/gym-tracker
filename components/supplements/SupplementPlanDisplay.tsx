@@ -158,7 +158,11 @@ const SupplementPlanOverview: React.FC<SupplementPlanOverviewProps> = ({
           // OR by underlying explanation ID (e.g. "Creatine" vs "Creatine Monohydrate")
           // This aligns existing user history with new library items.
           const libExplanationId = getExplanationIdForSupplement(name);
-          const isAlreadyActive = activeNames.has(name.toLowerCase().trim()) || (libExplanationId && activeExplanationIds.has(libExplanationId));
+          
+          // Use explanation ID match if possible, fallback to name string match
+          const isAlreadyActive = libExplanationId 
+              ? activeExplanationIds.has(libExplanationId) 
+              : activeNames.has(name.toLowerCase().trim());
 
           if (!isAlreadyActive) {
               list.push({
@@ -198,7 +202,7 @@ const SupplementPlanOverview: React.FC<SupplementPlanOverviewProps> = ({
           id: '', 
           supplement: libItem.name,
           dosage: libItem.defaultDose,
-          time: t(libItem.defaultTime as TranslationKey),
+          time: libItem.defaultTime, // Use the key directly
           notes: libItem.description || '',
           stock: 30,
           trainingDayOnly: false,
@@ -290,7 +294,8 @@ const SupplementPlanOverview: React.FC<SupplementPlanOverviewProps> = ({
                                 </div>
                                 
                                 <div className="flex flex-col gap-1">
-                                    <p className="text-xs text-text-secondary font-medium">{item.dosage} • <span className="text-primary/80">{item.time}</span></p>
+                                    {/* Translate the time key for display */}
+                                    <p className="text-xs text-text-secondary font-medium">{item.dosage} • <span className="text-primary/80">{t(item.time as TranslationKey)}</span></p>
                                     <div className="flex gap-2 mt-1 flex-wrap">
                                         {item.trainingDayOnly && <span className="text-[9px] font-bold uppercase tracking-wide bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded border border-indigo-500/30">{t('supplements_frequency_training')}</span>}
                                         {item.restDayOnly && <span className="text-[9px] font-bold uppercase tracking-wide bg-teal-500/20 text-teal-300 px-1.5 py-0.5 rounded border border-teal-500/30">{t('supplements_frequency_rest')}</span>}

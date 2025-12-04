@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { playWarningSound, playEndSound, playTickSound, unlockAudioContext } from '../../services/audioService';
+import { playWarningSound, playEndSound, playTickSound, unlockAudioContext, scheduleEndSound, stopScheduledSounds } from '../../services/audioService';
 import { Icon } from '../common/Icon';
 import { useI18n } from '../../hooks/useI18n';
 import { formatTime, formatSecondsToMMSS } from '../../utils/timeUtils';
 import Modal from '../common/Modal';
-import { ActiveTimerInfo } from '../../contexts/AppContext';
+import { ActiveTimerInfo } from '../../types';
 
 interface TimerProps {
   timerInfo: ActiveTimerInfo;
@@ -39,6 +39,19 @@ const Timer: React.FC<TimerProps> = ({ timerInfo, effortTime, failureTime, onFin
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timerInfo, tick]);
 
+  // Schedule sound when timer starts or changes state
+  useEffect(() => {
+      if (!timerInfo.isPaused && timeLeft > 0) {
+          // Cancel any previous schedule to avoid duplicates
+          stopScheduledSounds();
+          // Schedule the end sound precisely via WebAudio
+          scheduleEndSound(timeLeft);
+      } else {
+          stopScheduledSounds();
+      }
+      return () => stopScheduledSounds();
+  }, [timerInfo.isPaused, timerInfo.targetTime]); 
+
   useEffect(() => {
     if (timerInfo.isPaused) {
       return;
@@ -58,8 +71,12 @@ const Timer: React.FC<TimerProps> = ({ timerInfo, effortTime, failureTime, onFin
         } else if (timeLeft <= 3 && timeLeft > 0 && prevTime > timeLeft) {
           playTickSound();
         }
+        
+        // DRIFT FIX: If we hit 0, ensure sounds are stopped and force play
+        // This covers cases where the WebAudio schedule missed due to backgrounding
         if (timeLeft <= 0 && prevTime > 0) {
-          playEndSound();
+          stopScheduledSounds(); // Ensure no double play from queued schedule
+          playEndSound(); 
           onFinishRef.current();
         }
     }
@@ -82,6 +99,7 @@ const Timer: React.FC<TimerProps> = ({ timerInfo, effortTime, failureTime, onFin
     const newTotalDuration = Math.max(0, timerInfo.totalDuration + amount);
     onTimeUpdate({ newTimeLeft, newTotalDuration });
     if (newTimeLeft === 0 && amount < 0) {
+        stopScheduledSounds();
         onFinishRef.current();
     }
   };
@@ -104,6 +122,7 @@ const Timer: React.FC<TimerProps> = ({ timerInfo, effortTime, failureTime, onFin
   }
 
   const handleSkip = () => {
+    stopScheduledSounds();
     onFinishRef.current();
   };
 

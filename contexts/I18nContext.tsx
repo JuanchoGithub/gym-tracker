@@ -38,7 +38,9 @@ export const I18nProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const t = useCallback(
     (key: TranslationKey, replacements?: Record<string, string | number>): string => {
-      let message = translations[locale][key as keyof typeof translations[Locale]] || translations['en'][key as keyof typeof en] || key;
+      // Safety fallback: if locale is somehow invalid (e.g. corrupted local storage), default to 'en'
+      const safeLocale = translations[locale] ? locale : 'en';
+      let message = translations[safeLocale][key as keyof typeof translations[Locale]] || translations['en'][key as keyof typeof en] || key;
       
       if (typeof message !== 'string') {
           // FIX: The 'key' from TranslationKey could theoretically be a symbol or number,
@@ -61,7 +63,8 @@ export const I18nProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   
   const t_ins = useCallback((key: string): { title: string; steps: string[] } => {
     const keyTyped = key as TranslationKey;
-    const instructionSet = translations[locale][keyTyped as keyof typeof translations[Locale]] || translations['en'][keyTyped as keyof typeof en];
+    const safeLocale = translations[locale] ? locale : 'en';
+    const instructionSet = translations[safeLocale][keyTyped as keyof typeof translations[Locale]] || translations['en'][keyTyped as keyof typeof en];
     
     if (typeof instructionSet === 'object' && instructionSet !== null && 'title' in instructionSet && 'steps' in instructionSet) {
         // FIX: Removed @ts-ignore and added an explicit type assertion.

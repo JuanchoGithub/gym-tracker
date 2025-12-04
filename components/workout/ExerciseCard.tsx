@@ -9,6 +9,7 @@ import { useMeasureUnit } from '../../hooks/useWeight';
 import ChangeTimerModal from '../modals/ChangeTimerModal';
 import { formatSecondsToMMSS } from '../../utils/timeUtils';
 import { AppContext } from '../../contexts/AppContext';
+import { TimerContext } from '../../contexts/TimerContext';
 import { getExerciseHistory } from '../../utils/workoutUtils';
 import { TranslationKey } from '../../contexts/I18nContext';
 import { useExerciseName } from '../../hooks/useExerciseName';
@@ -49,7 +50,8 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
   } = props;
   const { t } = useI18n();
   const { weightUnit, displayWeight } = useMeasureUnit();
-  const { history: allHistory, activeTimerInfo } = useContext(AppContext);
+  const { history: allHistory } = useContext(AppContext);
+  const { activeTimerInfo } = useContext(TimerContext);
   const getExerciseName = useExerciseName();
   const [completedSets, setCompletedSets] = useState(workoutExercise.sets.filter(s => s.isComplete).length);
   const [isNoteEditing, setIsNoteEditing] = useState(false);
@@ -75,10 +77,9 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
     let setForStorage = { ...updatedSet };
 
     // LOGIC: Handle Bodyweight / Assisted Calculations
-    // If Bodyweight exercise, 'updatedSet.weight' is EXTRA weight (input value).
-    // If Assisted exercise, 'updatedSet.weight' is ASSISTANCE weight (input value).
-    // We convert this to Total Load for storage if user bodyweight is known.
-    const bw = userBodyWeight || 0;
+    // Prioritize storedBodyWeight from the set if available (for history edits), otherwise use current userBodyWeight
+    const bw = oldSet.storedBodyWeight || userBodyWeight || 0;
+    
     if (updatedSet.type !== 'timed' && bw > 0) {
          if (isBodyweight && updatedSet.weight >= 0) {
              // Total = Body Weight + Extra
@@ -215,6 +216,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
       isComplete: false,
       isRepsInherited: true,
       isWeightInherited: true,
+      storedBodyWeight: userBodyWeight, // FIX: Initialize with current bodyweight to prevent display drift
     };
     const updatedSets = [...workoutExercise.sets, newSet];
     onUpdate({ ...workoutExercise, sets: updatedSets });
@@ -329,7 +331,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
                     // UI Transformation for Display
                     let displaySet = { ...set };
                     
-                    // FIX: Use storedBodyWeight for consistent historical data if available, otherwise fall back to current userBodyWeight
+                    // Use storedBodyWeight for consistent historical data if available, otherwise fall back to current userBodyWeight
                     const referenceBodyWeight = set.storedBodyWeight ?? userBodyWeight;
                     
                     if (set.type !== 'timed' && referenceBodyWeight && referenceBodyWeight > 0 && set.weight > 0) {

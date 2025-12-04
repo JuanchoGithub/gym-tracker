@@ -5,14 +5,21 @@ export const useWakeLock = (enabled: boolean = true) => {
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
+
     const requestWakeLock = async () => {
       if (enabled && 'wakeLock' in navigator && document.visibilityState === 'visible') {
         try {
-          wakeLockRef.current = await navigator.wakeLock.request('screen');
-          console.log('Screen Wake Lock is active.');
-          wakeLockRef.current.addEventListener('release', () => {
-            console.log('Screen Wake Lock was released.');
-          });
+          const sentinel = await navigator.wakeLock.request('screen');
+          if (isMounted) {
+              wakeLockRef.current = sentinel;
+              console.log('Screen Wake Lock is active.');
+              sentinel.addEventListener('release', () => {
+                console.log('Screen Wake Lock was released.');
+              });
+          } else {
+              sentinel.release(); // Released immediately if unmounted
+          }
         } catch (err: any) {
           // Suppress warning for NotAllowedError (policy denied)
           if (err.name !== 'NotAllowedError') {
@@ -24,7 +31,7 @@ export const useWakeLock = (enabled: boolean = true) => {
 
     const releaseWakeLock = () => {
       if (wakeLockRef.current) {
-        wakeLockRef.current.release();
+        wakeLockRef.current.release().catch(() => {});
         wakeLockRef.current = null;
       }
     };
@@ -43,6 +50,7 @@ export const useWakeLock = (enabled: boolean = true) => {
     document.addEventListener('fullscreenchange', handleVisibilityChange);
 
     return () => {
+      isMounted = false;
       releaseWakeLock();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       document.removeEventListener('fullscreenchange', handleVisibilityChange);

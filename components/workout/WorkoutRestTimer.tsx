@@ -1,20 +1,13 @@
 
-import React, { useMemo, useCallback, useContext, useEffect } from 'react';
+import React, { useMemo, useCallback, useContext } from 'react';
 import { AppContext } from '../../contexts/AppContext';
+import { ActiveWorkoutContext } from '../../contexts/ActiveWorkoutContext';
+import { TimerContext } from '../../contexts/TimerContext';
 import Timer from './Timer';
-import { scheduleTimerNotification, cancelTimerNotification } from '../../services/notificationService';
-import { useI18n } from '../../hooks/useI18n';
 
 const WorkoutRestTimer: React.FC = () => {
-    const {
-        activeWorkout,
-        activeTimerInfo,
-        setActiveTimerInfo,
-        updateActiveWorkout,
-        getExerciseById,
-        enableNotifications,
-    } = useContext(AppContext);
-    const { t } = useI18n();
+    const { activeWorkout, updateActiveWorkout } = useContext(ActiveWorkoutContext);
+    const { activeTimerInfo, setActiveTimerInfo } = useContext(TimerContext);
     
     const activeTimerExercise = useMemo(() => {
         if (!activeTimerInfo || !activeWorkout) return null;
@@ -100,28 +93,6 @@ const WorkoutRestTimer: React.FC = () => {
             };
         });
     }, [setActiveTimerInfo]);
-
-    useEffect(() => {
-        if (enableNotifications && activeTimerInfo && !activeTimerInfo.isPaused) {
-            const exerciseInfo = getExerciseById(activeTimerInfo.exerciseId);
-            const remainingTime = (activeTimerInfo.targetTime - Date.now()) / 1000;
-            if (exerciseInfo && remainingTime > 0) {
-                scheduleTimerNotification(remainingTime, t('notification_timer_finished_title'), {
-                    body: t('notification_timer_finished_body', { exercise: exerciseInfo.name }),
-                    icon: '/icon-192x192.png',
-                    tag: 'rest-timer-finished',
-                    requireInteraction: true,
-                });
-            }
-        }
-        
-        // This cleanup will run when the component unmounts or dependencies change.
-        // It ensures that if the timer is paused, stopped, or changed, the old notification is cancelled.
-        return () => {
-            cancelTimerNotification('rest-timer-finished');
-        };
-    }, [activeTimerInfo, enableNotifications, getExerciseById, t]);
-    
 
     if (!activeTimerInfo || !activeTimerExercise) {
         return null;

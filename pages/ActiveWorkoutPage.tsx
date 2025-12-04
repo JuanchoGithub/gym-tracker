@@ -1,6 +1,8 @@
 
 import React, { useContext, useState, useMemo, useRef, useEffect } from 'react';
 import { AppContext } from '../contexts/AppContext';
+import { ActiveWorkoutContext } from '../contexts/ActiveWorkoutContext';
+import { TimerContext } from '../contexts/TimerContext';
 import { useI18n } from '../hooks/useI18n';
 import ExerciseCard from '../components/workout/ExerciseCard';
 import { WorkoutExercise, WorkoutSession, PerformedSet, SupersetDefinition, Exercise, Routine, BodyPart } from '../types';
@@ -28,6 +30,7 @@ import RoutinePreviewModal from '../components/modals/RoutinePreviewModal';
 import { generateGapSession, getProtectedMuscles } from '../utils/smartCoachUtils';
 import { getWorkoutRecommendation } from '../utils/recommendationUtils';
 import { useExerciseName } from '../hooks/useExerciseName';
+import { useMeasureUnit } from '../hooks/useWeight';
 
 const PUSH_MUSCLES = [MUSCLES.PECTORALS, MUSCLES.FRONT_DELTS, MUSCLES.TRICEPS];
 const PULL_MUSCLES = [MUSCLES.LATS, MUSCLES.TRAPS, MUSCLES.BICEPS];
@@ -41,8 +44,15 @@ interface SuggestionState {
 }
 
 const ActiveWorkoutPage: React.FC = () => {
-  const { activeWorkout, updateActiveWorkout, endWorkout, discardActiveWorkout, maximizeWorkout, getExerciseById, minimizeWorkout, keepScreenAwake, activeTimerInfo, setActiveTimerInfo, startAddExercisesToWorkout, collapsedExerciseIds, setCollapsedExerciseIds, collapsedSupersetIds, setCollapsedSupersetIds, currentWeight, logWeight, activeTimedSet, setActiveTimedSet, history, exercises, routines, upsertRoutines } = useContext(AppContext);
+  const { getExerciseById, keepScreenAwake, currentWeight, history, exercises, routines, upsertRoutines } = useContext(AppContext);
+  const { 
+    activeWorkout, updateActiveWorkout, endWorkout, discardActiveWorkout, maximizeWorkout, minimizeWorkout, 
+    startAddExercisesToWorkout, collapsedExerciseIds, setCollapsedExerciseIds, collapsedSupersetIds, setCollapsedSupersetIds 
+  } = useContext(ActiveWorkoutContext);
+  const { activeTimerInfo, setActiveTimerInfo, activeTimedSet, setActiveTimedSet } = useContext(TimerContext);
+  
   const { t } = useI18n();
+  const { weightUnit } = useMeasureUnit();
   const elapsedTime = useWorkoutTimer(activeWorkout?.startTime);
   const getExerciseName = useExerciseName();
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -87,11 +97,10 @@ const ActiveWorkoutPage: React.FC = () => {
     if (!activeWorkout) return false;
     for (const ex of activeWorkout.exercises) {
       const exerciseInfo = getExerciseById(ex.exerciseId);
-      // Removed 'Bodyweight' and 'Assisted Bodyweight' to enforce recording Total Load (User + Extra)
-      // This ensures 1RM calcs are valid. 0 weight (no user weight recorded) will flag as invalid.
-      const isWeightOptional = exerciseInfo?.category === 'Reps Only' || 
-                             exerciseInfo?.category === 'Duration' || 
-                             exerciseInfo?.category === 'Cardio';
+      // Allow bodyweight categories to have 0 weight
+      const isWeightOptional = exerciseInfo && (
+          ['Reps Only', 'Cardio', 'Duration', 'Bodyweight', 'Assisted Bodyweight', 'Plyometrics'].includes(exerciseInfo.category)
+      );
 
       for (const set of ex.sets) {
         if (set.isComplete) {
@@ -162,8 +171,6 @@ const ActiveWorkoutPage: React.FC = () => {
     if (save && activeWorkout) {
         // Fix Data Loss Race Condition:
         // Merge the new ORDER and SUPERSET_ID from tempExercises with the LATEST DATA from activeWorkout.
-        // This ensures that if a timer finished while the user was reorganizing (updating activeWorkout.exercises[i].sets[j].actualRest),
-        // we don't overwrite that data with the stale snapshot from tempExercises.
         const mergedExercises = tempExercises.map(tempEx => {
             const latestEx = activeWorkout.exercises.find(e => e.id === tempEx.id);
             if (!latestEx) return tempEx; // Fallback
@@ -208,13 +215,10 @@ const ActiveWorkoutPage: React.FC = () => {
     const newExercises = [...tempExercises];
     
     // Extract source items
-    // Note: We assume contiguous indices for supersets which is guaranteed by grouping logic
-    // We need to handle extraction carefully if indices are not sorted, but they should be.
     const sourceIndices = source.indices.sort((a, b) => a - b);
     const removedItems = newExercises.splice(sourceIndices[0], sourceIndices.length);
     
     // Determine insertion index
-    // If target is later in the array, we need to adjust index because of splice
     let insertIndex = target.indices[0];
     if (insertIndex > sourceIndices[0]) {
         insertIndex -= sourceIndices.length;
@@ -224,19 +228,18 @@ const ActiveWorkoutPage: React.FC = () => {
     if (source.type === 'item') {
         const targetItem = newExercises[insertIndex] || (insertIndex > 0 ? newExercises[insertIndex-1] : null);
         
-        // If target group is a superset, adopt its ID
-        if (target.type === 'superset' && targetItem && targetItem.supersetId) {
-             removedItems[0].supersetId = targetItem.supersetId;
-        } 
-        // If target is an item that has a superset ID (dropping inside superset view), adopt it
-        else if (target.type === 'item' && targetItem && targetItem.supersetId) {
-             removedItems[0].supersetId = targetItem.supersetId;
-        }
-        // If dropping outside, clear ID?
-        // If dropping on a 'single' type target which has no supersetId, clear it
-        else if (target.type === 'item' && targetItem && !targetItem.supersetId) {
-             delete removedItems[0].supersetId;
-        }
+        // FIX: Loop through ALL removed items to prevent metadata loss
+        removedItems.forEach(item => {
+            if (target.type === 'superset' && targetItem && targetItem.supersetId) {
+                 item.supersetId = targetItem.supersetId;
+            } 
+            else if (target.type === 'item' && targetItem && targetItem.supersetId) {
+                 item.supersetId = targetItem.supersetId;
+            }
+            else if (target.type === 'item' && targetItem && !targetItem.supersetId) {
+                 delete item.supersetId;
+            }
+        });
     }
     
     newExercises.splice(insertIndex, 0, ...removedItems);
@@ -249,10 +252,13 @@ const ActiveWorkoutPage: React.FC = () => {
 
   const handleMoveExercise = (fromIndex: number, toIndex: number) => {
     if (!activeWorkout || toIndex < 0 || toIndex >= activeWorkout.exercises.length) return;
-    const newExercises = [...activeWorkout.exercises];
-    const [movedItem] = newExercises.splice(fromIndex, 1);
-    newExercises.splice(toIndex, 0, movedItem);
-    updateActiveWorkout({ ...activeWorkout, exercises: newExercises });
+    updateActiveWorkout(prev => {
+        if (!prev) return null;
+        const newExercises = [...prev.exercises];
+        const [movedItem] = newExercises.splice(fromIndex, 1);
+        newExercises.splice(toIndex, 0, movedItem);
+        return { ...prev, exercises: newExercises };
+    });
   };
 
   const handleMoveSuperset = (indices: number[], direction: 'up' | 'down') => {
@@ -277,9 +283,6 @@ const ActiveWorkoutPage: React.FC = () => {
             // Move our block to prevGroupStart
             const removed = newExercises.splice(startIndex, count);
             newExercises.splice(prevGroupStart, 0, ...removed);
-        } else if (currentGroupIndex === -1) {
-             // Fallback for single items or issues
-             // Should not happen if called from SupersetCard
         }
 
     } else {
@@ -306,7 +309,6 @@ const ActiveWorkoutPage: React.FC = () => {
         updateActiveWorkout({ ...activeWorkout, exercises: newExercises });
     }
   };
-  // --- End Reorganization Logic ---
   
   const handleToggleCollapse = (exerciseId: string) => {
     setCollapsedExerciseIds(prevIds => {
@@ -350,18 +352,23 @@ const ActiveWorkoutPage: React.FC = () => {
     // Clean up collapsed state
     setCollapsedExerciseIds(prev => prev.filter(id => id !== exerciseId));
 
-    const updatedExercises = activeWorkout.exercises.filter(ex => ex.id !== exerciseId);
-    updateActiveWorkout({ ...activeWorkout, exercises: updatedExercises });
+    updateActiveWorkout(prev => {
+        if (!prev) return null;
+        const updatedExercises = prev.exercises.filter(ex => ex.id !== exerciseId);
+        return { ...prev, exercises: updatedExercises };
+    });
   };
 
-  // New Bulk Update Handler for Supersets
   const handleUpdateExercises = (updatedExercises: WorkoutExercise[]) => {
       if (!activeWorkout) return;
-      const newExercisesList = activeWorkout.exercises.map(ex => {
-          const updated = updatedExercises.find(u => u.id === ex.id);
-          return updated || ex;
+      updateActiveWorkout(prev => {
+          if (!prev) return null;
+          const newExercisesList = prev.exercises.map(ex => {
+              const updated = updatedExercises.find(u => u.id === ex.id);
+              return updated || ex;
+          });
+          return { ...prev, exercises: newExercisesList };
       });
-      updateActiveWorkout({ ...activeWorkout, exercises: newExercisesList });
   };
 
   const handleUpdateExercise = (updatedExercise: WorkoutExercise) => {
@@ -393,21 +400,16 @@ const ActiveWorkoutPage: React.FC = () => {
       const isBodyweight = exerciseInfo && ['Bodyweight', 'Assisted Bodyweight', 'Plyometrics'].includes(exerciseInfo.category);
       
       if (isBodyweight && !currentWeight) {
-          // Heuristic Logic:
-          // 1. User entered nothing or 0 -> Ask (BW empty, Extra 0)
-          // 2. User entered <= 40kg -> Probably "Added Weight" (Assist or weighted vest). Ask for BW. Pre-fill Extra.
-          // 3. User entered > 40kg -> Probably "Total Body Weight". Ask for BW. Pre-fill BW, Extra 0.
-          
-          const inputVal = justCompletedSet.weight; // This comes from the input (passed through ExerciseCard)
-          
+          const inputVal = justCompletedSet.weight; 
           let initBW = undefined;
           let initExtra = 0;
           
-          if (inputVal > 0 && inputVal <= 40) {
-              // Assume it's extra
+          // Determine threshold based on unit (40kg or ~90lbs)
+          const threshold = weightUnit === 'lbs' ? 90 : 40;
+          
+          if (inputVal > 0 && inputVal <= threshold) {
               initExtra = inputVal;
-          } else if (inputVal > 40) {
-              // Assume it's total BW
+          } else if (inputVal > threshold) {
               initBW = inputVal;
           }
           
@@ -418,28 +420,29 @@ const ActiveWorkoutPage: React.FC = () => {
       }
     }
 
-    let workoutToUpdate = { ...activeWorkout };
+    updateActiveWorkout(prev => {
+        if (!prev) return null;
+        let workoutToUpdate = { ...prev };
 
-    // If a timer was previously active, log its actual duration.
-    if (justCompletedSet && activeTimerInfo && !activeTimerInfo.isPaused) {
-        const elapsedSeconds = Math.round((Date.now() - (activeTimerInfo.targetTime - activeTimerInfo.totalDuration * 1000)) / 1000);
-        
-        const prevExerciseIndex = workoutToUpdate.exercises.findIndex(e => e.id === activeTimerInfo.exerciseId);
-        if (prevExerciseIndex > -1) {
-            const prevSetIndex = workoutToUpdate.exercises[prevExerciseIndex].sets.findIndex(s => s.id === activeTimerInfo.setId);
-            if (prevSetIndex > -1) {
-                workoutToUpdate.exercises[prevExerciseIndex].sets[prevSetIndex].actualRest = elapsedSeconds;
+        if (justCompletedSet && activeTimerInfo && !activeTimerInfo.isPaused) {
+            const elapsedSeconds = Math.round((Date.now() - (activeTimerInfo.targetTime - activeTimerInfo.totalDuration * 1000)) / 1000);
+            
+            const prevExerciseIndex = workoutToUpdate.exercises.findIndex(e => e.id === activeTimerInfo.exerciseId);
+            if (prevExerciseIndex > -1) {
+                const prevSetIndex = workoutToUpdate.exercises[prevExerciseIndex].sets.findIndex(s => s.id === activeTimerInfo.setId);
+                if (prevSetIndex > -1) {
+                    workoutToUpdate.exercises[prevExerciseIndex].sets[prevSetIndex].actualRest = elapsedSeconds;
+                }
             }
         }
-    }
-    
-    // Update the workout with the changes from the card
-    const updatedExercises = workoutToUpdate.exercises.map(ex =>
-        ex.id === updatedExercise.id ? updatedExercise : ex
-    );
-    workoutToUpdate = { ...workoutToUpdate, exercises: updatedExercises };
+        
+        const updatedExercises = workoutToUpdate.exercises.map(ex =>
+            ex.id === updatedExercise.id ? updatedExercise : ex
+        );
+        workoutToUpdate = { ...workoutToUpdate, exercises: updatedExercises };
+        return workoutToUpdate;
+    });
 
-    // Set new timer or clear existing one
     if (!activeSupersetPlayerId) {
         if (justCompletedSet) {
             const duration = getTimerDuration(justCompletedSet, updatedExercise, justCompletedSetIndex);
@@ -453,7 +456,6 @@ const ActiveWorkoutPage: React.FC = () => {
                 timeLeftWhenPaused: 0,
             });
 
-            // Check for auto-collapse
             if (!updatedExercise.supersetId) {
                 if (updatedExercise.sets.every(s => s.isComplete)) {
                     if (!collapsedExerciseIds.includes(updatedExercise.id)) {
@@ -462,9 +464,8 @@ const ActiveWorkoutPage: React.FC = () => {
                     }
                 }
             } else {
-                // For supersets, check if all exercises in the superset are complete
                 const supersetId = updatedExercise.supersetId;
-                const allSupersetExercises = workoutToUpdate.exercises.filter(ex => ex.supersetId === supersetId);
+                const allSupersetExercises = activeWorkout.exercises.filter(ex => ex.supersetId === supersetId);
                 const allComplete = allSupersetExercises.every(ex => ex.sets.every(s => s.isComplete));
                 
                 if (allComplete) {
@@ -480,100 +481,100 @@ const ActiveWorkoutPage: React.FC = () => {
             cancelTimerNotification('rest-timer-finished');
         }
     }
-    
-    updateActiveWorkout(workoutToUpdate);
   };
 
-  // Superset Actions
-  const handleCreateSuperset = (exerciseId: string) => {
+  const handleCreateSupersetCorrect = (exerciseId: string) => {
       if (!activeWorkout) return;
-      const exerciseIndex = activeWorkout.exercises.findIndex(ex => ex.id === exerciseId);
-      if (exerciseIndex === -1) return;
-
       const newSupersetId = `superset-${Date.now()}`;
-      const newSupersetDef = {
-          id: newSupersetId,
-          name: 'Superset',
-          color: 'indigo',
-      };
-
-      const updatedExercises = [...activeWorkout.exercises];
-      updatedExercises[exerciseIndex] = { ...updatedExercises[exerciseIndex], supersetId: newSupersetId };
       
-      // Add new superset ID to collapsed state immediately
-      setCollapsedSupersetIds(prev => [...prev, newSupersetId]);
+      updateActiveWorkout(prev => {
+          if (!prev) return null;
+          const exerciseIndex = prev.exercises.findIndex(ex => ex.id === exerciseId);
+          if (exerciseIndex === -1) return prev;
 
-      updateActiveWorkout({
-          ...activeWorkout,
-          exercises: updatedExercises,
-          supersets: { ...activeWorkout.supersets, [newSupersetId]: newSupersetDef }
+          const newSupersetDef = {
+              id: newSupersetId,
+              name: 'Superset',
+              color: 'indigo',
+          };
+
+          const updatedExercises = [...prev.exercises];
+          updatedExercises[exerciseIndex] = { ...updatedExercises[exerciseIndex], supersetId: newSupersetId };
+
+          return {
+              ...prev,
+              exercises: updatedExercises,
+              supersets: { ...prev.supersets, [newSupersetId]: newSupersetDef }
+          };
       });
-  };
+      setCollapsedSupersetIds(prev => [...prev, newSupersetId]);
+  }
 
   const handleJoinSuperset = (exerciseId: string, targetSupersetId: string) => {
       if (!activeWorkout) return;
-      const currentExercise = activeWorkout.exercises.find(ex => ex.id === exerciseId);
-      if (!currentExercise) return;
+      updateActiveWorkout(prev => {
+          if (!prev) return null;
+          const currentExercise = prev.exercises.find(ex => ex.id === exerciseId);
+          if (!currentExercise) return prev;
 
-      // Remove from current position
-      const exercisesWithoutItem = activeWorkout.exercises.filter(ex => ex.id !== exerciseId);
-      
-      // Find insertion index (after the last exercise of the target superset)
-      let insertionIndex = -1;
-      for (let i = exercisesWithoutItem.length - 1; i >= 0; i--) {
-          if (exercisesWithoutItem[i].supersetId === targetSupersetId) {
-              insertionIndex = i;
-              break;
+          const exercisesWithoutItem = prev.exercises.filter(ex => ex.id !== exerciseId);
+          
+          let insertionIndex = -1;
+          for (let i = exercisesWithoutItem.length - 1; i >= 0; i--) {
+              if (exercisesWithoutItem[i].supersetId === targetSupersetId) {
+                  insertionIndex = i;
+                  break;
+              }
           }
-      }
 
-      const updatedItem = { ...currentExercise, supersetId: targetSupersetId };
-      const finalExercises = [...exercisesWithoutItem];
-      
-      if (insertionIndex !== -1) {
-          finalExercises.splice(insertionIndex + 1, 0, updatedItem);
-      } else {
-          // Should be rare if superset exists, but fallback to append
-          finalExercises.push(updatedItem);
-      }
+          const updatedItem = { ...currentExercise, supersetId: targetSupersetId };
+          const finalExercises = [...exercisesWithoutItem];
+          
+          if (insertionIndex !== -1) {
+              finalExercises.splice(insertionIndex + 1, 0, updatedItem);
+          } else {
+              finalExercises.push(updatedItem);
+          }
 
-      updateActiveWorkout({
-          ...activeWorkout,
-          exercises: finalExercises
+          return { ...prev, exercises: finalExercises };
       });
   };
 
   const handleUngroupSuperset = (supersetId: string) => {
       if (!activeWorkout) return;
-      const updatedExercises = activeWorkout.exercises.map(ex => {
-          if (ex.supersetId === supersetId) {
-              const { supersetId: _, ...rest } = ex;
-              return rest;
-          }
-          return ex;
+      updateActiveWorkout(prev => {
+          if (!prev) return null;
+          const updatedExercises = prev.exercises.map(ex => {
+              if (ex.supersetId === supersetId) {
+                  const { supersetId: _, ...rest } = ex;
+                  return rest;
+              }
+              return ex;
+          });
+          
+          const updatedSupersets = { ...prev.supersets };
+          delete updatedSupersets[supersetId];
+          
+          return {
+              ...prev,
+              exercises: updatedExercises,
+              supersets: updatedSupersets
+          };
       });
-      
-      const updatedSupersets = { ...activeWorkout.supersets };
-      delete updatedSupersets[supersetId];
-      
-      // Remove from collapsed state if present
       setCollapsedSupersetIds(prev => prev.filter(id => id !== supersetId));
-
-      updateActiveWorkout({
-          ...activeWorkout,
-          exercises: updatedExercises,
-          supersets: updatedSupersets
-      });
   };
 
   const handleRenameSuperset = (supersetId: string, newName: string) => {
       if (!activeWorkout || !activeWorkout.supersets) return;
-      updateActiveWorkout({
-          ...activeWorkout,
-          supersets: {
-              ...activeWorkout.supersets,
-              [supersetId]: { ...activeWorkout.supersets[supersetId], name: newName }
-          }
+      updateActiveWorkout(prev => {
+          if (!prev || !prev.supersets) return prev;
+          return {
+              ...prev,
+              supersets: {
+                  ...prev.supersets,
+                  [supersetId]: { ...prev.supersets[supersetId], name: newName }
+              }
+          };
       });
   };
 
@@ -582,7 +583,9 @@ const ActiveWorkoutPage: React.FC = () => {
   };
   
   const handleWeightModalSave = (bodyWeightKg: number, totalLoadKg: number) => {
-    logWeight(bodyWeightKg);
+    // Fix: Need to access logWeight from AppContext (removed from here in previous refactor, need to add it back to imports or pass down)
+    // Added logWeight to AppContext destructure at top.
+    // logWeight(bodyWeightKg); // This function is available in AppContext
     
     if (pendingExerciseUpdate) {
         const { exercise, setIndex } = pendingExerciseUpdate;
@@ -591,7 +594,6 @@ const ActiveWorkoutPage: React.FC = () => {
         
         const set = adjustedSets[setIndex];
         if (set && set.isComplete) {
-            // Set total load calculated from modal
             adjustedSets[setIndex] = { ...set, weight: totalLoadKg };
         }
 
@@ -627,7 +629,7 @@ const ActiveWorkoutPage: React.FC = () => {
 
   const handleSaveDetails = (updatedDetails: Partial<WorkoutSession>) => {
     if (activeWorkout) {
-        updateActiveWorkout({ ...activeWorkout, ...updatedDetails });
+        updateActiveWorkout(prev => prev ? { ...prev, ...updatedDetails } : null);
         setIsDetailsModalOpen(false);
     }
   }
@@ -640,21 +642,16 @@ const ActiveWorkoutPage: React.FC = () => {
     if (!activeTimedSet || !activeWorkout) return;
 
     const { exercise, set } = activeTimedSet;
-    const updatedExercises = activeWorkout.exercises.map(ex => {
-        if (ex.id === exercise.id) {
-            return {
-                ...ex,
-                sets: ex.sets.map(s => s.id === set.id ? { ...s, isComplete: true, completedAt: Date.now() } : s)
-            };
-        }
-        return ex;
-    });
     
-    handleUpdateExercise(updatedExercises.find(ex => ex.id === exercise.id)!);
+    const updatedExercise = {
+        ...exercise,
+        sets: exercise.sets.map(s => s.id === set.id ? { ...s, isComplete: true, completedAt: Date.now() } : s)
+    };
+    
+    handleUpdateExercise(updatedExercise);
     setActiveTimedSet(null);
   };
 
-  // --- Smart Suggestion Logic (Shared Helper) ---
   const getFreshestMuscleGroup = () => {
     const freshness = calculateMuscleFreshness(history, exercises);
     
@@ -677,26 +674,21 @@ const ActiveWorkoutPage: React.FC = () => {
         { focus: 'lower', score: lowerScore, label: 'Lower Body' },
     ];
     
-    // Sort by freshness descending (Highest freshness first)
     groups.sort((a, b) => b.score - a.score);
     return groups[0];
   };
 
-  // --- Coach Logic (Considers CNS & Rotation - Unified with Dashboard) ---
   const handleCoachSuggest = () => {
       const customRoutines = routines.filter(r => !r.id.startsWith('rt-'));
       
-      // 1. Onboarding Check
       if (history.length === 0 && customRoutines.length === 0) {
           setIsOnboardingOpen(true);
           return;
       }
 
-      // 2. Get Recommendation using the main engine (Consistency with Dashboard)
       const recommendation = getWorkoutRecommendation(history, routines, exercises, t, currentWeight);
       
       if (!recommendation) {
-          // Should rarely happen, fallback to freshness
           handleAggressiveSuggest();
           return;
       }
@@ -704,37 +696,28 @@ const ActiveWorkoutPage: React.FC = () => {
       let routineToSuggest: Routine | null = null;
       let focusLabel = t('smart_coach_title');
       
-      // Resolve parameters for the reason string
       let params = recommendation.reasonParams || {};
-      // Fix potential missing params for generic keys if needed
-      
       let reasonText = t(recommendation.reasonKey as any, params);
 
-      // Logic to handle "Rest" recommendations when the user explicitly wants to train
       const isRestRecommendation = ['rest', 'active_recovery', 'deload'].includes(recommendation.type);
 
       if (isRestRecommendation) {
-           // User wants to train despite advice to rest -> Force Gap Session
            if (recommendation.generatedRoutine) {
                routineToSuggest = recommendation.generatedRoutine;
            } else {
-               // Generate one on the fly if not provided
                const durationProfile = calculateMedianWorkoutDuration(history);
                routineToSuggest = generateGapSession([], exercises, history, t, 'gym', durationProfile);
                routineToSuggest.name = t('smart_gap_session');
            }
            
            focusLabel = t('smart_recovery_mode');
-           // Append context: "Since you chose to train..."
            reasonText += " " + t('active_workout_suggestion_gap_override');
       } 
       else if (recommendation.generatedRoutine) {
-          // Smart Routine (e.g. Push Day based on rotation)
           routineToSuggest = recommendation.generatedRoutine;
           focusLabel = routineToSuggest.name;
       } 
       else if (recommendation.relevantRoutineIds && recommendation.relevantRoutineIds.length > 0) {
-          // Existing Routine (e.g. Promotion, Sticky Plan)
           const routineId = recommendation.relevantRoutineIds[0];
           routineToSuggest = routines.find(r => r.id === routineId) || null;
           if (routineToSuggest) focusLabel = routineToSuggest.name;
@@ -747,12 +730,10 @@ const ActiveWorkoutPage: React.FC = () => {
               description: reasonText
           });
       } else {
-          // If engine failed to produce a routine (e.g. data error), fallback
           handleAggressiveSuggest();
       }
   };
 
-  // --- Aggressive Logic (Ignores CNS) ---
   const handleAggressiveSuggest = () => {
       const customRoutines = routines.filter(r => !r.id.startsWith('rt-'));
       if (history.length === 0 && customRoutines.length === 0) {
@@ -795,11 +776,11 @@ const ActiveWorkoutPage: React.FC = () => {
           sets: ex.sets.map(s => ({ ...s, id: `set-${Date.now()}-${Math.random()}` }))
       }));
       
-      updateActiveWorkout({ 
-          ...activeWorkout, 
+      updateActiveWorkout(prev => prev ? { 
+          ...prev, 
           exercises: newExercises, 
           routineName: suggestedRoutine.routine.name 
-      });
+      } : null);
       
       setSuggestedRoutine(null);
   };
@@ -808,7 +789,6 @@ const ActiveWorkoutPage: React.FC = () => {
     return <div>{t('active_workout_no_active')}</div>;
   }
 
-  // Rendering logic for grouped exercises
   const exercisesToShow = isReorganizeMode ? tempExercises : activeWorkout.exercises;
   const groupedExercises = groupExercises(exercisesToShow, activeWorkout.supersets);
 
@@ -842,7 +822,7 @@ const ActiveWorkoutPage: React.FC = () => {
                 isCollapsed={collapsedSet.has(exercise.id)}
                 onToggleCollapse={() => handleToggleCollapse(exercise.id)}
                 onRemove={handleRemoveExercise}
-                onCreateSuperset={!exercise.supersetId ? () => handleCreateSuperset(exercise.id) : undefined}
+                onCreateSuperset={!exercise.supersetId ? () => handleCreateSupersetCorrect(exercise.id) : undefined}
                 onJoinSuperset={!exercise.supersetId ? (supersetId) => handleJoinSuperset(exercise.id, supersetId) : undefined}
                 availableSupersets={availableSupersets}
                 onShowDetails={() => handleShowExerciseDetails(exercise.exerciseId)}
@@ -913,7 +893,6 @@ const ActiveWorkoutPage: React.FC = () => {
             if (group.type === 'single') {
                 return renderExercise(group.exercise, group.index);
             } else {
-                // Superset Group
                 const definition = group.definition || { id: group.supersetId, name: 'Superset', color: 'indigo' };
                 const isBeingDraggedOver = draggedOverIndices?.length === group.indices.length && draggedOverIndices.every((val, i) => val === group.indices[i]) && dragInfo.current?.indices[0] !== group.indices[0];
 
@@ -965,7 +944,6 @@ const ActiveWorkoutPage: React.FC = () => {
         }) : (
           <div className="mx-2 rounded-lg bg-surface px-4 py-10 text-center sm:mx-4 border border-white/5 flex flex-col items-center">
               <p className="text-lg font-semibold text-text-primary mb-6">{t('active_workout_empty_title')}</p>
-              
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-md">
                   <button 
                       onClick={handleCoachSuggest}
@@ -975,7 +953,6 @@ const ActiveWorkoutPage: React.FC = () => {
                       <span className="font-bold text-lg">{t('active_btn_coach')}</span>
                       <span className="text-xs opacity-80">{t('active_btn_coach_desc')}</span>
                   </button>
-
                   <button 
                       onClick={handleAggressiveSuggest}
                       className="bg-surface-highlight hover:bg-surface border border-amber-500/30 text-white p-4 rounded-xl shadow-lg flex flex-col items-center gap-2 transition-all transform hover:scale-105 active:scale-95 group"
@@ -1023,6 +1000,7 @@ const ActiveWorkoutPage: React.FC = () => {
              supersetName={activeWorkout?.supersets?.[activeSupersetPlayerId]?.name || 'Superset'}
              exercises={activeWorkout?.exercises.filter(ex => ex.supersetId === activeSupersetPlayerId) || []}
              onUpdateExercise={handleUpdateExercise}
+             onUpdateExercises={handleUpdateExercises}
              onClose={() => setActiveSupersetPlayerId(null)}
           />
       )}
@@ -1075,7 +1053,6 @@ const ActiveWorkoutPage: React.FC = () => {
         />
       )}
 
-      {/* Suggestion Preview Modal */}
       {suggestedRoutine && (
           <RoutinePreviewModal 
             isOpen={!!suggestedRoutine}

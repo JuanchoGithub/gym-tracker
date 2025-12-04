@@ -133,13 +133,16 @@ const TemplateEditorPage: React.FC = () => {
         if (source.type === 'item') {
             const targetItem = newExercises[insertIndex] || (insertIndex > 0 ? newExercises[insertIndex-1] : null);
             
-            if (target.type === 'superset' && targetItem && targetItem.supersetId) {
-                 removedItems[0].supersetId = targetItem.supersetId;
-            } else if (target.type === 'item' && targetItem && targetItem.supersetId) {
-                 removedItems[0].supersetId = targetItem.supersetId;
-            } else if (target.type === 'item' && targetItem && !targetItem.supersetId) {
-                 delete removedItems[0].supersetId;
-            }
+            // FIX: Loop through all removed items
+            removedItems.forEach(item => {
+                if (target.type === 'superset' && targetItem && targetItem.supersetId) {
+                     item.supersetId = targetItem.supersetId;
+                } else if (target.type === 'item' && targetItem && targetItem.supersetId) {
+                     item.supersetId = targetItem.supersetId;
+                } else if (target.type === 'item' && targetItem && !targetItem.supersetId) {
+                     delete item.supersetId;
+                }
+            });
         }
         
         newExercises.splice(insertIndex, 0, ...removedItems);

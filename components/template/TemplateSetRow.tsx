@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { PerformedSet, SetType } from '../../types';
 import { Icon } from '../common/Icon';
 import SetTypeModal from '../modals/SetTypeModal';
-// FIX: Replaced `useWeight` with the correct `useMeasureUnit` hook.
 import { useMeasureUnit } from '../../hooks/useWeight';
 import { formatSecondsToMMSS, parseTimerInput } from '../../utils/timeUtils';
 import { useI18n } from '../../hooks/useI18n';
@@ -18,7 +17,6 @@ interface TemplateSetRowProps {
 }
 
 const TemplateSetRow: React.FC<TemplateSetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSet, restTime, onEditSetTimer }) => {
-  // FIX: Replaced `useWeight` with `useMeasureUnit`.
   const { displayWeight, getStoredWeight } = useMeasureUnit();
   const { t } = useI18n();
   const [weight, setWeight] = useState(set.weight > 0 ? displayWeight(set.weight) : '');
@@ -70,7 +68,8 @@ const TemplateSetRow: React.FC<TemplateSetRowProps> = ({ set, setNumber, onUpdat
     setIsTypeModalOpen(false);
   }
 
-  const getSetTypeStyles = (type: SetType) => {
+  const getSetTypeStyles = (type: SetType, isComplete: boolean) => {
+    // Keep consistent styles, though template rows aren't "complete"
     switch(type) {
         case 'warmup': return 'bg-[#1C354C]';
         case 'drop': return 'bg-[#343536]';
@@ -118,7 +117,7 @@ const TemplateSetRow: React.FC<TemplateSetRowProps> = ({ set, setNumber, onUpdat
 
   return (
     <>
-      <div className={`grid grid-cols-12 items-center gap-2 p-1 rounded-lg ${getSetTypeStyles(set.type)}`}>
+      <div className={`grid grid-cols-12 items-center gap-2 p-1 rounded-lg ${getSetTypeStyles(set.type, false)}`}>
         <div className="col-span-2 flex justify-center">
             <button onClick={() => setIsTypeModalOpen(true)} className={`text-center font-bold rounded-full w-8 h-8 mx-auto flex items-center justify-center ${getSetIdentifierStyles(set.type)}`}>
               {renderSetIdentifier()}
@@ -127,7 +126,7 @@ const TemplateSetRow: React.FC<TemplateSetRowProps> = ({ set, setNumber, onUpdat
         
         {set.type === 'timed' ? (
           <>
-            <div className="col-span-4">
+            <div className="col-span-5">
               <input
                 type="text"
                 inputMode="numeric"
@@ -135,7 +134,7 @@ const TemplateSetRow: React.FC<TemplateSetRowProps> = ({ set, setNumber, onUpdat
                 onChange={handleTimeChange}
                 onFocus={(e) => { setIsTimeFocused(true); e.target.select(); }}
                 onBlur={() => { setIsTimeFocused(false); setTime(formatSecondsToMMSS(parseTimerInput(time))) }}
-                className={`${inputClasses} ${set.isTimeInherited && !isTimeFocused ? 'text-text-secondary' : 'text-text-primary'} text-center`}
+                className={`${inputClasses} ${set.isTimeInherited && !isTimeFocused ? 'text-slate-400' : 'text-text-primary'} text-center`}
                 placeholder="m:ss"
               />
               <div className="flex justify-center gap-1 mt-1">
@@ -144,7 +143,7 @@ const TemplateSetRow: React.FC<TemplateSetRowProps> = ({ set, setNumber, onUpdat
                 ))}
               </div>
             </div>
-             <div className="col-span-4">
+             <div className="col-span-5">
               <input
                 type="number"
                 inputMode="numeric"
@@ -154,13 +153,13 @@ const TemplateSetRow: React.FC<TemplateSetRowProps> = ({ set, setNumber, onUpdat
                 onChange={handleRepsChange}
                 onFocus={(e) => { setIsRepsFocused(true); e.target.select(); }}
                 onBlur={() => setIsRepsFocused(false)}
-                className={`${inputClasses} ${set.isRepsInherited && !isRepsFocused ? 'text-text-secondary' : 'text-text-primary'}`}
+                className={`${inputClasses} ${set.isRepsInherited && !isRepsFocused ? 'text-slate-400' : 'text-text-primary'}`}
               />
             </div>
           </>
         ) : (
           <>
-            <div className="col-span-4">
+            <div className="col-span-5">
               <input 
                 type="number"
                 inputMode="decimal"
@@ -170,11 +169,11 @@ const TemplateSetRow: React.FC<TemplateSetRowProps> = ({ set, setNumber, onUpdat
                 onChange={handleWeightChange}
                 onFocus={(e) => { setIsWeightFocused(true); e.target.select(); }}
                 onBlur={() => setIsWeightFocused(false)}
-                className={`${inputClasses} ${set.isWeightInherited && !isWeightFocused ? 'text-text-secondary' : 'text-text-primary'}`}
+                className={`${inputClasses} ${set.isWeightInherited && !isWeightFocused ? 'text-slate-400' : 'text-text-primary'}`}
               />
             </div>
 
-            <div className="col-span-4">
+            <div className="col-span-5">
               <input
                 type="number"
                 inputMode="numeric"
@@ -184,18 +183,11 @@ const TemplateSetRow: React.FC<TemplateSetRowProps> = ({ set, setNumber, onUpdat
                 onChange={handleRepsChange}
                 onFocus={(e) => { setIsRepsFocused(true); e.target.select(); }}
                 onBlur={() => setIsRepsFocused(false)}
-                className={`${inputClasses} ${set.isRepsInherited && !isRepsFocused ? 'text-text-secondary' : 'text-text-primary'}`}
+                className={`${inputClasses} ${set.isRepsInherited && !isRepsFocused ? 'text-slate-400' : 'text-text-primary'}`}
               />
             </div>
           </>
         )}
-
-
-        <div className="col-span-2 flex justify-center">
-          <button onClick={onDeleteSet} className="p-2 rounded-full text-text-secondary hover:text-red-500 transition-colors">
-              <Icon name="trash" className="w-5 h-5" />
-          </button>
-        </div>
       </div>
       
       <button onClick={onEditSetTimer} className="w-full" aria-label="Adjust timer settings">
@@ -213,6 +205,7 @@ const TemplateSetRow: React.FC<TemplateSetRowProps> = ({ set, setNumber, onUpdat
           onClose={() => setIsTypeModalOpen(false)}
           currentType={set.type}
           onSelectType={handleSelectSetType}
+          onDelete={onDeleteSet}
       />
     </>
   );

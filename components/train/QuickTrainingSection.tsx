@@ -2,6 +2,7 @@
 import React, { useContext, useState } from 'react';
 import { useI18n } from '../../hooks/useI18n';
 import { AppContext } from '../../contexts/AppContext';
+import { TimerContext } from '../../contexts/TimerContext';
 import { Routine, WorkoutExercise } from '../../types';
 import { Icon } from '../common/Icon';
 import OneRepMaxHub from '../onerepmax/OneRepMaxHub';
@@ -13,7 +14,7 @@ interface QuickTrainingSectionProps {
 
 const QuickTrainingSection: React.FC<QuickTrainingSectionProps> = ({ isOpen, onToggle }) => {
     const { t } = useI18n();
-    const { startQuickTimer, startHiitSession } = useContext(AppContext);
+    const { startQuickTimer, startHiitSession } = useContext(TimerContext);
     const [isOrmHubOpen, setIsOrmHubOpen] = useState(false);
 
     const quickTimeOptions = [

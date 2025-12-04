@@ -7,6 +7,23 @@ import { SupplementPlanItem } from '../../types';
 import { getExplanationIdForSupplement } from '../../services/explanationService';
 import { getDateString } from '../../utils/timeUtils';
 import SupplementHistoryModal from '../modals/SupplementHistoryModal';
+import { TranslationKey } from '../../contexts/I18nContext';
+
+// Explicit mapping of Translation Keys to Group Buckets
+const TIME_KEY_MAP: Record<string, string> = {
+    'supplements_time_pre_workout': 'pre_workout',
+    'supplements_time_morning': 'morning',
+    'supplements_time_morning_with_meal': 'morning',
+    'supplements_time_with_breakfast': 'morning',
+    'supplements_time_intra_workout': 'intra_workout',
+    'supplements_time_post_workout': 'post_workout',
+    'supplements_time_lunch': 'lunch',
+    'supplements_time_with_meal': 'with_meal',
+    'supplements_time_evening': 'evening',
+    'supplements_time_before_bed': 'evening',
+    'supplements_time_daily': 'daily',
+    'supplements_time_daily_any': 'daily'
+};
 
 const timeKeywords = {
     en: {
@@ -61,10 +78,16 @@ const DailySupplementList: React.FC<DailySupplementListProps> = ({ date, readOnl
   const trainingTime = supplementPlan?.info?.trainingTime || 'afternoon';
   
   const getTimeKey = useCallback((time: string): string => {
-    // Handle ZMA/Magnesium explicit check if regex fails, though updated regex should catch 'bed'
+    // 1. Direct Key Mapping (Best/New Standard)
+    // This ensures valid translation keys are mapped to the correct bucket immediately
+    if (TIME_KEY_MAP[time]) return TIME_KEY_MAP[time];
+
+    // 2. Legacy Fallback: Handle custom strings via regex (e.g. "Mañana", "Morning")
+    // This supports data from older versions of the app before standardization
     const keywords = timeKeywords[locale as keyof typeof timeKeywords] || timeKeywords.en;
     
     for (const key in keywords) {
+        // Cast key to keyof typeof keywords to satisfy TS
         if (keywords[key as keyof typeof keywords].test(time)) {
             return key;
         }
@@ -101,7 +124,8 @@ const DailySupplementList: React.FC<DailySupplementListProps> = ({ date, readOnl
     }).map(item => {
         // Special logic for creatine on rest days
         if (getExplanationIdForSupplement(item.supplement) === 'creatine' && !isTrainingDay) {
-            return { ...item, time: t('supplements_time_with_breakfast') };
+            // Use the key for "With Breakfast"
+            return { ...item, time: 'supplements_time_with_breakfast' };
         }
         return item;
     });
@@ -239,7 +263,7 @@ const DailySupplementList: React.FC<DailySupplementListProps> = ({ date, readOnl
                                     className="flex-grow p-4 pl-0 text-left hover:bg-white/5 transition-colors group"
                                 >
                                     <div className="flex items-center gap-2">
-                                        <h4 className={`font-bold text-lg transition-colors ${isTaken ? 'line-through text-text-secondary' : 'text-primary'}`}>{item.supplement}</h4>
+                                        <h4 className={`font-bold text-base truncate text-white ${isTaken ? 'line-through text-text-secondary' : 'text-primary'}`}>{item.supplement}</h4>
                                         
                                         {item.stock !== undefined && item.stock <= 5 && !isTaken && (
                                             <span className="text-[10px] font-bold bg-red-500/20 text-red-400 border border-red-500/30 px-1.5 py-0.5 rounded">
@@ -249,7 +273,10 @@ const DailySupplementList: React.FC<DailySupplementListProps> = ({ date, readOnl
                                     </div>
                                     <div className="flex items-center gap-2 my-2 flex-wrap">
                                         <span className={`font-mono text-base px-3 py-1 rounded-full transition-colors ${isTaken ? 'bg-slate-700 text-text-secondary line-through' : 'bg-secondary/50'}`}>{item.dosage}</span>
-                                        <p className={`text-sm font-semibold transition-colors ${isTaken ? 'line-through text-text-secondary/70' : 'text-text-secondary'}`}>{item.time}</p>
+                                        {/* Display Translated Time */}
+                                        <p className={`text-sm font-semibold transition-colors ${isTaken ? 'line-through text-text-secondary/70' : 'text-text-secondary'}`}>
+                                            {t(item.time as TranslationKey)}
+                                        </p>
                                     </div>
                                     {item.notes && <p className={`text-sm transition-colors whitespace-pre-wrap ${isTaken ? 'line-through text-text-secondary/70' : 'text-text-primary'}`}>{item.notes}</p>}
                                 </button>

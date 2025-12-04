@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en" class="h-full w-full overflow-hidden overscroll-none">
 <head>
@@ -25,7 +26,7 @@
             'surface': '#1e293b', // slate-800
             'surface-highlight': '#334155', // slate-700
             'text-primary': '#f8fafc', // slate-50
-            'text-secondary': '#cbd5e1', // slate-300
+            'text-secondary': '#e2e8f0', // slate-200 (Brightened from slate-300 for better contrast)
             'success': '#4ade80', // green-400
             'warning': '#fbbf24', // amber-400
             'danger': '#f87171', // red-400
@@ -43,6 +44,11 @@
       }
     }
   </script>
+  <style>
+    .safe-area-bottom {
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+  </style>
 <script type="importmap">
 {
   "imports": {

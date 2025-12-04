@@ -1,6 +1,7 @@
 
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useMemo } from 'react';
 import { AppContext } from '../contexts/AppContext';
+import { ActiveWorkoutContext } from '../contexts/ActiveWorkoutContext';
 import { useI18n } from '../hooks/useI18n';
 import { Routine, WorkoutSession } from '../types';
 import { useMeasureUnit } from '../hooks/useWeight';
@@ -13,13 +14,17 @@ import HistoryDetailModal from '../components/modals/HistoryDetailModal';
 import HistoryChartsTab from '../components/history/HistoryChartsTab';
 import { TranslationKey } from '../contexts/I18nContext';
 
+const HISTORY_PAGE_SIZE = 10;
+
 const HistoryPage: React.FC = () => {
-  const { history, getExerciseById, deleteHistorySession, upsertRoutine, startWorkout, startHistoryEdit, routines } = useContext(AppContext);
+  const { history, getExerciseById, deleteHistorySession, upsertRoutine, startHistoryEdit, routines } = useContext(AppContext);
+  const { startWorkout } = useContext(ActiveWorkoutContext);
   const { t } = useI18n();
   const { displayWeight, weightUnit } = useMeasureUnit();
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [viewingSession, setViewingSession] = useState<WorkoutSession | null>(null);
   const [activeTab, setActiveTab] = useState<'list' | 'charts'>('list');
+  const [visibleCount, setVisibleCount] = useState(HISTORY_PAGE_SIZE);
   
   const [deletingSession, setDeletingSession] = useState<WorkoutSession | null>(null);
   const [templatingSession, setTemplatingSession] = useState<WorkoutSession | null>(null);
@@ -66,6 +71,14 @@ const HistoryPage: React.FC = () => {
     startWorkout(routineFromHistory);
   };
 
+  const visibleHistory = useMemo(() => {
+    return history.slice(0, visibleCount);
+  }, [history, visibleCount]);
+
+  const handleLoadMore = () => {
+    setVisibleCount(prev => prev + HISTORY_PAGE_SIZE);
+  };
+
   if (history.length === 0) {
     return (
       <div className="text-center text-text-secondary">
@@ -87,7 +100,7 @@ const HistoryPage: React.FC = () => {
 
   return (
     <>
-      <div className="space-y-4 sm:space-y-6" onClick={() => { if (menuOpenId) setMenuOpenId(null) }}>
+      <div className="space-y-4 sm:space-y-6 pb-10" onClick={() => { if (menuOpenId) setMenuOpenId(null) }}>
         <h1 className="text-3xl font-bold text-center">{t('nav_history')}</h1>
 
         <div className="flex justify-center border-b border-secondary/20">
@@ -105,67 +118,80 @@ const HistoryPage: React.FC = () => {
             </button>
         </div>
 
-        {activeTab === 'list' && history.map((session: WorkoutSession) => {
-          const totalTime = session.endTime > 0 ? formatTime(Math.round((session.endTime - session.startTime) / 1000)) : 'N/A';
-          const totalVolume = session.exercises.reduce((total, ex) => {
-            return total + ex.sets.reduce((exTotal, set) => exTotal + (set.weight * set.reps), 0);
-          }, 0);
-          
-          return (
-            <div key={session.id} className="bg-surface rounded-lg shadow cursor-pointer hover:bg-slate-700 transition-colors">
-              <div className="p-3 sm:p-4" onClick={() => setViewingSession(session)}>
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <h2 className="font-bold text-lg text-primary">{session.routineName}</h2>
-                    <span className="text-sm text-text-secondary">
-                      {new Date(session.startTime).toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="relative" onClick={(e) => e.stopPropagation()}>
-                    <button onClick={() => setMenuOpenId(mid => mid === session.id ? null : session.id)} className="p-2 -mt-2 -mr-2 text-text-secondary hover:text-primary">
-                      <Icon name="ellipsis"/>
-                    </button>
-                    {menuOpenId === session.id && (
-                      <div className="absolute right-0 mt-1 w-48 bg-slate-600 rounded-md shadow-lg z-10">
-                        <button onClick={(e) => { e.stopPropagation(); startHistoryEdit(session); setMenuOpenId(null); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-500 flex items-center gap-2"><Icon name="edit" className="w-4 h-4"/>{t('history_menu_edit')}</button>
-                        <button onClick={(e) => { e.stopPropagation(); handleRepeatWorkout(session); setMenuOpenId(null); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-500 flex items-center gap-2"><Icon name="repeat" className="w-4 h-4"/>{t('history_menu_repeat')}</button>
-                        <button onClick={(e) => { e.stopPropagation(); setTemplatingSession(session); setNewTemplateName(session.routineName); setMenuOpenId(null); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-500 flex items-center gap-2"><Icon name="save" className="w-4 h-4"/>{t('history_menu_save_template')}</button>
-                        <button onClick={(e) => { e.stopPropagation(); setDeletingSession(session); setMenuOpenId(null); }} className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-slate-500 flex items-center gap-2"><Icon name="trash" className="w-4 h-4"/>{t('history_menu_delete')}</button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-3 gap-2 mb-4">
-                    <StatItem icon={<Icon name="history" className="w-5 h-5"/>} label={t('history_total_time')} value={totalTime} />
-                    <StatItem icon={<Icon name="weight" className="w-5 h-5"/>} label={t('history_total_volume')} value={`${displayWeight(totalVolume, true)} ${t(`workout_${weightUnit}` as TranslationKey)}`} />
-                    <StatItem icon={<Icon name="trophy" className="w-5 h-5"/>} label={t('history_prs')} value={session.prCount || 0} />
-                </div>
-
-                <div className="space-y-2 text-sm">
-                  <div className="grid grid-cols-2 text-xs text-text-secondary font-semibold border-b border-secondary/20 pb-1">
-                    <span>Exercise</span>
-                    <span className="text-right">{t('history_best_set')}</span>
-                  </div>
-                  {session.exercises.map(ex => {
-                    const exerciseInfo = getExerciseById(ex.exerciseId);
-                    const bestSet = findBestSet(ex.sets);
-                    const normalSetsCount = ex.sets.filter(s => s.type === 'normal').length;
+        {activeTab === 'list' && (
+            <div className="space-y-4">
+                {visibleHistory.map((session: WorkoutSession) => {
+                    const totalTime = session.endTime > 0 ? formatTime(Math.round((session.endTime - session.startTime) / 1000)) : 'N/A';
+                    const totalVolume = session.exercises.reduce((total, ex) => {
+                        return total + ex.sets.reduce((exTotal, set) => exTotal + (set.isComplete ? (set.weight * set.reps) : 0), 0);
+                    }, 0);
+                    
                     return (
-                      <div key={ex.id} className="grid grid-cols-2 items-center">
-                        <div>
-                          <span className="font-semibold text-text-primary">{normalSetsCount}x {exerciseInfo?.name || t('history_page_unknown_exercise')}</span>
+                        <div key={session.id} className="bg-surface rounded-lg shadow cursor-pointer hover:bg-slate-700 transition-colors">
+                        <div className="p-3 sm:p-4" onClick={() => setViewingSession(session)}>
+                            <div className="flex justify-between items-start mb-3">
+                            <div>
+                                <h2 className="font-bold text-lg text-primary">{session.routineName}</h2>
+                                <span className="text-sm text-text-secondary">
+                                {new Date(session.startTime).toLocaleString()}
+                                </span>
+                            </div>
+                            <div className="relative" onClick={(e) => e.stopPropagation()}>
+                                <button onClick={() => setMenuOpenId(mid => mid === session.id ? null : session.id)} className="p-2 -mt-2 -mr-2 text-text-secondary hover:text-primary">
+                                <Icon name="ellipsis"/>
+                                </button>
+                                {menuOpenId === session.id && (
+                                <div className="absolute right-0 mt-1 w-48 bg-slate-600 rounded-md shadow-lg z-10">
+                                    <button onClick={(e) => { e.stopPropagation(); startHistoryEdit(session); setMenuOpenId(null); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-500 flex items-center gap-2"><Icon name="edit" className="w-4 h-4"/>{t('history_menu_edit')}</button>
+                                    <button onClick={(e) => { e.stopPropagation(); handleRepeatWorkout(session); setMenuOpenId(null); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-500 flex items-center gap-2"><Icon name="repeat" className="w-4 h-4"/>{t('history_menu_repeat')}</button>
+                                    <button onClick={(e) => { e.stopPropagation(); setTemplatingSession(session); setNewTemplateName(session.routineName); setMenuOpenId(null); }} className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-slate-500 flex items-center gap-2"><Icon name="save" className="w-4 h-4"/>{t('history_menu_save_template')}</button>
+                                    <button onClick={(e) => { e.stopPropagation(); setDeletingSession(session); setMenuOpenId(null); }} className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-slate-500 flex items-center gap-2"><Icon name="trash" className="w-4 h-4"/>{t('history_menu_delete')}</button>
+                                </div>
+                                )}
+                            </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-3 gap-2 mb-4">
+                                <StatItem icon={<Icon name="history" className="w-5 h-5"/>} label={t('history_total_time')} value={totalTime} />
+                                <StatItem icon={<Icon name="weight" className="w-5 h-5"/>} label={t('history_total_volume')} value={`${displayWeight(totalVolume, true)} ${t(`workout_${weightUnit}` as TranslationKey)}`} />
+                                <StatItem icon={<Icon name="trophy" className="w-5 h-5"/>} label={t('history_prs')} value={session.prCount || 0} />
+                            </div>
+
+                            <div className="space-y-2 text-sm">
+                            <div className="grid grid-cols-2 text-xs text-text-secondary font-semibold border-b border-secondary/20 pb-1">
+                                <span>Exercise</span>
+                                <span className="text-right">{t('history_best_set')}</span>
+                            </div>
+                            {session.exercises.map(ex => {
+                                const exerciseInfo = getExerciseById(ex.exerciseId);
+                                const bestSet = findBestSet(ex.sets);
+                                const normalSetsCount = ex.sets.filter(s => s.type === 'normal').length;
+                                return (
+                                <div key={ex.id} className="grid grid-cols-2 items-center">
+                                    <div>
+                                    <span className="font-semibold text-text-primary">{normalSetsCount}x {exerciseInfo?.name || t('history_page_unknown_exercise')}</span>
+                                    </div>
+                                    <div className="text-right text-text-secondary">
+                                    {bestSet ? `${displayWeight(bestSet.weight)} ${t(`workout_${weightUnit}` as TranslationKey)} x ${bestSet.reps} ${t('workout_reps')}` : '-'}
+                                    </div>
+                                </div>
+                                );
+                            })}
+                            </div>
                         </div>
-                        <div className="text-right text-text-secondary">
-                          {bestSet ? `${displayWeight(bestSet.weight)} ${t(`workout_${weightUnit}` as TranslationKey)} x ${bestSet.reps} ${t('workout_reps')}` : '-'}
                         </div>
-                      </div>
                     );
-                  })}
-                </div>
-              </div>
+                })}
+                
+                {visibleCount < history.length && (
+                    <button 
+                        onClick={handleLoadMore}
+                        className="w-full py-3 text-center bg-surface-highlight/20 text-primary font-semibold rounded-lg hover:bg-surface-highlight/40 transition-colors"
+                    >
+                        Load More
+                    </button>
+                )}
             </div>
-          )}
         )}
 
         {activeTab === 'charts' && <HistoryChartsTab history={history} />}

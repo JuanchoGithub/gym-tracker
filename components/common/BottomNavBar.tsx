@@ -23,10 +23,10 @@ const NavItem: React.FC<{
       {isActive && (
         <div className="absolute top-0 w-12 h-1 bg-primary rounded-b-full shadow-[0_0_10px_rgba(56,189,248,0.6)] animate-fadeIn" />
       )}
-      <div className={`transition-colors duration-300 mb-0.5 ${isActive ? 'text-primary' : 'text-secondary group-hover:text-text-primary'}`}>
+      <div className={`transition-colors duration-300 mb-0.5 ${isActive ? 'text-primary' : 'text-slate-400 group-hover:text-text-primary'}`}>
         {icon}
       </div>
-      <span className={`text-[10px] font-medium transition-colors duration-300 ${isActive ? 'text-primary' : 'text-secondary group-hover:text-text-primary'}`}>
+      <span className={`text-[10px] font-medium transition-colors duration-300 ${isActive ? 'text-primary' : 'text-slate-400 group-hover:text-text-primary'}`}>
         {label}
       </span>
     </button>
@@ -44,7 +44,7 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({ currentPage, onNavigate }) 
   ];
 
   return (
-    <nav className="h-[calc(4.5rem+env(safe-area-inset-bottom))] w-full bg-[#0f172a]/90 backdrop-blur-xl border-t border-white/5 flex justify-around items-start pt-2 pb-[env(safe-area-inset-bottom)] z-50 fixed bottom-0 left-0 right-0 shadow-2xl">
+    <nav className="h-[calc(4.5rem+env(safe-area-inset-bottom))] w-full bg-[#0f172a]/90 backdrop-blur-xl border-t border-white/5 flex justify-around items-start pt-2 pb-[env(safe-area-inset-bottom)] z-40 fixed bottom-0 left-0 right-0 shadow-2xl">
       {navItems.map(item => (
         <NavItem
           key={item.page}

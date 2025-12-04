@@ -62,4 +62,11 @@ export const es_profile = {
   fatigue_desc: "Rastrea el estrés acumulado en tu Sistema Nervioso Central basado en volumen e intensidad.",
   fatigue_info_title: "Sobre la Fatiga del SNC",
   fatigue_info_content: "Tu Sistema Nervioso Central (SNC) controla la contracción muscular. A diferencia del dolor muscular, la fatiga del SNC es silenciosa pero sistémica: afecta a todo el cuerpo, el estado de ánimo y el sueño.\n\nEsta métrica rastrea tu carga acumulada de los últimos 7 días basada en la intensidad (los ejercicios compuestos taxan más el SNC que los de aislamiento). Si la carga supera tu capacidad de recuperación por mucho tiempo, el rendimiento se estanca y aumenta el riesgo de lesiones.",
+
+  // Data Management
+  profile_data_title: "Gestión de Datos",
+  profile_data_desc: "Copia de seguridad o restaurar datos.",
+  profile_import_confirm: "Esto sobrescribirá tus datos actuales. ¿Estás seguro de querer continuar?",
+  profile_import_success: "¡Datos importados con éxito!",
+  profile_import_error: "Error al importar datos. Formato de archivo inválido.",
 };

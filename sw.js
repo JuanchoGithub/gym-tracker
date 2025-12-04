@@ -1,3 +1,4 @@
+
 self.addEventListener('push', event => {
   console.log('[Service Worker] Push Received.');
   const data = event.data ? event.data.json() : {};
@@ -13,12 +14,22 @@ self.addEventListener('push', event => {
   event.waitUntil(self.registration.showNotification(title, options));
 });
 
-const CACHE_NAME = 'fortachon-cache-v1';
+const CACHE_NAME = 'fortachon-cache-v2';
 const URLS_TO_CACHE = [
   '/',
   '/index.html',
-  // The fetch handler will cache other assets like JS bundles and CSS on the fly.
+  // Core Assets
+  '/icon-192x192.png',
+  '/icon-512x512.png',
+  '/manifest.json',
+  // Exercise Animations - Extended list for offline capability
+  // Generating list for ex-1 to ex-162
 ];
+
+// Helper to populate exercise URLs
+for (let i = 1; i <= 162; i++) {
+    URLS_TO_CACHE.push(`/assets/exercises/animations/svg/ex-${i}.svg`);
+}
 
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -69,7 +80,10 @@ self.addEventListener('fetch', event => {
 
           caches.open(CACHE_NAME)
             .then(cache => {
-              cache.put(event.request, responseToCache);
+              // Only cache valid http/https requests
+              if (event.request.url.startsWith('http')) {
+                  cache.put(event.request, responseToCache);
+              }
             });
 
           return networkResponse;

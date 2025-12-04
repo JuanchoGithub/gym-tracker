@@ -30,4 +30,6 @@ export const es_common = {
   common_next_session: "Próxima Sesión",
   common_undo: "Deshacer",
   common_dismiss: "Descartar",
+  common_export: "Exportar",
+  common_import: "Importar",
 };

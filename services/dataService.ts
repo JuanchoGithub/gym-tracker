@@ -1,21 +1,34 @@
+
 export const exportToCsv = (data: Record<string, any>[], filename: string) => {
   const header = Object.keys(data[0]).join(',');
   const rows = data.map(row => Object.values(row).join(','));
-  const csvContent = `data:text/csv;charset=utf-8,${header}\n${rows.join('\n')}`;
+  const csvContent = `${header}\n${rows.join('\n')}`;
+  
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  
   const link = document.createElement('a');
-  link.href = encodeURI(csvContent);
+  link.href = url;
   link.download = `${filename}.csv`;
   link.click();
+  
+  // Cleanup
+  URL.revokeObjectURL(url);
 };
 
-export const exportToJson = (data: Record<string, any>[], filename: string) => {
-    const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
-        JSON.stringify(data, null, 2)
-    )}`;
+export const exportToJson = (data: any, filename: string) => {
+    const jsonString = JSON.stringify(data, null, 2);
+    
+    const blob = new Blob([jsonString], { type: 'application/json;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+
     const link = document.createElement("a");
-    link.href = jsonString;
+    link.href = url;
     link.download = `${filename}.json`;
     link.click();
+
+    // Cleanup
+    URL.revokeObjectURL(url);
 }
 
 export const exportToPng = (svgElement: SVGElement, filename: string) => {

@@ -62,4 +62,11 @@ export const en_profile = {
   fatigue_desc: "Tracks cumulative stress on your Central Nervous System based on training volume and intensity.",
   fatigue_info_title: "About CNS Fatigue",
   fatigue_info_content: "Your Central Nervous System (CNS) controls muscle recruitment. Unlike sore muscles, CNS fatigue is silent but systemic—affecting your whole body, mood, and sleep.\n\nThis metric tracks your cumulative load over the last 7 days based on exercise intensity (Compound lifts tax the CNS more than isolation). If your load exceeds your recovery capacity for too long, performance stalls and injury risk spikes.",
+  
+  // Data Management
+  profile_data_title: "Data Management",
+  profile_data_desc: "Backup or restore your full app data.",
+  profile_import_confirm: "This will overwrite your current data. Are you sure you want to proceed?",
+  profile_import_success: "Data imported successfully!",
+  profile_import_error: "Failed to import data. Invalid file format.",
 };

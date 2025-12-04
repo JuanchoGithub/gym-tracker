@@ -67,7 +67,7 @@ const RadarChart: React.FC<RadarChartProps> = ({
             fill="none"
             stroke="#334155"
             strokeWidth="1"
-            className="opacity-50"
+            style={{ opacity: 0.5 }}
           />
       );
   }
@@ -85,7 +85,7 @@ const RadarChart: React.FC<RadarChartProps> = ({
             y2={y}
             stroke="#334155"
             strokeWidth="1"
-            className="opacity-50"
+            style={{ opacity: 0.5 }}
           />
       );
   }
@@ -111,6 +111,7 @@ const RadarChart: React.FC<RadarChartProps> = ({
             fontWeight="bold"
             textAnchor={textAnchor}
             dominantBaseline="middle"
+            style={{ fontFamily: 'sans-serif' }}
           >
               {d.label}
           </text>
@@ -118,7 +119,7 @@ const RadarChart: React.FC<RadarChartProps> = ({
   });
 
   return (
-    <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} className="overflow-visible">
+    <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} style={{ overflow: 'visible' }}>
         <defs>
             <clipPath id={`clip-${uniqueId}`}>
                 <polygon points={pointsString} />
@@ -149,7 +150,7 @@ const RadarChart: React.FC<RadarChartProps> = ({
                     cy={p.y}
                     r={radius} // Cover a good portion of the chart
                     fill={`url(#grad-${uniqueId}-${i})`}
-                    className="mix-blend-screen" 
+                    style={{ mixBlendMode: 'screen' }}
                 />
             ))}
         </g>
@@ -161,7 +162,7 @@ const RadarChart: React.FC<RadarChartProps> = ({
             stroke={strokeColor}
             strokeWidth="2"
             strokeLinejoin="round"
-            className="drop-shadow-[0_0_5px_rgba(56,189,248,0.5)]"
+            style={{ filter: 'drop-shadow(0 0 5px rgba(56,189,248,0.5))' }}
         />
         
         {/* Data Points */}
@@ -174,7 +175,8 @@ const RadarChart: React.FC<RadarChartProps> = ({
                fill={getPointColor(data[i].value)} 
                stroke="#0f172a"
                strokeWidth="2"
-               className="transition-all duration-1000 ease-out"
+               // Animation removed for PNG export compatibility safety, or kept as is since it doesn't break export usually, just style needed.
+               // Inline style for consistency
              />
         ))}
 

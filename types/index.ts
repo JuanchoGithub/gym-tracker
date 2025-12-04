@@ -1,5 +1,6 @@
 
 import { MUSCLES } from '../constants/muscles';
+import { Recommendation } from '../utils/recommendationUtils';
 
 export type BodyPart = 'Chest' | 'Back' | 'Legs' | 'Glutes' | 'Shoulders' | 'Biceps' | 'Triceps' | 'Core' | 'Full Body' | 'Calves' | 'Forearms' | 'Mobility' | 'Cardio';
 
@@ -87,6 +88,7 @@ export interface WorkoutSession {
   routineName: string;
   startTime: number;
   endTime: number; // timestamp
+  lastUpdated?: number; // Timestamp of last interaction/update to prevent stale timeouts
   exercises: WorkoutExercise[]; // This will store the completed sets
   supersets?: Record<string, SupersetDefinition>;
   prCount?: number;
@@ -199,4 +201,28 @@ export interface SupplementSuggestion {
 export interface RejectedSuggestion {
   identifier: string;
   rejectedAt: number;
+}
+
+// Timer Types
+export interface ActiveTimerInfo {
+  exerciseId: string;
+  setId: string;
+  targetTime: number;
+  totalDuration: number;
+  initialDuration: number;
+  isPaused: boolean;
+  timeLeftWhenPaused: number;
+}
+
+export interface TimedSetInfo {
+    exercise: WorkoutExercise;
+    set: PerformedSet;
+}
+
+// Stats Types
+export interface UserStatistics {
+    recommendation: Recommendation | null;
+    freshness: Record<string, number>;
+    imbalanceRecommendation: Recommendation | null;
+    lastCalculated: number;
 }

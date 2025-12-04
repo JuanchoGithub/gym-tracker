@@ -1,9 +1,19 @@
+
 import { WeightUnit } from "../contexts/AppContext";
 
 export const KG_TO_LBS = 2.20462;
 
-export const convertKgToLbs = (kg: number): number => kg * KG_TO_LBS;
-export const convertLbsToKg = (lbs: number): number => lbs / KG_TO_LBS;
+export const convertKgToLbs = (kg: number): number => {
+    const lbs = kg * KG_TO_LBS;
+    // Round to 2 decimals to avoid long floats but keep precision high enough
+    return Math.round(lbs * 100) / 100;
+};
+
+export const convertLbsToKg = (lbs: number): number => {
+    const kg = lbs / KG_TO_LBS;
+    // Higher precision for storage to prevent round-trip drift
+    return Math.round(kg * 10000) / 10000;
+};
 
 /**
  * Formats a weight value (stored in kg) for display in the selected unit.
@@ -22,12 +32,14 @@ export const formatWeightDisplay = (kg: number, unit: WeightUnit, isDelta: boole
     value = kg;
   }
   
-  // Use one decimal place for lbs, or for kg if it's not a whole number.
-  if (unit === 'lbs' || !Number.isInteger(value)) {
-    return value.toFixed(1);
+  // Use one decimal place for lbs if it has decimals, otherwise clean integer
+  // For kg, same logic, but generally .5 increments are common.
+  // Removing trailing zeros logic:
+  if (Number.isInteger(value)) {
+      return value.toFixed(0);
   }
   
-  return value.toFixed(0);
+  return value.toFixed(1);
 };
 
 /**

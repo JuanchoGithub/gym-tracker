@@ -1,12 +1,14 @@
-import React, { useState, useEffect, useRef, useMemo, useContext, useCallback } from 'react';
+
+import React, { useState, useEffect, useRef, useContext, useCallback } from 'react';
 import { useI18n } from '../hooks/useI18n';
 import { useWakeLock } from '../hooks/useWakeLock';
 import { playWarningSound, playEndSound, unlockAudioContext, playTickSound } from '../services/audioService';
-import { Icon } from '../components/common/Icon';
 import { formatSecondsToMMSS } from '../utils/timeUtils';
 import { AppContext } from '../contexts/AppContext';
-import { Routine, WorkoutExercise } from '../types';
+import { TimerContext } from '../contexts/TimerContext';
+import { Routine } from '../types';
 import { speak } from '../services/speechService';
+import { Icon } from '../components/common/Icon';
 
 type TimerMode = 'quick' | 'hiit';
 
@@ -28,7 +30,8 @@ interface ActiveTimerState {
 
 const TimersPage: React.FC = () => {
   const { t, locale } = useI18n();
-  const { activeHiitSession, endHiitSession, getExerciseById, selectedVoiceURI, activeQuickTimer, endQuickTimer } = useContext(AppContext);
+  const { getExerciseById, selectedVoiceURI } = useContext(AppContext);
+  const { activeHiitSession, endHiitSession, activeQuickTimer, endQuickTimer } = useContext(TimerContext);
   
   const [activeTimer, setActiveTimer] = useState<ActiveTimerState>({
     isActive: false, mode: 'quick', timeLeft: 0, totalDuration: 0, isPaused: false,

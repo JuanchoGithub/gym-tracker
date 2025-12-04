@@ -15,6 +15,7 @@ interface SupersetPlayerProps {
     supersetName: string;
     exercises: WorkoutExercise[];
     onUpdateExercise: (updatedExercise: WorkoutExercise) => void;
+    onUpdateExercises?: (updatedExercises: WorkoutExercise[]) => void;
     onClose: () => void;
 }
 
@@ -25,6 +26,7 @@ const SupersetPlayer: React.FC<SupersetPlayerProps> = ({
     supersetName,
     exercises,
     onUpdateExercise,
+    onUpdateExercises,
     onClose
 }) => {
     const { t } = useI18n();
@@ -32,134 +34,103 @@ const SupersetPlayer: React.FC<SupersetPlayerProps> = ({
     const { displayWeight, getStoredWeight, weightUnit } = useMeasureUnit();
     useWakeLock(true);
 
-    // Store the initial number of rounds to maintain "Round X of Y" consistency.
-    // If user does extra rounds, Y stays fixed (e.g., Round 4 (Extra)).
-    const [initialTotalRounds] = useState(() => {
+    // Calculate total rounds dynamically from current props
+    const totalRoundsCurrent = useMemo(() => {
         if (!exercises || exercises.length === 0) return 1;
         return Math.max(...exercises.map(ex => ex.sets.length));
-    });
+    }, [exercises]);
 
     // Calculate starting position based on first incomplete set across exercises
-    const calculateStartIndex = () => {
+    const [startIndex] = useState(() => {
         let minSets = 999;
+        if (!exercises || exercises.length === 0) return 0;
         exercises.forEach(ex => {
             const completedCount = ex.sets.filter(s => s.isComplete).length;
             if (completedCount < minSets) minSets = completedCount;
         });
-        return minSets; 
-    };
+        return minSets === 999 ? 0 : minSets; 
+    });
 
-    const [currentRoundIndex, setCurrentRoundIndex] = useState(calculateStartIndex());
+    const [currentRoundIndex, setCurrentRoundIndex] = useState(startIndex);
     const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
     const [phase, setPhase] = useState<Phase>('work');
-    const [timeLeft, setTimeLeft] = useState(10); // 10s Transition
+    const [timeLeft, setTimeLeft] = useState(10);
     
-    // Input state for the active set
     const [weightInput, setWeightInput] = useState('');
     const [repsInput, setRepsInput] = useState('');
 
     const intervalRef = useRef<number | null>(null);
     const targetTimeRef = useRef<number>(0);
 
-    // Derived state
     const currentWorkoutExercise = exercises[currentExerciseIndex];
-    const currentExerciseInfo = getExerciseById(currentWorkoutExercise.exerciseId);
+    const currentExerciseInfo = currentWorkoutExercise ? getExerciseById(currentWorkoutExercise.exerciseId) : null;
     
-    const totalRoundsCurrent = Math.max(...exercises.map(ex => ex.sets.length));
-    
-    // Determine if we are in the final rest period (all planned exercises/rounds done)
     const isLastExerciseOfLoop = currentExerciseIndex === exercises.length - 1;
     const isLastRoundOfLoop = currentRoundIndex === totalRoundsCurrent - 1;
     const isFinalRest = phase === 'transition' && isLastExerciseOfLoop && isLastRoundOfLoop;
 
-    // Next Up Logic
     const nextExerciseIndex = (currentExerciseIndex + 1) % exercises.length;
     const nextWorkoutExercise = exercises[nextExerciseIndex];
-    const nextExerciseInfo = getExerciseById(nextWorkoutExercise.exerciseId);
+    const nextExerciseInfo = nextWorkoutExercise ? getExerciseById(nextWorkoutExercise.exerciseId) : null;
     
-    // Calculate the round number for the "Next Up" item
     const nextRoundIndex = isLastExerciseOfLoop ? currentRoundIndex + 1 : currentRoundIndex;
 
-    // Display Strings Helper
-    const getRoundDisplayString = (roundIdx: number) => {
-        const roundNum = roundIdx + 1;
-        if (roundNum > initialTotalRounds) {
-            return `ROUND ${roundNum}`; // Extra round
-        }
-        return `ROUND ${roundNum} OF ${initialTotalRounds}`;
-    };
-    
-    const getShortRoundDisplayString = (roundIdx: number) => {
-        const roundNum = roundIdx + 1;
-        if (roundNum > initialTotalRounds) {
-            return `(Round ${roundNum})`;
-        }
-        return `(Round ${roundNum} of ${initialTotalRounds})`;
-    };
-
-    // Ensure set exists for current round
+    // Fix for Uneven Sets: Auto-generate set if missing for current round
     useEffect(() => {
-        if (phase !== 'work') return;
-        
-        const ensureSetExists = () => {
-            if (!currentWorkoutExercise.sets[currentRoundIndex]) {
-                const prevSet = currentWorkoutExercise.sets[currentRoundIndex - 1];
-                const lastSet = currentWorkoutExercise.sets[currentWorkoutExercise.sets.length - 1] || { reps: 10, weight: 0, type: 'normal', time: 0 };
-                
-                const newSet: PerformedSet = {
-                    id: `set-${Date.now()}-${Math.random()}`,
-                    reps: prevSet ? prevSet.reps : lastSet.reps,
-                    weight: prevSet ? prevSet.weight : lastSet.weight,
-                    time: prevSet ? prevSet.time : lastSet.time,
-                    type: lastSet.type,
-                    isComplete: false,
-                    isRepsInherited: true,
-                    isWeightInherited: true,
-                    isTimeInherited: true,
-                };
-                const updatedSets = [...currentWorkoutExercise.sets];
-                updatedSets[currentRoundIndex] = newSet;
-                
-                onUpdateExercise({ ...currentWorkoutExercise, sets: updatedSets });
-            }
-        };
+        if (currentWorkoutExercise && !currentWorkoutExercise.sets[currentRoundIndex]) {
+             const lastSet = currentWorkoutExercise.sets[currentWorkoutExercise.sets.length - 1];
+             const newSet: PerformedSet = {
+                id: `set-${Date.now()}-${Math.random()}`,
+                reps: lastSet ? lastSet.reps : 10,
+                weight: lastSet ? lastSet.weight : 0,
+                time: lastSet?.time,
+                type: lastSet ? lastSet.type : 'normal',
+                isComplete: false,
+                isRepsInherited: true,
+                isWeightInherited: true,
+                isTimeInherited: true,
+            };
+            
+            const newSets = [...currentWorkoutExercise.sets];
+            newSets[currentRoundIndex] = newSet;
+            
+            onUpdateExercise({ ...currentWorkoutExercise, sets: newSets });
+        }
+    }, [currentWorkoutExercise, currentRoundIndex, onUpdateExercise]);
 
-        ensureSetExists();
-    }, [currentRoundIndex, currentExerciseIndex, phase, currentWorkoutExercise, onUpdateExercise]);
+    const getRoundDisplayString = (roundIdx: number) => `ROUND ${roundIdx + 1} OF ${Math.max(totalRoundsCurrent, roundIdx + 1)}`;
+    const getShortRoundDisplayString = (roundIdx: number) => `(Round ${roundIdx + 1} of ${Math.max(totalRoundsCurrent, roundIdx + 1)})`;
 
+    // Safe access to current set
+    const currentSet = currentWorkoutExercise?.sets ? currentWorkoutExercise.sets[currentRoundIndex] : undefined;
 
     // Load values into inputs
     useEffect(() => {
-        if (phase === 'work') {
-            const set = currentWorkoutExercise.sets[currentRoundIndex];
-            const prevSet = currentWorkoutExercise.sets[currentRoundIndex - 1];
+        if (phase === 'work' && currentSet) {
+            const prevSet = currentRoundIndex > 0 ? currentWorkoutExercise.sets[currentRoundIndex - 1] : undefined;
 
-            if (set) {
-                let initialWeight = set.weight;
-                let initialReps = set.reps;
-                let initialTime = set.time;
+            let initialWeight = currentSet.weight;
+            let initialReps = currentSet.reps;
+            let initialTime = currentSet.time;
 
-                if (!set.isComplete && prevSet) {
-                    if (prevSet.weight > 0) initialWeight = prevSet.weight;
-                    if (prevSet.reps > 0) initialReps = prevSet.reps;
-                    if (prevSet.time && prevSet.time > 0) initialTime = prevSet.time;
-                }
-
-                if (set.type === 'timed') {
-                    setWeightInput((initialTime || 0).toString());
-                } else {
-                    setWeightInput(initialWeight > 0 ? displayWeight(initialWeight) : '');
-                }
-                setRepsInput(initialReps > 0 ? initialReps.toString() : '');
+            if (!currentSet.isComplete && prevSet) {
+                if (prevSet.weight > 0) initialWeight = prevSet.weight;
+                if (prevSet.reps > 0) initialReps = prevSet.reps;
+                if (prevSet.time && prevSet.time > 0) initialTime = prevSet.time;
             }
+
+            if (currentSet.type === 'timed') {
+                setWeightInput((initialTime || 0).toString());
+            } else {
+                setWeightInput(initialWeight > 0 ? displayWeight(initialWeight) : '');
+            }
+            setRepsInput(initialReps > 0 ? initialReps.toString() : '');
         }
-    }, [currentWorkoutExercise, currentRoundIndex, phase, displayWeight]);
+    }, [currentSet, currentWorkoutExercise, currentRoundIndex, phase, displayWeight]);
 
     // Timer Logic
     useEffect(() => {
         if (phase === 'transition') {
-            // Initialize target time based on the initial 10s
-            // We use a ref for targetTime to make it robust against renders
             targetTimeRef.current = Date.now() + 10000;
 
             intervalRef.current = window.setInterval(() => {
@@ -167,8 +138,6 @@ const SupersetPlayer: React.FC<SupersetPlayerProps> = ({
                 const remaining = Math.ceil((targetTimeRef.current - now) / 1000);
                 
                 setTimeLeft((prev) => {
-                    // Only update state if it changes visually to prevent excessive renders, 
-                    // though for a timer every second is expected.
                     if (remaining <= 0) {
                          if (isFinalRest) {
                             if (intervalRef.current) clearInterval(intervalRef.current);
@@ -177,32 +146,52 @@ const SupersetPlayer: React.FC<SupersetPlayerProps> = ({
                         handleTransitionComplete();
                         return 0;
                     }
-                    
                     if (remaining <= 4 && remaining < prev) playTickSound();
                     return remaining;
                 });
-            }, 200); // Check more frequently to be accurate
+            }, 200);
         }
         return () => {
             if (intervalRef.current) clearInterval(intervalRef.current);
         };
-    }, [phase, isFinalRest]); // Re-run only when phase changes
+    }, [phase, isFinalRest]);
 
     const handleAddTime = () => {
-        // Unlock audio on user gesture
         unlockAudioContext();
-        // Add 10 seconds to the target time
         targetTimeRef.current += 10000;
-        // Optimistically update UI immediately so it doesn't wait for next interval tick
         setTimeLeft(prev => prev + 10);
     };
 
     const handleTransitionComplete = () => {
         if (intervalRef.current) clearInterval(intervalRef.current);
         
+        // If we are moving to a new round, ensure the data exists first
         if (isLastExerciseOfLoop) {
-            setCurrentRoundIndex(prev => prev + 1);
-            setCurrentExerciseIndex(0);
+            const nextR = currentRoundIndex + 1;
+            const nextE = 0;
+            
+            // Verify if set exists for next round on the first exercise
+            if (exercises[nextE] && (!exercises[nextE].sets || !exercises[nextE].sets[nextR])) {
+                // Create it immediately
+                const ex = exercises[nextE];
+                const lastSet = ex.sets.length > 0 ? ex.sets[ex.sets.length - 1] : undefined;
+                const newSet: PerformedSet = {
+                    id: `set-${Date.now()}-${Math.random()}`,
+                    reps: lastSet ? lastSet.reps : 10,
+                    weight: lastSet ? lastSet.weight : 0,
+                    time: lastSet?.time,
+                    type: lastSet ? lastSet.type : 'normal',
+                    isComplete: false,
+                    isRepsInherited: true,
+                    isWeightInherited: true,
+                    isTimeInherited: true,
+                };
+                // Critical: update data before changing index
+                const updatedSets = [...ex.sets, newSet];
+                onUpdateExercise({ ...ex, sets: updatedSets });
+            }
+            setCurrentRoundIndex(nextR);
+            setCurrentExerciseIndex(nextE);
         } else {
             setCurrentExerciseIndex(prev => prev + 1);
         }
@@ -210,9 +199,8 @@ const SupersetPlayer: React.FC<SupersetPlayerProps> = ({
     };
 
     const handleCompleteSet = () => {
-        // Unlock audio on user gesture
         unlockAudioContext();
-        const set = currentWorkoutExercise.sets[currentRoundIndex];
+        const set = currentWorkoutExercise?.sets ? currentWorkoutExercise.sets[currentRoundIndex] : undefined;
         if (!set) return;
 
         const val1 = parseFloat(weightInput) || 0;
@@ -221,7 +209,7 @@ const SupersetPlayer: React.FC<SupersetPlayerProps> = ({
         const updatedSet: PerformedSet = {
             ...set,
             isComplete: true,
-            completedAt: Date.now(), // Record completion time
+            completedAt: Date.now(),
             weight: set.type === 'timed' ? 0 : getStoredWeight(val1),
             time: set.type === 'timed' ? val1 : set.time,
             reps: val2,
@@ -238,34 +226,41 @@ const SupersetPlayer: React.FC<SupersetPlayerProps> = ({
     };
 
     const handleOneMoar = () => {
-        // Unlock audio on user gesture
         unlockAudioContext();
-        // 1. Add a new set to ALL exercises in this superset
-        exercises.forEach(ex => {
-            const lastSet = ex.sets[ex.sets.length - 1] || { reps: 10, weight: 0, type: 'normal', time: 0 };
-            const newSet: PerformedSet = {
-                id: `set-${Date.now()}-${Math.random()}`,
-                reps: lastSet.reps,
-                weight: lastSet.weight,
-                time: lastSet.time,
-                type: lastSet.type,
-                isComplete: false,
-                isRepsInherited: true,
-                isWeightInherited: true,
-                isTimeInherited: true,
-            };
-            // We call update for each exercise. 
-            // Since ActiveWorkoutPage updates state, this is valid but might cause multiple re-renders.
-            // Given the small number of exercises in a superset, this is acceptable.
-            onUpdateExercise({ ...ex, sets: [...ex.sets, newSet] });
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        
+        const nextR = currentRoundIndex + 1;
+        
+        // Pre-populate the next round sets for ALL exercises in the superset to avoid race conditions
+        const updatedExercises = exercises.map(ex => {
+             if (!ex.sets[nextR]) {
+                 const lastSet = ex.sets.length > 0 ? ex.sets[ex.sets.length - 1] : undefined;
+                 const newSet: PerformedSet = {
+                    id: `set-${Date.now()}-${Math.random()}`,
+                    reps: lastSet ? lastSet.reps : 10,
+                    weight: lastSet ? lastSet.weight : 0,
+                    time: lastSet?.time,
+                    type: lastSet ? lastSet.type : 'normal',
+                    isComplete: false,
+                    isRepsInherited: true,
+                    isWeightInherited: true,
+                    isTimeInherited: true,
+                };
+                return { ...ex, sets: [...ex.sets, newSet] };
+             }
+             return ex;
         });
 
-        // 2. Advance indices
-        if (intervalRef.current) clearInterval(intervalRef.current);
-        setCurrentRoundIndex(prev => prev + 1);
+        if (onUpdateExercises) {
+            onUpdateExercises(updatedExercises);
+        } else {
+            // Fallback loop if bulk update not available
+            updatedExercises.forEach(ex => onUpdateExercise(ex));
+        }
+
+        // Now safe to advance pointers
+        setCurrentRoundIndex(nextR);
         setCurrentExerciseIndex(0);
-        
-        // 3. Go to work
         setPhase('work');
     };
 
@@ -275,11 +270,16 @@ const SupersetPlayer: React.FC<SupersetPlayerProps> = ({
         setter((Math.max(0, current + delta)).toFixed(decimals));
     };
 
-    if (!currentExerciseInfo) return null;
+    if (!currentExerciseInfo || !currentSet) {
+        return (
+            <div className="fixed inset-0 bg-background z-50 flex flex-col items-center justify-center">
+                 <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
+                 <p className="text-text-secondary">Preparing Round...</p>
+            </div>
+        );
+    }
 
-    const currentSet = currentWorkoutExercise.sets[currentRoundIndex] || { type: 'normal' };
     const isTimed = currentSet.type === 'timed';
-    
     const prevHistory = getExerciseHistory(allHistory, currentWorkoutExercise.exerciseId);
     const lastPerformance = prevHistory.length > 0 ? prevHistory[0].exerciseData.sets[currentRoundIndex] : null;
 

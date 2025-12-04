@@ -38,8 +38,18 @@ const EditSupplementModal: React.FC<EditSupplementModalProps> = ({ isOpen, onClo
             setSupplement(item.supplement);
             setDosage(item.dosage);
             
-            // Match time string to key or default
-            const matchedKey = TIME_OPTIONS.find(key => t(key as TranslationKey) === item.time) || TIME_OPTIONS[6];
+            // Correctly set the time key. If the stored time is a key, use it. 
+            // If it's a legacy translated string, try to find the matching key.
+            let matchedKey = TIME_OPTIONS[6]; // Default to Daily
+            
+            if (TIME_OPTIONS.includes(item.time)) {
+                matchedKey = item.time;
+            } else {
+                // Legacy check: Try to reverse lookup translation
+                const found = TIME_OPTIONS.find(key => t(key as TranslationKey) === item.time);
+                if (found) matchedKey = found;
+            }
+
             setTime(matchedKey);
 
             setNotes(item.notes);
@@ -63,7 +73,7 @@ const EditSupplementModal: React.FC<EditSupplementModalProps> = ({ isOpen, onClo
         const updates: Partial<SupplementPlanItem> = {
             stock: stockVal,
             notes: notes,
-            time: t(time as TranslationKey), // Save translated string
+            time: time, // Save the key directly
             trainingDayOnly: frequency === 'training',
             restDayOnly: frequency === 'rest'
         };

@@ -1,15 +1,17 @@
 
 export const formatTime = (totalSeconds: number): string => {
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
+    const isNegative = totalSeconds < 0;
+    const absSeconds = Math.abs(totalSeconds);
+    const hours = Math.floor(absSeconds / 3600);
+    const minutes = Math.floor((absSeconds % 3600) / 60);
+    const seconds = Math.floor(absSeconds % 60);
 
     const parts = [];
     if (hours > 0) parts.push(String(hours).padStart(2, '0'));
     parts.push(String(minutes).padStart(2, '0'));
     parts.push(String(seconds).padStart(2, '0'));
 
-    return parts.join(':');
+    return (isNegative ? '-' : '') + parts.join(':');
 };
 
 export const toDateTimeLocal = (timestamp: number): string => {
@@ -45,10 +47,12 @@ export const getEffectiveDate = (date: Date = new Date()): Date => {
 };
 
 export const formatSecondsToMMSS = (totalSeconds: number): string => {
-    if (isNaN(totalSeconds) || totalSeconds < 0) return '0:00';
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${String(minutes)}:${String(seconds).padStart(2, '0')}`;
+    // Ensure we format non-negative numbers for countdowns usually, but handle negative if needed
+    const isNegative = totalSeconds < 0;
+    const absSeconds = Math.abs(totalSeconds);
+    const minutes = Math.floor(absSeconds / 60);
+    const seconds = Math.floor(absSeconds % 60);
+    return `${isNegative ? '-' : ''}${String(minutes)}:${String(seconds).padStart(2, '0')}`;
 };
 
 export const parseTimerInput = (input: string): number => {
