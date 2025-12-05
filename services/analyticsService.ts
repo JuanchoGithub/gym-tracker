@@ -6,6 +6,36 @@ import { SurveyAnswers } from '../utils/routineGenerator';
 import { calculate1RM, getExerciseHistory } from '../utils/workoutUtils';
 import { ANCHOR_EXERCISES, EXERCISE_RATIOS, BODY_PART_ANCHORS, CATEGORY_RATIOS } from '../constants/ratios';
 
+export interface HabitData {
+    exerciseFrequency: Record<string, number>;
+    routineFrequency: Record<string, number>;
+}
+
+export const analyzeUserHabits = (history: WorkoutSession[]): HabitData => {
+    const now = Date.now();
+    // Analyze last 90 days for relevant habits
+    const ninetyDaysAgo = now - (90 * 24 * 60 * 60 * 1000);
+    const recentHistory = history.filter(s => s.startTime > ninetyDaysAgo);
+
+    const exerciseFrequency: Record<string, number> = {};
+    const routineFrequency: Record<string, number> = {};
+
+    recentHistory.forEach(session => {
+        // Routine Frequency
+        // Use routineId to track specific templates
+        if (session.routineId) {
+            routineFrequency[session.routineId] = (routineFrequency[session.routineId] || 0) + 1;
+        }
+
+        // Exercise Frequency
+        session.exercises.forEach(ex => {
+            exerciseFrequency[ex.exerciseId] = (exerciseFrequency[ex.exerciseId] || 0) + 1;
+        });
+    });
+
+    return { exerciseFrequency, routineFrequency };
+};
+
 // Exercise IDs grouped by pattern for 1RM aggregation
 export const MOVEMENT_PATTERNS = {
     SQUAT: ['ex-2', 'ex-101', 'ex-108', 'ex-109', 'ex-113', 'ex-160'],

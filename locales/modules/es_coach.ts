@@ -38,6 +38,7 @@ export const es_coach = {
   rec_title_promotion: "Promoción Disponible: {exercise}",
   rec_title_workout_complete: "¡Gran Sesión!",
   rec_title_deload: "Descarga Recomendada",
+  rec_title_suggested_habit: "Sugerido: {name}",
   rec_reason_fresh: "Tus {muscles} están frescos (último entreno hace {days} días).",
   rec_reason_neglected: "Pasaron {days} días desde que entrenaste {muscles}.",
   rec_reason_fatigued: "Tus puntajes de recuperación son bajos. Considerá un día de descanso o cardio ligero.",
@@ -48,6 +49,7 @@ export const es_coach = {
   rec_reason_trained_today: "Ya registraste un entrenamiento hoy.",
   rec_reason_workout_complete: "¡Moviste {volume} hoy! Ahora toca descansar.",
   rec_reason_cns_fatigue: "Tu fatiga sistémica es alta ({score}). Tomar un día ligero o de descanso potenciará tu progreso a largo plazo.",
+  rec_reason_habit_match: "Ideal para tu enfoque de {focus} y tus hábitos de entrenamiento.",
   rec_type_gap_title: "Recuperación Activa y Accesorios",
   rec_type_gap_desc: "Una sesión más ligera para mantenerte en movimiento sin fatigar los músculos clave para tu próximo entrenamiento pesado.",
   rec_type_imbalance: "Control de Simetría",
@@ -58,6 +60,7 @@ export const es_coach = {
   rec_reason_strength_loss: "Tu rendimiento reciente en {exercise} sugiere que tu máximo bajó de {old} a {new}. Ajustar hacia abajo puede asegurar la intensidad correcta.",
   rec_action_update_profile: "Actualizar Perfil",
   rec_action_snooze: "Posponer (2 Semanas)",
+  rec_alternatives_label: "O elegí una de estas plantillas:",
   
   active_workout_suggestion_gap_override: "Generando una sesión de bajo impacto para facilitar la recuperación mientras entrenás.",
 

@@ -7,7 +7,7 @@ import { PREDEFINED_EXERCISES } from '../constants/exercises';
 import { PROGRESSION_PATHS } from '../constants/progression';
 import { getExerciseHistory } from './workoutUtils';
 import { predictNextRoutine, getProtectedMuscles, generateGapSession } from './smartCoachUtils';
-import { inferUserProfile, MOVEMENT_PATTERNS, calculateMaxStrengthProfile, calculateMedianWorkoutDuration } from '../services/analyticsService';
+import { inferUserProfile, MOVEMENT_PATTERNS, calculateMaxStrengthProfile, calculateMedianWorkoutDuration, analyzeUserHabits } from '../services/analyticsService';
 
 export interface Recommendation {
   type: 'rest' | 'workout' | 'promotion' | 'active_recovery' | 'imbalance' | 'deload' | 'update_1rm';
@@ -39,6 +39,7 @@ export interface Recommendation {
 const PUSH_MUSCLES = [MUSCLES.PECTORALS, MUSCLES.FRONT_DELTS, MUSCLES.TRICEPS];
 const PULL_MUSCLES = [MUSCLES.LATS, MUSCLES.TRAPS, MUSCLES.BICEPS];
 const LEG_MUSCLES = [MUSCLES.QUADS, MUSCLES.HAMSTRINGS, MUSCLES.GLUTES];
+const FULL_BODY_MUSCLES = [...PUSH_MUSCLES, ...PULL_MUSCLES, ...LEG_MUSCLES];
 
 const ROUTINE_LEVELS: Record<string, RoutineLevel> = {
     'rt-1': 'beginner', // StrongLifts A
@@ -268,6 +269,10 @@ export const getWorkoutRecommendation = (
   const isOnboardingPhase = history.length < 15;
   const lastSession = history.length > 0 ? history[0] : null;
   
+  // Analyze Habits
+  const habitData = analyzeUserHabits(history);
+  const { routineFrequency, exerciseFrequency } = habitData;
+  
   // Calculate Systemic Fatigue
   const systemicFatigue = calculateSystemicFatigue(history, exercises);
 
@@ -279,7 +284,7 @@ export const getWorkoutRecommendation = (
   // Check if a session started OR ended today
   const trainedToday = lastSession && (
       lastSession.startTime >= todayStart || 
-      (lastSession.endTime > 0 && lastSession.endTime >= todayStart)
+      (lastSession.endTime > 0 && lastSession.endTime >= yesterdayStart)
   );
 
   if (trainedToday) {
@@ -305,25 +310,19 @@ export const getWorkoutRecommendation = (
   const durationProfile = calculateMedianWorkoutDuration(history);
 
   // --- PHASE 1: STICKY PLAN (Beginner / New User) ---
-  // If user is new AND has custom routines (from wizard), stick to them.
-  // PRIORITY: This now runs BEFORE Systemic Fatigue check to ensure new users aren't derailed
-  // by fatigue warnings in their first weeks.
   if (isOnboardingPhase && customRoutines.length > 0) {
       if (history.length === 0) {
-           // Fresh start
            return {
               type: 'workout',
               titleKey: "rec_title_onboarding_complete",
               reasonKey: "rec_reason_onboarding_complete",
               suggestedBodyParts: [],
-              relevantRoutineIds: [customRoutines[0].id], // Suggest the first one
+              relevantRoutineIds: [customRoutines[0].id],
               systemicFatigue
           };
       }
       
-      // Determine Next Routine in Sequence
       const lastRoutineIndex = customRoutines.findIndex(r => r.id === lastSession?.routineId);
-      // If last routine wasn't one of ours (e.g. random workout), start over at 0.
       const nextIndex = lastRoutineIndex === -1 ? 0 : (lastRoutineIndex + 1) % customRoutines.length;
       const nextRoutine = customRoutines[nextIndex];
 
@@ -353,10 +352,7 @@ export const getWorkoutRecommendation = (
       };
   }
 
-  // Check if user is a "Rookie" (Very low history or explicitly beginner profile)
-  const isRookie = history.length < 5 || (userProfile.experience === 'beginner' && history.length < 10);
-
-  // --- CHECK FOR PROMOTIONS (Runs for everyone) ---
+  // --- CHECK FOR PROMOTIONS ---
   for (const path of PROGRESSION_PATHS) {
       const exHistory = getExerciseHistory(history, path.baseExerciseId);
       if (exHistory.length === 0) continue;
@@ -373,7 +369,6 @@ export const getWorkoutRecommendation = (
           if (path.criteria.minWeightRatio && currentBodyweight) {
               if (bestSet.weight < (currentBodyweight * path.criteria.minWeightRatio)) met = false;
           }
-          
           if (met) sessionsMetCriteria++;
           if (sessionsMetCriteria >= path.criteria.requiredSessions) break;
       }
@@ -411,18 +406,8 @@ export const getWorkoutRecommendation = (
   const freshness = calculateMuscleFreshness(history, exercises);
   const scores = Object.values(freshness);
   const avgFreshness = scores.reduce((a, b) => a + b, 0) / (scores.length || 1);
-  
-  // Check if any muscle is notably fresh (>90%) which usually indicates ready for a specific workout
-  // If everything is fatigued (<60%), we should consider active recovery
   const hasFreshMuscles = scores.some(s => s > 80);
-
-  // Predict next routine to see if we should protect muscles for it
   const predictedNextRoutine = predictNextRoutine(history, routines);
-  
-  // Check if we need a Gap Session (Active Recovery)
-  // Trigger if: 
-  // 1. Local fatigue is high (avg < 60) AND no specific muscle group is super fresh
-  // 2. OR if user explicitly trained yesterday and we want to ensure recovery for a predicted heavy day tomorrow
   
   const trainedYesterday = lastSession && (
      lastSession.startTime >= yesterdayStart ||
@@ -430,19 +415,14 @@ export const getWorkoutRecommendation = (
   );
 
   if ((avgFreshness < 60 && !hasFreshMuscles) || (trainedYesterday && predictedNextRoutine)) {
-     
      let protectedMuscles: any[] = [];
      if (predictedNextRoutine) {
-         // If we know what's coming next, protect those muscles
          protectedMuscles = getProtectedMuscles(predictedNextRoutine, exercises);
      } else {
-         // If we don't know, protect whatever is currently most fatigued
          protectedMuscles = Object.entries(freshness)
             .filter(([_, score]) => score < 50)
             .map(([muscle]) => muscle);
      }
-     
-     const gapSession = generateGapSession(protectedMuscles, exercises, history, t, userProfile.equipment, durationProfile);
      
      return {
          type: 'active_recovery',
@@ -451,11 +431,12 @@ export const getWorkoutRecommendation = (
          reasonParams: { next_routine: predictedNextRoutine?.name || t('common_next_session') },
          suggestedBodyParts: ['Cardio', 'Mobility', 'Core'],
          relevantRoutineIds: [],
-         generatedRoutine: gapSession,
+         generatedRoutine: generateGapSession(protectedMuscles, exercises, history, t, userProfile.equipment, durationProfile),
          systemicFatigue
      };
   }
 
+  // Helper for scoring muscle groups
   const getGroupData = (id: string, muscleNames: string[], bodyParts: BodyPart[], focusKey: RoutineFocus) => {
       const groupScores = muscleNames.map(m => freshness[m] !== undefined ? freshness[m] : 100); 
       const score = groupScores.reduce((a,b) => a + b, 0) / groupScores.length;
@@ -482,20 +463,64 @@ export const getWorkoutRecommendation = (
   const pushGroup = getGroupData('Push', PUSH_MUSCLES, ['Chest', 'Shoulders', 'Triceps'], 'push');
   const pullGroup = getGroupData('Pull', PULL_MUSCLES, ['Back', 'Biceps'], 'pull');
   const legsGroup = getGroupData('Legs', LEG_MUSCLES, ['Legs', 'Glutes', 'Calves'], 'legs');
+  const fullBodyGroup = getGroupData('Full Body', FULL_BODY_MUSCLES, ['Full Body', 'Chest', 'Back', 'Legs'], 'full_body');
 
-  const groups = [pushGroup, pullGroup, legsGroup];
-  // Find groups that are "ready" (High freshness)
-  const readyGroups = groups.filter(g => g.score > 80);
+  const groups = [pushGroup, pullGroup, legsGroup, fullBodyGroup];
   
-  // If we have a prediction, prioritize it if it's ready
+  // Calculate Habit Bias based on routine CONTENT, not just name
+  const getHabitScore = (focusKey: RoutineFocus) => {
+      let count = 0;
+      for (const [rId, freq] of Object.entries(routineFrequency)) {
+          const r = routines.find(rout => rout.id === rId);
+          if (r) {
+              // Analyze routine content to classify it
+              let hasLegs = false;
+              let hasPush = false;
+              let hasPull = false;
+              
+              r.exercises.forEach(ex => {
+                  const def = exercises.find(e => e.id === ex.exerciseId) || PREDEFINED_EXERCISES.find(e => e.id === ex.exerciseId);
+                  if (def) {
+                      if (def.bodyPart === 'Legs' && def.category !== 'Cardio') hasLegs = true;
+                      if (['Chest', 'Shoulders', 'Triceps'].includes(def.bodyPart)) hasPush = true;
+                      if (['Back', 'Biceps'].includes(def.bodyPart)) hasPull = true;
+                  }
+              });
+
+              let routineType: RoutineFocus | null = null;
+              if (hasLegs && (hasPush || hasPull)) routineType = 'full_body';
+              else if (hasLegs && !hasPush && !hasPull) routineType = 'legs';
+              else if (!hasLegs && hasPush && !hasPull) routineType = 'push';
+              else if (!hasLegs && !hasPush && hasPull) routineType = 'pull';
+              else if (!hasLegs && hasPush && hasPull) routineType = 'upper';
+              
+              if (routineType === focusKey) {
+                  count += freq;
+              } else if (r.name.toLowerCase().includes(focusKey.replace('_', ' '))) {
+                   // Fallback to name match if heuristics are ambiguous but name is explicit
+                   count += freq;
+              }
+          }
+      }
+      return count;
+  };
+
+  // Identify readiness
+  // We use a lower threshold for Full Body because it recovers slower, 
+  // but if the user habitually does it, we should suggest it if they are reasonably fresh (>70%)
+  const readyGroups = groups.filter(g => {
+      const threshold = g.id === 'Full Body' ? 70 : 80;
+      return g.score > threshold;
+  });
+
+  // If we have a prediction, prioritize it
   if (predictedNextRoutine) {
       const predictedFocus = predictedNextRoutine.name.toLowerCase();
-      const matchingGroup = readyGroups.find(g => predictedFocus.includes(g.id.toLowerCase()));
+      const matchingGroup = readyGroups.find(g => predictedFocus.includes(g.id.toLowerCase().replace('_', ' ')));
       if (matchingGroup) {
-          // The predicted routine is ready to go!
            return {
               type: 'workout',
-              titleKey: "rec_title_next_up", // "Next Up: {routine}"
+              titleKey: "rec_title_next_up",
               titleParams: { routine: predictedNextRoutine.name },
               reasonKey: "rec_reason_fresh",
               reasonParams: { muscles: matchingGroup.bodyParts[0], days: matchingGroup.daysSince.toString() },
@@ -507,53 +532,119 @@ export const getWorkoutRecommendation = (
   }
 
   if (readyGroups.length > 0) {
-      // Standard fallback: Suggest most rested group
-      readyGroups.sort((a, b) => b.daysSince - a.daysSince);
+      // Sort criteria: 
+      // 1. Days since trained (Prioritize neglected)
+      // 2. Habit Bias (If tied or close in days, prefer what user does most)
+      readyGroups.sort((a, b) => {
+          const daysDiff = b.daysSince - a.daysSince;
+          // If days difference is huge (>2 days), prioritize neglecting.
+          // Otherwise, check habits.
+          if (Math.abs(daysDiff) > 2) return daysDiff;
+          
+          const habitA = getHabitScore(a.focusKey);
+          const habitB = getHabitScore(b.focusKey);
+          return habitB - habitA;
+      });
+      
       const winner = readyGroups[0];
       
       let titleKey = 'rec_title_generic';
       if (winner.id === 'Push') titleKey = 'rec_title_push';
       if (winner.id === 'Pull') titleKey = 'rec_title_pull';
       if (winner.id === 'Legs') titleKey = 'rec_title_legs';
+      
+      let relevantRoutineIds: string[] = [];
+      let generatedRoutine: Routine | undefined = undefined;
+      let reasonKey = winner.daysSince > 4 ? 'rec_reason_neglected' : 'rec_reason_fresh';
+      let titleParams: Record<string, string> = { focus: winner.id };
 
-      const relevantRoutineIds = routines.filter(r => {
-          // 1. Filter by Level Suitability
-          const isCustom = !r.id.startsWith('rt-');
-          const routineLevel = ROUTINE_LEVELS[r.id];
-          const userLevel = userProfile.experience;
+      // --- RANKING LOGIC ---
+      const scoredRoutines = routines.map(r => {
+        let score = 0;
+        let matchCount = 0;
 
-          if (!isCustom) {
-              // If Rookie, hide complex compound routines unless specifically generated for them
-              if (isRookie && (r.id === 'rt-1' || r.id === 'rt-2')) return false;
+        r.exercises.forEach(ex => {
+            const def = exercises.find(e => e.id === ex.exerciseId) || PREDEFINED_EXERCISES.find(e => e.id === ex.exerciseId);
+            if (def) {
+                // For Full Body, we want routines that hit multiple major areas
+                if (winner.id === 'Full Body') {
+                    if (['Chest', 'Back', 'Legs', 'Shoulders'].includes(def.bodyPart)) matchCount++;
+                } else {
+                    // For splits, match specific body parts
+                    if (winner.bodyParts.includes(def.bodyPart)) matchCount++;
+                }
+            }
+        });
+        
+        const matchRatio = r.exercises.length > 0 ? matchCount / r.exercises.length : 0;
+        
+        // 1. Muscle Match Score (0-20 points)
+        if (matchRatio < 0.3) {
+             // Too low relevance, give negative score to ensure it's filtered out unless it's a huge habit
+             return { r, score: -10 }; 
+        }
+        score += matchRatio * 20;
 
-              // If Beginner, only show Beginner routines
-              if (userLevel === 'beginner' && routineLevel !== 'beginner') return false;
+        // 2. Habit History (0-20 points)
+        const freq = routineFrequency[r.id] || 0;
+        score += Math.min(20, freq * 2);
+
+        // 3. Name Match Bonus (0-10 points)
+        // Helps if user named it "Push A" and we want "Push"
+        if (r.name.toLowerCase().includes(winner.id.toLowerCase())) score += 10;
+        
+        // 4. Custom Template Bonus (5 points)
+        // We prefer custom routines over system ones if they match
+        if (!r.id.startsWith('rt-')) score += 5;
+        
+        // 5. Explicit "Full Body" detection bonus for Full Body day
+        // Some robust routines like StrongLifts don't say "Full Body" but are full body.
+        // We check if it hits Legs + (Push OR Pull)
+        if (winner.id === 'Full Body') {
+             const hasLegs = r.exercises.some(ex => {
+                  const def = exercises.find(e => e.id === ex.exerciseId) || PREDEFINED_EXERCISES.find(e => e.id === ex.exerciseId);
+                  return def?.bodyPart === 'Legs' && def.category !== 'Cardio';
+             });
+             const hasUpper = r.exercises.some(ex => {
+                  const def = exercises.find(e => e.id === ex.exerciseId) || PREDEFINED_EXERCISES.find(e => e.id === ex.exerciseId);
+                  return ['Chest', 'Back', 'Shoulders'].includes(def?.bodyPart || '');
+             });
+             if (hasLegs && hasUpper) score += 10;
+        }
+
+        return { r, score };
+      });
+      
+      // Filter out low scores and Sort
+      const validScored = scoredRoutines.filter(x => x.score > 10);
+      validScored.sort((a, b) => b.score - a.score);
+      
+      // Take Top 2
+      relevantRoutineIds = validScored.slice(0, 2).map(x => x.r.id);
+
+      // Always generate a smart routine option unless in onboarding (where we force specific routines)
+      if (!isOnboardingPhase) {
+          generatedRoutine = generateSmartRoutine(winner.focusKey, userProfile, t, exercises, exerciseFrequency);
+      }
+
+      // If we found a very strong habit match (high frequency custom routine), switch title to "Suggested"
+      if (relevantRoutineIds.length > 0 && routineFrequency[relevantRoutineIds[0]] > 2) {
+          const topRoutine = routines.find(r => r.id === relevantRoutineIds[0]);
+          if (topRoutine) {
+              titleKey = "rec_title_suggested_habit";
+              titleParams = { name: topRoutine.name };
+              reasonKey = "rec_reason_habit_match";
           }
-
-          // 2. Filter by Muscle Focus
-          const nameMatch = r.name.toLowerCase().includes(winner.id.toLowerCase());
-          if (nameMatch) return true;
-          const targetCount = r.exercises.reduce((count, ex) => {
-              const exDef = exercises.find(e => e.id === ex.exerciseId);
-              if (exDef && winner.bodyParts.includes(exDef.bodyPart)) {
-                  return count + 1;
-              }
-              return count;
-          }, 0);
-          return r.exercises.length > 0 && (targetCount / r.exercises.length) > 0.4;
-      }).map(r => r.id);
+      }
 
       const daysText = winner.daysSince === 999 ? t('common_many') : winner.daysSince.toString();
       
-      // Only generate a smart routine if we are in the advanced phase or really need one
-      const generatedRoutine = isOnboardingPhase ? undefined : generateSmartRoutine(winner.focusKey, userProfile, t);
-
       return {
           type: 'workout',
           titleKey,
-          titleParams: { focus: winner.id },
-          reasonKey: winner.daysSince > 4 ? 'rec_reason_neglected' : 'rec_reason_fresh',
-          reasonParams: { muscles: winner.bodyParts[0], days: daysText },
+          titleParams,
+          reasonKey,
+          reasonParams: { muscles: winner.bodyParts[0], days: daysText, focus: winner.id },
           suggestedBodyParts: winner.bodyParts,
           relevantRoutineIds,
           generatedRoutine,
@@ -561,7 +652,7 @@ export const getWorkoutRecommendation = (
       };
   }
 
-  // Fallback if everything is somewhat fatigued but no specific prediction
+  // Absolute fallback
   return {
       type: 'workout',
       titleKey: "rec_title_generic",

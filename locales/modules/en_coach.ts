@@ -38,6 +38,7 @@ export const en_coach = {
   rec_title_promotion: "Promotion Available: {exercise}",
   rec_title_workout_complete: "Great Session!",
   rec_title_deload: "Deload Recommended",
+  rec_title_suggested_habit: "Suggested: {name}",
   rec_reason_fresh: "Your {muscles} are fresh (last trained {days} days ago).",
   rec_reason_neglected: "It's been {days} days since you trained {muscles}.",
   rec_reason_fatigued: "Your recovery scores are low. Consider a rest day or light cardio.",
@@ -48,6 +49,7 @@ export const en_coach = {
   rec_reason_trained_today: "You already logged a workout today.",
   rec_reason_workout_complete: "You moved {volume} today! Now it's time to rest.",
   rec_reason_cns_fatigue: "Your systemic fatigue is high ({score}). Taking a light day or rest will actually boost your long-term progress.",
+  rec_reason_habit_match: "Fits today's {focus} focus and your training habits.",
   rec_type_gap_title: "Active Recovery & Accessories",
   rec_type_gap_desc: "A lighter session to keep you moving without fatiguing key muscles for your next heavy workout.",
   rec_type_imbalance: "Symmetry Check",
@@ -58,6 +60,7 @@ export const en_coach = {
   rec_reason_strength_loss: "Your recent performance on {exercise} suggests your max has dropped from {old} to {new}. Adjusting down can help ensure proper training intensity.",
   rec_action_update_profile: "Update Profile",
   rec_action_snooze: "Snooze (2 Weeks)",
+  rec_alternatives_label: "Or choose from these templates:",
   
   active_workout_suggestion_gap_override: "Generating a low-impact session to facilitate recovery while training.",
 

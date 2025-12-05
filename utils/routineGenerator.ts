@@ -1,5 +1,5 @@
 
-import { Routine, WorkoutExercise, PerformedSet } from '../types';
+import { Routine, WorkoutExercise, PerformedSet, Exercise, BodyPart, ExerciseCategory } from '../types';
 
 export type RoutineLevel = 'beginner' | 'intermediate' | 'advanced';
 
@@ -38,7 +38,7 @@ const createExercise = (exerciseId: string, sets: number, reps: number, rest: nu
 
 // --- Exercise Maps (Slots -> Exercise IDs) ---
 // Note: IDs must match constants/exercises.ts
-
+// These maps act as the Default / Fallback if no history exists.
 const EXERCISE_MAP = {
   gym: {
     chest_compound: 'ex-1', // Bench Press
@@ -84,12 +84,70 @@ const EXERCISE_MAP = {
   }
 };
 
-const getExerciseId = (slot: keyof typeof EXERCISE_MAP['gym'], equipment: SurveyAnswers['equipment'], experience: SurveyAnswers['experience']): string => {
+// Logical Definitions for each slot to enable dynamic matching
+// Used to find user favorites that fit the biomechanical role.
+const SLOT_CRITERIA: Record<string, (e: Exercise) => boolean> = {
+    chest_compound: (e) => e.bodyPart === 'Chest' && ['Barbell', 'Dumbbell', 'Machine', 'Smith Machine', 'Bodyweight', 'Assisted Bodyweight'].includes(e.category) && !e.name.includes('Fly'),
+    chest_iso: (e) => e.bodyPart === 'Chest' && (e.name.includes('Fly') || e.category === 'Cable' || e.category === 'Machine'),
+    back_vertical: (e) => e.bodyPart === 'Back' && (e.name.includes('Pull') || e.name.includes('Chin') || e.name.includes('Lat') || e.name.includes('Down')),
+    back_horizontal: (e) => e.bodyPart === 'Back' && (e.name.includes('Row')),
+    shoulder_press: (e) => e.bodyPart === 'Shoulders' && e.name.includes('Press'),
+    shoulder_iso: (e) => e.bodyPart === 'Shoulders' && (e.name.includes('Raise') || e.name.includes('Fly')),
+    legs_quad: (e) => (e.bodyPart === 'Legs' || e.bodyPart === 'Full Body') && (e.name.includes('Squat') || e.name.includes('Lunge') || e.name.includes('Step') || e.name.includes('Press')),
+    legs_ham: (e) => (e.bodyPart === 'Legs' || e.bodyPart === 'Back') && (e.name.includes('Deadlift') || e.name.includes('Curl') || e.name.includes('Hinge') || e.name.includes('Glute') || e.name.includes('Thrust')),
+    legs_iso: (e) => e.bodyPart === 'Legs' && (e.category === 'Machine' || e.category === 'Cable') && !e.name.includes('Press') && !e.name.includes('Squat'),
+    tricep: (e) => e.bodyPart === 'Triceps',
+    bicep: (e) => e.bodyPart === 'Biceps',
+    core: (e) => e.bodyPart === 'Core',
+};
+
+const getExerciseId = (
+    slot: keyof typeof EXERCISE_MAP['gym'], 
+    equipment: SurveyAnswers['equipment'], 
+    experience: SurveyAnswers['experience'],
+    allExercises?: Exercise[],
+    exerciseFrequency?: Record<string, number>
+): string => {
+    // 1. Dynamic Resolution (The "Favorite Lift" Engine)
+    // If we have history data and the full exercise list, try to find a user favorite.
+    if (allExercises && exerciseFrequency) {
+        const criteria = SLOT_CRITERIA[slot];
+        if (criteria) {
+            // Filter candidates based on slot criteria AND available equipment
+            const candidates = allExercises.filter(ex => {
+                // Check biomechanical fit
+                if (!criteria(ex)) return false;
+
+                // Check equipment constraints
+                if (equipment === 'bodyweight') {
+                    if (!['Bodyweight', 'Assisted Bodyweight', 'Cardio', 'Plyometrics', 'Reps Only'].includes(ex.category)) return false;
+                } else if (equipment === 'dumbbell') {
+                    if (['Barbell', 'Machine', 'Cable', 'Smith Machine'].includes(ex.category)) return false;
+                }
+                // 'gym' allows everything
+
+                return true;
+            });
+
+            // Sort by frequency
+            candidates.sort((a, b) => (exerciseFrequency[b.id] || 0) - (exerciseFrequency[a.id] || 0));
+
+            // If the user has done the top candidate at least 3 times, use it.
+            // This threshold ensures we don't pick a random one-off exercise over a solid default.
+            if (candidates.length > 0) {
+                const bestCandidate = candidates[0];
+                if ((exerciseFrequency[bestCandidate.id] || 0) >= 3) {
+                    return bestCandidate.id;
+                }
+            }
+        }
+    }
+
+    // 2. Fallback to Static Map
     const map = EXERCISE_MAP[equipment];
-    // Fallback to gym if slot missing
     const originalId = map[slot] || EXERCISE_MAP['gym'][slot];
 
-    // Safety Swaps for Beginners
+    // Safety Swaps for Beginners (Overrides defaults)
     if (experience === 'beginner') {
         if (equipment === 'gym') {
             switch (originalId) {
@@ -126,7 +184,9 @@ type TranslateFunc = (key: string, replacements?: Record<string, string | number
 export const generateSmartRoutine = (
   focus: RoutineFocus, 
   settings: SurveyAnswers, 
-  t: TranslateFunc
+  t: TranslateFunc,
+  allExercises?: Exercise[],
+  exerciseFrequency?: Record<string, number>
 ): Routine => {
     const { goal, equipment, time, experience } = settings;
     
@@ -177,7 +237,7 @@ export const generateSmartRoutine = (
     }
 
     slots.forEach(slot => {
-        const id = getExerciseId(slot, equipment, experience);
+        const id = getExerciseId(slot, equipment, experience, allExercises, exerciseFrequency);
         // Special case for core/plank which is timed
         const isTimed = id === 'ex-15'; // Plank
         const finalReps = isTimed ? 1 : reps;
@@ -206,6 +266,7 @@ export const generateRoutines = (answers: SurveyAnswers, t: TranslateFunc): Rout
     
     // Helper to wrap the smart generator but customize IDs and Names for onboarding
     const addRoutine = (nameKey: string, descKey: string, focus: RoutineFocus, freqDesc: string = "") => {
+        // Note: For initial wizard, we don't pass exercise history so it uses defaults (Dynamic Resolution off)
         const routine = generateSmartRoutine(focus, answers, t);
         routineCounter++;
         routine.id = `gen-${Date.now()}-${routineCounter}-${Math.random().toString(36).substr(2, 9)}`;

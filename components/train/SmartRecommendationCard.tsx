@@ -6,6 +6,7 @@ import { Recommendation } from '../../utils/recommendationUtils';
 import { TranslationKey } from '../../contexts/I18nContext';
 import { Routine } from '../../types';
 import { useMeasureUnit } from '../../hooks/useWeight';
+import { getBodyPartTKey } from '../../utils/i18nUtils';
 
 interface SmartRecommendationCardProps {
   recommendation: Recommendation;
@@ -79,9 +80,24 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
   const formattedParams = useMemo(() => {
       if (!recommendation.reasonParams) return undefined;
       
+      const newParams = { ...recommendation.reasonParams };
+
+      // Try to translate muscles parameter if it exists and looks like a body part string
+      if (newParams.muscles && typeof newParams.muscles === 'string') {
+          try {
+              const key = getBodyPartTKey(newParams.muscles as any);
+              const translated = t(key);
+              // Use translation if it exists (different from key)
+              if (translated !== key) {
+                  newParams.muscles = translated;
+              }
+          } catch (e) {
+              // Ignore if not a valid body part key
+          }
+      }
+      
       // Special handling for weight values in imbalance checks, 1RM updates, or workout complete volume
       if (recommendation.type === 'imbalance' || recommendation.type === 'update_1rm' || recommendation.type === 'active_recovery') {
-          const newParams = { ...recommendation.reasonParams };
           const weightKeys = ['squat', 'deadlift', 'bench', 'ohp', 'old', 'new', 'volume'];
           
           weightKeys.forEach(key => {
@@ -94,10 +110,8 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
                    }
               }
           });
-          return newParams;
       }
-
-      return recommendation.reasonParams;
+      return newParams;
   }, [recommendation, displayWeight, weightUnit, t]);
 
   return (
@@ -189,6 +203,13 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
             {/* List Recommended Routines Inline */}
             {recommendedRoutines.length > 0 && (
               <div className="flex flex-col gap-2 mt-2">
+                 {recommendation.generatedRoutine && (
+                    <div className="flex items-center gap-2 my-1 opacity-60">
+                        <div className="h-px bg-white/50 flex-grow"></div>
+                        <span className="text-[10px] uppercase font-bold tracking-wider text-white">{t('rec_alternatives_label')}</span>
+                        <div className="h-px bg-white/50 flex-grow"></div>
+                    </div>
+                 )}
                  {recommendedRoutines.map(routine => (
                    <button 
                       key={routine.id}
