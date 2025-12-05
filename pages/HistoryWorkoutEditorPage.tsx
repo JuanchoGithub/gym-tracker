@@ -1,6 +1,6 @@
-
 import React, { useContext, useState, useMemo } from 'react';
 import { AppContext } from '../contexts/AppContext';
+import { EditorContext } from '../contexts/EditorContext';
 import { useI18n } from '../hooks/useI18n';
 import ExerciseCard from '../components/workout/ExerciseCard';
 import { WorkoutExercise, WorkoutSession, PerformedSet } from '../types';
@@ -12,11 +12,13 @@ import { formatTime } from '../utils/timeUtils';
 
 const HistoryWorkoutEditorPage: React.FC = () => {
   const { 
-    editingHistorySession, 
-    endHistoryEdit, 
     getExerciseById, 
-    defaultRestTimes 
+    defaultRestTimes,
+    // endHistoryEdit is imported from AppContext to use the wrapper that saves data
+    endHistoryEdit 
   } = useContext(AppContext);
+  
+  const { editingHistorySession } = useContext(EditorContext);
   const { t } = useI18n();
 
   const [workout, setWorkout] = useState<WorkoutSession | null>(() => JSON.parse(JSON.stringify(editingHistorySession)));
@@ -116,8 +118,6 @@ const HistoryWorkoutEditorPage: React.FC = () => {
                 reps: 0,
                 weight: 0,
                 type: 'normal',
-                // Fix: Set isComplete to false by default to prevent 0-stat pollution.
-                // User must explicitly confirm sets in history editor.
                 isComplete: false, 
             }
         ],

@@ -101,9 +101,10 @@ export const generateSupplementPlan = (info: SupplementInfo, t: (key: string, re
         const dosagePerServing = Math.round(whey_needed / doses);
         
         if (doses > 0 && dosagePerServing > 10) {
-            // Dose 1: Always post-workout on training days
+            // DOSE 1: SPLIT SCHEDULE (Training vs Rest)
+            // Item 1A: Training Days (Post-Workout)
             plan.push({
-                id: `gen-protein-1-${Date.now()}`,
+                id: `gen-protein-1-train-${Date.now()}`,
                 time: 'supplements_time_post_workout',
                 supplement: proteinType,
                 dosage: `~${dosagePerServing}g`,
@@ -111,22 +112,26 @@ export const generateSupplementPlan = (info: SupplementInfo, t: (key: string, re
                 trainingDayOnly: true,
             });
 
-            // Dose 2: With breakfast OR Lunch (if training in morning)
+            // Item 1B: Rest Days (Morning/Breakfast) - Ensures the user takes it every day, but at different times
+            plan.push({
+                id: `gen-protein-1-rest-${Date.now()}`,
+                time: 'supplements_time_with_breakfast',
+                supplement: proteinType,
+                dosage: `~${dosagePerServing}g`,
+                notes: t('supplements_note_protein_breakfast') + ' ' + t('supplements_note_protein_dose', { doseNum: 1, totalDoses: doses, goal: Math.round(prot_total_needed) }),
+                restDayOnly: true,
+            });
+
+            // Dose 2: With Lunch (Daily) - If they need a lot of protein
             if (doses >= 2) {
-                let timeKey = 'supplements_time_with_breakfast';
-                let noteKey = 'supplements_note_protein_breakfast';
-
-                if (info.trainingTime === 'morning') {
-                    timeKey = 'supplements_time_lunch';
-                    noteKey = 'supplements_note_protein_lunch';
-                }
-
+                // If they train in morning, Dose 1 (Train) is Post-Workout (Morning), Dose 1 (Rest) is Breakfast.
+                // Dose 2 at Lunch is fine for both.
                 plan.push({
                     id: `gen-protein-2-${Date.now()}`,
-                    time: timeKey,
+                    time: 'supplements_time_lunch',
                     supplement: proteinType,
                     dosage: `~${dosagePerServing}g`,
-                    notes: t(noteKey) + ' ' + t('supplements_note_protein_dose', { doseNum: 2, totalDoses: doses, goal: Math.round(prot_total_needed) }),
+                    notes: t('supplements_note_protein_lunch') + ' ' + t('supplements_note_protein_dose', { doseNum: 2, totalDoses: doses, goal: Math.round(prot_total_needed) }),
                 });
             }
 
@@ -151,12 +156,25 @@ export const generateSupplementPlan = (info: SupplementInfo, t: (key: string, re
         if (age > 40) dosis_creatina += 1;
         dosis_creatina = Math.round(Math.min(5, dosis_creatina));
 
+        // Split Schedule for Creatine
+        // Item A: Training Days (Post-Workout)
         plan.push({
-            id: `gen-creatine-${Date.now()}`,
-            time: 'supplements_time_daily_any',
+            id: `gen-creatine-train-${Date.now()}`,
+            time: 'supplements_time_post_workout',
             supplement: t('supplements_name_creatine'),
             dosage: `${dosis_creatina}g`,
-            notes: t('supplements_note_creatine')
+            notes: t('supplements_note_creatine'),
+            trainingDayOnly: true
+        });
+
+        // Item B: Rest Days (Morning/Breakfast)
+        plan.push({
+            id: `gen-creatine-rest-${Date.now()}`,
+            time: 'supplements_time_with_breakfast',
+            supplement: t('supplements_name_creatine'),
+            dosage: `${dosis_creatina}g`,
+            notes: t('supplements_note_creatine'),
+            restDayOnly: true
         });
     }
     
@@ -274,6 +292,7 @@ export const generateSupplementPlan = (info: SupplementInfo, t: (key: string, re
     };
 };
 
+// ... existing code for analysis functions (analyzeVolumeDrop, checkStimulantTolerance, etc.)
 export const analyzeVolumeDrop = (history: WorkoutSession[]): boolean => {
     const now = new Date();
     const fourWeeksAgo = new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000);
@@ -427,11 +446,6 @@ const checkScheduleDrift = (
         const consistency = maxCount / recentLogs.length;
 
         // If consistent and different from plan time
-        // Note: We must map plan time to a key. 
-        // If plan item says "supplements_time_with_breakfast" but drift is "supplements_time_lunch", 
-        // we should check if breakfast IS morning. 
-        // Simplification: Map plan time to general buckets for comparison.
-        
         const currentPlanBucket = getBucketFromPlanTime(item.time);
 
         if (consistency >= CONSISTENCY_THRESHOLD && dominantBucket !== currentPlanBucket) {
@@ -636,8 +650,9 @@ export const reviewSupplementPlan = (
                     id: `gen-creatine-${Date.now()}`,
                     supplement: creatineName,
                     dosage: `${dose}g`,
-                    time: 'supplements_time_daily_any',
+                    time: 'supplements_time_post_workout', // Default to post workout, but user can edit
                     notes: t('supplements_note_creatine'),
+                    trainingDayOnly: true // Default to Training day only for new add
                 }
             }
         });

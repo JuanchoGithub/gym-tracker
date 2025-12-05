@@ -1,4 +1,3 @@
-
 import React, { useState, useContext, useEffect, useRef } from 'react';
 import BottomNavBar from './components/common/BottomNavBar';
 import TrainPage from './pages/TrainPage';
@@ -10,6 +9,7 @@ import ActiveWorkoutPage from './pages/ActiveWorkoutPage';
 import { AppContext } from './contexts/AppContext';
 import { ActiveWorkoutContext } from './contexts/ActiveWorkoutContext';
 import { TimerContext } from './contexts/TimerContext';
+import { EditorContext } from './contexts/EditorContext';
 import MinimizedWorkoutBar from './components/workout/MinimizedWorkoutBar';
 import TemplateEditorPage from './pages/TemplateEditorPage';
 import ExerciseEditorPage from './pages/ExerciseEditorPage';
@@ -33,7 +33,7 @@ const App: React.FC = () => {
 
   const [currentPage, setCurrentPage] = useState<Page>(getPageFromHash());
   
-  const { editingTemplate, editingExercise, editingHistorySession, isAddingExercisesToTemplate } = useContext(AppContext);
+  const { editingTemplate, editingExercise, editingHistorySession, isAddingExercisesToTemplate } = useContext(EditorContext);
   const { activeWorkout, updateActiveWorkout, endWorkout, isWorkoutMinimized, isAddingExercisesToWorkout } = useContext(ActiveWorkoutContext);
   const { activeHiitSession, activeQuickTimer } = useContext(TimerContext);
   const { t } = useI18n();

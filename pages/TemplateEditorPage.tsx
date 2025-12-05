@@ -1,6 +1,6 @@
-
 import React, { useContext, useState, useRef, useMemo } from 'react';
 import { AppContext } from '../contexts/AppContext';
+import { EditorContext } from '../contexts/EditorContext';
 import { Routine, WorkoutExercise, SupersetDefinition } from '../types';
 import { Icon } from '../components/common/Icon';
 import TemplateExerciseCard from '../components/template/TemplateExerciseCard';
@@ -11,7 +11,14 @@ import SupersetCard from '../components/workout/SupersetCard';
 import { useExerciseName } from '../hooks/useExerciseName';
 
 const TemplateEditorPage: React.FC = () => {
-    const { editingTemplate, updateEditingTemplate, endTemplateEdit, getExerciseById, startAddExercisesToTemplate } = useContext(AppContext);
+    const { getExerciseById, upsertRoutine } = useContext(AppContext);
+    const { 
+        editingTemplate, 
+        updateEditingTemplate, 
+        endTemplateEdit, 
+        startAddExercisesToTemplate 
+    } = useContext(EditorContext);
+    
     const { t } = useI18n();
     const getExerciseName = useExerciseName();
     const [originalTemplate] = useState<Routine | null>(() => JSON.parse(JSON.stringify(editingTemplate)));
@@ -53,7 +60,8 @@ const TemplateEditorPage: React.FC = () => {
             alert(t('template_editor_name_empty_alert'));
             return;
         }
-        endTemplateEdit(editingTemplate);
+        upsertRoutine(editingTemplate);
+        endTemplateEdit();
     };
 
     const handleUpdateExercise = (updatedExercise: WorkoutExercise) => {

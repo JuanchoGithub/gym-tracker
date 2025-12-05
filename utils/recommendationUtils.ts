@@ -99,6 +99,13 @@ const RATIOS = {
 
 
 export const detectImbalances = (history: WorkoutSession[], routines: Routine[], currentBodyWeight?: number, gender?: 'male' | 'female'): Recommendation | null => {
+    // REQUIREMENT: Newbies should be on rails. 
+    // Disable imbalance detection until the user has logged at least 15 workouts (~5 weeks).
+    // This prevents the system from flagging "Squat Dominant" just because they haven't Deadlifted yet.
+    if (history.length < 15) {
+        return null;
+    }
+
     const currentProfile = calculateMaxStrengthProfile(history);
     const MIN_STRENGTH_THRESHOLD = 40; // kg, ignore very beginners for ratios
     const max1RM = Math.max(currentProfile.SQUAT, currentProfile.DEADLIFT, currentProfile.BENCH);
@@ -257,7 +264,8 @@ export const getWorkoutRecommendation = (
 ): Recommendation | null => {
   const userProfile = inferUserProfile(history);
   const customRoutines = routines.filter(r => !r.id.startsWith('rt-'));
-  const isOnboardingPhase = history.length < 10;
+  // REQUIREMENT: Stay "on rails" for first ~5 weeks (15 sessions)
+  const isOnboardingPhase = history.length < 15;
   const lastSession = history.length > 0 ? history[0] : null;
   
   // Calculate Systemic Fatigue
@@ -331,6 +339,7 @@ export const getWorkoutRecommendation = (
       
       // Determine Next Routine in Sequence
       const lastRoutineIndex = customRoutines.findIndex(r => r.id === lastSession?.routineId);
+      // If last routine wasn't one of ours (e.g. random workout), start over at 0.
       const nextIndex = lastRoutineIndex === -1 ? 0 : (lastRoutineIndex + 1) % customRoutines.length;
       const nextRoutine = customRoutines[nextIndex];
 

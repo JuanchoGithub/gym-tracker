@@ -1,4 +1,3 @@
-
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
@@ -7,6 +6,10 @@ import { I18nProvider } from './contexts/I18nContext';
 import { TimerProvider } from './contexts/TimerContext';
 import { ActiveWorkoutProvider } from './contexts/ActiveWorkoutContext';
 import { StatsProvider } from './contexts/StatsContext';
+import { UserProvider } from './contexts/UserContext';
+import { DataProvider } from './contexts/DataContext';
+import { SupplementProvider } from './contexts/SupplementContext';
+import { EditorProvider } from './contexts/EditorContext';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -17,15 +20,23 @@ const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
     <I18nProvider>
-      <TimerProvider>
-        <AppProvider>
-          <ActiveWorkoutProvider>
-            <StatsProvider>
-              <App />
-            </StatsProvider>
-          </ActiveWorkoutProvider>
-        </AppProvider>
-      </TimerProvider>
+      <UserProvider>
+        <DataProvider>
+          <EditorProvider>
+            <SupplementProvider>
+              <TimerProvider>
+                <AppProvider>
+                  <ActiveWorkoutProvider>
+                    <StatsProvider>
+                      <App />
+                    </StatsProvider>
+                  </ActiveWorkoutProvider>
+                </AppProvider>
+              </TimerProvider>
+            </SupplementProvider>
+          </EditorProvider>
+        </DataProvider>
+      </UserProvider>
     </I18nProvider>
   </React.StrictMode>
 );

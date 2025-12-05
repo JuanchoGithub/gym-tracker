@@ -1,7 +1,7 @@
-
 import React, { useState, useContext, useMemo, useRef, useEffect } from 'react';
 import { AppContext } from '../contexts/AppContext';
 import { ActiveWorkoutContext } from '../contexts/ActiveWorkoutContext';
+import { EditorContext } from '../contexts/EditorContext';
 import { useI18n } from '../hooks/useI18n';
 import { BodyPart, ExerciseCategory, Exercise } from '../types';
 import { Icon } from '../components/common/Icon';
@@ -18,12 +18,15 @@ import { useExerciseName } from '../hooks/useExerciseName';
 const AddExercisePage: React.FC = () => {
   const { 
     exercises, 
+    // startExerciseEdit is wrapped in AppContext to use EditorContext
     startExerciseEdit, 
-    isAddingExercisesToTemplate, 
+    // endAddExercisesToTemplate is wrapped in AppContext to use EditorContext and DataContext (for saving)
     endAddExercisesToTemplate,
     allTimeBestSets,
     useLocalizedExerciseNames
   } = useContext(AppContext);
+  
+  const { isAddingExercisesToTemplate } = useContext(EditorContext);
   const { endAddExercisesToWorkout } = useContext(ActiveWorkoutContext);
   const { t } = useI18n();
   const { displayWeight, weightUnit } = useMeasureUnit();

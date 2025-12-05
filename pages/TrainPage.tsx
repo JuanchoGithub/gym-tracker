@@ -41,7 +41,7 @@ const daysOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'fri
 const TrainPage: React.FC = () => {
   const { 
       routines, checkInState, handleCheckInResponse, history, upsertRoutines,
-      currentWeight, logUnlock, supplementPlan, takenSupplements, toggleSupplementIntake, snoozedSupplements, snoozeSupplement,
+      currentWeight, logUnlock, supplementPlan, takenSupplements, batchTakeSupplements, snoozedSupplements, batchSnoozeSupplements,
       profile, updateOneRepMax, snoozeOneRepMaxUpdate, undoAutoUpdate, dismissAutoUpdate, getExerciseById, startTemplateEdit, startTemplateDuplicate
   } = useContext(AppContext);
   const { activeWorkout, startWorkout, discardActiveWorkout, maximizeWorkout } = useContext(ActiveWorkoutContext);
@@ -160,7 +160,7 @@ const TrainPage: React.FC = () => {
 
       const allItems = supplementPlan.plan;
 
-      // 1. Check Post-Workout Context (High Priority) - This relies on actual workout finish time, not effective date
+      // 1. Check Post-Workout Context (High Priority)
       const lastSession = history.length > 0 ? history[0] : null;
       const nowTs = Date.now();
       const isPostWorkoutWindow = lastSession && (nowTs - lastSession.endTime) < (2 * 60 * 60 * 1000) && (nowTs - lastSession.endTime) > 0; // 2 hours window
@@ -217,52 +217,81 @@ const TrainPage: React.FC = () => {
       }
 
       // 2. Check Time-Based Contexts
-      // Logic uses effective date's hour, but effectively we want to bucket properly.
-
       let timeContext = 'daily';
       if (hour >= 4 && hour < 11) timeContext = 'morning';
       else if (hour >= 11 && hour < 14) timeContext = 'lunch';
       else if (hour >= 14 && hour < 20) timeContext = 'afternoon'; 
       else timeContext = 'evening'; // Includes 20:00 - 03:59
 
-      let potentialItems = allItems.filter(item => {
-          // Filter by completion status
+      // Helper to check conditions for including item in general stack
+      const isValidForNow = (item: SupplementPlanItem) => {
           if (isTaken(item.id) || isSnoozed(item.id)) return false;
-          
-          // Strict Filtering based on Training Day preference
-          // If item is training only, and today isn't a training day -> Hide
           if (item.trainingDayOnly && !isTrainingDay) return false;
-          // If item is rest only, and today IS a training day -> Hide
           if (item.restDayOnly && isTrainingDay) return false;
+          return true;
+      };
 
+      // Filter function based on context
+      const getContextItems = () => {
+          return allItems.filter(item => {
+              if (!isValidForNow(item)) return false;
+              
+              const tLower = item.time.toLowerCase();
+              
+              if (timeContext === 'morning') {
+                  // Only specific Morning items or Pre-workout if training in morning
+                  if (timeKeywords.morning.test(tLower)) return true;
+                  if (supplementPlan.info.trainingTime === 'morning' && timeKeywords.pre_workout.test(tLower)) return true;
+                  return false;
+              }
+              
+              if (timeContext === 'lunch') {
+                  return timeKeywords.lunch.test(tLower);
+              }
+              
+              if (timeContext === 'afternoon') {
+                  if (timeKeywords.afternoon.test(tLower)) return true;
+                  if (supplementPlan.info.trainingTime === 'afternoon' && timeKeywords.pre_workout.test(tLower)) return true;
+                  return false;
+              }
+              
+              if (timeContext === 'evening') {
+                  if (timeKeywords.evening.test(tLower)) return true;
+                  if (supplementPlan.info.trainingTime === 'night' && timeKeywords.pre_workout.test(tLower)) return true;
+                  return false;
+              }
+
+              return false;
+          });
+      };
+
+      // Get high priority context specific items
+      let potentialItems = getContextItems();
+
+      // Get "Daily" (Any time) items that haven't been taken
+      const dailyItems = allItems.filter(item => {
+          if (!isValidForNow(item)) return false;
           const tLower = item.time.toLowerCase();
-          
-          if (timeContext === 'morning') {
-              if (timeKeywords.morning.test(tLower)) return true;
-              // Smart Stacking: If training time is morning, include pre-workout
-              if (supplementPlan.info.trainingTime === 'morning' && (timeKeywords.pre_workout.test(tLower))) return true;
-              if (tLower.includes('daily') || tLower.includes('diario')) return true; // Catch-all
-          }
-          
-          if (timeContext === 'lunch') {
-               if (timeKeywords.lunch.test(tLower)) return true;
-          }
-
-          if (timeContext === 'evening') {
-               if (timeKeywords.evening.test(tLower)) return true;
-               if (supplementPlan.info.trainingTime === 'night' && (timeKeywords.pre_workout.test(tLower))) return true;
-          }
-          
-          if (timeContext === 'afternoon') {
-             if (timeKeywords.afternoon.test(tLower)) return true;
-             if (supplementPlan.info.trainingTime === 'afternoon' && (timeKeywords.pre_workout.test(tLower))) return true;
-          }
-
-          return false;
+          // Check for "daily", "any time", or items that don't match specific time keywords well
+          return tLower.includes('daily') || tLower.includes('diario') || tLower.includes('any time');
       });
+
+      // --- MERGE LOGIC ---
+      // If it's a Training Day and we haven't trained yet, defer daily items to the Post-Workout stack
+      // Exception: If it's Evening, assume we might have missed the window or it's late, so show them.
+      const includeDaily = !isTrainingDay || workoutFinishedToday || timeContext === 'evening';
+
+      if (includeDaily && (potentialItems.length + dailyItems.length <= 3 || timeContext === 'evening')) {
+          // Add daily items if not already present (though filter logic should separate them)
+          const existingIds = new Set(potentialItems.map(i => i.id));
+          dailyItems.forEach(d => {
+              if (!existingIds.has(d.id)) {
+                  potentialItems.push(d);
+              }
+          });
+      }
       
       // Filter out Pre-workout if workout is ALREADY done today (handled by post-workout check mostly, but as safety)
-      // Note: workoutFinishedToday checks calendar day. For smart stacking late night, we trust the user context.
       if (workoutFinishedToday && timeContext !== 'evening') {
           potentialItems = potentialItems.filter(i => !timeKeywords.pre_workout.test(i.time.toLowerCase()));
       }
@@ -291,14 +320,18 @@ const TrainPage: React.FC = () => {
   const handleRoutineSelect = (routine: Routine) => {
     if (routine.routineType === 'hiit') {
         startHiitSession(routine);
+        setSelectedRoutine(null);
+        window.location.hash = '/timers';
         return;
     }
 
     if (activeWorkout) {
       setRoutineToStart(routine);
       setIsConfirmingNewWorkout(true);
+      setSelectedRoutine(null); // Clean up preview modal if switching to confirm modal
     } else {
       startWorkout(routine);
+      setSelectedRoutine(null);
     }
   };
 
@@ -405,16 +438,14 @@ const TrainPage: React.FC = () => {
       const effectiveDate = getEffectiveDate();
       const dateString = getDateString(effectiveDate);
       
-      itemIds.forEach(id => {
-          toggleSupplementIntake(dateString, id);
-      });
+      // Use batch function to prevent race conditions on state updates
+      batchTakeSupplements(dateString, itemIds);
   };
   
   const handleSnoozeStack = () => {
       if (smartStack) {
-          smartStack.items.forEach(item => {
-              snoozeSupplement(item.id);
-          });
+          const ids = smartStack.items.map(i => i.id);
+          batchSnoozeSupplements(ids);
       }
   }
   
