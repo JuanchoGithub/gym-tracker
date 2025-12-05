@@ -46,19 +46,11 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }, 10);
     }, [history, routines, exercises, t, currentWeight, profile.gender, setStats]);
 
-    // Initial calculation if empty or stale (older than 1 hour? or just ensuring it exists)
+    // Recalculate when history changes (workout finished) OR when routines change (e.g. onboarding completed)
+    // This fixes the issue where new users wouldn't see their new plan suggested until after a reload or workout
     useEffect(() => {
-        if (stats.lastCalculated === 0 && history.length > 0) {
-            refreshStats();
-        }
-    }, []); // Run once on mount if needed
-
-    // Recalculate when history changes (workout finished)
-    useEffect(() => {
-        if (history.length > 0) {
-             refreshStats();
-        }
-    }, [history]);
+        refreshStats();
+    }, [history, routines]); 
 
     const value = {
         stats,

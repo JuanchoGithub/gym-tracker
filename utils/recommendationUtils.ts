@@ -303,27 +303,11 @@ export const getWorkoutRecommendation = (
   
   // Calculate median duration to tune recommendations
   const durationProfile = calculateMedianWorkoutDuration(history);
-  
-  // --- PHASE 0.5: SYSTEMIC FATIGUE OVERRIDE ---
-  if (systemicFatigue.level === 'High') {
-      return {
-          type: 'deload',
-          titleKey: 'rec_title_deload',
-          reasonKey: 'rec_reason_cns_fatigue',
-          reasonParams: { score: systemicFatigue.score.toString() },
-          suggestedBodyParts: ['Mobility', 'Cardio'],
-          relevantRoutineIds: [],
-          generatedRoutine: generateGapSession([], exercises, history, t, userProfile.equipment, durationProfile), // Unconstrained gap session
-          systemicFatigue
-      };
-  }
-
-  // Check if user is a "Rookie" (Very low history or explicitly beginner profile)
-  const isRookie = history.length < 5 || (userProfile.experience === 'beginner' && history.length < 10);
-
 
   // --- PHASE 1: STICKY PLAN (Beginner / New User) ---
   // If user is new AND has custom routines (from wizard), stick to them.
+  // PRIORITY: This now runs BEFORE Systemic Fatigue check to ensure new users aren't derailed
+  // by fatigue warnings in their first weeks.
   if (isOnboardingPhase && customRoutines.length > 0) {
       if (history.length === 0) {
            // Fresh start
@@ -354,6 +338,23 @@ export const getWorkoutRecommendation = (
           systemicFatigue
       };
   }
+  
+  // --- PHASE 0.5: SYSTEMIC FATIGUE OVERRIDE ---
+  if (systemicFatigue.level === 'High') {
+      return {
+          type: 'deload',
+          titleKey: 'rec_title_deload',
+          reasonKey: 'rec_reason_cns_fatigue',
+          reasonParams: { score: systemicFatigue.score.toString() },
+          suggestedBodyParts: ['Mobility', 'Cardio'],
+          relevantRoutineIds: [],
+          generatedRoutine: generateGapSession([], exercises, history, t, userProfile.equipment, durationProfile), // Unconstrained gap session
+          systemicFatigue
+      };
+  }
+
+  // Check if user is a "Rookie" (Very low history or explicitly beginner profile)
+  const isRookie = history.length < 5 || (userProfile.experience === 'beginner' && history.length < 10);
 
   // --- CHECK FOR PROMOTIONS (Runs for everyone) ---
   for (const path of PROGRESSION_PATHS) {
