@@ -284,7 +284,7 @@ export const getWorkoutRecommendation = (
   // Check if a session started OR ended today
   const trainedToday = lastSession && (
       lastSession.startTime >= todayStart || 
-      (lastSession.endTime > 0 && lastSession.endTime >= yesterdayStart)
+      (lastSession.endTime > 0 && lastSession.endTime >= todayStart)
   );
 
   if (trainedToday) {
