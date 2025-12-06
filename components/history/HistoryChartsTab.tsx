@@ -5,6 +5,7 @@ import { WorkoutSession, ChartDataPoint } from '../../types';
 import { useI18n } from '../../hooks/useI18n';
 import ChartBlock from '../common/ChartBlock';
 import FullScreenChartModal from '../common/FullScreenChartModal';
+import { useExerciseName } from '../../hooks/useExerciseName';
 
 interface HistoryChartsTabProps {
     history: WorkoutSession[];
@@ -19,6 +20,7 @@ interface FullScreenChartData {
 const HistoryChartsTab: React.FC<HistoryChartsTabProps> = ({ history }) => {
     const { getExerciseById } = useContext(AppContext);
     const { t } = useI18n();
+    const getExerciseName = useExerciseName();
     const [fullScreenChart, setFullScreenChart] = useState<FullScreenChartData | null>(null);
 
     const chartData = useMemo(() => {
@@ -27,7 +29,6 @@ const HistoryChartsTab: React.FC<HistoryChartsTabProps> = ({ history }) => {
         }
 
         // Sort Ascending (Oldest -> Newest) for chronological charts
-        // This ensures the chart draws from left (past) to right (present)
         const chronologicalHistory = [...history].sort((a, b) => a.startTime - b.startTime);
         const dateFormat: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
 
@@ -43,11 +44,12 @@ const HistoryChartsTab: React.FC<HistoryChartsTabProps> = ({ history }) => {
             };
         });
 
-        // 2. Top 3 Exercises
+        // 2. Top Exercises by Frequency
         const exerciseCounts = new Map<string, number>();
         history.forEach(session => {
-            const sessionExercises = new Set(session.exercises.map(ex => ex.exerciseId));
-            sessionExercises.forEach((exerciseId: string) => {
+            // Use Set to count "sessions with exercise" rather than "total sets of exercise"
+            const distinctExercises = new Set(session.exercises.map(ex => ex.exerciseId));
+            distinctExercises.forEach((exerciseId: string) => {
                 exerciseCounts.set(exerciseId, (exerciseCounts.get(exerciseId) || 0) + 1);
             });
         });
@@ -56,22 +58,34 @@ const HistoryChartsTab: React.FC<HistoryChartsTabProps> = ({ history }) => {
             exerciseId,
             count: exerciseCounts.get(exerciseId) || 0
         }));
+        
+        // Sort descending by count
         const sortedExercises = exercisesWithCounts.sort((a, b) => b.count - a.count);
-        const top3Ids = sortedExercises.slice(0, 3).map(entry => entry.exerciseId);
+        
+        // Take top 5 most frequent
+        const topIds = sortedExercises.slice(0, 5).map(entry => entry.exerciseId);
 
-        const topExercisesChartData = top3Ids.map(exerciseId => {
+        const topExercisesChartData = topIds.map(exerciseId => {
             const exerciseInfo = getExerciseById(exerciseId);
             const data: ChartDataPoint[] = [];
 
             chronologicalHistory.forEach(session => {
-                const exerciseInSession = session.exercises.find(ex => ex.exerciseId === exerciseId);
-                if (exerciseInSession) {
-                    const exerciseVolume = exerciseInSession.sets.reduce((sum, set) => sum + (set.isComplete ? (set.weight * set.reps) : 0), 0);
-                    data.push({
-                        date: session.startTime,
-                        label: new Date(session.startTime).toLocaleDateString(undefined, dateFormat),
-                        value: exerciseVolume
-                    });
+                // Aggregate all instances of this exercise in the session (e.g. if done twice or in superset)
+                const exercisesInSession = session.exercises.filter(ex => ex.exerciseId === exerciseId);
+                
+                if (exercisesInSession.length > 0) {
+                    const exerciseVolume = exercisesInSession.reduce((vol, ex) => {
+                         return vol + ex.sets.reduce((sum, set) => sum + (set.isComplete ? (set.weight * set.reps) : 0), 0);
+                    }, 0);
+
+                    // Only plot if there was volume (skip empty entries if any)
+                    if (exerciseVolume > 0) {
+                        data.push({
+                            date: session.startTime,
+                            label: new Date(session.startTime).toLocaleDateString(undefined, dateFormat),
+                            value: exerciseVolume
+                        });
+                    }
                 }
             });
 
@@ -79,7 +93,7 @@ const HistoryChartsTab: React.FC<HistoryChartsTabProps> = ({ history }) => {
                 exerciseInfo,
                 data,
             };
-        });
+        }).filter(item => item.exerciseInfo && item.data.length > 1); // Only show charts with at least 2 points for a line
 
         return { totalVolume: totalVolumeData, topExercises: topExercisesChartData };
     }, [history, getExerciseById]);
@@ -92,6 +106,8 @@ const HistoryChartsTab: React.FC<HistoryChartsTabProps> = ({ history }) => {
         );
     }
     
+    const colors = ["#818cf8", "#f87171", "#4ade80", "#fbbf24", "#a78bfa"];
+
     return (
         <div className="space-y-4">
             <ChartBlock 
@@ -103,9 +119,9 @@ const HistoryChartsTab: React.FC<HistoryChartsTabProps> = ({ history }) => {
             />
 
             {chartData.topExercises.map(({ exerciseInfo, data }, index) => {
-                const colors = ["#818cf8", "#f87171", "#4ade80"];
                 if (!exerciseInfo) return null;
-                const title = `${exerciseInfo.name} - Volume`;
+                const name = getExerciseName(exerciseInfo);
+                const title = `${name} - Volume`;
                 const color = colors[index % colors.length];
                 return (
                     <ChartBlock 
@@ -113,7 +129,7 @@ const HistoryChartsTab: React.FC<HistoryChartsTabProps> = ({ history }) => {
                         title={title}
                         data={data}
                         color={color}
-                        filenamePrefix={exerciseInfo.name}
+                        filenamePrefix={name}
                         onFullScreen={() => setFullScreenChart({ title, data, color })}
                     />
                 );
@@ -121,7 +137,7 @@ const HistoryChartsTab: React.FC<HistoryChartsTabProps> = ({ history }) => {
 
             {chartData.topExercises.length === 0 && chartData.totalVolume.length > 0 && (
                 <div className="text-center text-text-secondary py-4">
-                    <p>Not enough individual exercise data to generate more charts.</p>
+                    <p>Keep training to unlock specific exercise trends!</p>
                 </div>
             )}
             
