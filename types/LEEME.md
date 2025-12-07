@@ -49,10 +49,10 @@ Desarrollada con **React**, **TypeScript** y **Tailwind CSS**.
 Fortachon se ejecuta totalmente del lado del cliente (client-side) usando `localStorage`. Estos son los algoritmos clave que mueven la app:
 
 ### 1. 1-Rep Max Estimado (e1RM)
-Usamos la **Fórmula de Epley** para proyectar tu potencial de fuerza a partir de series sub-máximas. Esto nos permite normalizar el rendimiento sin importar el rango de repeticiones que uses.
+Usamos la **Fórmula de Lombardi** para proyectar tu potencial de fuerza a partir de series sub-máximas. Esta fórmula fue elegida sobre la de Epley por su mayor precisión en rangos de repeticiones altos (evita la sobreestimación).
 
 $$
-1RM = w \cdot (1 + \frac{r}{30})
+1RM = w \cdot r^{0.10}
 $$
 
 *   $w$ = Peso levantado

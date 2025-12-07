@@ -49,10 +49,10 @@ Built with **React**, **TypeScript**, and **Tailwind CSS**.
 Fortachon runs entirely client-side using `localStorage`. Below are the core algorithms driving the analytics.
 
 ### 1. Estimated 1-Rep Max (e1RM)
-We use the **Epley Formula** to estimate strength potential from sub-maximal sets. This allows for normalization of performance across different rep ranges.
+We use the **Lombardi Formula** to estimate strength potential from sub-maximal sets. This was chosen over Epley for better accuracy at higher rep ranges (preventing overestimation).
 
 $$
-1RM = w \cdot (1 + \frac{r}{30})
+1RM = w \cdot r^{0.10}
 $$
 
 *   $w$ = Weight lifted
@@ -71,7 +71,7 @@ $$
 $$
 
 $$
-\text{Freshness} = \max(0, 100 - \text{Fatigue}_{current})
+\text{Frescura} = \max(0, 100 - \text{Fatigue}_{current})
 $$
 
 ### 3. Lifter DNA Scoring
@@ -86,7 +86,7 @@ We classify users based on their training history (last 20 sessions).
 
 ### 4. Systemic Fatigue (CNS Load)
 We track central nervous system stress to prevent burnout.
-*   **Base Cost:** Heavy Compounds (4 pts) > Accessories (2.5 pts) > Isolation (1 pt).
+*   **Costo Base:** Heavy Compounds (4 pts) > Accessories (2.5 pts) > Isolation (1 pt).
 *   **Decay:** Exponential decay over 7 days ($0.6^d$).
 
 $$
