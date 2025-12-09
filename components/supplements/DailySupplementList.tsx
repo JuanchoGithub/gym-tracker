@@ -1,5 +1,5 @@
 
-import React, { useContext, useMemo, useCallback, useState, useEffect } from 'react';
+import React, { useContext, useMemo, useCallback, useState, useEffect, useRef } from 'react';
 import { AppContext } from '../../contexts/AppContext';
 import { useI18n } from '../../hooks/useI18n';
 import { Icon } from '../common/Icon';
@@ -8,6 +8,8 @@ import { getExplanationIdForSupplement } from '../../services/explanationService
 import { getDateString } from '../../utils/timeUtils';
 import SupplementHistoryModal from '../modals/SupplementHistoryModal';
 import { TranslationKey } from '../../contexts/I18nContext';
+import { useClickOutside } from '../../hooks/useClickOutside';
+import { DayMode } from '../../contexts/SupplementContext';
 
 // Explicit mapping of Translation Keys to Group Buckets
 const TIME_KEY_MAP: Record<string, string> = {
@@ -67,27 +69,29 @@ interface DailySupplementListProps {
 }
 
 const DailySupplementList: React.FC<DailySupplementListProps> = ({ date, readOnly = false, title, subTitle, onOpenExplanation }) => {
-  const { supplementPlan, userSupplements, takenSupplements, toggleSupplementIntake } = useContext(AppContext);
+  const { supplementPlan, userSupplements, takenSupplements, toggleSupplementIntake, dayOverrides, setDayOverride } = useContext(AppContext);
   const { t, locale } = useI18n();
   const [isSmartSortEnabled, setIsSmartSortEnabled] = useState(true);
   const [hasSmartSortChanges, setHasSmartSortChanges] = useState(false);
   const [historyItem, setHistoryItem] = useState<SupplementPlanItem | null>(null);
+  const [isModeMenuOpen, setIsModeMenuOpen] = useState(false);
+  const modeMenuRef = useRef<HTMLDivElement>(null);
+
+  useClickOutside(modeMenuRef, () => setIsModeMenuOpen(false));
 
   const dateString = getDateString(date);
   const takenIds = takenSupplements[dateString] || [];
   const trainingTime = supplementPlan?.info?.trainingTime || 'afternoon';
+  const override = dayOverrides[dateString];
   
   const getTimeKey = useCallback((time: string): string => {
     // 1. Direct Key Mapping (Best/New Standard)
-    // This ensures valid translation keys are mapped to the correct bucket immediately
     if (TIME_KEY_MAP[time]) return TIME_KEY_MAP[time];
 
-    // 2. Legacy Fallback: Handle custom strings via regex (e.g. "Mañana", "Morning")
-    // This supports data from older versions of the app before standardization
+    // 2. Legacy Fallback
     const keywords = timeKeywords[locale as keyof typeof timeKeywords] || timeKeywords.en;
     
     for (const key in keywords) {
-        // Cast key to keyof typeof keywords to satisfy TS
         if (keywords[key as keyof typeof keywords].test(time)) {
             return key;
         }
@@ -104,16 +108,37 @@ const DailySupplementList: React.FC<DailySupplementListProps> = ({ date, readOnl
   const handleItemClick = (item: SupplementPlanItem) => {
       setHistoryItem(item);
   };
+  
+  const handleModeChange = (mode: DayMode | null) => {
+      setDayOverride(dateString, mode);
+      setIsModeMenuOpen(false);
+  }
 
-  const { groupedPlan, orderedGroups, isTrainingDay, scheduledCount } = useMemo(() => {
+  const { groupedPlan, orderedGroups, isTrainingDay, scheduledCount, dayTypeLabel } = useMemo(() => {
     const dayOfWeek = daysOfWeek[date.getDay()];
-    const isTrainingDay = !!supplementPlan?.info?.trainingDays?.includes(dayOfWeek);
+    // Determine base status from plan
+    const isPlanTrainingDay = !!supplementPlan?.info?.trainingDays?.includes(dayOfWeek);
+    
+    // Determine effective status from override
+    let isTrainingDay = isPlanTrainingDay;
+    let dayTypeLabel = isTrainingDay ? t('supplements_workout_day') : t('supplements_rest_day');
+
+    if (override === 'heavy') {
+        isTrainingDay = true;
+        dayTypeLabel = t('supplements_workout_day');
+    } else if (override === 'light') {
+        isTrainingDay = true;
+        dayTypeLabel = t('smart_recovery_mode');
+    } else if (override === 'rest') {
+        isTrainingDay = false;
+        dayTypeLabel = t('supplements_rest_day');
+    }
     
     // Combine plan items + user items if no plan, or just plan items if plan exists
     const itemsSource = supplementPlan ? supplementPlan.plan : userSupplements;
 
     if (!itemsSource || itemsSource.length === 0) {
-      return { groupedPlan: {}, orderedGroups: [], isTrainingDay, scheduledCount: 0 };
+      return { groupedPlan: {}, orderedGroups: [], isTrainingDay, scheduledCount: 0, dayTypeLabel };
     }
     
     // 1. Filter items for today
@@ -128,6 +153,13 @@ const DailySupplementList: React.FC<DailySupplementListProps> = ({ date, readOnl
             return { ...item, time: 'supplements_time_with_breakfast' };
         }
         return item;
+    }).filter(item => {
+        // Special Logic: If 'Light' day (Active Recovery), hide stimulants (Pre-workout)
+        if (override === 'light') {
+             const key = getTimeKey(item.time);
+             if (key === 'pre_workout') return false;
+        }
+        return true;
     });
 
     // 2. Grouping Logic with Smart Sort detection
@@ -138,9 +170,8 @@ const DailySupplementList: React.FC<DailySupplementListProps> = ({ date, readOnl
         const originalKey = key;
 
         // --- SMART SORTING LOGIC ---
-        // Only apply if enabled AND if we are not dealing with Pre-Workout which has its own specific early slot
         if (isSmartSortEnabled && isTrainingDay) {
-             // Move Post workout items into Morning/Evening buckets if applicable, but keep Pre-workout separate/first unless it's Evening training
+             // Move Post workout items into Morning/Evening buckets if applicable
              if (key === 'post_workout' || key === 'intra_workout') {
                  if (trainingTime === 'morning') {
                      key = 'morning';
@@ -167,12 +198,13 @@ const DailySupplementList: React.FC<DailySupplementListProps> = ({ date, readOnl
     
     const ordered = Object.keys(grouped).sort((a, b) => (timeOrder[a] || 99) - (timeOrder[b] || 99));
     
-    return { groupedPlan: grouped, orderedGroups: ordered, isTrainingDay, scheduledCount: itemsForDay.length, changesDetected };
-  }, [supplementPlan, userSupplements, getTimeKey, date, t, isSmartSortEnabled, trainingTime]);
+    return { groupedPlan: grouped, orderedGroups: ordered, isTrainingDay, scheduledCount: itemsForDay.length, changesDetected, dayTypeLabel };
+  }, [supplementPlan, userSupplements, getTimeKey, date, t, isSmartSortEnabled, trainingTime, override]);
 
   // Use the memoized result to set the flag for rendering the banner
   useEffect(() => {
-      setHasSmartSortChanges(groupedPlan && isTrainingDay && (trainingTime === 'morning' || trainingTime === 'night'));
+      // Logic for showing banner: Training day and user trains at extreme times
+      setHasSmartSortChanges(!!groupedPlan && isTrainingDay && (trainingTime === 'morning' || trainingTime === 'night'));
   }, [groupedPlan, isTrainingDay, trainingTime]);
 
 
@@ -180,14 +212,28 @@ const DailySupplementList: React.FC<DailySupplementListProps> = ({ date, readOnl
     <div className="space-y-6">
       {title}
       
-      {subTitle && (
-        <div className="text-center -mt-4 mb-4 animate-fadeIn">
-             <span className="inline-block px-3 py-1 bg-white/5 rounded-full text-xs font-medium text-text-secondary/80 border border-white/5">
-                 {subTitle}
-             </span>
-        </div>
-      )}
-      
+      {/* Day Mode Selector */}
+      <div className="flex justify-center -mt-2 mb-4 relative z-20" ref={modeMenuRef}>
+          <button 
+             onClick={() => !readOnly && setIsModeMenuOpen(!isModeMenuOpen)}
+             className={`flex items-center gap-2 px-4 py-2 rounded-full border shadow-sm transition-all ${
+                 override ? 'bg-primary/20 border-primary text-primary' : 'bg-surface border-white/10 text-text-secondary'
+             }`}
+          >
+              <span className="font-bold text-sm">{dayTypeLabel}</span>
+              {!readOnly && <Icon name="arrow-down" className={`w-4 h-4 transition-transform ${isModeMenuOpen ? 'rotate-180' : ''}`} />}
+          </button>
+          
+          {isModeMenuOpen && (
+              <div className="absolute top-full mt-2 w-48 bg-surface border border-white/10 rounded-xl shadow-xl overflow-hidden flex flex-col z-30">
+                  <button onClick={() => handleModeChange(null)} className="px-4 py-3 text-left hover:bg-white/5 text-sm text-text-secondary border-b border-white/5">Auto</button>
+                  <button onClick={() => handleModeChange('rest')} className="px-4 py-3 text-left hover:bg-white/5 text-sm text-text-secondary border-b border-white/5">{t('supplements_rest_day')}</button>
+                  <button onClick={() => handleModeChange('light')} className="px-4 py-3 text-left hover:bg-white/5 text-sm text-green-400 border-b border-white/5">{t('smart_recovery_mode')}</button>
+                  <button onClick={() => handleModeChange('heavy')} className="px-4 py-3 text-left hover:bg-white/5 text-sm text-primary font-bold">{t('supplements_workout_day')}</button>
+              </div>
+          )}
+      </div>
+
       {/* Smart Schedule Notification */}
       {isSmartSortEnabled && hasSmartSortChanges && (
           <div className="bg-indigo-500/10 border border-indigo-500/20 p-3 rounded-lg flex items-start justify-between gap-3 animate-fadeIn">

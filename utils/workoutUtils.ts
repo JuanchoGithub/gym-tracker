@@ -1,5 +1,5 @@
 
-import { WorkoutSession, PerformedSet, WorkoutExercise, Routine, SupersetDefinition } from '../types';
+import { WorkoutSession, PerformedSet, WorkoutExercise, Routine, SupersetDefinition, Exercise } from '../types';
 
 export type ExerciseHistory = {
   session: WorkoutSession;
@@ -259,4 +259,59 @@ export const generate1RMProtocol = (target1RM: number): ProtocolStep[] => {
             type: 'attempt'
         }
     ];
+};
+
+/**
+ * Heuristically determines if a workout session counts as 'heavy' or 'light'.
+ * Used for auto-detecting day overrides in the supplement schedule.
+ */
+export const detectWorkoutIntensity = (workout: WorkoutSession, allExercises: Exercise[]): 'heavy' | 'light' => {
+    let isHeavy = false;
+    
+    for (const ex of workout.exercises) {
+        // Must have done at least one set
+        const performedSets = ex.sets.filter(s => s.isComplete);
+        if (performedSets.length === 0) continue;
+        
+        const def = allExercises.find(e => e.id === ex.exerciseId);
+        if (!def) continue;
+
+        // Rule 1: Heavy Compound Check (Category Priority)
+        // Barbell and Smith Machine movements almost always imply CNS load
+        if (['Barbell', 'Smith Machine'].includes(def.category)) {
+            isHeavy = true;
+            break;
+        }
+        
+        // Scan Sets for Intensity Markers
+        for (const set of performedSets) {
+            // Rule 2: Effort Check
+            // Going to failure or using drop sets implies high intensity regardless of exercise
+            if (set.type === 'failure' || set.type === 'drop') {
+                isHeavy = true;
+                break;
+            }
+            
+            // Rule 3: Load Check
+            // Filter out "pink dumbbell" rehab work.
+            // For Bodyweight moves, check if they added significant external load.
+            if (['Bodyweight', 'Plyometrics', 'Assisted Bodyweight'].includes(def.category)) {
+                 const addedLoad = set.weight - (set.storedBodyWeight || 0);
+                 if (addedLoad > 10) {
+                     isHeavy = true;
+                     break;
+                 }
+            } else {
+                 // For external weights, just check the absolute load
+                 if (set.weight > 10) {
+                     isHeavy = true;
+                     break;
+                 }
+            }
+        }
+        
+        if (isHeavy) break;
+    }
+    
+    return isHeavy ? 'heavy' : 'light';
 };

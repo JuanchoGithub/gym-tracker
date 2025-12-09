@@ -5,6 +5,8 @@ import { SupplementPlan, SupplementPlanItem, SupplementSuggestion, WorkoutSessio
 import { reviewSupplementPlan } from '../services/supplementService';
 import { useI18n } from '../hooks/useI18n';
 
+export type DayMode = 'rest' | 'heavy' | 'light';
+
 export interface SupplementContextType {
   supplementPlan: SupplementPlan | null;
   setSupplementPlan: (plan: SupplementPlan | null) => void;
@@ -20,6 +22,9 @@ export interface SupplementContextType {
   updateSupplementStock: (itemId: string, amountToAdd: number) => void;
   updateSupplementPlanItem: (itemId: string, updates: Partial<SupplementPlanItem>) => void;
   
+  dayOverrides: Record<string, DayMode>;
+  setDayOverride: (date: string, mode: DayMode | null) => void;
+
   newSuggestions: SupplementSuggestion[];
   applyPlanSuggestion: (suggestionId: string) => void;
   applyAllPlanSuggestions: () => void;
@@ -39,6 +44,7 @@ export const SupplementProvider: React.FC<{ children: ReactNode }> = ({ children
   const [takenSupplements, setTakenSupplements] = useLocalStorage<Record<string, string[]>>('takenSupplements', {});
   const [supplementLogs, setSupplementLogs] = useLocalStorage<Record<string, number[]>>('supplementLogs', {});
   const [snoozedSupplements, setSnoozedSupplements] = useLocalStorage<Record<string, number>>('snoozedSupplements', {});
+  const [dayOverrides, setDayOverrides] = useLocalStorage<Record<string, DayMode>>('dayOverrides', {});
   const [newSuggestions, setNewSuggestions] = useState<SupplementSuggestion[]>([]);
   const [dismissedSuggestions, setDismissedSuggestions] = useLocalStorage<string[]>('dismissedSuggestions', []);
   
@@ -79,33 +85,25 @@ export const SupplementProvider: React.FC<{ children: ReactNode }> = ({ children
       setSupplementPlan(prevPlan => prevPlan ? { ...prevPlan, plan: updateStockInList(prevPlan.plan) } : null);
   }, [takenSupplements, setTakenSupplements, setUserSupplements, setSupplementPlan, setSupplementLogs]);
   
-  // NEW: Batch mark as taken (Log Stack)
   const batchTakeSupplements = useCallback((date: string, itemIds: string[]) => {
-      // 1. Update Taken Status
       setTakenSupplements(prev => {
           const currentDay = new Set(prev[date] || []);
-          // Filter out already taken ones to avoid double counting stock reduction if called multiple times
           const newlyTakenIds = itemIds.filter(id => !currentDay.has(id));
           
-          if (newlyTakenIds.length === 0) return prev; // No changes needed
+          if (newlyTakenIds.length === 0) return prev;
 
           newlyTakenIds.forEach(id => currentDay.add(id));
           return { ...prev, [date]: Array.from(currentDay) };
       });
 
-      // 2. Update Logs
       setSupplementLogs(prev => {
           const nextLogs = { ...prev };
           itemIds.forEach(id => {
-               // We only log if it wasn't already taken today, checking takenSupplements here might be stale
-               // so we append optimistically or just append. 
-               // For simplicity in a batch log context (usually "I just took these"), we append.
                nextLogs[id] = [...(nextLogs[id] || []), Date.now()];
           });
           return nextLogs;
       });
 
-      // 3. Reduce Stock
       const updateStockInList = (list: SupplementPlanItem[]) => {
           return list.map(item => {
               if (itemIds.includes(item.id) && item.stock !== undefined) {
@@ -121,7 +119,6 @@ export const SupplementProvider: React.FC<{ children: ReactNode }> = ({ children
 
   }, [setTakenSupplements, setSupplementLogs, setUserSupplements, setSupplementPlan]);
 
-  // NEW: Batch Snooze
   const batchSnoozeSupplements = useCallback((itemIds: string[]) => {
       setSnoozedSupplements(prev => {
           const next = { ...prev };
@@ -142,6 +139,18 @@ export const SupplementProvider: React.FC<{ children: ReactNode }> = ({ children
       setUserSupplements(prev => prev.some(s => s.id === itemId) ? prev.map(s => s.id === itemId ? { ...s, ...updates } : s) : prev);
       setSupplementPlan(prevPlan => (prevPlan && prevPlan.plan.some(s => s.id === itemId)) ? { ...prevPlan, plan: prevPlan.plan.map(s => s.id === itemId ? { ...s, ...updates } : s) } : prevPlan);
   }, [setUserSupplements, setSupplementPlan]);
+
+  const setDayOverride = useCallback((date: string, mode: DayMode | null) => {
+      setDayOverrides(prev => {
+          const newOverrides = { ...prev };
+          if (mode === null) {
+              delete newOverrides[date];
+          } else {
+              newOverrides[date] = mode;
+          }
+          return newOverrides;
+      });
+  }, [setDayOverrides]);
 
   const snoozeSupplement = useCallback((itemId: string) => {
       setSnoozedSupplements(prev => ({ ...prev, [itemId]: Date.now() + 6 * 60 * 60 * 1000 }));
@@ -197,18 +206,19 @@ export const SupplementProvider: React.FC<{ children: ReactNode }> = ({ children
       if (data.takenSupplements) setTakenSupplements(data.takenSupplements);
       if (data.supplementLogs) setSupplementLogs(data.supplementLogs);
       if (data.snoozedSupplements) setSnoozedSupplements(data.snoozedSupplements);
-  }, [setSupplementPlan, setUserSupplements, setTakenSupplements, setSupplementLogs, setSnoozedSupplements]);
+      if (data.dayOverrides) setDayOverrides(data.dayOverrides);
+  }, [setSupplementPlan, setUserSupplements, setTakenSupplements, setSupplementLogs, setSnoozedSupplements, setDayOverrides]);
 
   const value = useMemo(() => ({
     supplementPlan, setSupplementPlan, userSupplements, setUserSupplements, takenSupplements, supplementLogs,
     toggleSupplementIntake, batchTakeSupplements, snoozedSupplements, snoozeSupplement, batchSnoozeSupplements, 
-    updateSupplementStock, updateSupplementPlanItem,
+    updateSupplementStock, updateSupplementPlanItem, dayOverrides, setDayOverride,
     newSuggestions, applyPlanSuggestion, applyAllPlanSuggestions, dismissSuggestion, dismissAllSuggestions, clearNewSuggestions, triggerManualPlanReview,
     importSupplementData
   }), [
     supplementPlan, setSupplementPlan, userSupplements, setUserSupplements, takenSupplements, supplementLogs,
     toggleSupplementIntake, batchTakeSupplements, snoozedSupplements, snoozeSupplement, batchSnoozeSupplements,
-    updateSupplementStock, updateSupplementPlanItem,
+    updateSupplementStock, updateSupplementPlanItem, dayOverrides, setDayOverride,
     newSuggestions, applyPlanSuggestion, applyAllPlanSuggestions, dismissSuggestion, dismissAllSuggestions, clearNewSuggestions, triggerManualPlanReview,
     importSupplementData
   ]);

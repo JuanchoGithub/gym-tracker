@@ -9,9 +9,11 @@ import { PREDEFINED_ROUTINES } from '../constants/routines';
 import { PREDEFINED_EXERCISES } from '../constants/exercises';
 import { UserContext } from './UserContext';
 import { DataContext } from './DataContext';
-import { SupplementContext } from './SupplementContext';
+import { SupplementContext, DayMode } from './SupplementContext';
 import { EditorContext } from './EditorContext';
 import { getSmartStartingWeight } from '../services/analyticsService';
+import { getDateString } from '../utils/timeUtils';
+import { detectWorkoutIntensity } from '../utils/workoutUtils';
 
 export type CheckInReason = 'busy' | 'deload' | 'injury';
 export type WeightUnit = 'kg' | 'lbs';
@@ -94,6 +96,10 @@ export interface AppContextType {
   batchSnoozeSupplements: (itemIds: string[]) => void;
   updateSupplementStock: (itemId: string, amountToAdd: number) => void;
   updateSupplementPlanItem: (itemId: string, updates: Partial<SupplementPlanItem>) => void;
+  
+  dayOverrides: Record<string, DayMode>;
+  setDayOverride: (date: string, mode: DayMode | null) => void;
+
   newSuggestions: SupplementSuggestion[];
   applyPlanSuggestion: (suggestionId: string) => void;
   applyAllPlanSuggestions: () => void;
@@ -222,7 +228,35 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (!importPayload) return;
       data.importDataData(importPayload);
       user.importUserData(importPayload);
-      supplements.importSupplementData(importPayload);
+
+      // Auto-detect day overrides from imported history if missing from payload
+      // This is helpful for legacy backups or tests
+      const history = importPayload.history || [];
+      const importExercises = importPayload.exercises || [];
+      const allExercises = [...PREDEFINED_EXERCISES, ...importExercises];
+      
+      const computedOverrides: Record<string, DayMode> = {};
+      
+      history.forEach((session: WorkoutSession) => {
+          if (!session.startTime) return;
+          const date = getDateString(new Date(session.startTime));
+          
+          // Don't overwrite if we already decided it was heavy for this day
+          if (computedOverrides[date] === 'heavy') return;
+          
+          const dayMode = detectWorkoutIntensity(session, allExercises);
+          computedOverrides[date] = dayMode;
+      });
+
+      // Merge computed with payload overrides (payload takes precedence if exists)
+      const finalOverrides = { ...computedOverrides, ...(importPayload.dayOverrides || {}) };
+
+      const supplementPayload = {
+          ...importPayload,
+          dayOverrides: finalOverrides
+      };
+
+      supplements.importSupplementData(supplementPayload);
   }, [data, user, supplements]);
 
   const exportData = useCallback(() => {
@@ -252,6 +286,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           takenSupplements: supplements.takenSupplements,
           supplementLogs: supplements.supplementLogs,
           snoozedSupplements: supplements.snoozedSupplements,
+          dayOverrides: supplements.dayOverrides, // Include manual overrides
           settings: {
               measureUnit: user.measureUnit,
               defaultRestTimes: user.defaultRestTimes,

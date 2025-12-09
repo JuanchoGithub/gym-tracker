@@ -4,7 +4,11 @@ import { useLocalStorage } from '../hooks/useLocalStorage';
 import { Routine, WorkoutSession, WorkoutExercise, UserGoal } from '../types';
 import { TimerContext } from './TimerContext';
 import { AppContext } from './AppContext';
+import { SupplementContext } from './SupplementContext';
 import { getSmartStartingWeight } from '../services/analyticsService';
+import { getDateString } from '../utils/timeUtils';
+import { PREDEFINED_EXERCISES } from '../constants/exercises';
+import { detectWorkoutIntensity } from '../utils/workoutUtils';
 
 export interface ActiveWorkoutContextType {
   activeWorkout: WorkoutSession | null;
@@ -92,6 +96,7 @@ export const ActiveWorkoutProvider: React.FC<{ children: ReactNode }> = ({ child
 
   const { stopAllTimers } = useContext(TimerContext);
   const { saveCompletedWorkout, rawExercises, defaultRestTimes, profile, history } = useContext(AppContext);
+  const { setDayOverride } = useContext(SupplementContext);
 
   const startWorkout = useCallback((routine: Routine) => {
       const session: WorkoutSession = {
@@ -160,6 +165,16 @@ export const ActiveWorkoutProvider: React.FC<{ children: ReactNode }> = ({ child
           if (state.activeWorkout.exercises.length > 0) {
               const finishedWorkout = { ...state.activeWorkout, endTime: endTime || Date.now() };
               saveCompletedWorkout(finishedWorkout);
+              
+              // --- Auto-Detect Day Type for Supplements ---
+              const today = getDateString(new Date(finishedWorkout.startTime));
+              
+              // Prepare full list of exercises (predefined + custom)
+              // NOTE: rawExercises usually contains custom ones, PREDEFINED is static fallback
+              const allExercises = [...rawExercises, ...PREDEFINED_EXERCISES]; 
+              
+              const dayMode = detectWorkoutIntensity(finishedWorkout, allExercises);
+              setDayOverride(today, dayMode);
           }
           
           dispatch({ type: 'SET_WORKOUT', payload: null });
@@ -168,7 +183,7 @@ export const ActiveWorkoutProvider: React.FC<{ children: ReactNode }> = ({ child
           setCollapsedExerciseIds([]);
           setCollapsedSupersetIds([]);
       }
-  }, [state.activeWorkout, saveCompletedWorkout, stopAllTimers]);
+  }, [state.activeWorkout, saveCompletedWorkout, stopAllTimers, rawExercises, setDayOverride]);
 
   const discardActiveWorkout = useCallback(() => {
       dispatch({ type: 'SET_WORKOUT', payload: null });
