@@ -14,12 +14,19 @@ Built with **React**, **TypeScript**, and **Tailwind CSS**.
 *   **Live PR Detection:** Real-time notifications during active workouts when a performed set exceeds your current theoretical max.
 *   **Percentage Tools:** Instantly calculate and apply weight percentages (e.g., "Set to 75%") across your workout.
 
+### 🧠 Active Coaching & Auto-Regulation
+*   **Active Insights:** A "Just-in-Time" calibration system that appears *during* your workout. It analyzes your previous performance to suggest specific weight jumps ("Crushed it last time! +2.5kg?") or deloads ("It's been 21 days. Ease back in.").
+*   **Silent RPE:** The app infers your Rate of Perceived Exertion (RPE) without asking you. It looks at which Rest Timer you used (Warmup vs. Failure) and how long you rested to determine if you are ready to progress or need to hold steady.
+*   **The Plate Detective:** The app learns your gym's equipment. By analyzing your history, it detects if you have micro-plates (1.25kg) or if you are limited to 5kg jumps, rounding its suggestions to match your reality.
+*   **Smart Prefill:** Never start with an empty bar (unless you want to). New workouts auto-populate weights based on your Last Performance, % of 1RM, or biomechanical inference from other lifts.
+*   **Goal Drift Detection:** If you set your goal to "Strength" but consistently do 12 reps, the Smart Coach detects the mismatch and prompts you to update your profile or adjust your training.
+
 ### 🏋️‍♂️ Training & Tracking
 *   **Active Workout Mode:** Real-time tracking with support for **Supersets**, Drop Sets, Warmups, and Timed Sets.
 *   **Smart Timers:** Auto-calculating rest timers based on set intensity (Warmup vs. Failure) with background notification support.
 *   **Interactive Visual Database:** Detailed SVG animations for exercises and dynamic anatomical maps highlighting primary vs. secondary muscle targets.
-*   **Voice Coach:** Text-to-Speech (TTS) announcements for rounds, rest intervals, and upcoming exercises.
-*   **Procedural Audio:** Real-time synthesized sound effects (tocks, bells) for timers, ensuring lightweight performance without external assets.
+*   **Voice Coach:** Anuncios Text-to-Speech (TTS) que te cantan las rondas, los intervalos de descanso y qué ejercicio sigue.
+*   **Audio Procedural:** Efectos de sonido sintetizados en tiempo real (ticks, campanas) para temporizadores, sin depender de archivos externos, asegurando un rendimiento ligero.
 *   **Quick HIIT Mode:** Dedicated interval timer for high-intensity sessions with customizable work/rest ratios.
 *   **Routine Management:** Create custom templates or use built-in programs (StrongLifts, PPL, PHUL).
 *   **Superset Player:** A dedicated UI for managing complex superset transitions and rest periods.
@@ -139,6 +146,22 @@ The recommendation engine (`smartCoachUtils.ts`) uses a hierarchy of needs to de
 5.  **Phase 4: Performance (The Split)**
     *   If muscles are fresh, it predicts the next routine based on history patterns (e.g., Push -> Pull -> Legs) or selects the specific body part with the highest freshness score.
 
+### 8. Auto-Regulation Algorithms (Active Insights)
+Fortachon moves beyond static spreadsheets by adapting to the user's environment and biological state in real-time.
+
+#### The "Silent RPE" Heuristic
+Instead of interrupting the user with "How was that?" popups, we infer exertion based on behavior:
+*   **Signals:** Set Completion Status + Timer Selection (Warmup/Normal/Failure) + Actual Rest Duration vs Target.
+*   **Logic:**
+    *   *High Performance:* Completed sets + "Normal" timer + Rest < Target = **Progress (+2.5kg/5kg)**.
+    *   *Grind:* Completed sets + "Failure" timer + Rest > Target (+20%) = **Maintain**.
+    *   *Failure:* Incomplete sets = **Maintain/Deload**.
+
+#### Equipment Inference ("Plate Detective")
+The recommendation engine analyzes the mathematical delta between historical logs to determine available equipment.
+*   **Algorithm:** Calculate the Greatest Common Divisor (GCD) of weight changes over the last 10 sessions.
+*   **Result:** If a user never increments by less than 5kg, the system creates a "Snap-to-Grid" constraint, ensuring suggested weights are achievable with their specific equipment (e.g., rounding 72.5kg -> 75kg).
+
 ---
 
 ## 🌊 System Architecture & Flows
@@ -151,17 +174,21 @@ graph TD
     A[Start] --> B{Select Routine}
     B -->|Existing| C[Load Template]
     B -->|New| D[Empty Workout]
-    C --> E[Active Workout View]
+    
+    C --> P[Smart Prefill Engine]
+    P --> E[Active Workout View]
     D --> E
     
     subgraph Active Session
-    E --> F{Interact}
+    E --> I[Inject Active Insights]
+    I --> F{Interact}
     F -->|Log Set| G[Update State & Timer]
+    G --> R[Silent RPE Analysis]
     F -->|Superset| H[Superset Player UI]
-    F -->|Minimize| I[Background Mode]
+    F -->|Minimize| Bg[Background Mode]
     end
     
-    E --> J[Finish Workout]
+    F --> J[Finish Workout]
     J --> K[Calculate PRs]
     K --> L[Save to History]
     L --> M[Update Muscle Heatmap]
@@ -174,20 +201,20 @@ How the app decides what you should train today (`rec_reason_fresh` vs `rec_reas
 ```mermaid
 sequenceDiagram
     participant UI as Dashboard
-    participant Heuristic as Recommendation Engine
-    participant History as Workout History
-    participant Fatigue as Algo Fatiga
+    participant Heuristica as Motor Recomendación
+    participant Historial as Historial Entrenos
+    participant Fatiga as Algo Fatiga
 
-    UI->>Heuristic: Request Suggestion
-    Heuristic->>History: Get Recent Sessions
-    Heuristic->>Fatigue: Calculate Muscle Freshness
-    Fatigue-->>Heuristic: Returns { Chest: 100%, Legs: 40% }
+    UI->>Heuristica: Solicitar Sugerencia
+    Heuristica->>Historial: Obtener Sesiones Recientes
+    Heuristica->>Fatiga: Calcular Frescura Muscular
+    Fatiga-->>Heuristica: Retorna { Pecho: 100%, Piernas: 40% }
     
-    alt Systemic Fatigue High
-        Heuristic-->>UI: Suggest Active Recovery / Deload
-    else Specific Muscle Fresh
-        Heuristic->>Heuristic: Sort Routines by Focus (Push/Pull/Legs)
-        Heuristic-->>UI: Suggest "Push Day" (Chest Fresh)
+    alt Fatiga Sistémica Alta
+        Heuristica-->>UI: Sugerir Recuperación Activa / Descarga
+    else Músculo Específico Fresco
+        Heuristica->>Heuristica: Ordenar Rutinas por Foco (Empuje/Tracción/Piernas)
+        Heuristica-->>UI: Sugerir "Día de Empuje" (Pecho Fresco)
     end
 ```
 

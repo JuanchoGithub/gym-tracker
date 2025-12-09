@@ -14,6 +14,13 @@ Desarrollada con **React**, **TypeScript** y **Tailwind CSS**.
 *   **Detección de PR en Vivo:** Recibí notificaciones en tiempo real durante el entrenamiento si una serie que acabás de hacer supera tu máximo teórico actual.
 *   **Calculadora de Porcentajes:** Calculá y aplicá instantáneamente porcentajes de carga (ej: "Ajustar todo al 75%") en tu rutina.
 
+### 🧠 Coach Activo y Autorregulación
+*   **Insights Activos:** Un sistema de calibración "Just-in-Time" que aparece *durante* tu entrenamiento. Analiza tu rendimiento anterior para sugerir saltos de peso específicos ("¡La rompiste la última vez! ¿+2.5kg?") o descargas ("Pasaron 21 días. Volvé suave.").
+*   **RPE Silencioso:** La app infiere tu Tasa de Esfuerzo Percibido (RPE) sin preguntarte. Mira qué Temporizador de Descanso usaste (Calentamiento vs. Fallo) y cuánto tiempo descansaste para determinar si estás listo para progresar o necesitás mantenerte.
+*   **El Detective de Discos:** La app aprende el equipamiento de tu gimnasio. Analizando tu historial, detecta si tenés micro-discos (1.25kg) o si estás limitado a saltos de 5kg, redondeando sus sugerencias para coincidir con tu realidad.
+*   **Autocompletado Inteligente:** Nunca empieces con la barra vacía (a menos que quieras). Los nuevos entrenamientos autocompletan los pesos basándose en tu Último Rendimiento, % del 1RM, o inferencia biomecánica de otros levantamientos.
+*   **Detección de Desvío de Meta:** Si establecés tu objetivo en "Fuerza" pero consistentemente hacés 12 repeticiones, el Smart Coach detecta la discrepancia y te sugiere actualizar tu perfil o ajustar tu entrenamiento.
+
 ### 🏋️‍♂️ Entrenamiento y Seguimiento
 *   **Modo Entrenamiento Activo:** Registro en tiempo real con soporte nativo para **Superseries**, Drop Sets, Series de Aproximación y Series por Tiempo.
 *   **Temporizadores Inteligentes:** El tiempo de descanso se calcula solo según la intensidad de la serie (no es lo mismo descansar después de calentar que después de fallar) y corre en segundo plano.
@@ -143,6 +150,22 @@ El motor de recomendación (`smartCoachUtils.ts`) usa una jerarquía de necesida
 5.  **Fase 4: Rendimiento (El Split)**
     *   Si los músculos están frescos, predice la siguiente rutina basada en patrones históricos (ej: Empuje -> Tracción -> Piernas) o selecciona la parte del cuerpo específica con el puntaje de frescura más alto.
 
+### 8. Algoritmos de Autorregulación (Insights Activos)
+Fortachon va más allá de las planillas estáticas adaptándose al entorno y estado biológico del usuario en tiempo real.
+
+#### La Heurística de "RPE Silencioso"
+En lugar de interrumpir al usuario con popups de "¿Cómo estuvo?", inferimos el esfuerzo basado en el comportamiento:
+*   **Señales:** Estado de Completitud de la Serie + Selección de Temporizador (Calentamiento/Normal/Fallo) + Duración Real del Descanso vs Objetivo.
+*   **Lógica:**
+    *   *Alto Rendimiento:* Series completas + Temporizador "Normal" + Descanso < Objetivo = **Progreso (+2.5kg/5kg)**.
+    *   *Grind (Esfuerzo Máximo):* Series completas + Temporizador "Fallo" + Descanso > Objetivo (+20%) = **Mantener**.
+    *   *Fallo:* Series incompletas = **Mantener/Descarga**.
+
+#### Inferencia de Equipamiento ("Detective de Discos")
+El motor de recomendación analiza el delta matemático entre registros históricos para determinar el equipamiento disponible.
+*   **Algoritmo:** Calcula el Máximo Común Divisor (MCD) de los cambios de peso en las últimas 10 sesiones.
+*   **Resultado:** Si un usuario nunca incrementa menos de 5kg, el sistema crea una restricción de "Ajuste a la Grilla", asegurando que los pesos sugeridos sean alcanzables con su equipo específico (ej: redondeando 72.5kg -> 75kg).
+
 ---
 
 ## 🌊 Arquitectura y Flujos del Sistema
@@ -158,14 +181,19 @@ graph TD
     C --> E[Vista de Entrenamiento Activo]
     D --> E
     
+    C --> P[Motor de Autocompletado Inteligente]
+    P --> E
+    
     subgraph Sesión Activa
-    E --> F{Interactuar}
+    E --> I[Inyectar Insights Activos]
+    I --> F{Interactuar}
     F -->|Loguear Serie| G[Actualizar Estado y Timer]
+    G --> R[Análisis de RPE Silencioso]
     F -->|Superserie| H[UI Reproductor Superserie]
     F -->|Minimizar| I[Modo Segundo Plano]
     end
     
-    E --> J[Terminar Entrenamiento]
+    F --> J[Terminar Entrenamiento]
     J --> K[Calcular PRs]
     K --> L[Guardar en Historial]
     L --> M[Actualizar Mapa de Calor]
