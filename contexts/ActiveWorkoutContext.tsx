@@ -4,6 +4,7 @@ import { useLocalStorage } from '../hooks/useLocalStorage';
 import { Routine, WorkoutSession, WorkoutExercise, UserGoal } from '../types';
 import { TimerContext } from './TimerContext';
 import { AppContext } from './AppContext';
+import { getSmartStartingWeight } from '../services/analyticsService';
 
 export interface ActiveWorkoutContextType {
   activeWorkout: WorkoutSession | null;
@@ -90,7 +91,7 @@ export const ActiveWorkoutProvider: React.FC<{ children: ReactNode }> = ({ child
   const [collapsedSupersetIds, setCollapsedSupersetIds] = useState<string[]>([]);
 
   const { stopAllTimers } = useContext(TimerContext);
-  const { saveCompletedWorkout, rawExercises, defaultRestTimes, profile } = useContext(AppContext);
+  const { saveCompletedWorkout, rawExercises, defaultRestTimes, profile, history } = useContext(AppContext);
 
   const startWorkout = useCallback((routine: Routine) => {
       const session: WorkoutSession = {
@@ -174,13 +175,15 @@ export const ActiveWorkoutProvider: React.FC<{ children: ReactNode }> = ({ child
               const exerciseDef = rawExercises.find(e => e.id === id);
               const isTimed = exerciseDef?.isTimed;
               
+              const smartWeight = getSmartStartingWeight(id, history, profile, rawExercises, profile.mainGoal);
+
               return {
                 id: `we-${Date.now()}-${Math.random()}`,
                 exerciseId: id,
                 sets: [{ 
                     id: `set-${Date.now()}-${Math.random()}`, 
                     reps: isTimed ? 1 : defaultReps, 
-                    weight: 0, 
+                    weight: isTimed ? 0 : smartWeight, 
                     type: isTimed ? 'timed' : 'normal', 
                     time: isTimed ? 60 : undefined,
                     isComplete: false 
@@ -215,7 +218,7 @@ export const ActiveWorkoutProvider: React.FC<{ children: ReactNode }> = ({ child
           });
       }
       dispatch({ type: 'SET_TARGET_SUPERSET', payload: undefined });
-  }, [state.activeWorkout, state.addingTargetSupersetId, defaultRestTimes, rawExercises, profile.mainGoal]);
+  }, [state.activeWorkout, state.addingTargetSupersetId, defaultRestTimes, rawExercises, profile.mainGoal, history, profile]);
 
 
   const value = useMemo(() => ({

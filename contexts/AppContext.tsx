@@ -11,6 +11,7 @@ import { UserContext } from './UserContext';
 import { DataContext } from './DataContext';
 import { SupplementContext } from './SupplementContext';
 import { EditorContext } from './EditorContext';
+import { getSmartStartingWeight } from '../services/analyticsService';
 
 export type CheckInReason = 'busy' | 'deload' | 'injury';
 export type WeightUnit = 'kg' | 'lbs';
@@ -175,6 +176,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               const exerciseDef = data.rawExercises.find(e => e.id === id);
               const isTimed = exerciseDef?.isTimed;
               const defaults = user.defaultRestTimes;
+              
+              const smartWeight = getSmartStartingWeight(id, data.history, user.profile, data.rawExercises, user.profile.mainGoal);
 
               return {
                 id: `we-${Date.now()}-${Math.random()}`,
@@ -182,7 +185,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 sets: [{ 
                     id: `set-${Date.now()}-${Math.random()}`, 
                     reps: isTimed ? 1 : defaultReps, 
-                    weight: 0, 
+                    weight: isTimed ? 0 : smartWeight, 
                     type: isTimed ? 'timed' : 'normal',
                     time: isTimed ? 60 : undefined,
                     isComplete: false 

@@ -1,5 +1,5 @@
 
-import { WorkoutSession, SupplementPlanItem, PerformedSet, Profile, Exercise } from '../types';
+import { WorkoutSession, SupplementPlanItem, PerformedSet, Profile, Exercise, UserGoal } from '../types';
 import { getDateString } from '../utils/timeUtils';
 import { PREDEFINED_EXERCISES } from '../constants/exercises';
 import { SurveyAnswers } from '../utils/routineGenerator';
@@ -214,6 +214,66 @@ export const getInferredMax = (exercise: Exercise, syntheticAnchors: Record<stri
     }
 
     return null;
+};
+
+/**
+ * Calculates a smart starting weight for an exercise.
+ * Prioritizes: Last Performance > 1RM % > Inferred 1RM > 0
+ */
+export const getSmartStartingWeight = (
+    exerciseId: string,
+    history: WorkoutSession[],
+    profile: Profile,
+    allExercises: Exercise[],
+    goal: UserGoal = 'muscle'
+): number => {
+    // 1. Last Performance (Exact exercise)
+    const exHistory = getExerciseHistory(history, exerciseId);
+    if (exHistory.length > 0) {
+        // Look for the most recent session with valid sets
+        for (const entry of exHistory) {
+             const validSets = entry.exerciseData.sets.filter(s => s.type === 'normal' && s.isComplete && s.weight > 0);
+             if (validSets.length > 0) {
+                 // Use the weight from the last completed set of that session
+                 return validSets[validSets.length - 1].weight;
+             }
+        }
+    }
+
+    // 2 & 3. 1RM Based (Direct or Inferred)
+    // Calculate synthetic anchors to enable inference
+    const syntheticAnchors = calculateSyntheticAnchors(history, allExercises, profile);
+    
+    // Find exercise definition
+    const exerciseDef = allExercises.find(e => e.id === exerciseId) || PREDEFINED_EXERCISES.find(e => e.id === exerciseId);
+    
+    let oneRepMax = 0;
+
+    // A. Check stored 1RM specifically for this exercise (Manual test or calculated)
+    if (profile.oneRepMaxes?.[exerciseId]) {
+        oneRepMax = profile.oneRepMaxes[exerciseId].weight;
+    }
+    
+    // B. If no stored 1RM, try inference from anchors
+    if (oneRepMax === 0 && exerciseDef) {
+        const inferred = getInferredMax(exerciseDef, syntheticAnchors, allExercises);
+        if (inferred) {
+            oneRepMax = inferred.value;
+        }
+    }
+
+    if (oneRepMax > 0) {
+        let percentage = 0.7; // Default Muscle (10 reps)
+        if (goal === 'strength') percentage = 0.8; // ~5 reps
+        if (goal === 'endurance') percentage = 0.6; // ~15 reps
+        
+        // Round to nearest 2.5kg (typical gym increment)
+        const target = oneRepMax * percentage;
+        return Math.round(target / 2.5) * 2.5;
+    }
+
+    // 4. Fallback
+    return 0;
 };
 
 
