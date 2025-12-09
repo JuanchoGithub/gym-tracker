@@ -13,6 +13,8 @@ import { TimerContext } from '../../contexts/TimerContext';
 import { getExerciseHistory } from '../../utils/workoutUtils';
 import { TranslationKey } from '../../contexts/I18nContext';
 import { useExerciseName } from '../../hooks/useExerciseName';
+import { getSmartWeightSuggestion, WeightSuggestion } from '../../services/analyticsService';
+import InsightBanner from './InsightBanner';
 
 interface ExerciseCardProps {
   workoutExercise: WorkoutExercise;
@@ -50,7 +52,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
   } = props;
   const { t } = useI18n();
   const { weightUnit, displayWeight } = useMeasureUnit();
-  const { history: allHistory } = useContext(AppContext);
+  const { history: allHistory, profile, rawExercises } = useContext(AppContext);
   const { activeTimerInfo } = useContext(TimerContext);
   const getExerciseName = useExerciseName();
   const [completedSets, setCompletedSets] = useState(workoutExercise.sets.filter(s => s.isComplete).length);
@@ -58,10 +60,46 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
   const [note, setNote] = useState(workoutExercise.note || '');
   const [isDefaultsTimerModalOpen, setIsDefaultsTimerModalOpen] = useState(false);
   
+  // Insight State
+  const [insight, setInsight] = useState<WeightSuggestion | null>(null);
+  const [isInsightDismissed, setIsInsightDismissed] = useState(false);
+
   const lastPerformance = useMemo(() => {
     const history = getExerciseHistory(allHistory, exerciseInfo.id);
     return history.length > 0 ? history[0] : null;
   }, [allHistory, exerciseInfo.id]);
+  
+  // Calculate Insight on Mount
+  useEffect(() => {
+     // Only calculate if not bodyweight/timed (mostly for weighted exercises)
+     const isTimed = workoutExercise.sets.some(s => s.type === 'timed');
+     if (!isTimed && !isInsightDismissed) {
+         const suggestion = getSmartWeightSuggestion(exerciseInfo.id, allHistory, profile, rawExercises, profile.mainGoal);
+         
+         // Only show if there is a suggestion and it differs from current set weight (check first set)
+         // And if reason is compelling (not just maintain default 0)
+         if (suggestion.weight > 0 && suggestion.reason && suggestion.trend !== 'maintain') {
+             const currentFirstSet = workoutExercise.sets.find(s => s.type === 'normal');
+             if (currentFirstSet && currentFirstSet.weight !== suggestion.weight && !currentFirstSet.isComplete) {
+                  setInsight(suggestion);
+             }
+         }
+     }
+  }, [allHistory, exerciseInfo.id, profile, rawExercises]);
+
+  const handleApplyInsight = () => {
+      if (!insight) return;
+      
+      const newSets = workoutExercise.sets.map(set => {
+          if (set.type === 'normal' && !set.isComplete) {
+              return { ...set, weight: insight.weight, isWeightInherited: true };
+          }
+          return set;
+      });
+      
+      onUpdate({ ...workoutExercise, sets: newSets });
+      setInsight(null); // Dismiss after applying
+  };
   
   const isBodyweight = ['Bodyweight', 'Plyometrics'].includes(exerciseInfo.category);
   const isAssisted = exerciseInfo.category === 'Assisted Bodyweight';
@@ -216,7 +254,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
       isComplete: false,
       isRepsInherited: true,
       isWeightInherited: true,
-      storedBodyWeight: userBodyWeight, // FIX: Initialize with current bodyweight to prevent display drift
+      storedBodyWeight: userBodyWeight,
     };
     const updatedSets = [...workoutExercise.sets, newSet];
     onUpdate({ ...workoutExercise, sets: updatedSets });
@@ -282,6 +320,16 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
                 onShowDetails={onShowDetails}
             />
         </div>
+        
+        {/* Active Insight Banner */}
+        {!isCollapsed && insight && (
+             <InsightBanner 
+                 suggestion={insight} 
+                 onApply={handleApplyInsight} 
+                 onDismiss={() => { setInsight(null); setIsInsightDismissed(true); }} 
+             />
+        )}
+
         {!isCollapsed && (
           <div className="p-3 sm:p-4 space-y-2 bg-gradient-to-b from-surface to-background/50 rounded-b-2xl">
               {isNoteEditing && (

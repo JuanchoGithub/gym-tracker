@@ -21,7 +21,7 @@ import SupersetView from '../components/workout/SupersetView';
 import SupersetPlayer from '../components/workout/SupersetPlayer';
 import ExerciseDetailModal from '../components/exercise/ExerciseDetailModal';
 import { generateSmartRoutine, RoutineFocus } from '../utils/routineGenerator';
-import { calculateMedianWorkoutDuration, inferUserProfile, analyzeUserHabits } from '../services/analyticsService';
+import { calculateMedianWorkoutDuration, inferUserProfile, analyzeUserHabits, getSmartStartingWeight } from '../services/analyticsService';
 import { calculateMuscleFreshness, calculateSystemicFatigue } from '../utils/fatigueUtils';
 import { MUSCLES } from '../constants/muscles';
 import { TranslationKey } from '../contexts/I18nContext';
@@ -786,11 +786,27 @@ const ActiveWorkoutPage: React.FC = () => {
   const handleAcceptSuggestion = () => {
       if (!activeWorkout || !suggestedRoutine) return;
       
-      const newExercises = suggestedRoutine.routine.exercises.map(ex => ({
-          ...ex,
-          id: `we-${Date.now()}-${Math.random()}`,
-          sets: ex.sets.map(s => ({ ...s, id: `set-${Date.now()}-${Math.random()}` }))
-      }));
+      const newExercises = suggestedRoutine.routine.exercises.map(ex => {
+          // Calculate smart weight
+          const smartWeight = getSmartStartingWeight(
+              ex.exerciseId, 
+              history, 
+              profile, 
+              exercises, 
+              profile.mainGoal
+          );
+
+          return {
+              ...ex,
+              id: `we-${Date.now()}-${Math.random()}`,
+              sets: ex.sets.map(s => ({
+                  ...s,
+                  id: `set-${Date.now()}-${Math.random()}`,
+                  // Apply smart weight if standard normal set with 0 weight
+                  weight: (s.type === 'normal' && s.weight === 0) ? smartWeight : s.weight
+              }))
+          };
+      });
       
       updateActiveWorkout(prev => prev ? { 
           ...prev, 

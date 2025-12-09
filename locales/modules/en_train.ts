@@ -129,7 +129,7 @@ export const en_train = {
   timers_round: "Round",
   timers_of: "of",
   timers_complete: "COMPLETE",
-  timers_prepare: "PREPARE",
+  timers_prepare: "PREPARAR",
   timers_hiit_work: "WORK",
   timers_hiit_rest: "REST",
   timers_announce_prepare: "Prepare for {exercise}",
@@ -146,4 +146,14 @@ export const en_train = {
   confirm_new_workout_start_new: "Start New (Discard Active)",
   confirm_new_workout_continue: "Continue Active",
   confirm_new_workout_cancel: "Cancel",
+
+  // Active Insights
+  insight_reason_easy: "Crushed it last time! Bump it up?",
+  insight_reason_progression: "Steady progress. Small increase?",
+  insight_reason_hard: "Tough session last time. Keep weight.",
+  insight_reason_failed: "Missed reps last time. Try again.",
+  insight_reason_maintain: "Maintain weight.",
+  insight_reason_rust: "It's been a while. Easing back in.",
+  insight_reason_new: "Suggested starting weight.",
+  insight_apply: "Apply",
 };

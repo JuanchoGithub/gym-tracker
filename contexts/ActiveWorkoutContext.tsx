@@ -101,16 +101,37 @@ export const ActiveWorkoutProvider: React.FC<{ children: ReactNode }> = ({ child
           startTime: Date.now(),
           lastUpdated: Date.now(),
           endTime: 0,
-          exercises: routine.exercises.map(ex => ({
-              ...ex,
-              id: `we-${Date.now()}-${Math.random()}`,
-              sets: ex.sets.map(s => ({ ...s, id: `set-${Date.now()}-${Math.random()}`, isComplete: false }))
-          })),
+          exercises: routine.exercises.map(ex => {
+              // Calculate smart weight for this exercise if it's a template or generated routine
+              // We only apply this if the set weight is 0 (which is true for templates)
+              // If re-doing a history session (isTemplate=false), we preserve the original weights
+              
+              // FIX: Treat generated smart routines as templates for weight calculation purposes
+              const isGenerated = routine.id.startsWith('smart-') || routine.id.startsWith('gap-');
+              const shouldPrefill = routine.isTemplate || isGenerated;
+              
+              let smartWeight = 0;
+              if (shouldPrefill) {
+                 smartWeight = getSmartStartingWeight(ex.exerciseId, history, profile, rawExercises, profile.mainGoal);
+              }
+
+              return {
+                  ...ex,
+                  id: `we-${Date.now()}-${Math.random()}`,
+                  sets: ex.sets.map(s => ({
+                      ...s,
+                      id: `set-${Date.now()}-${Math.random()}`,
+                      isComplete: false,
+                      // Apply smart weight if it's a normal set and the template weight is 0
+                      weight: (shouldPrefill && s.type === 'normal' && s.weight === 0) ? smartWeight : s.weight
+                  }))
+              };
+          }),
           supersets: routine.supersets
       };
       dispatch({ type: 'SET_WORKOUT', payload: session });
       dispatch({ type: 'MINIMIZE', payload: false });
-  }, []);
+  }, [history, profile, rawExercises]);
 
   // Legacy support wrapper for direct updates
   const updateActiveWorkout = useCallback((workoutOrFn: WorkoutSession | ((prev: WorkoutSession | null) => WorkoutSession | null)) => {

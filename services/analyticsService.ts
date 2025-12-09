@@ -216,9 +216,177 @@ export const getInferredMax = (exercise: Exercise, syntheticAnchors: Record<stri
     return null;
 };
 
+export interface WeightSuggestion {
+    weight: number;
+    reason: string;
+    trend: 'increase' | 'decrease' | 'maintain';
+}
+
 /**
- * Calculates a smart starting weight for an exercise.
- * Prioritizes: Last Performance > 1RM % > Inferred 1RM > 0
+ * Plate Detective: Infers the minimum plate increment based on history.
+ */
+const detectPreferredIncrement = (historyEntries: { exerciseData: { sets: PerformedSet[] } }[]): number => {
+    // Collect all weights used
+    const weights = new Set<number>();
+    historyEntries.slice(0, 5).forEach(entry => {
+        entry.exerciseData.sets.forEach(s => {
+            if (s.weight > 0) weights.add(s.weight);
+        });
+    });
+
+    if (weights.size < 2) return 2.5; // Default
+
+    // Analyze divisibility
+    let allDivisibleBy5 = true;
+    weights.forEach(w => {
+        if (w % 5 !== 0) allDivisibleBy5 = false;
+    });
+
+    return allDivisibleBy5 ? 5 : 2.5;
+};
+
+/**
+ * Silent RPE: Infers effort based on rest times and set completion.
+ */
+const analyzePerformance = (lastSession: { exerciseData: { sets: PerformedSet[] }, session: WorkoutSession }, targetRest: number): 'easy' | 'good' | 'hard' | 'failed' => {
+    const sets = lastSession.exerciseData.sets.filter(s => s.type === 'normal');
+    
+    if (sets.length === 0) return 'good'; // No data
+
+    // Check for failure (incomplete sets)
+    const hasFailedSets = sets.some(s => !s.isComplete);
+    if (hasFailedSets) return 'failed';
+
+    // Check Rest Times
+    let totalRest = 0;
+    let restCount = 0;
+    
+    sets.forEach(s => {
+        if (s.actualRest) {
+            totalRest += s.actualRest;
+            restCount++;
+        }
+    });
+
+    if (restCount > 0) {
+        const avgRest = totalRest / restCount;
+        // If average rest was significantly lower than target, it was likely easy
+        if (avgRest <= targetRest * 0.8) return 'easy';
+        // If average rest was significantly higher, it was hard
+        if (avgRest >= targetRest * 1.3) return 'hard';
+    }
+
+    return 'good';
+};
+
+/**
+ * Advanced Weight Suggestion Engine (Active Insights)
+ */
+export const getSmartWeightSuggestion = (
+    exerciseId: string,
+    history: WorkoutSession[],
+    profile: Profile,
+    allExercises: Exercise[],
+    goal: UserGoal = 'muscle'
+): WeightSuggestion => {
+    const exHistory = getExerciseHistory(history, exerciseId);
+    
+    // 1. Existing History Analysis
+    if (exHistory.length > 0) {
+        const lastEntry = exHistory[0];
+        const lastSets = lastEntry.exerciseData.sets.filter(s => s.type === 'normal' && s.isComplete && s.weight > 0);
+        
+        if (lastSets.length > 0) {
+            const lastWeight = lastSets[lastSets.length - 1].weight;
+            const increment = detectPreferredIncrement(exHistory);
+            
+            // Check for Rust (Atrophy)
+            const daysSince = (Date.now() - lastEntry.session.startTime) / (1000 * 60 * 60 * 24);
+            if (daysSince > 14) {
+                const deloadWeight = Math.round((lastWeight * 0.9) / increment) * increment;
+                return {
+                    weight: deloadWeight,
+                    reason: 'insight_reason_rust',
+                    trend: 'decrease'
+                };
+            }
+
+            // Analyze RPE / Performance
+            // We need the exercise def to get target rest time
+            const exerciseDef = allExercises.find(e => e.id === exerciseId) || PREDEFINED_EXERCISES.find(e => e.id === exerciseId);
+            const targetRest = 90; // Default if not found (we don't have access to custom timer settings here easily, assuming standard)
+            
+            const performance = analyzePerformance(lastEntry, targetRest);
+
+            if (performance === 'easy') {
+                return {
+                    weight: lastWeight + (increment * 2), // Aggressive jump
+                    reason: 'insight_reason_easy',
+                    trend: 'increase'
+                };
+            }
+            
+            if (performance === 'good') {
+                 // Standard Progression: If consistent for 2 sessions or if simple progression mode
+                 // For safety, let's suggest a small bump
+                 return {
+                    weight: lastWeight + increment,
+                    reason: 'insight_reason_progression',
+                    trend: 'increase'
+                };
+            }
+
+            if (performance === 'hard') {
+                return {
+                    weight: lastWeight,
+                    reason: 'insight_reason_hard',
+                    trend: 'maintain'
+                };
+            }
+
+            if (performance === 'failed') {
+                 return {
+                    weight: lastWeight,
+                    reason: 'insight_reason_failed',
+                    trend: 'maintain' // Suggest trying again at same weight first, or deload if repeated (logic simplified)
+                };
+            }
+            
+            return { weight: lastWeight, reason: 'insight_reason_maintain', trend: 'maintain' };
+        }
+    }
+
+    // 2. No history? Use 1RM Inference
+    const syntheticAnchors = calculateSyntheticAnchors(history, allExercises, profile);
+    const exerciseDef = allExercises.find(e => e.id === exerciseId) || PREDEFINED_EXERCISES.find(e => e.id === exerciseId);
+    let oneRepMax = 0;
+
+    if (profile.oneRepMaxes?.[exerciseId]) {
+        oneRepMax = profile.oneRepMaxes[exerciseId].weight;
+    } else if (exerciseDef) {
+        const inferred = getInferredMax(exerciseDef, syntheticAnchors, allExercises);
+        if (inferred) oneRepMax = inferred.value;
+    }
+
+    if (oneRepMax > 0) {
+        let percentage = 0.7; // Default Muscle
+        if (goal === 'strength') percentage = 0.8;
+        if (goal === 'endurance') percentage = 0.6;
+        
+        const target = Math.round((oneRepMax * percentage) / 2.5) * 2.5;
+        return {
+            weight: target,
+            reason: 'insight_reason_new',
+            trend: 'increase'
+        };
+    }
+
+    // 3. Fallback
+    return { weight: 0, reason: '', trend: 'maintain' };
+};
+
+/**
+ * Legacy Wrapper for backward compatibility
  */
 export const getSmartStartingWeight = (
     exerciseId: string,
@@ -227,53 +395,8 @@ export const getSmartStartingWeight = (
     allExercises: Exercise[],
     goal: UserGoal = 'muscle'
 ): number => {
-    // 1. Last Performance (Exact exercise)
-    const exHistory = getExerciseHistory(history, exerciseId);
-    if (exHistory.length > 0) {
-        // Look for the most recent session with valid sets
-        for (const entry of exHistory) {
-             const validSets = entry.exerciseData.sets.filter(s => s.type === 'normal' && s.isComplete && s.weight > 0);
-             if (validSets.length > 0) {
-                 // Use the weight from the last completed set of that session
-                 return validSets[validSets.length - 1].weight;
-             }
-        }
-    }
-
-    // 2 & 3. 1RM Based (Direct or Inferred)
-    // Calculate synthetic anchors to enable inference
-    const syntheticAnchors = calculateSyntheticAnchors(history, allExercises, profile);
-    
-    // Find exercise definition
-    const exerciseDef = allExercises.find(e => e.id === exerciseId) || PREDEFINED_EXERCISES.find(e => e.id === exerciseId);
-    
-    let oneRepMax = 0;
-
-    // A. Check stored 1RM specifically for this exercise (Manual test or calculated)
-    if (profile.oneRepMaxes?.[exerciseId]) {
-        oneRepMax = profile.oneRepMaxes[exerciseId].weight;
-    }
-    
-    // B. If no stored 1RM, try inference from anchors
-    if (oneRepMax === 0 && exerciseDef) {
-        const inferred = getInferredMax(exerciseDef, syntheticAnchors, allExercises);
-        if (inferred) {
-            oneRepMax = inferred.value;
-        }
-    }
-
-    if (oneRepMax > 0) {
-        let percentage = 0.7; // Default Muscle (10 reps)
-        if (goal === 'strength') percentage = 0.8; // ~5 reps
-        if (goal === 'endurance') percentage = 0.6; // ~15 reps
-        
-        // Round to nearest 2.5kg (typical gym increment)
-        const target = oneRepMax * percentage;
-        return Math.round(target / 2.5) * 2.5;
-    }
-
-    // 4. Fallback
-    return 0;
+    const suggestion = getSmartWeightSuggestion(exerciseId, history, profile, allExercises, goal);
+    return suggestion.weight;
 };
 
 

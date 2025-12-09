@@ -146,4 +146,14 @@ export const es_train = {
   confirm_new_workout_start_new: "Empezar Nuevo (Descartar Activo)",
   confirm_new_workout_continue: "Continuar Activo",
   confirm_new_workout_cancel: "Cancelar",
+
+  // Active Insights
+  insight_reason_easy: "¡Fue fácil! ¿Subimos peso?",
+  insight_reason_progression: "Progreso constante. ¿Aumento pequeño?",
+  insight_reason_hard: "Sesión dura. Mantengamos el peso.",
+  insight_reason_failed: "Fallaste reps. Probemos de nuevo.",
+  insight_reason_maintain: "Mantener peso.",
+  insight_reason_rust: "Hace mucho no entrenás. Vamos suave.",
+  insight_reason_new: "Peso inicial sugerido.",
+  insight_apply: "Aplicar",
 };
