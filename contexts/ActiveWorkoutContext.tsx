@@ -1,6 +1,7 @@
+
 import React, { createContext, useContext, ReactNode, useCallback, useMemo, useReducer, useEffect, useState } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import { Routine, WorkoutSession, WorkoutExercise } from '../types';
+import { Routine, WorkoutSession, WorkoutExercise, UserGoal } from '../types';
 import { TimerContext } from './TimerContext';
 import { AppContext } from './AppContext';
 
@@ -57,6 +58,16 @@ const workoutReducer = (state: WorkoutState, action: WorkoutAction): WorkoutStat
     }
 };
 
+// Helper for default reps
+const getDefaultReps = (goal?: UserGoal): number => {
+    switch (goal) {
+        case 'strength': return 5;
+        case 'endurance': return 15;
+        case 'muscle': 
+        default: return 10;
+    }
+};
+
 export const ActiveWorkoutContext = createContext<ActiveWorkoutContextType>({} as ActiveWorkoutContextType);
 
 export const ActiveWorkoutProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -79,7 +90,7 @@ export const ActiveWorkoutProvider: React.FC<{ children: ReactNode }> = ({ child
   const [collapsedSupersetIds, setCollapsedSupersetIds] = useState<string[]>([]);
 
   const { stopAllTimers } = useContext(TimerContext);
-  const { saveCompletedWorkout, rawExercises, defaultRestTimes } = useContext(AppContext);
+  const { saveCompletedWorkout, rawExercises, defaultRestTimes, profile } = useContext(AppContext);
 
   const startWorkout = useCallback((routine: Routine) => {
       const session: WorkoutSession = {
@@ -108,24 +119,8 @@ export const ActiveWorkoutProvider: React.FC<{ children: ReactNode }> = ({ child
       // However, standard useReducer dispatch doesn't support functional updates for payload.
       // We will assume the caller passes the latest object or we resolve it.
       
-      // Actually, to support functional updates correctly, we might need to check the arg.
-      // BUT, since we can't access 'prev' inside dispatch payload, we rely on the caller having the right 'prev'.
-      // NOTE: This is a limitation if we don't refactor `updateActiveWorkout` signature in Context.
-      
-      // Workaround: We can't fully support functional updates in this hybrid approach easily without
-      // access to the reducer's current state which is async. 
-      // However, most calls are `updateActiveWorkout({...activeWorkout, ...})`.
-      
-      // We will construct the new state if it's a function by using the current state ref? 
-      // No, let's just use the state from the render scope.
-      
-      // Ideally we refactor `updateActiveWorkout` to `dispatchAction`.
-      // For backward compatibility, we try to resolve it.
-      
       let newWorkout: WorkoutSession | null = null;
       if (typeof workoutOrFn === 'function') {
-           // This is risky if state is stale. But this matches the previous useState behavior.
-           // Ideally we change all consumers. For now, let's use the state.activeWorkout.
            newWorkout = workoutOrFn(state.activeWorkout);
       } else {
            newWorkout = workoutOrFn;
@@ -173,6 +168,8 @@ export const ActiveWorkoutProvider: React.FC<{ children: ReactNode }> = ({ child
       dispatch({ type: 'SET_ADDING_EXERCISES', payload: false });
       
       if (ids && state.activeWorkout) {
+          const defaultReps = getDefaultReps(profile.mainGoal);
+
           const newExercises: WorkoutExercise[] = ids.map(id => {
               const exerciseDef = rawExercises.find(e => e.id === id);
               const isTimed = exerciseDef?.isTimed;
@@ -182,7 +179,7 @@ export const ActiveWorkoutProvider: React.FC<{ children: ReactNode }> = ({ child
                 exerciseId: id,
                 sets: [{ 
                     id: `set-${Date.now()}-${Math.random()}`, 
-                    reps: isTimed ? 1 : 10, 
+                    reps: isTimed ? 1 : defaultReps, 
                     weight: 0, 
                     type: isTimed ? 'timed' : 'normal', 
                     time: isTimed ? 60 : undefined,
@@ -218,7 +215,7 @@ export const ActiveWorkoutProvider: React.FC<{ children: ReactNode }> = ({ child
           });
       }
       dispatch({ type: 'SET_TARGET_SUPERSET', payload: undefined });
-  }, [state.activeWorkout, state.addingTargetSupersetId, defaultRestTimes, rawExercises]);
+  }, [state.activeWorkout, state.addingTargetSupersetId, defaultRestTimes, rawExercises, profile.mainGoal]);
 
 
   const value = useMemo(() => ({

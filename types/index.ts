@@ -129,6 +129,8 @@ export interface AutoUpdateEntry {
     date: number;
 }
 
+export type UserGoal = 'strength' | 'muscle' | 'endurance';
+
 export interface Profile {
   gender?: 'male' | 'female';
   height?: number; // in cm
@@ -137,6 +139,10 @@ export interface Profile {
   oneRepMaxes?: Record<string, OneRepMaxEntry>; // Keyed by Exercise ID
   oneRepMaxSnoozes?: Record<string, number>; // Keyed by Exercise ID, value is timestamp until which to snooze updates
   autoUpdated1RMs?: Record<string, AutoUpdateEntry>; // Keyed by Exercise ID, tracks pending notifications for auto-updates
+  mainGoal?: UserGoal;
+  smartGoalDetection?: boolean; // Defaults to true
+  goalMismatchSnoozedUntil?: number; // Timestamp
+  lastImported?: number; // Timestamp of last full profile import
 }
 
 export interface SupplementInfo {
@@ -224,5 +230,6 @@ export interface UserStatistics {
     recommendation: Recommendation | null;
     freshness: Record<string, number>;
     imbalanceRecommendation: Recommendation | null;
+    goalMismatchRecommendation: Recommendation | null;
     lastCalculated: number;
 }

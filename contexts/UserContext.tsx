@@ -115,7 +115,13 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [setProfile]);
 
   const importUserData = useCallback((data: any) => {
-      if (data.profile) setProfile(prev => ({ ...prev, ...data.profile }));
+      if (data.profile) {
+          setProfile(prev => ({ 
+              ...prev, 
+              ...data.profile, 
+              lastImported: Date.now() 
+          }));
+      }
       if (data.settings) {
           if (data.settings.measureUnit) setMeasureUnit(data.settings.measureUnit);
           if (data.settings.defaultRestTimes) setDefaultRestTimes(data.settings.defaultRestTimes);

@@ -20,6 +20,7 @@ import MuscleHeatmap from '../components/insights/MuscleHeatmap';
 import { calculateMuscleFreshness } from '../utils/fatigueUtils';
 import OneRepMaxDetailView from '../components/onerepmax/OneRepMaxDetailView';
 import FatigueMonitor from '../components/profile/FatigueMonitor';
+import { UserGoal } from '../types';
 
 const SettingsGroup: React.FC<{ title?: string, children: React.ReactNode }> = ({ title, children }) => (
   <div className="mb-8">
@@ -201,6 +202,19 @@ const ProfilePage: React.FC = () => {
   const handleLanguageChange = (newLocale: 'en' | 'es') => {
     setLocale(newLocale);
     setMeasureUnit(newLocale === 'es' ? 'metric' : 'imperial');
+  };
+
+  // Goal update handler: reset smart detection if manual change
+  const handleGoalChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+      updateProfileInfo({ 
+          mainGoal: e.target.value as UserGoal,
+          smartGoalDetection: true, // Reset detection to enabled
+          goalMismatchSnoozedUntil: 0 // Reset snooze
+      });
+  };
+
+  const handleSmartGoalToggle = (checked: boolean) => {
+      updateProfileInfo({ smartGoalDetection: checked });
   };
 
   const [editingTimerKey, setEditingTimerKey] = useState<keyof typeof defaultRestTimes | null>(null);
@@ -521,6 +535,29 @@ const ProfilePage: React.FC = () => {
                             <Icon name="chart-line" className="w-5 h-5" />
                         </button>
                     </div>
+                </SettingsItem>
+            </SettingsGroup>
+
+            <SettingsGroup title={t('profile_goal_section')}>
+                 <SettingsItem>
+                    <label htmlFor="goal-select" className="text-text-primary font-medium">{t('profile_main_goal')}</label>
+                    <select
+                        id="goal-select"
+                        value={profile.mainGoal || 'muscle'}
+                        onChange={handleGoalChange}
+                        className={selectClass}
+                    >
+                        <option value="strength">{t('profile_goal_strength')}</option>
+                        <option value="muscle">{t('profile_goal_muscle')}</option>
+                        <option value="endurance">{t('profile_goal_endurance')}</option>
+                    </select>
+                </SettingsItem>
+                <SettingsItem>
+                    <div className="flex flex-col">
+                        <span className="text-text-primary font-medium">{t('profile_smart_goal_detect')}</span>
+                        <span className="text-xs text-text-secondary">{t('profile_smart_goal_detect_desc')}</span>
+                    </div>
+                    <ToggleSwitch checked={profile.smartGoalDetection !== false} onChange={handleSmartGoalToggle} />
                 </SettingsItem>
             </SettingsGroup>
 

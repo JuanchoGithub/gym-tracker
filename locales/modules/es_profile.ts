@@ -37,6 +37,15 @@ export const es_profile = {
   profile_unlock_history_title: "Historial de Desbloqueos",
   profile_unlock_message: "Desbloqueaste {to} desde {from}",
   
+  // Goals
+  profile_goal_section: "Metas y Preferencias",
+  profile_main_goal: "Meta Principal",
+  profile_goal_strength: "Fuerza (Pocas Reps)",
+  profile_goal_muscle: "Ganar Músculo (Reps Medias)",
+  profile_goal_endurance: "Resistencia (Muchas Reps)",
+  profile_smart_goal_detect: "Detección Inteligente de Meta",
+  profile_smart_goal_detect_desc: "Sugerir cambios de meta basados en tu historial",
+
   // Share
   profile_about: "Acerca de",
   profile_share_app: "Compartir App",

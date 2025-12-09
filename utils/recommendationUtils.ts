@@ -1,16 +1,16 @@
 
-import { WorkoutSession, Routine, Exercise, BodyPart, Profile } from '../types';
+import { WorkoutSession, Routine, Exercise, BodyPart, Profile, UserGoal } from '../types';
 import { calculateMuscleFreshness, calculateSystemicFatigue } from './fatigueUtils';
 import { MUSCLES } from '../constants/muscles';
-import { generateSmartRoutine, RoutineFocus, RoutineLevel } from './routineGenerator';
+import { generateSmartRoutine, RoutineFocus, RoutineLevel, SurveyAnswers } from './routineGenerator';
 import { PREDEFINED_EXERCISES } from '../constants/exercises';
 import { PROGRESSION_PATHS } from '../constants/progression';
 import { getExerciseHistory } from './workoutUtils';
 import { predictNextRoutine, getProtectedMuscles, generateGapSession } from './smartCoachUtils';
-import { inferUserProfile, MOVEMENT_PATTERNS, calculateMaxStrengthProfile, calculateMedianWorkoutDuration, analyzeUserHabits } from '../services/analyticsService';
+import { inferUserProfile, MOVEMENT_PATTERNS, calculateMaxStrengthProfile, calculateMedianWorkoutDuration, analyzeUserHabits, calculateLifterDNA } from '../services/analyticsService';
 
 export interface Recommendation {
-  type: 'rest' | 'workout' | 'promotion' | 'active_recovery' | 'imbalance' | 'deload' | 'update_1rm';
+  type: 'rest' | 'workout' | 'promotion' | 'active_recovery' | 'imbalance' | 'deload' | 'update_1rm' | 'goal_mismatch';
   titleKey: string;
   titleParams?: Record<string, string | number>;
   reasonKey: string;
@@ -33,6 +33,11 @@ export interface Recommendation {
       exerciseName: string;
       oldMax: number;
       newMax: number;
+  };
+  goalMismatchData?: {
+      currentGoal: UserGoal;
+      detectedGoal: UserGoal;
+      avgReps: number;
   };
 }
 
@@ -96,6 +101,58 @@ const RATIOS = {
     SQ_DL: 1.25, // Deadlift (5) / Squat (4) = 1.25
     BN_SQ: 1.33, // Squat (4) / Bench (3) = 1.33
     OH_BN: 0.66, // OHP (2) / Bench (3) = 0.66
+};
+
+// Added exported function for goal detection
+export const detectGoalMismatch = (profile: Profile, history: WorkoutSession[]): Recommendation | null => {
+    // 1. Check if feature is enabled
+    if (profile.smartGoalDetection === false) return null;
+
+    // 2. Check if snoozed
+    if (profile.goalMismatchSnoozedUntil && Date.now() < profile.goalMismatchSnoozedUntil) return null;
+
+    // 3. Need enough history (e.g., 10 workouts)
+    if (history.length < 10) return null;
+
+    // 4. Calculate Stats
+    const lifterStats = calculateLifterDNA(history);
+    
+    // 5. Determine Detected Goal from Archetype
+    let detectedGoal: UserGoal = 'muscle'; // Default fallback
+    if (lifterStats.archetype === 'powerbuilder') detectedGoal = 'strength';
+    else if (lifterStats.archetype === 'bodybuilder') detectedGoal = 'muscle';
+    else if (lifterStats.archetype === 'endurance') detectedGoal = 'endurance';
+    
+    // 6. Compare with Current Profile Goal
+    const currentGoal = profile.mainGoal || 'muscle';
+
+    // If they match, or if user is hybrid/beginner (hard to classify), return null
+    if (detectedGoal === currentGoal || lifterStats.archetype === 'hybrid' || lifterStats.archetype === 'beginner') {
+        return null;
+    }
+
+    // 7. Get avg reps for context (need to re-calculate simple avg or expose from service)
+    // For now we can assume avg based on archetype mapping:
+    // Strength: < 6, Muscle: 8-12, Endurance: > 15.
+    // Let's rely on the messaging to be generic or pass a heuristic.
+    // Ideally we'd modify calculateLifterDNA to return avgReps, but for now we infer ranges.
+    let repRange = "8-12";
+    if (detectedGoal === 'strength') repRange = "< 6";
+    else if (detectedGoal === 'endurance') repRange = "15+";
+
+    return {
+        type: 'goal_mismatch',
+        titleKey: 'rec_title_goal_mismatch',
+        reasonKey: 'rec_reason_goal_mismatch',
+        reasonParams: { current: currentGoal, detected: detectedGoal, reps: repRange },
+        suggestedBodyParts: [],
+        relevantRoutineIds: [],
+        goalMismatchData: {
+            currentGoal,
+            detectedGoal,
+            avgReps: 0 // Placeholder, formatted string used in reasonParams
+        }
+    };
 };
 
 
@@ -261,9 +318,16 @@ export const getWorkoutRecommendation = (
   routines: Routine[],
   exercises: Exercise[],
   t: (key: string) => string,
-  currentBodyweight?: number
+  currentBodyweight?: number,
+  profile?: Profile
 ): Recommendation | null => {
   const userProfile = inferUserProfile(history);
+  
+  // Override inferred goal with explicit profile goal if available
+  if (profile?.mainGoal) {
+      userProfile.goal = profile.mainGoal;
+  }
+
   const customRoutines = routines.filter(r => !r.id.startsWith('rt-'));
   // REQUIREMENT: Stay "on rails" for first ~5 weeks (15 sessions)
   const isOnboardingPhase = history.length < 15;

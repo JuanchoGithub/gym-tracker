@@ -37,6 +37,15 @@ export const en_profile = {
   profile_unlock_history_title: "Unlock History",
   profile_unlock_message: "Unlocked {to} from {from}",
   
+  // Goals
+  profile_goal_section: "Goals & Preferences",
+  profile_main_goal: "Main Goal",
+  profile_goal_strength: "Strength (Low Reps)",
+  profile_goal_muscle: "Build Muscle (Med Reps)",
+  profile_goal_endurance: "Endurance (High Reps)",
+  profile_smart_goal_detect: "Smart Goal Detection",
+  profile_smart_goal_detect_desc: "Suggest goal updates based on your training history",
+  
   // Share
   profile_about: "About",
   profile_share_app: "Share App",

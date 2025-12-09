@@ -361,6 +361,11 @@ export const calculateLifterDNA = (history: WorkoutSession[], currentBodyWeight:
     let totalVolumeForWeightedAvg = 0;
     let totalRawVolume = 0;
     
+    // Separate tracking for Compound Lifts to avoid "accessory drift"
+    // (e.g. doing 5x5 squats but 3x15 calves shouldn't make you a 'bodybuilder')
+    let compoundWeightedRepSum = 0;
+    let compoundTotalVolume = 0;
+    
     const muscleCounts: Record<string, number> = {};
     const analyzedHistory = history.slice(0, 20); // Analyze last 20 sessions for archetype
 
@@ -373,56 +378,67 @@ export const calculateLifterDNA = (history: WorkoutSession[], currentBodyWeight:
 
             ex.sets.forEach(set => {
                 if (set.type === 'normal' && set.isComplete) {
-                    // Raw volume for Volume Score (keeps historical consistency)
+                    // Raw volume for Volume Score
                     totalRawVolume += set.weight * set.reps;
 
-                    // Weighted calculation for Archetype
-                    // This ensures high-rep light weight sets don't skew the average reps up too much
-                    // if the user is mostly doing heavy work.
                     let effectiveWeight = set.weight;
-                    // Fallback to passed currentBodyWeight if set weight is 0 (bodyweight exercises)
                     if (effectiveWeight <= 0) {
                         effectiveWeight = currentBodyWeight > 0 ? currentBodyWeight : 70;
                     }
                     
                     const setVolume = effectiveWeight * set.reps;
                     
-                    // Weight the rep count by the volume of the set
-                    // Heavy Sets (High Volume/Low Reps) contribute heavily to lowering the average
-                    // Light Sets (Low Volume/High Reps) contribute lightly to raising the average
+                    // Global Average Tracking
                     weightedRepSum += set.reps * setVolume;
                     totalVolumeForWeightedAvg += setVolume;
+
+                    // Compound Average Tracking
+                    // Only count Barbell/Dumbbell lifts for major muscle groups
+                    if (def && (def.category === 'Barbell' || def.category === 'Dumbbell') && ['Chest', 'Back', 'Legs', 'Shoulders'].includes(def.bodyPart)) {
+                        compoundWeightedRepSum += set.reps * setVolume;
+                        compoundTotalVolume += setVolume;
+                    }
                 }
             });
         });
     });
 
-    // Calculate the Volume-Weighted Average Reps
-    const avgReps = totalVolumeForWeightedAvg > 0 ? weightedRepSum / totalVolumeForWeightedAvg : 0;
+    // Calculate the Volume-Weighted Average Reps (Global)
+    const globalAvgReps = totalVolumeForWeightedAvg > 0 ? weightedRepSum / totalVolumeForWeightedAvg : 0;
+    
+    // Calculate the Volume-Weighted Average Reps (Compound Only)
+    const compoundAvgReps = compoundTotalVolume > 0 ? compoundWeightedRepSum / compoundTotalVolume : 0;
     
     let archetype: LifterArchetype = 'hybrid';
     
-    // Thresholds adjusted for volume-weighted averages. 
-    // Since heavy sets dominate volume, a "Strength" lifter doing 5x5 (25 reps) 
-    // plus accessories will still average low. 
-    // We moved the threshold from 6.5 to 7.5 to better capture powerbuilders who do accessory work.
-    if (avgReps > 0 && avgReps <= 7.5) archetype = 'powerbuilder';
-    else if (avgReps > 7.5 && avgReps <= 13) archetype = 'bodybuilder';
-    else if (avgReps > 13) archetype = 'endurance';
+    // 1. PRIORITY CHECK: Heavy Compounds
+    // If user is doing heavy compounds (< 6 reps), they are a Powerbuilder/Strength athlete, 
+    // regardless of what their accessory work averages out to.
+    if (compoundAvgReps > 0 && compoundAvgReps <= 6.5) {
+        archetype = 'powerbuilder';
+    } 
+    // 2. Fallback to Global Average
+    else {
+        // We moved the threshold from 6.5 to 7.5 to better capture powerbuilders who do accessory work if compounds weren't detected
+        if (globalAvgReps > 0 && globalAvgReps <= 7.5) archetype = 'powerbuilder';
+        else if (globalAvgReps > 7.5 && globalAvgReps <= 13) archetype = 'bodybuilder';
+        else if (globalAvgReps > 13) archetype = 'endurance';
+    }
 
     // 3. Volume Score (Average session volume. 10,000kg/session = 100)
-    // Fix: Use analyzedHistory.length to ensure consistent average
     const avgSessionVolume = analyzedHistory.length > 0 ? totalRawVolume / analyzedHistory.length : 0;
     const volumeScore = Math.min(100, Math.round((avgSessionVolume / 10000) * 100));
 
     // 4. Intensity Score (Heuristic based on avg reps)
-    // Lower reps = higher relative intensity (% of 1RM)
+    // Use compound avg if available for better accuracy on intensity
+    const effectiveAvgReps = compoundAvgReps > 0 ? compoundAvgReps : globalAvgReps;
+    
     let intensityScore = 50;
-    if (avgReps > 0) {
-        if (avgReps <= 5) intensityScore = 95;
-        else if (avgReps <= 8) intensityScore = 85;
-        else if (avgReps <= 12) intensityScore = 75;
-        else if (avgReps <= 15) intensityScore = 60;
+    if (effectiveAvgReps > 0) {
+        if (effectiveAvgReps <= 5) intensityScore = 95;
+        else if (effectiveAvgReps <= 8) intensityScore = 85;
+        else if (effectiveAvgReps <= 12) intensityScore = 75;
+        else if (effectiveAvgReps <= 15) intensityScore = 60;
         else intensityScore = 40;
     }
 

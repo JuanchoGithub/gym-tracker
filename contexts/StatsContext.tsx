@@ -4,7 +4,7 @@ import { useLocalStorage } from '../hooks/useLocalStorage';
 import { UserStatistics } from '../types';
 import { AppContext } from './AppContext';
 import { calculateMuscleFreshness } from '../utils/fatigueUtils';
-import { getWorkoutRecommendation, detectImbalances } from '../utils/recommendationUtils';
+import { getWorkoutRecommendation, detectImbalances, detectGoalMismatch } from '../utils/recommendationUtils';
 import { useI18n } from '../hooks/useI18n';
 
 export interface StatsContextType {
@@ -17,6 +17,7 @@ const INITIAL_STATS: UserStatistics = {
     recommendation: null,
     freshness: {},
     imbalanceRecommendation: null,
+    goalMismatchRecommendation: null,
     lastCalculated: 0
 };
 
@@ -33,24 +34,25 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         // Defer calculation to next tick to allow UI to update
         setTimeout(() => {
             const freshness = calculateMuscleFreshness(history, exercises);
-            const recommendation = getWorkoutRecommendation(history, routines, exercises, t, currentWeight);
+            const recommendation = getWorkoutRecommendation(history, routines, exercises, t, currentWeight, profile);
             const imbalanceRecommendation = detectImbalances(history, routines, currentWeight, profile.gender);
+            const goalMismatchRecommendation = detectGoalMismatch(profile, history);
             
             setStats({
                 freshness,
                 recommendation,
                 imbalanceRecommendation,
+                goalMismatchRecommendation,
                 lastCalculated: Date.now()
             });
             setIsCalculating(false);
         }, 10);
-    }, [history, routines, exercises, t, currentWeight, profile.gender, setStats]);
+    }, [history, routines, exercises, t, currentWeight, profile, setStats]);
 
-    // Recalculate when history changes (workout finished) OR when routines change (e.g. onboarding completed)
-    // This fixes the issue where new users wouldn't see their new plan suggested until after a reload or workout
+    // Recalculate when history, routines, exercises, profile goals/import status, or 1RMs change
     useEffect(() => {
         refreshStats();
-    }, [history, routines]); 
+    }, [history, routines, exercises, profile.mainGoal, profile.smartGoalDetection, profile.oneRepMaxes, profile.lastImported]); 
 
     const value = {
         stats,

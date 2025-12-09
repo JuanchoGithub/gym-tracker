@@ -2,7 +2,7 @@
 import React, { createContext, useMemo, useContext, ReactNode, useCallback } from 'react';
 import { 
   Routine, WorkoutSession, Exercise, PerformedSet, 
-  Profile, SupplementPlan, SupplementPlanItem, SupplementSuggestion
+  Profile, SupplementPlan, SupplementPlanItem, SupplementSuggestion, UserGoal
 } from '../types';
 import { exportToJson } from '../services/dataService';
 import { PREDEFINED_ROUTINES } from '../constants/routines';
@@ -108,6 +108,16 @@ export interface AppContextType {
 
 export const AppContext = createContext<AppContextType>({} as AppContextType);
 
+// Helper for default reps based on goal
+const getDefaultReps = (goal?: UserGoal): number => {
+    switch (goal) {
+        case 'strength': return 5;
+        case 'endurance': return 15;
+        case 'muscle': 
+        default: return 10;
+    }
+};
+
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const user = useContext(UserContext);
   const data = useContext(DataContext);
@@ -159,6 +169,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const endAddExercisesToTemplateWrapper = useCallback((ids?: string[]) => {
       editor.endAddExercisesToTemplate();
       if (ids && editor.editingTemplate) {
+          const defaultReps = getDefaultReps(user.profile.mainGoal);
+
           const newExercises: any[] = ids.map(id => {
               const exerciseDef = data.rawExercises.find(e => e.id === id);
               const isTimed = exerciseDef?.isTimed;
@@ -169,7 +181,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 exerciseId: id,
                 sets: [{ 
                     id: `set-${Date.now()}-${Math.random()}`, 
-                    reps: isTimed ? 1 : 10, 
+                    reps: isTimed ? 1 : defaultReps, 
                     weight: 0, 
                     type: isTimed ? 'timed' : 'normal',
                     time: isTimed ? 60 : undefined,
@@ -196,7 +208,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           }
           editor.updateEditingTemplate({ ...editor.editingTemplate, exercises: updatedExercises });
       }
-  }, [data, editor, user.defaultRestTimes]);
+  }, [data, editor, user.defaultRestTimes, user.profile.mainGoal]);
 
   // Compatibility wrapper for triggerManualPlanReview (needs history)
   const triggerManualPlanReviewWrapper = useCallback(() => {

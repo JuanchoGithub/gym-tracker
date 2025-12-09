@@ -1,12 +1,13 @@
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useContext } from 'react';
 import { Icon } from '../common/Icon';
 import { useI18n } from '../../hooks/useI18n';
 import { Recommendation } from '../../utils/recommendationUtils';
 import { TranslationKey } from '../../contexts/I18nContext';
-import { Routine } from '../../types';
+import { Routine, UserGoal } from '../../types';
 import { useMeasureUnit } from '../../hooks/useWeight';
 import { getBodyPartTKey } from '../../utils/i18nUtils';
+import { AppContext } from '../../contexts/AppContext';
 
 interface SmartRecommendationCardProps {
   recommendation: Recommendation;
@@ -31,6 +32,7 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
 }) => {
   const { t } = useI18n();
   const { displayWeight, weightUnit } = useMeasureUnit();
+  const { updateProfileInfo } = useContext(AppContext);
 
   let gradientClass = 'from-violet-600/90 to-indigo-700/90 border-indigo-500/30';
   let iconName = 'dumbbell';
@@ -74,6 +76,10 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
       gradientClass = 'from-blue-600/90 to-cyan-700/90 border-blue-500/30';
       iconName = 'chart-line';
       cardTitle = t('rec_type_strength_update');
+  } else if (recommendation.type === 'goal_mismatch') {
+      gradientClass = 'from-fuchsia-600/90 to-purple-700/90 border-purple-500/30';
+      iconName = 'sparkles';
+      cardTitle = t('rec_type_goal_mismatch');
   }
 
   // Format parameters if this is an imbalance check (assuming keys map to weight values)
@@ -111,8 +117,33 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
               }
           });
       }
+      
+      // Special handling for Goal Mismatch translation keys
+      if (recommendation.type === 'goal_mismatch') {
+          if (newParams.current) newParams.current = t(`profile_goal_${newParams.current}` as TranslationKey);
+          if (newParams.detected) newParams.detected = t(`profile_goal_${newParams.detected}` as TranslationKey);
+      }
+
       return newParams;
   }, [recommendation, displayWeight, weightUnit, t]);
+
+  const handleUpdateGoal = () => {
+      if (recommendation.goalMismatchData) {
+          updateProfileInfo({ mainGoal: recommendation.goalMismatchData.detectedGoal });
+          onDismiss(); // Hide card after action
+      }
+  };
+
+  const handleKeepGoal = () => {
+      // Dismiss for 2 weeks
+      updateProfileInfo({ goalMismatchSnoozedUntil: Date.now() + 14 * 24 * 60 * 60 * 1000 });
+      onDismiss();
+  };
+
+  const handleDisableDetection = () => {
+      updateProfileInfo({ smartGoalDetection: false });
+      onDismiss();
+  };
 
   return (
     <div className={`relative overflow-hidden rounded-2xl p-5 shadow-lg border bg-gradient-to-br ${gradientClass} mb-6 animate-fadeIn transition-all`}>
@@ -185,6 +216,31 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
                     </button>
                  </div>
             )}
+
+            {recommendation.type === 'goal_mismatch' && recommendation.goalMismatchData && (
+                <div className="flex flex-col gap-3 mt-2">
+                    <button
+                       onClick={handleUpdateGoal}
+                       className="w-full bg-white text-purple-600 font-bold py-3 px-4 rounded-xl shadow-md hover:bg-purple-50 transition-colors"
+                   >
+                       {t('rec_action_update_goal', { detected: t(`profile_goal_${recommendation.goalMismatchData.detectedGoal}` as TranslationKey) })}
+                   </button>
+                   <div className="flex gap-3">
+                       <button
+                           onClick={handleKeepGoal}
+                           className="flex-1 bg-white/20 text-white font-bold py-2 px-4 rounded-xl shadow-sm hover:bg-white/30 transition-colors border border-white/10 text-sm"
+                       >
+                           {t('rec_action_keep_goal', { current: t(`profile_goal_${recommendation.goalMismatchData.currentGoal}` as TranslationKey) })}
+                       </button>
+                       <button
+                           onClick={handleDisableDetection}
+                           className="flex-1 bg-transparent text-white/60 font-medium py-2 px-4 rounded-xl hover:text-white transition-colors text-xs"
+                       >
+                           {t('rec_action_disable_detection')}
+                       </button>
+                   </div>
+                </div>
+           )}
 
             {recommendation.generatedRoutine && (
                 <button

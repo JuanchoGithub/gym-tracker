@@ -21,7 +21,7 @@ import SupersetView from '../components/workout/SupersetView';
 import SupersetPlayer from '../components/workout/SupersetPlayer';
 import ExerciseDetailModal from '../components/exercise/ExerciseDetailModal';
 import { generateSmartRoutine, RoutineFocus } from '../utils/routineGenerator';
-import { calculateMedianWorkoutDuration, inferUserProfile } from '../services/analyticsService';
+import { calculateMedianWorkoutDuration, inferUserProfile, analyzeUserHabits } from '../services/analyticsService';
 import { calculateMuscleFreshness, calculateSystemicFatigue } from '../utils/fatigueUtils';
 import { MUSCLES } from '../constants/muscles';
 import { TranslationKey } from '../contexts/I18nContext';
@@ -44,7 +44,7 @@ interface SuggestionState {
 }
 
 const ActiveWorkoutPage: React.FC = () => {
-  const { getExerciseById, keepScreenAwake, currentWeight, history, exercises, routines, upsertRoutines } = useContext(AppContext);
+  const { getExerciseById, keepScreenAwake, currentWeight, history, exercises, routines, upsertRoutines, profile } = useContext(AppContext);
   const { 
     activeWorkout, updateActiveWorkout, endWorkout, discardActiveWorkout, maximizeWorkout, minimizeWorkout, 
     startAddExercisesToWorkout, collapsedExerciseIds, setCollapsedExerciseIds, collapsedSupersetIds, setCollapsedSupersetIds 
@@ -741,9 +741,25 @@ const ActiveWorkoutPage: React.FC = () => {
           return;
       }
 
-      const profile = inferUserProfile(history);
+      const inferredProfile = inferUserProfile(history);
+      
+      // Override inferred goal with explicit profile goal if available
+      if (profile.mainGoal) {
+          inferredProfile.goal = profile.mainGoal;
+      }
+
       const winner = getFreshestMuscleGroup();
-      const generatedRoutine = generateSmartRoutine(winner.focus, profile, t);
+
+      // Calculate habits for dynamic exercise resolution
+      const habitData = analyzeUserHabits(history);
+      
+      const generatedRoutine = generateSmartRoutine(
+          winner.focus, 
+          inferredProfile, 
+          t,
+          exercises,
+          habitData.exerciseFrequency
+      );
       
       generatedRoutine.name = `Target: ${winner.label}`;
       
