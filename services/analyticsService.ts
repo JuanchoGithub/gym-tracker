@@ -248,7 +248,7 @@ const detectPreferredIncrement = (historyEntries: { exerciseData: { sets: Perfor
 /**
  * Silent RPE: Infers effort based on rest times and set completion.
  */
-const analyzePerformance = (lastSession: { exerciseData: { sets: PerformedSet[] }, session: WorkoutSession }, targetRest: number): 'easy' | 'good' | 'hard' | 'failed' => {
+const analyzePerformance = (lastSession: { exerciseData: { sets: PerformedSet[] }, session: WorkoutSession }, targetRest: number): 'good' | 'hard' | 'failed' => {
     const sets = lastSession.exerciseData.sets.filter(s => s.type === 'normal');
     
     if (sets.length === 0) return 'good'; // No data
@@ -270,8 +270,6 @@ const analyzePerformance = (lastSession: { exerciseData: { sets: PerformedSet[] 
 
     if (restCount > 0) {
         const avgRest = totalRest / restCount;
-        // If average rest was significantly lower than target, it was likely easy
-        if (avgRest <= targetRest * 0.8) return 'easy';
         // If average rest was significantly higher, it was hard
         if (avgRest >= targetRest * 1.3) return 'hard';
     }
@@ -317,14 +315,6 @@ export const getSmartWeightSuggestion = (
             const targetRest = 90; // Default if not found (we don't have access to custom timer settings here easily, assuming standard)
             
             const performance = analyzePerformance(lastEntry, targetRest);
-
-            if (performance === 'easy') {
-                return {
-                    weight: lastWeight + (increment * 2), // Aggressive jump
-                    reason: 'insight_reason_easy',
-                    trend: 'increase'
-                };
-            }
             
             if (performance === 'good') {
                  // Standard Progression: If consistent for 2 sessions or if simple progression mode
