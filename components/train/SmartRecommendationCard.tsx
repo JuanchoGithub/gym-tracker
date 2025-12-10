@@ -84,9 +84,9 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
 
   // Format parameters if this is an imbalance check (assuming keys map to weight values)
   const formattedParams = useMemo(() => {
-      if (!recommendation.reasonParams) return undefined;
+      if (!recommendation.reasonParams) return recommendation.titleParams; // Fallback to title params if no reason params
       
-      const newParams = { ...recommendation.reasonParams };
+      const newParams = { ...recommendation.titleParams, ...recommendation.reasonParams };
 
       // Try to translate muscles parameter if it exists and looks like a body part string
       if (newParams.muscles && typeof newParams.muscles === 'string') {
@@ -196,7 +196,7 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
                     className="w-full bg-white text-amber-600 font-bold py-3 px-4 rounded-xl shadow-md hover:bg-amber-50 transition-colors flex items-center justify-center gap-2 mb-2"
                 >
                     <Icon name="arrow-up" className="w-4 h-4" />
-                    <span>Upgrade Routines</span>
+                    <span>Review Upgrades</span>
                 </button>
             )}
             

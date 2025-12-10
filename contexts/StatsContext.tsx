@@ -4,7 +4,7 @@ import { useLocalStorage } from '../hooks/useLocalStorage';
 import { UserStatistics } from '../types';
 import { AppContext } from './AppContext';
 import { calculateMuscleFreshness } from '../utils/fatigueUtils';
-import { getWorkoutRecommendation, detectImbalances, detectGoalMismatch } from '../utils/recommendationUtils';
+import { getWorkoutRecommendation, detectImbalances, detectGoalMismatch, detectPromotions } from '../utils/recommendationUtils';
 import { useI18n } from '../hooks/useI18n';
 
 export interface StatsContextType {
@@ -15,6 +15,7 @@ export interface StatsContextType {
 
 const INITIAL_STATS: UserStatistics = {
     recommendation: null,
+    activePromotion: null,
     freshness: {},
     imbalanceRecommendation: null,
     goalMismatchRecommendation: null,
@@ -37,10 +38,12 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             const recommendation = getWorkoutRecommendation(history, routines, exercises, t, currentWeight, profile);
             const imbalanceRecommendation = detectImbalances(history, routines, currentWeight, profile.gender);
             const goalMismatchRecommendation = detectGoalMismatch(profile, history);
+            const activePromotion = detectPromotions(history, exercises, routines, t, currentWeight, profile);
             
             setStats({
                 freshness,
                 recommendation,
+                activePromotion,
                 imbalanceRecommendation,
                 goalMismatchRecommendation,
                 lastCalculated: Date.now()
@@ -50,9 +53,10 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }, [history, routines, exercises, t, currentWeight, profile, setStats]);
 
     // Recalculate when history, routines, exercises, profile goals/import status, or 1RMs change
+    // Also include 't' or 'locale' dependency if not already implied, to refresh on lang switch
     useEffect(() => {
         refreshStats();
-    }, [history, routines, exercises, profile.mainGoal, profile.smartGoalDetection, profile.oneRepMaxes, profile.lastImported]); 
+    }, [history, routines, exercises, profile.mainGoal, profile.smartGoalDetection, profile.oneRepMaxes, profile.lastImported, profile.promotionSnoozes, t]); 
 
     const value = {
         stats,

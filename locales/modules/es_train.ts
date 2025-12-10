@@ -63,6 +63,8 @@ export const es_train = {
   notification_timer_finished_body: "¡{exercise} está listo!",
   workout_timer_sub: "-10s",
   workout_timer_add: "+10s",
+  workout_rollback_banner: "Mejorado desde {oldName}",
+  workout_rollback_action: "Deshacer",
   
   // Timers & Sets
   timer_normal: "Serie Normal",

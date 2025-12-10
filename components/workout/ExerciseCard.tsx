@@ -15,6 +15,7 @@ import { TranslationKey } from '../../contexts/I18nContext';
 import { useExerciseName } from '../../hooks/useExerciseName';
 import { getSmartWeightSuggestion, WeightSuggestion } from '../../services/analyticsService';
 import InsightBanner from './InsightBanner';
+import PromotionBanner from './PromotionBanner';
 
 interface ExerciseCardProps {
   workoutExercise: WorkoutExercise;
@@ -42,17 +43,23 @@ interface ExerciseCardProps {
   availableSupersets?: { id: string; name: string; exercises: string[] }[];
   onShowDetails?: () => void;
   userBodyWeight?: number;
+
+  // Promotion
+  promotionSuggestion?: Exercise;
+  onUpgrade?: (targetExercise: Exercise) => void;
+  onRollback?: () => void;
 }
 
 const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
   const { 
     workoutExercise, exerciseInfo, onUpdate, onStartTimedSet,
     isReorganizeMode, onDragStart, onDragEnter, onDragEnd, onMoveUp, onMoveDown, isMoveUpDisabled, isMoveDownDisabled, onReorganize, isBeingDraggedOver,
-    isCollapsed, onToggleCollapse, onRemove, onCreateSuperset, onJoinSuperset, availableSupersets, onShowDetails, userBodyWeight
+    isCollapsed, onToggleCollapse, onRemove, onCreateSuperset, onJoinSuperset, availableSupersets, onShowDetails, userBodyWeight,
+    promotionSuggestion, onUpgrade, onRollback
   } = props;
   const { t } = useI18n();
   const { weightUnit, displayWeight } = useMeasureUnit();
-  const { history: allHistory, profile, rawExercises } = useContext(AppContext);
+  const { history: allHistory, profile, rawExercises, getExerciseById } = useContext(AppContext);
   const { activeTimerInfo } = useContext(TimerContext);
   const getExerciseName = useExerciseName();
   const [completedSets, setCompletedSets] = useState(workoutExercise.sets.filter(s => s.isComplete).length);
@@ -63,6 +70,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
   // Insight State
   const [insight, setInsight] = useState<WeightSuggestion | null>(null);
   const [isInsightDismissed, setIsInsightDismissed] = useState(false);
+  const [isPromotionDismissed, setIsPromotionDismissed] = useState(false);
 
   const lastPerformance = useMemo(() => {
     const history = getExerciseHistory(allHistory, exerciseInfo.id);
@@ -291,6 +299,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
   }
 
   const bodyWeightLabel = (isBodyweight || isAssisted) && userBodyWeight ? `+ Body (${displayWeight(userBodyWeight)}${t(('workout_' + weightUnit) as TranslationKey)})` : '';
+  const previousExerciseName = workoutExercise.previousVersion ? getExerciseName(getExerciseById(workoutExercise.previousVersion.exerciseId)) : '';
 
   return (
     <div 
@@ -320,6 +329,37 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
                 onShowDetails={onShowDetails}
             />
         </div>
+        
+        {/* Promotion Banner */}
+        {!isCollapsed && promotionSuggestion && !isPromotionDismissed && onUpgrade && (
+            <PromotionBanner 
+                targetExercise={promotionSuggestion}
+                onUpgrade={() => onUpgrade(promotionSuggestion)}
+                onDismiss={() => setIsPromotionDismissed(true)}
+            />
+        )}
+        
+        {/* Undo Rollback Banner */}
+        {!isCollapsed && workoutExercise.previousVersion && onRollback && (
+            <div className="mx-3 sm:mx-4 mt-3 rounded-lg border border-slate-500/20 bg-gradient-to-r from-slate-500/10 to-gray-500/10 p-3 flex items-center justify-between animate-fadeIn">
+                <div className="flex items-center gap-3 min-w-0 flex-grow">
+                    <div className="p-1.5 rounded-full bg-slate-500/20 text-slate-400 flex-shrink-0">
+                         <Icon name="history" className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                        <div className="text-sm font-bold text-slate-200 truncate">
+                             {t('workout_rollback_banner', { oldName: previousExerciseName })}
+                        </div>
+                    </div>
+                </div>
+                <button 
+                    onClick={onRollback}
+                    className="bg-slate-500/20 hover:bg-slate-500/30 text-slate-300 text-xs font-bold py-1.5 px-3 rounded-lg transition-colors border border-slate-500/30"
+                >
+                     {t('workout_rollback_action')}
+                </button>
+            </div>
+        )}
         
         {/* Active Insight Banner */}
         {!isCollapsed && insight && (

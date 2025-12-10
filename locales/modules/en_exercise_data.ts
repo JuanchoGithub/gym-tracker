@@ -9,6 +9,7 @@ export const en_exercise_data = {
   body_part_shoulders: "Shoulders",
   body_part_biceps: "Biceps",
   body_part_triceps: "Triceps",
+  body_part_arms: "Arms",
   body_part_core: "Core",
   body_part_full_body: "Full Body",
   body_part_calves: "Calves",

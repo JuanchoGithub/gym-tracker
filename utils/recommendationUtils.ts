@@ -46,23 +46,7 @@ const PULL_MUSCLES = [MUSCLES.LATS, MUSCLES.TRAPS, MUSCLES.BICEPS];
 const LEG_MUSCLES = [MUSCLES.QUADS, MUSCLES.HAMSTRINGS, MUSCLES.GLUTES];
 const FULL_BODY_MUSCLES = [...PUSH_MUSCLES, ...PULL_MUSCLES, ...LEG_MUSCLES];
 
-const ROUTINE_LEVELS: Record<string, RoutineLevel> = {
-    'rt-1': 'beginner', // StrongLifts A
-    'rt-2': 'beginner', // StrongLifts B
-    'rt-3': 'intermediate', // PHUL Upper
-    'rt-4': 'intermediate', // PHUL Lower
-    'rt-ppl-push': 'intermediate', // PPL Push
-    'rt-ppl-pull': 'intermediate', // PPL Pull
-    'rt-ppl-legs': 'intermediate', // PPL Legs
-    'rt-full-body': 'beginner', // Full Body
-    'rt-hiit-7min': 'beginner',
-    'rt-hiit-beginner': 'beginner',
-};
-
-// Strength Standards (Multipliers of Bodyweight)
-type ProficiencyLevel = 'Untrained' | 'Novice' | 'Intermediate' | 'Advanced' | 'Elite';
-
-const LEVEL_SCORES: Record<ProficiencyLevel, number> = {
+const LEVEL_SCORES: Record<string, number> = {
     'Untrained': 0,
     'Novice': 1,
     'Intermediate': 2,
@@ -85,7 +69,7 @@ const STRENGTH_STANDARDS = {
     }
 };
 
-const getProficiency = (lift: 'SQUAT' | 'BENCH' | 'DEADLIFT' | 'OHP', weight: number, bw: number, gender: 'male' | 'female'): ProficiencyLevel => {
+const getProficiency = (lift: 'SQUAT' | 'BENCH' | 'DEADLIFT' | 'OHP', weight: number, bw: number, gender: 'male' | 'female'): string => {
     const standards = STRENGTH_STANDARDS[gender][lift];
     const ratio = weight / bw;
     
@@ -103,7 +87,6 @@ const RATIOS = {
     OH_BN: 0.66, // OHP (2) / Bench (3) = 0.66
 };
 
-// Added exported function for goal detection
 export const detectGoalMismatch = (profile: Profile, history: WorkoutSession[]): Recommendation | null => {
     // 1. Check if feature is enabled
     if (profile.smartGoalDetection === false) return null;
@@ -131,11 +114,7 @@ export const detectGoalMismatch = (profile: Profile, history: WorkoutSession[]):
         return null;
     }
 
-    // 7. Get avg reps for context (need to re-calculate simple avg or expose from service)
-    // For now we can assume avg based on archetype mapping:
-    // Strength: < 6, Muscle: 8-12, Endurance: > 15.
-    // Let's rely on the messaging to be generic or pass a heuristic.
-    // Ideally we'd modify calculateLifterDNA to return avgReps, but for now we infer ranges.
+    // 7. Get avg reps for context
     let repRange = "8-12";
     if (detectedGoal === 'strength') repRange = "< 6";
     else if (detectedGoal === 'endurance') repRange = "15+";
@@ -150,38 +129,122 @@ export const detectGoalMismatch = (profile: Profile, history: WorkoutSession[]):
         goalMismatchData: {
             currentGoal,
             detectedGoal,
-            avgReps: 0 // Placeholder, formatted string used in reasonParams
+            avgReps: 0 
         }
     };
 };
 
+export const getAvailablePromotion = (
+    currentExerciseId: string,
+    history: WorkoutSession[],
+    profile?: Profile,
+    currentBodyweight?: number
+): string | null => {
+    const now = Date.now();
+
+    // Find if this exercise is a base for any progression path
+    const path = PROGRESSION_PATHS.find(p => p.baseExerciseId === currentExerciseId);
+    if (!path) return null;
+
+    // Check snoozes
+    if (profile?.promotionSnoozes?.[path.baseExerciseId] && now < profile.promotionSnoozes[path.baseExerciseId]) {
+        return null;
+    }
+
+    const exHistory = getExerciseHistory(history, path.baseExerciseId);
+    if (exHistory.length === 0) return null;
+
+    let sessionsMetCriteria = 0;
+    for (const entry of exHistory) {
+        const bestSet = entry.exerciseData.sets.reduce((best, current) => {
+            if (!current.isComplete || current.type !== 'normal') return best;
+            return (current.weight * current.reps > best.weight * best.reps) ? current : best;
+        }, { weight: 0, reps: 0, type: 'normal', id: '', isComplete: false });
+        
+        let met = true;
+        if (path.criteria.minReps && bestSet.reps < path.criteria.minReps) met = false;
+        if (path.criteria.minWeightRatio && currentBodyweight) {
+            if (bestSet.weight < (currentBodyweight * path.criteria.minWeightRatio)) met = false;
+        }
+        if (met) sessionsMetCriteria++;
+        if (sessionsMetCriteria >= path.criteria.requiredSessions) break;
+    }
+
+    if (sessionsMetCriteria >= path.criteria.requiredSessions) {
+        return path.targetExerciseId;
+    }
+
+    return null;
+};
+
+export const detectPromotions = (
+    history: WorkoutSession[], 
+    exercises: Exercise[], 
+    routines: Routine[], 
+    t: (key: string) => string,
+    currentBodyweight?: number, 
+    profile?: Profile
+): Recommendation | null => {
+    
+    for (const path of PROGRESSION_PATHS) {
+        const targetId = getAvailablePromotion(path.baseExerciseId, history, profile, currentBodyweight);
+        
+        if (targetId) {
+            const fromEx = exercises.find(e => e.id === path.baseExerciseId) || PREDEFINED_EXERCISES.find(e => e.id === path.baseExerciseId);
+            const toEx = exercises.find(e => e.id === targetId) || PREDEFINED_EXERCISES.find(e => e.id === targetId);
+            
+            if (fromEx && toEx) {
+                // Localize names if possible
+                const fromName = t(fromEx.id as any) !== fromEx.id ? t(fromEx.id as any) : fromEx.name;
+                const toName = t(toEx.id as any) !== toEx.id ? t(toEx.id as any) : toEx.name;
+
+                const relevantRoutineIds = routines.filter(r => r.exercises.some(e => e.exerciseId === path.baseExerciseId)).map(r => r.id);
+                if (relevantRoutineIds.length > 0) {
+                    return {
+                        type: 'promotion',
+                        titleKey: 'rec_title_promotion',
+                        titleParams: { from: fromName, to: toName },
+                        reasonKey: path.reasonKey,
+                        reasonParams: { from: fromName, to: toName },
+                        suggestedBodyParts: [],
+                        relevantRoutineIds,
+                        promotionData: {
+                            fromId: fromEx.id,
+                            toId: toEx.id,
+                            fromName: fromEx.name,
+                            toName: toEx.name
+                        }
+                    };
+                }
+            }
+        }
+    }
+    return null;
+}
+
 
 export const detectImbalances = (history: WorkoutSession[], routines: Routine[], currentBodyWeight?: number, gender?: 'male' | 'female'): Recommendation | null => {
     // REQUIREMENT: Newbies should be on rails. 
-    // Disable imbalance detection until the user has logged at least 15 workouts (~5 weeks).
-    // This prevents the system from flagging "Squat Dominant" just because they haven't Deadlifted yet.
     if (history.length < 15) {
         return null;
     }
 
     const currentProfile = calculateMaxStrengthProfile(history);
-    const MIN_STRENGTH_THRESHOLD = 40; // kg, ignore very beginners for ratios
+    const MIN_STRENGTH_THRESHOLD = 40; // kg
     const max1RM = Math.max(currentProfile.SQUAT, currentProfile.DEADLIFT, currentProfile.BENCH);
 
-    // Need at least one significant lift to perform analysis
     if (max1RM < MIN_STRENGTH_THRESHOLD) {
         return null;
     }
 
-    // Calculate historical profile (14 days ago) to check for trends
     const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
     const historicalDate = Date.now() - TWO_WEEKS_MS;
     const historicalProfile = calculateMaxStrengthProfile(history, historicalDate);
 
     let worstImbalance: Recommendation | null = null;
-    let maxDeviation = 0.15; // Threshold: 15% deviation initiates a warning
+    let maxDeviation = 0.15; 
 
-    // --- CHECK 1: RATIOS (SYMMETRY & STRUCTURAL) ---
+    // --- CHECK 1: RATIOS ---
 
     const analyzePair = (
         liftA: keyof typeof currentProfile, 
@@ -197,18 +260,17 @@ export const detectImbalances = (history: WorkoutSession[], routines: Routine[],
 
         if (valA > MIN_STRENGTH_THRESHOLD && valB > 0) {
             const targetB = valA * ratio;
-            // Check if Lift B is lagging behind Lift A (e.g., DL lagging behind Squat)
             if (valB < targetB) {
                 const currentDiff = targetB - valB;
                 const currentDeviation = currentDiff / targetB;
 
                 if (currentDeviation > maxDeviation) {
-                    // TREND CHECK: Was it bad 2 weeks ago?
                     const histValA = historicalProfile[liftA] || 0;
                     const histValB = historicalProfile[liftB] || 0;
+                    
+                    const MIN_THRESHOLD_FOR_RATIO_CHECK = MIN_STRENGTH_THRESHOLD * 0.5;
 
-                    // If historically untrained in one, it's a new imbalance -> ignore (allow time to settle)
-                    if (histValA < MIN_STRENGTH_THRESHOLD || histValB < MIN_THRESHOLD_FOR_RATIO_CHECK(MIN_STRENGTH_THRESHOLD)) {
+                    if (histValA < MIN_STRENGTH_THRESHOLD || histValB < MIN_THRESHOLD_FOR_RATIO_CHECK) {
                          return null;
                     }
 
@@ -216,11 +278,6 @@ export const detectImbalances = (history: WorkoutSession[], routines: Routine[],
                     const histDiff = histTargetB - histValB;
                     const histDeviation = histDiff / histTargetB;
 
-                    // Logic:
-                    // 1. If historical deviation was small (< 10%), this is a new spike -> Ignore (could be cycle phase).
-                    // 2. If current deviation is LESS than historical deviation, we are improving -> Ignore.
-                    // 3. Only flag if it persisted (was high before) AND is stable or getting worse.
-                    
                     if (histDeviation > 0.10 && currentDeviation >= histDeviation) {
                         return {
                             type: 'imbalance' as const,
@@ -239,8 +296,6 @@ export const detectImbalances = (history: WorkoutSession[], routines: Routine[],
         return null;
     };
 
-    // Lower threshold for historical check to avoid filtering out legitimate beginners who are progressing
-    const MIN_THRESHOLD_FOR_RATIO_CHECK = (base: number) => base * 0.5;
 
     // 1a: Squat vs Deadlift (4:5 Ratio)
     const sqDl = analyzePair('SQUAT', 'DEADLIFT', RATIOS.SQ_DL, 'imbalance_squat_deadlift_title', 'imbalance_squat_deadlift_desc', ['Back', 'Legs'], MOVEMENT_PATTERNS.DEADLIFT);
@@ -255,7 +310,6 @@ export const detectImbalances = (history: WorkoutSession[], routines: Routine[],
     if (ohBn) { worstImbalance = ohBn; }
 
     // 1d: Horizontal Push (Bench) vs Pull (Row) (~1:1 Ratio)
-    // Allow 15% variance, so target is 0.85
     const pushPull = analyzePair('BENCH', 'ROW', 0.85, 'imbalance_push_pull_title', 'imbalance_push_pull_desc', ['Back', 'Shoulders'], MOVEMENT_PATTERNS.ROW);
     if (pushPull) { worstImbalance = pushPull; }
     
@@ -263,10 +317,8 @@ export const detectImbalances = (history: WorkoutSession[], routines: Routine[],
     const vertBal = analyzePair('OHP', 'VERTICAL_PULL', 0.85, 'imbalance_vertical_balance_title', 'imbalance_vertical_balance_desc', ['Back'], MOVEMENT_PATTERNS.VERTICAL_PULL);
     if (vertBal) { worstImbalance = vertBal; }
     
-    // --- CHECK 2: PROFICIENCY GAPS (STANDARDIZATION) ---
+    // --- CHECK 2: PROFICIENCY GAPS ---
     if (currentBodyWeight && currentBodyWeight > 0 && gender && worstImbalance === null) {
-        // Only calculate if we haven't found a critical ratio imbalance yet (or maybe treat this as lower priority)
-        // We assume 'male' as default for physiology if not specified, but typically gender is required for this.
         const profGender = gender;
 
         const levelSquat = getProficiency('SQUAT', currentProfile.SQUAT, currentBodyWeight, profGender);
@@ -277,17 +329,14 @@ export const detectImbalances = (history: WorkoutSession[], routines: Routine[],
         const scoreUpper = Math.max(LEVEL_SCORES[levelBench], LEVEL_SCORES[levelOhp]);
         const scoreLower = Math.max(LEVEL_SCORES[levelSquat], LEVEL_SCORES[levelDeadlift]);
 
-        // Gap Threshold: 2 levels difference is worth a notification (e.g. Advanced vs Novice)
-        // 1.5 allows for "High Intermediate" vs "Low Novice" effectively.
-        
         if (scoreUpper >= scoreLower + 2) {
              worstImbalance = {
                 type: 'imbalance',
                 titleKey: 'imbalance_upper_dominant_title',
                 reasonKey: 'imbalance_upper_dominant_desc',
                 reasonParams: { 
-                    upper_level: t(levelBench === 'Untrained' ? levelOhp : levelBench), // Use the localized string key
-                    lower_level: t(levelSquat === 'Untrained' ? levelDeadlift : levelSquat) 
+                    upper_level: levelBench === 'Untrained' ? levelOhp : levelBench,
+                    lower_level: levelSquat === 'Untrained' ? levelDeadlift : levelSquat 
                 },
                 suggestedBodyParts: ['Legs'],
                 relevantRoutineIds: routines.filter(r => r.exercises.some(e => MOVEMENT_PATTERNS.SQUAT.includes(e.exerciseId) || MOVEMENT_PATTERNS.DEADLIFT.includes(e.exerciseId))).map(r => r.id)
@@ -298,8 +347,8 @@ export const detectImbalances = (history: WorkoutSession[], routines: Routine[],
                 titleKey: 'imbalance_lower_dominant_title',
                 reasonKey: 'imbalance_lower_dominant_desc',
                 reasonParams: { 
-                    lower_level: t(levelSquat === 'Untrained' ? levelDeadlift : levelSquat),
-                    upper_level: t(levelBench === 'Untrained' ? levelOhp : levelBench)
+                    lower_level: levelSquat === 'Untrained' ? levelDeadlift : levelSquat,
+                    upper_level: levelBench === 'Untrained' ? levelOhp : levelBench
                 },
                 suggestedBodyParts: ['Chest', 'Shoulders', 'Back'],
                 relevantRoutineIds: routines.filter(r => r.exercises.some(e => MOVEMENT_PATTERNS.BENCH.includes(e.exerciseId) || MOVEMENT_PATTERNS.OHP.includes(e.exerciseId))).map(r => r.id)
@@ -307,9 +356,6 @@ export const detectImbalances = (history: WorkoutSession[], routines: Routine[],
         }
     }
     
-    // Helper function to make TS happy with key access in reasonParams
-    function t(key: string) { return key; } // Dummy, the actual translation happens in the UI component
-
     return worstImbalance;
 }
 
@@ -323,29 +369,25 @@ export const getWorkoutRecommendation = (
 ): Recommendation | null => {
   const userProfile = inferUserProfile(history);
   
-  // Override inferred goal with explicit profile goal if available
   if (profile?.mainGoal) {
       userProfile.goal = profile.mainGoal;
   }
 
   const customRoutines = routines.filter(r => !r.id.startsWith('rt-'));
-  // REQUIREMENT: Stay "on rails" for first ~5 weeks (15 sessions)
   const isOnboardingPhase = history.length < 15;
   const lastSession = history.length > 0 ? history[0] : null;
   
-  // Analyze Habits
   const habitData = analyzeUserHabits(history);
   const { routineFrequency, exerciseFrequency } = habitData;
   
-  // Calculate Systemic Fatigue
   const systemicFatigue = calculateSystemicFatigue(history, exercises);
+  const freshness = calculateMuscleFreshness(history, exercises); // Moved up to use for gap session
 
   // --- PHASE 0: CHECK ALREADY TRAINED TODAY ---
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
   const yesterdayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1).getTime();
   
-  // Check if a session started OR ended today
   const trainedToday = lastSession && (
       lastSession.startTime >= todayStart || 
       (lastSession.endTime > 0 && lastSession.endTime >= todayStart)
@@ -370,7 +412,6 @@ export const getWorkoutRecommendation = (
      };
   }
   
-  // Calculate median duration to tune recommendations
   const durationProfile = calculateMedianWorkoutDuration(history);
 
   // --- PHASE 1: STICKY PLAN (Beginner / New User) ---
@@ -411,63 +452,13 @@ export const getWorkoutRecommendation = (
           reasonParams: { score: systemicFatigue.score.toString() },
           suggestedBodyParts: ['Mobility', 'Cardio'],
           relevantRoutineIds: [],
-          generatedRoutine: generateGapSession([], exercises, history, t, userProfile.equipment, durationProfile), // Unconstrained gap session
+          generatedRoutine: generateGapSession([], exercises, history, t, userProfile, freshness), 
           systemicFatigue
       };
   }
 
-  // --- CHECK FOR PROMOTIONS ---
-  for (const path of PROGRESSION_PATHS) {
-      const exHistory = getExerciseHistory(history, path.baseExerciseId);
-      if (exHistory.length === 0) continue;
-
-      let sessionsMetCriteria = 0;
-      for (const entry of exHistory) {
-          const bestSet = entry.exerciseData.sets.reduce((best, current) => {
-              if (!current.isComplete || current.type !== 'normal') return best;
-              return (current.weight * current.reps > best.weight * best.reps) ? current : best;
-          }, { weight: 0, reps: 0, type: 'normal', id: '', isComplete: false });
-          
-          let met = true;
-          if (path.criteria.minReps && bestSet.reps < path.criteria.minReps) met = false;
-          if (path.criteria.minWeightRatio && currentBodyweight) {
-              if (bestSet.weight < (currentBodyweight * path.criteria.minWeightRatio)) met = false;
-          }
-          if (met) sessionsMetCriteria++;
-          if (sessionsMetCriteria >= path.criteria.requiredSessions) break;
-      }
-
-      if (sessionsMetCriteria >= path.criteria.requiredSessions) {
-          const fromEx = exercises.find(e => e.id === path.baseExerciseId) || PREDEFINED_EXERCISES.find(e => e.id === path.baseExerciseId);
-          const toEx = exercises.find(e => e.id === path.targetExerciseId) || PREDEFINED_EXERCISES.find(e => e.id === path.targetExerciseId);
-          
-          if (fromEx && toEx) {
-              const relevantRoutineIds = routines.filter(r => r.exercises.some(e => e.exerciseId === path.baseExerciseId)).map(r => r.id);
-              if (relevantRoutineIds.length > 0) {
-                  return {
-                      type: 'promotion',
-                      titleKey: 'rec_title_promotion',
-                      titleParams: { exercise: fromEx.name },
-                      reasonKey: path.reasonKey,
-                      reasonParams: { from: fromEx.name, to: toEx.name },
-                      suggestedBodyParts: [],
-                      relevantRoutineIds,
-                      promotionData: {
-                          fromId: fromEx.id,
-                          toId: toEx.id,
-                          fromName: fromEx.name,
-                          toName: toEx.name
-                      },
-                      systemicFatigue
-                  };
-              }
-          }
-      }
-  }
-
   // --- PHASE 2: SMART COACH (Advanced / No Custom Plan) ---
   
-  const freshness = calculateMuscleFreshness(history, exercises);
   const scores = Object.values(freshness);
   const avgFreshness = scores.reduce((a, b) => a + b, 0) / (scores.length || 1);
   const hasFreshMuscles = scores.some(s => s > 80);
@@ -495,7 +486,7 @@ export const getWorkoutRecommendation = (
          reasonParams: { next_routine: predictedNextRoutine?.name || t('common_next_session') },
          suggestedBodyParts: ['Cardio', 'Mobility', 'Core'],
          relevantRoutineIds: [],
-         generatedRoutine: generateGapSession(protectedMuscles, exercises, history, t, userProfile.equipment, durationProfile),
+         generatedRoutine: generateGapSession(protectedMuscles, exercises, history, t, userProfile, freshness),
          systemicFatigue
      };
   }
@@ -561,7 +552,6 @@ export const getWorkoutRecommendation = (
               if (routineType === focusKey) {
                   count += freq;
               } else if (r.name.toLowerCase().includes(focusKey.replace('_', ' '))) {
-                   // Fallback to name match if heuristics are ambiguous but name is explicit
                    count += freq;
               }
           }
@@ -569,15 +559,11 @@ export const getWorkoutRecommendation = (
       return count;
   };
 
-  // Identify readiness
-  // We use a lower threshold for Full Body because it recovers slower, 
-  // but if the user habitually does it, we should suggest it if they are reasonably fresh (>70%)
   const readyGroups = groups.filter(g => {
       const threshold = g.id === 'Full Body' ? 70 : 80;
       return g.score > threshold;
   });
 
-  // If we have a prediction, prioritize it
   if (predictedNextRoutine) {
       const predictedFocus = predictedNextRoutine.name.toLowerCase();
       const matchingGroup = readyGroups.find(g => predictedFocus.includes(g.id.toLowerCase().replace('_', ' ')));
@@ -596,13 +582,8 @@ export const getWorkoutRecommendation = (
   }
 
   if (readyGroups.length > 0) {
-      // Sort criteria: 
-      // 1. Days since trained (Prioritize neglected)
-      // 2. Habit Bias (If tied or close in days, prefer what user does most)
       readyGroups.sort((a, b) => {
           const daysDiff = b.daysSince - a.daysSince;
-          // If days difference is huge (>2 days), prioritize neglecting.
-          // Otherwise, check habits.
           if (Math.abs(daysDiff) > 2) return daysDiff;
           
           const habitA = getHabitScore(a.focusKey);
@@ -622,7 +603,6 @@ export const getWorkoutRecommendation = (
       let reasonKey = winner.daysSince > 4 ? 'rec_reason_neglected' : 'rec_reason_fresh';
       let titleParams: Record<string, string> = { focus: winner.id };
 
-      // --- RANKING LOGIC ---
       const scoredRoutines = routines.map(r => {
         let score = 0;
         let matchCount = 0;
@@ -630,11 +610,9 @@ export const getWorkoutRecommendation = (
         r.exercises.forEach(ex => {
             const def = exercises.find(e => e.id === ex.exerciseId) || PREDEFINED_EXERCISES.find(e => e.id === ex.exerciseId);
             if (def) {
-                // For Full Body, we want routines that hit multiple major areas
                 if (winner.id === 'Full Body') {
                     if (['Chest', 'Back', 'Legs', 'Shoulders'].includes(def.bodyPart)) matchCount++;
                 } else {
-                    // For splits, match specific body parts
                     if (winner.bodyParts.includes(def.bodyPart)) matchCount++;
                 }
             }
@@ -642,28 +620,18 @@ export const getWorkoutRecommendation = (
         
         const matchRatio = r.exercises.length > 0 ? matchCount / r.exercises.length : 0;
         
-        // 1. Muscle Match Score (0-20 points)
         if (matchRatio < 0.3) {
-             // Too low relevance, give negative score to ensure it's filtered out unless it's a huge habit
              return { r, score: -10 }; 
         }
         score += matchRatio * 20;
 
-        // 2. Habit History (0-20 points)
         const freq = routineFrequency[r.id] || 0;
         score += Math.min(20, freq * 2);
 
-        // 3. Name Match Bonus (0-10 points)
-        // Helps if user named it "Push A" and we want "Push"
         if (r.name.toLowerCase().includes(winner.id.toLowerCase())) score += 10;
         
-        // 4. Custom Template Bonus (5 points)
-        // We prefer custom routines over system ones if they match
         if (!r.id.startsWith('rt-')) score += 5;
         
-        // 5. Explicit "Full Body" detection bonus for Full Body day
-        // Some robust routines like StrongLifts don't say "Full Body" but are full body.
-        // We check if it hits Legs + (Push OR Pull)
         if (winner.id === 'Full Body') {
              const hasLegs = r.exercises.some(ex => {
                   const def = exercises.find(e => e.id === ex.exerciseId) || PREDEFINED_EXERCISES.find(e => e.id === ex.exerciseId);
@@ -679,19 +647,15 @@ export const getWorkoutRecommendation = (
         return { r, score };
       });
       
-      // Filter out low scores and Sort
       const validScored = scoredRoutines.filter(x => x.score > 10);
       validScored.sort((a, b) => b.score - a.score);
       
-      // Take Top 2
       relevantRoutineIds = validScored.slice(0, 2).map(x => x.r.id);
 
-      // Always generate a smart routine option unless in onboarding (where we force specific routines)
       if (!isOnboardingPhase) {
           generatedRoutine = generateSmartRoutine(winner.focusKey, userProfile, t, exercises, exerciseFrequency);
       }
 
-      // If we found a very strong habit match (high frequency custom routine), switch title to "Suggested"
       if (relevantRoutineIds.length > 0 && routineFrequency[relevantRoutineIds[0]] > 2) {
           const topRoutine = routines.find(r => r.id === relevantRoutineIds[0]);
           if (topRoutine) {
@@ -716,14 +680,18 @@ export const getWorkoutRecommendation = (
       };
   }
 
-  // Absolute fallback
+  // Fallback (General Fatigue / No clear winner)
+  // Ensure we generate a custom gap session even in fallback so the user always has a main action button
+  const fallbackRoutine = generateGapSession([], exercises, history, t, userProfile, freshness);
+  
   return {
-      type: 'workout',
+      type: 'active_recovery', // Changed from 'workout' to active_recovery to better reflect the state
       titleKey: "rec_title_generic",
       titleParams: { focus: 'Cardio / Mobility' },
       reasonKey: "rec_reason_fatigued",
       suggestedBodyParts: ['Cardio', 'Mobility'],
       relevantRoutineIds: routines.filter(r => r.routineType === 'hiit' || r.name.includes('Cardio')).map(r => r.id),
+      generatedRoutine: fallbackRoutine, // Provide the custom routine here
       systemicFatigue
   };
 };

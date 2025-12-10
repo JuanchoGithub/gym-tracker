@@ -382,8 +382,8 @@ const ProfilePage: React.FC = () => {
       
       {activeTab === 'you' && (
         <div className="animate-fadeIn space-y-8">
-            {/* Fatigue Monitor */}
-            <FatigueMonitor history={history} exercises={exercises} />
+            {/* Fatigue Monitor (Unified) */}
+            <FatigueMonitor history={history} exercises={exercises} muscleFreshness={muscleFreshness} />
             
             {/* Recovery Heatmap */}
             <div>

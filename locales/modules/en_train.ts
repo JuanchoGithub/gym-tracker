@@ -63,6 +63,8 @@ export const en_train = {
   notification_timer_finished_body: "{exercise} is ready!",
   workout_timer_sub: "-10s",
   workout_timer_add: "+10s",
+  workout_rollback_banner: "Upgraded from {oldName}",
+  workout_rollback_action: "Undo",
   
   // Timers & Sets
   timer_normal: "Normal Set",

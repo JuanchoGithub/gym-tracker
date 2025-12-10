@@ -35,7 +35,7 @@ export const es_coach = {
   rec_title_gap_workout: "Entrenamiento Puente",
   rec_title_onboarding_complete: "Empezá Acá",
   rec_title_next_up: "Siguiente: {routine}",
-  rec_title_promotion: "Promoción Disponible: {exercise}",
+  rec_title_promotion: "{from} \u2192 {to}",
   rec_title_workout_complete: "¡Gran Sesión!",
   rec_title_deload: "Descarga Recomendada",
   rec_title_suggested_habit: "Sugerido: {name}",
@@ -99,6 +99,14 @@ export const es_coach = {
   cns_level_medium: "Media",
   cns_level_high: "Alta",
 
+  // New Dynamic Routine Strings
+  coach_routine_cns_reset_title: "Reset SNC & Movilidad",
+  coach_routine_cns_reset_desc: "Tu preparación sistémica es {score}. Esta sesión enfoca en calidad de movimiento y recuperación del sistema nervioso.",
+  coach_routine_metabolic_title: "Lavado Metabólico",
+  coach_routine_metabolic_desc: "Acondicionamiento de bajo impacto para aumentar el flujo sanguíneo sin agregar fatiga pesada. Preparación: {score}.",
+  coach_routine_active_recovery_title: "Flujo de Recuperación Activa",
+  coach_routine_active_recovery_desc: "Movilidad dirigida y trabajo de aislamiento para abordar puntos débiles mientras te recuperás.",
+
   // Onboarding Wizard
   wizard_step_1_question: "Nivel de Experiencia",
   wizard_option_beginner: "Principiante",
@@ -160,4 +168,19 @@ export const es_coach = {
   dna_stats_intensity: "Intensidad",
   dna_stats_favorite_muscle: "Músculo Fav",
   dna_stats_lifetime_workouts: "Entrenamientos Totales",
+  
+  // Promotion Modal
+  promotion_modal_title: "Mejora Disponible",
+  promotion_modal_current: "Actual",
+  promotion_modal_upgrade: "Mejora",
+  promotion_modal_level_up: "¡Subir de Nivel!",
+  promotion_modal_starting_weight: "Peso Inicial",
+  promotion_modal_reset_warning: "Las series se reiniciarán para coincidir con la nueva intensidad.",
+  promotion_modal_desc_part1: "Dominaste",
+  promotion_modal_desc_part2: "Recomendamos mejorar a",
+  promotion_modal_desc_part3: "en las siguientes rutinas:",
+  promotion_modal_action_apply: "Aplicar a Seleccionadas",
+  promotion_modal_action_snooze: "Ahora No",
+  promotion_modal_snooze_1_week: "Mantener por esta semana (7 días)",
+  promotion_modal_snooze_3_weeks: "Ahora no (3 semanas)",
 };

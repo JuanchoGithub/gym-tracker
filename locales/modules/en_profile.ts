@@ -60,17 +60,21 @@ export const en_profile = {
   checkin_option_injury: "Injury",
   
   // Fatigue Monitor
-  fatigue_title: "Systemic CNS Load",
+  fatigue_title: "Training Readiness",
   fatigue_level_optimal: "Optimal",
   fatigue_level_overreaching: "Overreaching",
-  fatigue_level_warning: "High Risk",
+  fatigue_level_warning: "High CNS Load",
+  fatigue_level_muscle_limit: "Muscle Fatigue",
+  fatigue_limit_factor: "Limiting Factor: {factor}",
+  fatigue_factor_cns: "Nervous System",
+  fatigue_factor_muscles: "Muscles",
   fatigue_prediction_rising: "Accumulating fatigue.",
   fatigue_prediction_burnout: "Burnout risk in {days} days at current rate.",
   fatigue_prediction_stable: "Load is sustainable.",
   fatigue_prediction_recovering: "You are recovering well.",
-  fatigue_desc: "Tracks cumulative stress on your Central Nervous System based on training volume and intensity.",
-  fatigue_info_title: "About CNS Fatigue",
-  fatigue_info_content: "Your Central Nervous System (CNS) controls muscle recruitment. Unlike sore muscles, CNS fatigue is silent but systemic—affecting your whole body, mood, and sleep.\n\nThis metric tracks your cumulative load over the last 7 days based on exercise intensity (Compound lifts tax the CNS more than isolation). If your load exceeds your recovery capacity for too long, performance stalls and injury risk spikes.",
+  fatigue_desc: "Combined score of your CNS health and muscle freshness.",
+  fatigue_info_title: "About Readiness",
+  fatigue_info_content: "Your Readiness Score is the 'Weakest Link' between your Systemic CNS Load and your local Muscle Recovery.\n\nEven if your nervous system is fresh (Optimal CNS), you may be advised to rest if specific muscle groups are still damaged from previous workouts.\n\nThis ensures you don't train heavy on a foundation that hasn't recovered.",
   
   // Data Management
   profile_data_title: "Data Management",

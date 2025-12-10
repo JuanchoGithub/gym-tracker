@@ -60,17 +60,21 @@ export const es_profile = {
   checkin_option_injury: "Lesión",
 
   // Fatigue Monitor
-  fatigue_title: "Carga Sistémica (SNC)",
+  fatigue_title: "Estado de Recuperación",
   fatigue_level_optimal: "Óptimo",
   fatigue_level_overreaching: "Sobrecarga",
-  fatigue_level_warning: "Alto Riesgo",
+  fatigue_level_warning: "Alta Carga SNC",
+  fatigue_level_muscle_limit: "Fatiga Muscular",
+  fatigue_limit_factor: "Factor Limitante: {factor}",
+  fatigue_factor_cns: "Sistema Nervioso",
+  fatigue_factor_muscles: "Músculos",
   fatigue_prediction_rising: "Acumulando fatiga.",
   fatigue_prediction_burnout: "Riesgo de burnout en {days} días a este ritmo.",
   fatigue_prediction_stable: "Carga sostenible.",
   fatigue_prediction_recovering: "Te estás recuperando bien.",
-  fatigue_desc: "Rastrea el estrés acumulado en tu Sistema Nervioso Central basado en volumen e intensidad.",
-  fatigue_info_title: "Sobre la Fatiga del SNC",
-  fatigue_info_content: "Tu Sistema Nervioso Central (SNC) controla la contracción muscular. A diferencia del dolor muscular, la fatiga del SNC es silenciosa pero sistémica: afecta a todo el cuerpo, el estado de ánimo y el sueño.\n\nEsta métrica rastrea tu carga acumulada de los últimos 7 días basada en la intensidad (los ejercicios compuestos taxan más el SNC que los de aislamiento). Si la carga supera tu capacidad de recuperación por mucho tiempo, el rendimiento se estanca y aumenta el riesgo de lesiones.",
+  fatigue_desc: "Puntaje combinado de salud del SNC y frescura muscular.",
+  fatigue_info_title: "Sobre la Recuperación",
+  fatigue_info_content: "Tu Puntaje de Recuperación se basa en el 'Eslabón Más Débil' entre tu Carga Sistémica del SNC y tu Recuperación Muscular local.\n\nIncluso si tu sistema nervioso está fresco (SNC Óptimo), se te puede aconsejar descansar si grupos musculares específicos aún están dañados por entrenamientos anteriores.\n\nEsto asegura que no entrenes pesado sobre una base que no se ha recuperado.",
 
   // Data Management
   profile_data_title: "Gestión de Datos",

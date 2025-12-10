@@ -56,6 +56,11 @@ export interface WorkoutExercise {
   note?: string;
   barWeight?: number;
   supersetId?: string;
+  previousVersion?: {
+      exerciseId: string;
+      sets: PerformedSet[];
+      note?: string;
+  };
 }
 
 export interface SupersetDefinition {
@@ -139,6 +144,7 @@ export interface Profile {
   oneRepMaxes?: Record<string, OneRepMaxEntry>; // Keyed by Exercise ID
   oneRepMaxSnoozes?: Record<string, number>; // Keyed by Exercise ID, value is timestamp until which to snooze updates
   autoUpdated1RMs?: Record<string, AutoUpdateEntry>; // Keyed by Exercise ID, tracks pending notifications for auto-updates
+  promotionSnoozes?: Record<string, number>; // Keyed by Base Exercise ID, value is timestamp until which to snooze promotion
   mainGoal?: UserGoal;
   smartGoalDetection?: boolean; // Defaults to true
   goalMismatchSnoozedUntil?: number; // Timestamp
@@ -228,6 +234,7 @@ export interface TimedSetInfo {
 // Stats Types
 export interface UserStatistics {
     recommendation: Recommendation | null;
+    activePromotion: Recommendation | null;
     freshness: Record<string, number>;
     imbalanceRecommendation: Recommendation | null;
     goalMismatchRecommendation: Recommendation | null;

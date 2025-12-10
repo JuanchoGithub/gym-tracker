@@ -25,6 +25,7 @@ import CascadeUpdateModal from '../components/onerepmax/CascadeUpdateModal';
 import { useMeasureUnit } from '../hooks/useWeight';
 import { TranslationKey } from '../contexts/I18nContext';
 import { TimerContext } from '../contexts/TimerContext';
+import PromotionReviewModal from '../components/modals/PromotionReviewModal';
 
 // Updated Regex to catch both translation keys and plain text words
 const timeKeywords = {
@@ -42,7 +43,7 @@ const TrainPage: React.FC = () => {
   const { 
       routines, checkInState, handleCheckInResponse, history, upsertRoutines,
       currentWeight, logUnlock, supplementPlan, takenSupplements, batchTakeSupplements, snoozedSupplements, batchSnoozeSupplements,
-      profile, updateOneRepMax, snoozeOneRepMaxUpdate, undoAutoUpdate, dismissAutoUpdate, getExerciseById, startTemplateEdit, startTemplateDuplicate
+      profile, updateProfileInfo, updateOneRepMax, snoozeOneRepMaxUpdate, undoAutoUpdate, dismissAutoUpdate, getExerciseById, startTemplateEdit, startTemplateDuplicate
   } = useContext(AppContext);
   const { activeWorkout, startWorkout, discardActiveWorkout, maximizeWorkout } = useContext(ActiveWorkoutContext);
   const { stats, refreshStats } = useContext(StatsContext);
@@ -58,7 +59,8 @@ const TrainPage: React.FC = () => {
   
   // Recommendation State
   const [isRecDismissed, setIsRecDismissed] = useState(false);
-  const [isUpgradeConfirmOpen, setIsUpgradeConfirmOpen] = useState(false);
+  const [isPromoDismissed, setIsPromoDismissed] = useState(false);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [onboardingRoutines, setOnboardingRoutines] = useState<Routine[]>([]);
   const [imbalanceSnoozedUntil, setImbalanceSnoozedUntil] = useLocalStorage('imbalanceSnooze', 0);
   
@@ -137,6 +139,25 @@ const TrainPage: React.FC = () => {
       // Otherwise filter from main list
       return routines.filter(r => recommendation.relevantRoutineIds.includes(r.id));
   }, [recommendation, routines, onboardingRoutines]);
+
+  const promotionRoutines = useMemo(() => {
+      if (!stats.activePromotion || !stats.activePromotion.promotionData) return [];
+      const { fromId } = stats.activePromotion.promotionData;
+
+      // 1. Find all custom routines that contain the exercise
+      // Filter out System Routines (rt-) as requested to avoid modifying base templates
+      const candidates = routines.filter(r => 
+          !r.id.startsWith('rt-') && 
+          r.exercises.some(e => e.exerciseId === fromId)
+      );
+
+      // 2. Sort by Usage Recency (Latest first)
+      // This ensures we target the routines the user is actually using
+      candidates.sort((a, b) => (b.lastUsed || 0) - (a.lastUsed || 0));
+
+      // 3. Limit to Top 5
+      return candidates.slice(0, 5);
+  }, [stats.activePromotion, routines]);
   
   // --- Smart Supplement Stack Logic ---
   const { smartStack } = useMemo(() => {
@@ -393,13 +414,12 @@ const TrainPage: React.FC = () => {
       refreshStats(); // Force refresh stats to update recommendations
   };
 
-  const handleUpgradeRoutines = () => {
-      if (!recommendation || recommendation.type !== 'promotion' || !recommendation.promotionData) return;
+  const handleApplyPromotion = (routineIds: string[]) => {
+      if (!stats.activePromotion || !stats.activePromotion.promotionData) return;
       
-      const { fromId, toId, fromName, toName } = recommendation.promotionData;
-      const relevantIds = recommendation.relevantRoutineIds;
+      const { fromId, toId, fromName, toName } = stats.activePromotion.promotionData;
       
-      const routinesToUpdate = routines.filter(r => relevantIds.includes(r.id) && !r.id.startsWith('rt-')); // Only update custom routines
+      const routinesToUpdate = routines.filter(r => routineIds.includes(r.id));
       
       const updatedRoutines = routinesToUpdate.map(r => ({
           ...r,
@@ -411,10 +431,25 @@ const TrainPage: React.FC = () => {
       // Log the unlock event
       logUnlock(fromName, toName);
 
-      setIsUpgradeConfirmOpen(false);
-      setIsRecDismissed(true); // Hide card after upgrading
+      setIsReviewModalOpen(false);
+      setIsPromoDismissed(true);
   };
   
+  const handleSnoozePromotion = (days: number) => {
+      if (!stats.activePromotion?.promotionData) return;
+      const { fromId } = stats.activePromotion.promotionData;
+      const snoozeUntil = Date.now() + days * 24 * 60 * 60 * 1000;
+      
+      updateProfileInfo({
+          promotionSnoozes: {
+              ...profile.promotionSnoozes,
+              [fromId]: snoozeUntil
+          }
+      });
+      setIsReviewModalOpen(false);
+      setIsPromoDismissed(true);
+  };
+
   const handleDismissRecommendation = () => {
       if (recommendation?.type === 'imbalance') {
           // Snooze imbalance warnings for 7 days
@@ -531,6 +566,7 @@ const TrainPage: React.FC = () => {
             </div>
         )}
 
+        {/* Daily Recommendation Card */}
         {!isNewUser && recommendation && !isRecDismissed && (
             <SmartRecommendationCard 
                 recommendation={recommendation}
@@ -540,7 +576,6 @@ const TrainPage: React.FC = () => {
                 onViewSmartRoutine={() => {
                     if(recommendation.generatedRoutine) setSelectedRoutine(recommendation.generatedRoutine);
                 }}
-                onUpgrade={() => setIsUpgradeConfirmOpen(true)}
                 onUpdate1RM={handleUpdate1RM}
                 onSnooze1RM={handleSnooze1RM}
             />
@@ -627,16 +662,15 @@ const TrainPage: React.FC = () => {
              onComplete={handleOnboardingComplete}
           />
       )}
-
-      {recommendation?.type === 'promotion' && recommendation.promotionData && (
-          <ConfirmModal
-              isOpen={isUpgradeConfirmOpen}
-              onClose={() => setIsUpgradeConfirmOpen(false)}
-              onConfirm={handleUpgradeRoutines}
-              title="Upgrade Routines?"
-              message={`This will replace ${recommendation.promotionData.fromName} with ${recommendation.promotionData.toName} in all your custom templates.`}
-              confirmText="Upgrade All"
-              confirmButtonClass="bg-amber-600 hover:bg-amber-700"
+      
+      {stats.activePromotion && (
+          <PromotionReviewModal 
+             isOpen={isReviewModalOpen}
+             onClose={() => setIsReviewModalOpen(false)}
+             promotion={stats.activePromotion}
+             routines={promotionRoutines}
+             onApply={handleApplyPromotion}
+             onSnooze={handleSnoozePromotion}
           />
       )}
       

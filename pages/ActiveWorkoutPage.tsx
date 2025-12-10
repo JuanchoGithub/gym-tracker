@@ -28,9 +28,10 @@ import { TranslationKey } from '../contexts/I18nContext';
 import OnboardingWizard from '../components/onboarding/OnboardingWizard';
 import RoutinePreviewModal from '../components/modals/RoutinePreviewModal';
 import { generateGapSession, getProtectedMuscles } from '../utils/smartCoachUtils';
-import { getWorkoutRecommendation } from '../utils/recommendationUtils';
+import { getWorkoutRecommendation, getAvailablePromotion } from '../utils/recommendationUtils';
 import { useExerciseName } from '../hooks/useExerciseName';
 import { useMeasureUnit } from '../hooks/useWeight';
+import UpgradeExerciseModal from '../components/modals/UpgradeExerciseModal';
 
 const PUSH_MUSCLES = [MUSCLES.PECTORALS, MUSCLES.FRONT_DELTS, MUSCLES.TRICEPS];
 const PULL_MUSCLES = [MUSCLES.LATS, MUSCLES.TRAPS, MUSCLES.BICEPS];
@@ -44,7 +45,7 @@ interface SuggestionState {
 }
 
 const ActiveWorkoutPage: React.FC = () => {
-  const { getExerciseById, keepScreenAwake, currentWeight, history, exercises, routines, upsertRoutines, profile } = useContext(AppContext);
+  const { getExerciseById, keepScreenAwake, currentWeight, history, exercises, routines, upsertRoutines, profile, logUnlock, rawExercises } = useContext(AppContext);
   const { 
     activeWorkout, updateActiveWorkout, endWorkout, discardActiveWorkout, maximizeWorkout, minimizeWorkout, 
     startAddExercisesToWorkout, collapsedExerciseIds, setCollapsedExerciseIds, collapsedSupersetIds, setCollapsedSupersetIds 
@@ -67,6 +68,24 @@ const ActiveWorkoutPage: React.FC = () => {
   const headerRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
+  // Cached promotions map: exerciseId -> targetId
+  const [availablePromotions, setAvailablePromotions] = useState<Record<string, string>>({});
+
+  // Check for promotions on mount or workout update
+  useEffect(() => {
+      if (activeWorkout) {
+          const promoMap: Record<string, string> = {};
+          activeWorkout.exercises.forEach(ex => {
+               // Check if promotion is available based on history criteria
+               const targetId = getAvailablePromotion(ex.exerciseId, history, profile, currentWeight);
+               if (targetId) {
+                   promoMap[ex.exerciseId] = targetId;
+               }
+          });
+          setAvailablePromotions(promoMap);
+      }
+  }, [activeWorkout?.id, activeWorkout?.exercises, history, profile, currentWeight]); // Re-check when workout or history changes
+
   useEffect(() => {
     const scroller = document.querySelector('main');
     if (scroller) {
@@ -87,6 +106,13 @@ const ActiveWorkoutPage: React.FC = () => {
   
   // Suggestion State
   const [suggestedRoutine, setSuggestedRoutine] = useState<SuggestionState | null>(null);
+
+  // Upgrade State
+  const [upgradeCandidate, setUpgradeCandidate] = useState<{ 
+      workoutExercise: WorkoutExercise; 
+      targetExercise: Exercise; 
+      suggestedWeight: number; 
+  } | null>(null);
 
   const collapsedSet = useMemo(() => new Set(collapsedExerciseIds), [collapsedExerciseIds]);
   const collapsedSupersetSet = useMemo(() => new Set(collapsedSupersetIds), [collapsedSupersetIds]);
@@ -515,7 +541,7 @@ const ActiveWorkoutPage: React.FC = () => {
       updateActiveWorkout(prev => {
           if (!prev) return null;
           const currentExercise = prev.exercises.find(ex => ex.id === exerciseId);
-          if (!currentExercise) return prev;
+          if (currentExercise) return prev;
 
           const exercisesWithoutItem = prev.exercises.filter(ex => ex.id !== exerciseId);
           
@@ -651,6 +677,85 @@ const ActiveWorkoutPage: React.FC = () => {
     handleUpdateExercise(updatedExercise);
     setActiveTimedSet(null);
   };
+  
+  // --- Upgrade Logic ---
+  const handleRequestUpgrade = (originalWorkoutExercise: WorkoutExercise, targetExercise: Exercise) => {
+      // Calculate smart starting weight for the target exercise
+      const smartWeight = getSmartStartingWeight(
+          targetExercise.id,
+          history,
+          profile,
+          rawExercises, 
+          profile.mainGoal
+      );
+      setUpgradeCandidate({ workoutExercise: originalWorkoutExercise, targetExercise, suggestedWeight: smartWeight });
+  };
+
+  const handleConfirmUpgrade = (startingWeight: number) => {
+    if (!activeWorkout || !upgradeCandidate) return;
+
+    const { workoutExercise, targetExercise } = upgradeCandidate;
+    
+    // Log the unlock
+    const fromExercise = getExerciseById(workoutExercise.exerciseId);
+    if (fromExercise) {
+         logUnlock(fromExercise.name, targetExercise.name);
+    }
+
+    // Replace exercise ID and reset sets with new weight, BUT save old state first
+    const newSets: PerformedSet[] = workoutExercise.sets.map(oldSet => ({
+        ...oldSet,
+        id: `set-${Date.now()}-${Math.random()}`,
+        weight: startingWeight, 
+        reps: oldSet.reps, // Keep target reps
+        isComplete: false,
+        isWeightInherited: true
+    }));
+
+    const updatedWorkoutExercise: WorkoutExercise = {
+        ...workoutExercise,
+        exerciseId: targetExercise.id,
+        sets: newSets,
+        previousVersion: {
+            exerciseId: workoutExercise.exerciseId,
+            sets: workoutExercise.sets,
+            note: workoutExercise.note
+        }
+    };
+
+    updateActiveWorkout(prev => {
+        if (!prev) return null;
+        return {
+            ...prev,
+            exercises: prev.exercises.map(ex => ex.id === workoutExercise.id ? updatedWorkoutExercise : ex)
+        };
+    });
+    
+    setUpgradeCandidate(null);
+  };
+  
+  // --- Rollback Logic ---
+  const handleRollbackExercise = (workoutExercise: WorkoutExercise) => {
+      if (!activeWorkout || !workoutExercise.previousVersion) return;
+      
+      const { exerciseId, sets, note } = workoutExercise.previousVersion;
+      
+      const restoredExercise: WorkoutExercise = {
+          ...workoutExercise,
+          exerciseId,
+          sets,
+          note,
+          previousVersion: undefined // Clear history
+      };
+      
+      updateActiveWorkout(prev => {
+        if (!prev) return null;
+        return {
+            ...prev,
+            exercises: prev.exercises.map(ex => ex.id === workoutExercise.id ? restoredExercise : ex)
+        };
+    });
+  };
 
   const getFreshestMuscleGroup = () => {
     const freshness = calculateMuscleFreshness(history, exercises);
@@ -705,8 +810,11 @@ const ActiveWorkoutPage: React.FC = () => {
            if (recommendation.generatedRoutine) {
                routineToSuggest = recommendation.generatedRoutine;
            } else {
-               const durationProfile = calculateMedianWorkoutDuration(history);
-               routineToSuggest = generateGapSession([], exercises, history, t, 'gym', durationProfile);
+               const inferredProfile = inferUserProfile(history);
+               if (profile.mainGoal) inferredProfile.goal = profile.mainGoal;
+               const freshness = calculateMuscleFreshness(history, exercises);
+               
+               routineToSuggest = generateGapSession([], exercises, history, t, inferredProfile, freshness);
                routineToSuggest.name = t('smart_gap_session');
            }
            
@@ -765,7 +873,7 @@ const ActiveWorkoutPage: React.FC = () => {
       
       setSuggestedRoutine({ 
           routine: generatedRoutine, 
-          focus: winner.label,
+          focus: winner.label, 
           description: `Ignoring CNS fatigue. ${winner.label} muscles are ${Math.round(winner.score)}% recovered.`
       });
   };
@@ -828,7 +936,14 @@ const ActiveWorkoutPage: React.FC = () => {
       const exerciseInfo = getExerciseById(exercise.exerciseId);
       const isBeingDraggedOver = draggedOverIndices?.includes(index) && dragInfo.current?.indices[0] !== index;
 
-      return exerciseInfo ? (
+      if (!exerciseInfo) return null;
+
+      // Check for available promotion (calculated on mount/update)
+      const promotionTargetId = availablePromotions[exercise.exerciseId];
+      const promotionSuggestion = promotionTargetId ? getExerciseById(promotionTargetId) : undefined;
+      const currentEx = getExerciseById(exercise.exerciseId);
+
+      return (
           <div 
             key={exercise.id} 
             ref={el => {
@@ -859,9 +974,12 @@ const ActiveWorkoutPage: React.FC = () => {
                 availableSupersets={availableSupersets}
                 onShowDetails={() => handleShowExerciseDetails(exercise.exerciseId)}
                 userBodyWeight={currentWeight}
+                promotionSuggestion={promotionSuggestion}
+                onUpgrade={(target) => handleRequestUpgrade(exercise, target)}
+                onRollback={() => handleRollbackExercise(exercise)}
             />
           </div>
-      ) : null;
+      );
   };
 
   return (
@@ -1103,6 +1221,17 @@ const ActiveWorkoutPage: React.FC = () => {
           <OnboardingWizard 
              onClose={() => setIsOnboardingOpen(false)}
              onComplete={handleOnboardingComplete}
+          />
+      )}
+
+      {upgradeCandidate && (
+          <UpgradeExerciseModal 
+            isOpen={!!upgradeCandidate}
+            onClose={() => setUpgradeCandidate(null)}
+            currentName={getExerciseName(getExerciseById(upgradeCandidate.workoutExercise.exerciseId))}
+            targetName={getExerciseName(upgradeCandidate.targetExercise)}
+            suggestedWeight={upgradeCandidate.suggestedWeight}
+            onConfirm={handleConfirmUpgrade}
           />
       )}
     </div>

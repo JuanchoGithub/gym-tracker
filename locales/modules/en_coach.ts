@@ -35,7 +35,7 @@ export const en_coach = {
   rec_title_gap_workout: "Gap Workout",
   rec_title_onboarding_complete: "Start Here",
   rec_title_next_up: "Next Up: {routine}",
-  rec_title_promotion: "Promotion Available: {exercise}",
+  rec_title_promotion: "{from} \u2192 {to}",
   rec_title_workout_complete: "Great Session!",
   rec_title_deload: "Deload Recommended",
   rec_title_suggested_habit: "Suggested: {name}",
@@ -99,6 +99,14 @@ export const en_coach = {
   cns_level_medium: "Medium",
   cns_level_high: "High",
 
+  // New Dynamic Routine Strings
+  coach_routine_cns_reset_title: "CNS Reset & Mobility",
+  coach_routine_cns_reset_desc: "Your systemic readiness is {score}. This session focuses on movement quality and nervous system recovery.",
+  coach_routine_metabolic_title: "Metabolic Flush",
+  coach_routine_metabolic_desc: "Low impact conditioning to boost blood flow without adding heavy fatigue. Readiness: {score}.",
+  coach_routine_active_recovery_title: "Active Recovery Flow",
+  coach_routine_active_recovery_desc: "Targeted mobility and isolation work to address weak points while you recover.",
+
   // Onboarding Wizard
   wizard_step_1_question: "Experience Level",
   wizard_option_beginner: "Beginner",
@@ -160,4 +168,19 @@ export const en_coach = {
   dna_stats_intensity: "Intensity",
   dna_stats_favorite_muscle: "Fav Muscle",
   dna_stats_lifetime_workouts: "Lifetime Workouts",
+  
+  // Promotion Modal
+  promotion_modal_title: "Upgrade Available",
+  promotion_modal_current: "Current",
+  promotion_modal_upgrade: "Upgrade",
+  promotion_modal_level_up: "Level Up!",
+  promotion_modal_starting_weight: "Starting Weight",
+  promotion_modal_reset_warning: "Sets will be reset to match the new intensity.",
+  promotion_modal_desc_part1: "You've mastered",
+  promotion_modal_desc_part2: "We recommend upgrading to",
+  promotion_modal_desc_part3: "in the following routines:",
+  promotion_modal_action_apply: "Apply to Selected",
+  promotion_modal_action_snooze: "Not Now",
+  promotion_modal_snooze_1_week: "Keep for this week (7 days)",
+  promotion_modal_snooze_3_weeks: "Not now (3 weeks)",
 };
