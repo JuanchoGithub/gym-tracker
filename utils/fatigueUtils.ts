@@ -1,279 +1,220 @@
 
-import { MuscleGroup, WorkoutSession, Exercise } from '../types';
+import { WorkoutSession, Exercise, UserGoal } from '../types';
 import { PREDEFINED_EXERCISES } from '../constants/exercises';
 import { MUSCLES } from '../constants/muscles';
 
-// Recovery profiles in hours (time to reach 100% freshness from full fatigue)
-const RECOVERY_PROFILES: Record<MuscleGroup, number> = {
-  // Large Muscles (Slower recovery)
-  [MUSCLES.QUADS]: 72,
-  [MUSCLES.HAMSTRINGS]: 72,
-  [MUSCLES.GLUTES]: 72,
-  [MUSCLES.LOWER_BACK]: 72,
-  [MUSCLES.LATS]: 60,
-  [MUSCLES.PECTORALS]: 60,
-  [MUSCLES.SPINAL_ERECTORS]: 72,
-  
-  // Medium Muscles
-  [MUSCLES.UPPER_CHEST]: 48,
-  [MUSCLES.LOWER_CHEST]: 48,
-  [MUSCLES.FRONT_DELTS]: 48,
-  [MUSCLES.SIDE_DELTS]: 48,
-  [MUSCLES.REAR_DELTS]: 48,
-  [MUSCLES.TRAPS]: 48,
-  [MUSCLES.RHOMBOIDS]: 48,
-  [MUSCLES.TERES_MAJOR]: 48,
-  [MUSCLES.TRICEPS]: 48,
-  [MUSCLES.BICEPS]: 48,
-  [MUSCLES.BRACHIALIS]: 48,
-  [MUSCLES.SERRATUS_ANTERIOR]: 48,
-  [MUSCLES.ADDUCTORS]: 48,
-  [MUSCLES.ABDUCTORS]: 48,
-  [MUSCLES.GASTROCNEMIUS]: 48,
-  [MUSCLES.SOLEUS]: 48,
-  
-  // Small/Fast Recovery Muscles
-  [MUSCLES.ABS]: 24,
-  [MUSCLES.OBLIQUES]: 24,
-  [MUSCLES.TRANSVERSE_ABDOMINIS]: 24,
-  [MUSCLES.FOREARMS]: 24,
-  [MUSCLES.WRIST_FLEXORS]: 24,
-  [MUSCLES.WRIST_EXTENSORS]: 24,
-  [MUSCLES.CALVES]: 48, // General catch-all
-  [MUSCLES.ROTATOR_CUFF]: 36,
-  [MUSCLES.TIBIALIS_ANTERIOR]: 24,
-  [MUSCLES.HIP_FLEXORS]: 36,
-  [MUSCLES.CARDIOVASCULAR_SYSTEM]: 24,
+// Recovery times in hours for different muscle groups
+// Smaller muscles recover faster (24-48h), larger systemic groups take longer (72-96h)
+const RECOVERY_TIMES: Record<string, number> = {
+    // Fast Recovery (24-48h)
+    [MUSCLES.ABS]: 24,
+    [MUSCLES.FOREARMS]: 24,
+    [MUSCLES.CALVES]: 48,
+    [MUSCLES.BICEPS]: 48,
+    [MUSCLES.TRICEPS]: 48,
+    [MUSCLES.SIDE_DELTS]: 48,
+    [MUSCLES.REAR_DELTS]: 48,
+    [MUSCLES.ROTATOR_CUFF]: 48,
+
+    // Medium Recovery (60-72h)
+    [MUSCLES.PECTORALS]: 72,
+    [MUSCLES.UPPER_CHEST]: 72,
+    [MUSCLES.LOWER_CHEST]: 72,
+    [MUSCLES.LATS]: 72,
+    [MUSCLES.FRONT_DELTS]: 60,
+    [MUSCLES.TRAPS]: 60,
+    [MUSCLES.RHOMBOIDS]: 60,
+    [MUSCLES.HIP_FLEXORS]: 60,
+    [MUSCLES.ADDUCTORS]: 72,
+    [MUSCLES.ABDUCTORS]: 72,
+
+    // Slow Recovery (Systemic load) (96h)
+    [MUSCLES.QUADS]: 96,
+    [MUSCLES.HAMSTRINGS]: 96,
+    [MUSCLES.GLUTES]: 96,
+    [MUSCLES.LOWER_BACK]: 96,
+    [MUSCLES.SPINAL_ERECTORS]: 96,
 };
 
-const DEFAULT_RECOVERY_HOURS = 48;
+const DEFAULT_RECOVERY_HOURS = 72;
 
-// How much fatigue (0-100 scale) one set induces (simplified model)
-const FATIGUE_PER_SET_PRIMARY = 12;
-const FATIGUE_PER_SET_SECONDARY = 6;
-const MAX_FATIGUE_CAP = 150; // Cap accumulated fatigue so one crazy workout doesn't ruin you for weeks
-
-// CNS Cost per set based on exercise category and body part
-// Heaviest compounds tax CNS the most
-const getCnsCost = (exercise: Exercise): number => {
-    if (exercise.category === 'Plyometrics') return 4; // High impact
+export const getFreshnessColor = (score: number): string => {
+    // RME Scale Mapping:
+    // 0-20% Freshness (80-100% Fatigue) -> Red (Optimal Overload / Tired)
+    // 20-60% Freshness (40-80% Fatigue) -> Orange/Yellow (Effective Training / Recovering)
+    // 60-100% Freshness (0-40% Fatigue) -> Green (Fresh)
     
-    if (exercise.category === 'Barbell') {
-        if (['Legs', 'Back', 'Full Body'].includes(exercise.bodyPart)) return 4; // Squat/Deadlift
-        return 3; // Bench/OHP
+    let hue = 0;
+    if (score <= 20) {
+        // Deep Red to Red
+        hue = (score / 20) * 10; 
+    } else if (score <= 60) {
+        // Red-Orange to Yellow (10 -> 60)
+        hue = 10 + ((score - 20) / 40) * 50;
+    } else {
+        // Yellow to Green (60 -> 120)
+        hue = 60 + ((score - 60) / 40) * 60;
     }
     
-    if (exercise.category === 'Dumbbell' || exercise.category === 'Kettlebell') {
-        if (['Legs', 'Back', 'Full Body'].includes(exercise.bodyPart)) return 2.5;
-        return 2;
-    }
-    
-    if (exercise.category === 'Bodyweight') {
-        if (['Legs', 'Full Body'].includes(exercise.bodyPart)) return 2;
-        return 1.5;
-    }
-    
-    if (exercise.category === 'Machine' || exercise.category === 'Cable') {
-        if (['Legs', 'Back'].includes(exercise.bodyPart)) return 1.5; // Leg Press etc
-        return 1;
-    }
-    
-    return 0.5; // Cardio, Abs, Isolation
+    return `hsl(${Math.round(hue)}, 85%, 45%)`;
 };
 
-export const calculateMuscleFreshness = (history: WorkoutSession[], exercises: Exercise[]): Record<string, number> => {
-  const now = Date.now();
-  const fatigueMap: Record<string, number> = {};
-
-  // Initialize all known muscles to 0 fatigue (100% freshness) implied
-  // We will calculate residual fatigue and subtract from 100
-
-  // Filter history to relevant window (max recovery is 72h, so let's look back 4 days to be safe and catch lingering fatigue)
-  const cutoffTime = now - (96 * 60 * 60 * 1000); 
-  const recentHistory = history.filter(s => s.endTime > cutoffTime);
-
-  // Helper to look up exercise definitions
-  const getExerciseDef = (id: string) => exercises.find(e => e.id === id) || PREDEFINED_EXERCISES.find(e => e.id === id);
-
-  recentHistory.forEach(session => {
-    // Hours passed since this workout finished
-    const hoursSince = (now - session.endTime) / (1000 * 60 * 60);
-    
-    session.exercises.forEach(exercise => {
-      const def = getExerciseDef(exercise.exerciseId);
-      if (!def) return;
-
-      // Count effective sets (ignore warmups for fatigue calculation generally, or weight them lower)
-      const effectiveSets = exercise.sets.filter(s => s.type !== 'warmup' && s.isComplete).length;
-      if (effectiveSets === 0) return;
-
-      // Apply fatigue to Primary Muscles
-      if (def.primaryMuscles) {
-        def.primaryMuscles.forEach(muscle => {
-            const recoveryDuration = RECOVERY_PROFILES[muscle] || DEFAULT_RECOVERY_HOURS;
-            
-            // Linear Recovery Model:
-            // Fatigue = InitialFatigue * (1 - (HoursPassed / RecoveryDuration))
-            // If HoursPassed > RecoveryDuration, fatigue is 0.
-            
-            if (hoursSince < recoveryDuration) {
-                const initialFatigue = effectiveSets * FATIGUE_PER_SET_PRIMARY;
-                const remainingFatigue = initialFatigue * (1 - (hoursSince / recoveryDuration));
-                fatigueMap[muscle] = (fatigueMap[muscle] || 0) + remainingFatigue;
-            }
-        });
-      }
-
-      // Apply fatigue to Secondary Muscles
-      if (def.secondaryMuscles) {
-        def.secondaryMuscles.forEach(muscle => {
-            const recoveryDuration = RECOVERY_PROFILES[muscle] || DEFAULT_RECOVERY_HOURS;
-            if (hoursSince < recoveryDuration) {
-                const initialFatigue = effectiveSets * FATIGUE_PER_SET_SECONDARY;
-                const remainingFatigue = initialFatigue * (1 - (hoursSince / recoveryDuration));
-                fatigueMap[muscle] = (fatigueMap[muscle] || 0) + remainingFatigue;
-            }
-        });
-      }
-    });
-  });
-
-  // Convert accumulated fatigue to Freshness Score (0-100)
-  const freshnessMap: Record<string, number> = {};
-  
-  // List of all muscles we track to ensure we return a value even if 100%
-  const allMuscles = Object.keys(RECOVERY_PROFILES);
-  
-  allMuscles.forEach(muscle => {
-      const fatigue = fatigueMap[muscle] || 0;
-      // Clamp fatigue at cap
-      const clampedFatigue = Math.min(fatigue, MAX_FATIGUE_CAP);
-      // Freshness is inverse of fatigue. 
-      // If fatigue is >= 100, freshness is 0 (or very low).
-      // We scale it so 0 fatigue = 100 freshness. 100 fatigue = 0 freshness.
-      
-      let freshness = 100 - clampedFatigue;
-      freshness = Math.max(0, Math.round(freshness));
-      
-      freshnessMap[muscle] = freshness;
-  });
-
-  return freshnessMap;
-};
-
-export const calculateSystemicFatigue = (history: WorkoutSession[], exercises: Exercise[]): { score: number; level: 'Low' | 'Medium' | 'High' } => {
+export const calculateMuscleFreshness = (
+    history: WorkoutSession[], 
+    exercises: Exercise[], 
+    userGoal: UserGoal = 'muscle'
+): Record<string, number> => {
+    const freshness: Record<string, number> = {};
     const now = Date.now();
-    const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
-    const recentHistory = history.filter(s => (now - s.startTime) < SEVEN_DAYS);
+    const MS_PER_HOUR = 3600000;
     
-    const getExerciseDef = (id: string) => exercises.find(e => e.id === id) || PREDEFINED_EXERCISES.find(e => e.id === id);
+    // Determine Capacity Baseline (Sets per muscle group for full recovery/saturation)
+    // Powerbuilder (Strength): Lower volume tolerance, higher intensity focus (~10 sets)
+    // Bodybuilder (Muscle): Moderate volume tolerance (~15 sets)
+    // Endurance: High volume tolerance (~20 sets)
+    let capacityBaseline = 15;
+    if (userGoal === 'strength') capacityBaseline = 10;
+    if (userGoal === 'endurance') capacityBaseline = 20;
 
-    let totalAccumulatedLoad = 0;
+    // We analyze history up to the max recovery time (approx 5 days)
+    const MAX_LOOKBACK = 5 * 24 * MS_PER_HOUR;
+    const relevantHistory = history.filter(s => (now - s.startTime) < MAX_LOOKBACK);
 
-    recentHistory.forEach(session => {
-        const daysAgo = (now - session.startTime) / (24 * 60 * 60 * 1000);
-        
-        // Decay factor: Fatigue reduces by roughly 50% every 24 hours
-        // Day 0: 1.0, Day 1: 0.5, Day 2: 0.25...
-        const decayFactor = Math.pow(0.6, daysAgo); // slightly slower decay than 50% to be conservative
-        
-        let sessionLoad = 0;
-        
+    const muscleFatigueAccumulation: Record<string, number> = {};
+
+    relevantHistory.forEach(session => {
+        const hoursAgo = (now - session.startTime) / MS_PER_HOUR;
+
         session.exercises.forEach(ex => {
-            const def = getExerciseDef(ex.exerciseId);
+            const def = exercises.find(e => e.id === ex.exerciseId) || PREDEFINED_EXERCISES.find(e => e.id === ex.exerciseId);
             if (!def) return;
+
+            // Calculate Effective Stress Units (RME Numerator)
+            const stressUnits = ex.sets.reduce((acc, set) => {
+                if (!set.isComplete) return acc;
+                
+                let intensityMult = 1.0;
+                
+                // Intensity Multiplier based on Rep Range (implied load)
+                // Updated: Increased Heavy Load multiplier from 1.3 to 1.65 to better reflect CNS stress of 5x5
+                if (set.reps > 0 && set.reps <= 6) intensityMult = 1.65; // Heavy Load
+                else if (set.reps > 12) intensityMult = 0.8; // Light Load
+                
+                // Modifiers
+                if (set.type === 'failure') intensityMult += 0.3; // Increased from 0.2
+                if (set.type === 'drop') intensityMult += 0.1;
+                if (set.type === 'warmup') intensityMult = 0.5;
+
+                return acc + intensityMult;
+            }, 0);
+
+            if (stressUnits === 0) return;
+
+            // Apply fatigue to Primary Muscles
+            def.primaryMuscles?.forEach(m => {
+                const recoveryDuration = RECOVERY_TIMES[m] || DEFAULT_RECOVERY_HOURS;
+                
+                if (hoursAgo >= recoveryDuration) return;
+
+                // Linear decay
+                const timeFactor = 1 - (hoursAgo / recoveryDuration);
+                
+                // Fatigue % = (Stress / Capacity) * 100 * decay
+                const fatigue = (stressUnits / capacityBaseline) * 100 * timeFactor;
+                
+                muscleFatigueAccumulation[m] = (muscleFatigueAccumulation[m] || 0) + fatigue;
+            });
             
-            const sets = ex.sets.filter(s => s.type === 'normal' && s.isComplete).length;
-            const pointsPerSet = getCnsCost(def);
-            
-            sessionLoad += sets * pointsPerSet;
+            // Apply fatigue to Secondary Muscles (Reduced impact)
+            def.secondaryMuscles?.forEach(m => {
+                const recoveryDuration = RECOVERY_TIMES[m] || DEFAULT_RECOVERY_HOURS;
+                if (hoursAgo >= recoveryDuration) return;
+
+                const timeFactor = 1 - (hoursAgo / recoveryDuration);
+                // Secondary muscles take about 50% of the stress
+                const fatigue = ((stressUnits * 0.5) / capacityBaseline) * 100 * timeFactor; 
+                
+                muscleFatigueAccumulation[m] = (muscleFatigueAccumulation[m] || 0) + fatigue;
+            });
         });
-        
-        totalAccumulatedLoad += sessionLoad * decayFactor;
     });
 
-    const score = Math.round(totalAccumulatedLoad);
+    // Convert accumulated fatigue to freshness (0-100)
+    const allMuscles = Object.keys(muscleFatigueAccumulation);
+    allMuscles.forEach(m => {
+        const fatigue = muscleFatigueAccumulation[m];
+        freshness[m] = Math.round(Math.max(0, 100 - fatigue));
+    });
+
+    return freshness;
+};
+
+export const calculateSystemicFatigue = (history: WorkoutSession[], exercises: Exercise[]): { score: number, level: 'Low' | 'Medium' | 'High' } => {
+    const now = Date.now();
+    const TWO_WEEKS = 14 * 24 * 3600 * 1000;
+    const recent = history.filter(s => (now - s.startTime) < TWO_WEEKS);
+    
+    let fatiguePoints = 0;
+    recent.forEach(s => {
+        const daysAgo = (now - s.startTime) / (24 * 3600 * 1000);
+        // CNS fatigue decays slower than muscle fatigue, roughly 7-10 days
+        const decay = Math.max(0, 1 - (daysAgo / 10)); 
+        
+        // Base cost per session
+        let sessionCost = 5; 
+        
+        // Add for volume/intensity
+        const sets = s.exercises.reduce((acc, ex) => acc + ex.sets.filter(set => set.isComplete).length, 0);
+        
+        // Heuristic: More compounds = Higher CNS load
+        let compoundFactor = 0;
+        s.exercises.forEach(ex => {
+            const def = exercises.find(e => e.id === ex.exerciseId) || PREDEFINED_EXERCISES.find(e => e.id === ex.exerciseId);
+            if (def && ['Barbell', 'Dumbbell'].includes(def.category) && ['Legs', 'Back', 'Chest'].includes(def.bodyPart)) {
+                compoundFactor += 1;
+            }
+        });
+
+        sessionCost += (sets * 1) + (compoundFactor * 2);
+
+        fatiguePoints += sessionCost * decay;
+    });
+    
+    // Normalize: >150 points in 10 days is extremely high
+    const score = Math.min(100, Math.round((fatiguePoints / 150) * 100));
     
     let level: 'Low' | 'Medium' | 'High' = 'Low';
-    if (score > 110) level = 'High';
-    else if (score > 60) level = 'Medium';
-
+    if (score > 60) level = 'High';
+    else if (score > 30) level = 'Medium';
+    
     return { score, level };
 };
 
-export interface BurnoutAnalysis {
-    currentLoad: number;
-    maxLoad: number;
-    trend: 'recovering' | 'stable' | 'accumulating';
-    daysToBurnout: number | null;
-}
-
-export const calculateBurnoutAnalysis = (history: WorkoutSession[], exercises: Exercise[]): BurnoutAnalysis => {
-    const now = Date.now();
-    const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
-    const recentHistory = history.filter(s => (now - s.startTime) < SEVEN_DAYS);
-    const getExerciseDef = (id: string) => exercises.find(e => e.id === id) || PREDEFINED_EXERCISES.find(e => e.id === id);
-
-    const MAX_LOAD = 150;
-    const DECAY_RATE = 0.6; // Retain 60% of fatigue each day (recover 40%)
-
-    // 1. Calculate Current Load (Weighted)
-    let currentLoad = 0;
-    let totalRawLoad = 0;
-
-    recentHistory.forEach(session => {
-        const daysAgo = (now - session.startTime) / (24 * 60 * 60 * 1000);
-        let sessionLoad = 0;
-        
-        session.exercises.forEach(ex => {
-            const def = getExerciseDef(ex.exerciseId);
-            if (!def) return;
-            const sets = ex.sets.filter(s => s.type === 'normal' && s.isComplete).length;
-            sessionLoad += sets * getCnsCost(def);
-        });
-        
-        totalRawLoad += sessionLoad;
-        currentLoad += sessionLoad * Math.pow(DECAY_RATE, daysAgo);
-    });
-
-    // 2. Calculate Average Daily Input (Trajectory)
-    // We average the raw load over 7 days to get the user's current "habit"
-    const dailyInput = totalRawLoad / 7;
-
-    // 3. Project Forward
-    let futureLoad = currentLoad;
-    let daysToBurnout: number | null = null;
-    let trend: 'recovering' | 'stable' | 'accumulating' = 'stable';
-
-    // Check trend direction
-    // Equilibrium point: Input = Load * (1 - Decay)
-    // If Input > Equilibrium, load increases.
-    const recoveryCapacity = currentLoad * (1 - DECAY_RATE);
+export const calculateBurnoutAnalysis = (history: WorkoutSession[], exercises: Exercise[]): { currentLoad: number, maxLoad: number, trend: 'accumulating' | 'recovering' | 'stable', daysToBurnout?: number } => {
+    const { score: currentLoad } = calculateSystemicFatigue(history, exercises);
     
-    if (dailyInput > recoveryCapacity * 1.1) {
-        trend = 'accumulating';
-        // Simulate forward 14 days
-        for (let i = 1; i <= 14; i++) {
-            futureLoad = (futureLoad * DECAY_RATE) + dailyInput;
-            if (futureLoad >= MAX_LOAD) {
-                daysToBurnout = i;
-                break;
-            }
-        }
-    } else if (dailyInput < recoveryCapacity * 0.9) {
-        trend = 'recovering';
+    const now = Date.now();
+    const oneWeek = 7 * 24 * 3600 * 1000;
+    const week1History = history.filter(s => s.startTime > now - oneWeek);
+    const week2History = history.filter(s => s.startTime <= now - oneWeek && s.startTime > now - 2 * oneWeek);
+    
+    const vol1 = week1History.length;
+    const vol2 = week2History.length;
+    
+    let trend: 'accumulating' | 'recovering' | 'stable' = 'stable';
+    if (vol1 > vol2 + 1) trend = 'accumulating';
+    else if (vol1 < vol2 - 1) trend = 'recovering';
+    
+    let daysToBurnout = undefined;
+    if (trend === 'accumulating' && currentLoad > 70) {
+        // Rough estimate: how many days until load hits 100 at current pace
+        daysToBurnout = Math.max(1, Math.round((100 - currentLoad) / 5)); 
     }
-
+    
     return {
-        currentLoad: Math.round(currentLoad),
-        maxLoad: MAX_LOAD,
+        currentLoad,
+        maxLoad: 100,
         trend,
         daysToBurnout
     };
-};
-
-export const getFreshnessColor = (score: number): string => {
-    // HSL Interpolation: 0 (Red/0deg) -> 100 (Green/120deg)
-    const hue = Math.round((score / 100) * 120);
-    return `hsl(${hue}, 70%, 45%)`;
 };

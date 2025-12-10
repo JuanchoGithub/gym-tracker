@@ -1,4 +1,16 @@
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+
+// Helper to set a cookie
+const setCookie = (name: string, value: string, days: number) => {
+    const d = new Date();
+    d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
+    const expires = "expires=" + d.toUTCString();
+    document.cookie = name + "=" + value + ";" + expires + ";path=/;SameSite=Strict";
+};
+
+// Keys that should be synced to cookies (Small preferences only)
+const COOKIE_SYNC_KEYS = ['locale', 'measureUnit', 'theme', 'activeWorkoutId'];
 
 export function useLocalStorage<T,>(key: string, initialValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {
   // Ref to keep track of the current state value for the debounce callback
@@ -34,9 +46,21 @@ export function useLocalStorage<T,>(key: string, initialValue: T): [T, React.Dis
 
       timeoutRef.current = window.setTimeout(() => {
         try {
-          window.localStorage.setItem(key, JSON.stringify(valueToStore));
+          const stringified = JSON.stringify(valueToStore);
+          window.localStorage.setItem(key, stringified);
+          
+          // Sync specific small keys to cookies for redundancy/access
+          if (COOKIE_SYNC_KEYS.includes(key)) {
+              // Special case: for activeWorkout, just save the ID or boolean, not the whole object to save space
+              if (key === 'activeWorkout' && valueToStore) {
+                 // @ts-ignore
+                 setCookie('hasActiveWorkout', 'true', 1);
+              } else {
+                 setCookie(key, String(valueToStore), 365);
+              }
+          }
         } catch (e) {
-          console.error("Failed to write to local storage", e);
+          console.error("Failed to write to storage", e);
         }
       }, 500); // 500ms debounce delay
 

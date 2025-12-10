@@ -758,7 +758,7 @@ const ActiveWorkoutPage: React.FC = () => {
   };
 
   const getFreshestMuscleGroup = () => {
-    const freshness = calculateMuscleFreshness(history, exercises);
+    const freshness = calculateMuscleFreshness(history, exercises, profile.mainGoal);
     
     const getGroupScore = (muscleNames: string[]) => {
         const groupScores = muscleNames.map(m => freshness[m] !== undefined ? freshness[m] : 100);
@@ -791,7 +791,7 @@ const ActiveWorkoutPage: React.FC = () => {
           return;
       }
 
-      const recommendation = getWorkoutRecommendation(history, routines, exercises, t, currentWeight);
+      const recommendation = getWorkoutRecommendation(history, routines, exercises, t, currentWeight, profile);
       
       if (!recommendation) {
           handleAggressiveSuggest();
@@ -812,7 +812,7 @@ const ActiveWorkoutPage: React.FC = () => {
            } else {
                const inferredProfile = inferUserProfile(history);
                if (profile.mainGoal) inferredProfile.goal = profile.mainGoal;
-               const freshness = calculateMuscleFreshness(history, exercises);
+               const freshness = calculateMuscleFreshness(history, exercises, profile.mainGoal);
                
                routineToSuggest = generateGapSession([], exercises, history, t, inferredProfile, freshness);
                routineToSuggest.name = t('smart_gap_session');

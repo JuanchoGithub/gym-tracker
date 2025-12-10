@@ -381,7 +381,7 @@ export const getWorkoutRecommendation = (
   const { routineFrequency, exerciseFrequency } = habitData;
   
   const systemicFatigue = calculateSystemicFatigue(history, exercises);
-  const freshness = calculateMuscleFreshness(history, exercises); // Moved up to use for gap session
+  const freshness = calculateMuscleFreshness(history, exercises, profile?.mainGoal); 
 
   // --- PHASE 0: CHECK ALREADY TRAINED TODAY ---
   const now = new Date();

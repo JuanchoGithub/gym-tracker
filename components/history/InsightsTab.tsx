@@ -59,23 +59,23 @@ const InsightCard: React.FC<{ insight: SupplementCorrelation }> = ({ insight }) 
 
 const InsightsTab: React.FC<InsightsTabProps> = ({ history, takenSupplements, allSupplements }) => {
   const { t } = useI18n();
-  const { exercises } = useContext(AppContext);
+  const { exercises, profile } = useContext(AppContext);
 
   const insights = useMemo(() => {
     return analyzeCorrelations(history, takenSupplements, allSupplements);
   }, [history, takenSupplements, allSupplements]);
   
   const muscleFreshness = useMemo(() => {
-      return calculateMuscleFreshness(history, exercises);
-  }, [history, exercises]);
+      return calculateMuscleFreshness(history, exercises, profile.mainGoal);
+  }, [history, exercises, profile.mainGoal]);
   
   // Identify Freshest and Most Fatigued muscles
   const sortedMuscles = useMemo(() => {
       return Object.entries(muscleFreshness).sort(([, scoreA], [, scoreB]) => (scoreA as number) - (scoreB as number));
   }, [muscleFreshness]);
 
-  const freshestMuscles = sortedMuscles.filter(([, score]) => score >= 90).map(([muscle]) => muscle).slice(0, 3);
-  const fatiguedMuscles = sortedMuscles.filter(([, score]) => score <= 60).map(([muscle]) => muscle).slice(0, 3);
+  const freshestMuscles = sortedMuscles.filter(([, score]) => score >= 80).map(([muscle]) => muscle).slice(0, 3);
+  const fatiguedMuscles = sortedMuscles.filter(([, score]) => score <= 40).map(([muscle]) => muscle).slice(0, 3);
 
   if (history.length === 0) {
     return (

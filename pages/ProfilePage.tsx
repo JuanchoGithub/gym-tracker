@@ -133,8 +133,8 @@ const ProfilePage: React.FC = () => {
   const lifterStats = useMemo(() => calculateLifterDNA(history, currentWeight || 70), [history, currentWeight]);
 
   const muscleFreshness = useMemo(() => {
-      return calculateMuscleFreshness(history, exercises);
-  }, [history, exercises]);
+      return calculateMuscleFreshness(history, exercises, profile.mainGoal);
+  }, [history, exercises, profile.mainGoal]);
 
   useEffect(() => {
     if (!('wakeLock' in navigator)) {

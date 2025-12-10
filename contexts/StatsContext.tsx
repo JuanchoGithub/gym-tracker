@@ -34,7 +34,7 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setIsCalculating(true);
         // Defer calculation to next tick to allow UI to update
         setTimeout(() => {
-            const freshness = calculateMuscleFreshness(history, exercises);
+            const freshness = calculateMuscleFreshness(history, exercises, profile.mainGoal);
             const recommendation = getWorkoutRecommendation(history, routines, exercises, t, currentWeight, profile);
             const imbalanceRecommendation = detectImbalances(history, routines, currentWeight, profile.gender);
             const goalMismatchRecommendation = detectGoalMismatch(profile, history);
