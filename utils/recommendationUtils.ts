@@ -560,7 +560,7 @@ export const getWorkoutRecommendation = (
   };
 
   const readyGroups = groups.filter(g => {
-      const threshold = g.id === 'Full Body' ? 70 : 80;
+      const threshold = 80; // Standard threshold for all groups to ensure sufficient recovery
       return g.score > threshold;
   });
 
@@ -631,6 +631,11 @@ export const getWorkoutRecommendation = (
         if (r.name.toLowerCase().includes(winner.id.toLowerCase())) score += 10;
         
         if (!r.id.startsWith('rt-')) score += 5;
+        
+        // Anti-Repetition Penalty: Heavily penalize the routine just performed
+        if (lastSession && r.id === lastSession.routineId) {
+            score -= 50; 
+        }
         
         if (winner.id === 'Full Body') {
              const hasLegs = r.exercises.some(ex => {

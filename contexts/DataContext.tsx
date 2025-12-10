@@ -1,4 +1,5 @@
-import React, { createContext, useState, ReactNode, useCallback, useMemo, useEffect } from 'react';
+
+import React, { createContext, ReactNode, useCallback, useMemo, useEffect } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { Routine, WorkoutSession, Exercise, PerformedSet } from '../types';
 import { PREDEFINED_ROUTINES } from '../constants/routines';
@@ -34,32 +35,44 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [routines, setRoutines] = useLocalStorage<Routine[]>('routines', PREDEFINED_ROUTINES);
   const [rawExercises, setRawExercises] = useLocalStorage<Exercise[]>('exercises', PREDEFINED_EXERCISES);
 
-  // Exercise Fixing Logic - Ensure integrity of predefined exercises
+  // Helper to synchronize local storage exercises with the latest code definitions
+  // This ensures that if we update biomechanics (e.g. adding Forearms to Deadlift), 
+  // the user's local data gets updated automatically.
+  const syncExercises = useCallback((currentExercises: Exercise[]): Exercise[] => {
+      let hasChanges = false;
+      const updated = currentExercises.map(ex => {
+          if (ex.id.startsWith('ex-')) {
+              const def = PREDEFINED_EXERCISES.find(p => p.id === ex.id);
+              if (def) {
+                  // Compare muscle arrays (sort to ignore order differences)
+                  const pMuscles = JSON.stringify(ex.primaryMuscles?.sort() || []);
+                  const defPMuscles = JSON.stringify(def.primaryMuscles?.sort() || []);
+                  const sMuscles = JSON.stringify(ex.secondaryMuscles?.sort() || []);
+                  const defSMuscles = JSON.stringify(def.secondaryMuscles?.sort() || []);
+
+                  // If definitions drift, force update to the code's version
+                  if (pMuscles !== defPMuscles || sMuscles !== defSMuscles) {
+                      hasChanges = true;
+                      return {
+                          ...ex,
+                          primaryMuscles: def.primaryMuscles,
+                          secondaryMuscles: def.secondaryMuscles,
+                          // We can also sync category if needed, but muscles are the priority
+                          category: def.category, 
+                          bodyPart: def.bodyPart
+                      };
+                  }
+              }
+          }
+          return ex;
+      });
+      return hasChanges ? updated : currentExercises;
+  }, []);
+
+  // Run sync on mount to fix any stale data immediately
   useEffect(() => {
-    setRawExercises(currentExercises => {
-        let hasChanges = false;
-        const updated = currentExercises.map(ex => {
-            if (ex.id.startsWith('ex-')) {
-                const predefined = PREDEFINED_EXERCISES.find(p => p.id === ex.id);
-                if (predefined) {
-                    const missingPrimary = predefined.primaryMuscles && !ex.primaryMuscles;
-                    const missingSecondary = predefined.secondaryMuscles && !ex.secondaryMuscles;
-                    
-                    if (missingPrimary || missingSecondary) {
-                        hasChanges = true;
-                        return {
-                            ...ex,
-                            primaryMuscles: ex.primaryMuscles || predefined.primaryMuscles,
-                            secondaryMuscles: ex.secondaryMuscles || predefined.secondaryMuscles
-                        };
-                    }
-                }
-            }
-            return ex;
-        });
-        return hasChanges ? updated : currentExercises;
-    });
-  }, [setRawExercises]);
+    setRawExercises(current => syncExercises(current));
+  }, [setRawExercises, syncExercises]);
 
   const exercises = useMemo(() => rawExercises, [rawExercises]);
 
@@ -99,7 +112,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const saveCompletedWorkout = useCallback((session: WorkoutSession) => {
       setHistory(prev => [session, ...prev]);
-  }, [setHistory]);
+      
+      // Also sync exercises here to ensure any newly finished workout 
+      // uses the absolute latest definitions for stats calculation next time
+      setRawExercises(current => syncExercises(current));
+  }, [setHistory, setRawExercises, syncExercises]);
 
   const upsertRoutine = useCallback((routine: Routine) => {
       setRoutines(prev => {
@@ -152,11 +169,27 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
       if (Array.isArray(data.exercises)) {
           setRawExercises(() => {
+              // When importing, we start with the Code Constants to ensure we have the latest
+              // structure. Then we merge in the imported data.
               const merged = [...PREDEFINED_EXERCISES];
+              
               data.exercises.forEach((ie: Exercise) => {
                    const existingIdx = merged.findIndex(m => m.id === ie.id);
-                   if (existingIdx >= 0) merged[existingIdx] = ie;
-                   else merged.push(ie);
+                   
+                   if (existingIdx >= 0) {
+                       // Stock exercise: We want to keep user customizations (like notes?) 
+                       // BUT we want to ENFORCE the code's muscle definitions.
+                       // The imported 'ie' might have stale muscle data.
+                       const freshDef = merged[existingIdx];
+                       merged[existingIdx] = {
+                           ...ie, // Keep imported properties (id, name, notes...)
+                           primaryMuscles: freshDef.primaryMuscles, // Enforce fresh muscles
+                           secondaryMuscles: freshDef.secondaryMuscles // Enforce fresh muscles
+                       };
+                   } else {
+                       // Custom exercise: Add it as is
+                       merged.push(ie);
+                   }
               });
               return merged;
           });
