@@ -23,13 +23,15 @@ Desarrollada con **React**, **TypeScript** y **Tailwind CSS**.
 
 ### 🏋️‍♂️ Entrenamiento y Seguimiento
 *   **Modo Entrenamiento Activo:** Registro en tiempo real con soporte nativo para **Superseries**, Drop Sets, Series de Aproximación y Series por Tiempo.
-*   **Temporizadores Inteligentes:** El tiempo de descanso se calcula solo según la intensidad de la serie (no es lo mismo descansar después de calentar que después de fallar) y corre en segundo plano.
+*   **Temporizadores Inteligentes:** Cálculo automático con control granular. Definí valores predeterminados específicos para series de **Esfuerzo**, **Fallo**, **Drop Sets** y **Calentamiento** para ajustar tu curva de intensidad.
+*   **"¡Una Más!" (One Moar):** Una función dinámica en el Reproductor de Superseries que te permite extender instantáneamente una ronda del circuito sobre la marcha cuando sentís que tenés energía extra.
+*   **Reorganización Drag-and-Drop:** Interfaz totalmente interactiva que te permite reordenar ejercicios y mover elementos dentro y fuera de Superseries al instante dentro de una sesión activa.
+*   **Búsqueda Bilingüe:** La base de datos de ejercicios está indexada en dos idiomas. Buscar "Bench" encontrará "Press de Banca", y buscar "Espalda" encontrará ejercicios de "Back", independientemente del idioma seleccionado en la app.
 *   **Base de Datos Visual:** Animaciones SVG detalladas y mapas anatómicos dinámicos que resaltan qué músculos estás trabajando realmente (Motores vs. Estabilizadores).
 *   **Coach de Voz:** Anuncios Text-to-Speech (TTS) que te cantan las rondas, los intervalos de descanso y qué ejercicio sigue.
 *   **Audio Procedural:** Efectos de sonido sintetizados en tiempo real (ticks, campanas) para temporizadores, sin depender de archivos externos, asegurando un rendimiento ligero.
 *   **Modo HIIT Express:** Un timer de intervalos dedicado para sesiones de alta intensidad con ratios de trabajo/descanso totalmente configurables.
 *   **Gestión de Rutinas:** Creá tus propias plantillas o usá los programas pre-cargados (StrongLifts, PPL, PHUL).
-*   **Reproductor de Superseries:** Una interfaz específica para manejar las transiciones y descansos en bloques de ejercicios complejos sin perderte.
 *   **Guardián de Sesiones:** Detección automática de entrenamientos abandonados (>3 horas) para cerrar la sesión y que no te arruinen las estadísticas de tiempo.
 
 ### 📊 Analíticas e Insights
@@ -44,7 +46,9 @@ Desarrollada con **React**, **TypeScript** y **Tailwind CSS**.
 
 ### 💊 Nutrición y Salud
 *   **Asistente de Suplementación:** Genera un plan de suplementos a medida basándose en tu peso, género, objetivos (volumen/definición) y condiciones médicas.
+*   **Detección de Desvío de Hábito:** Un sistema reactivo que analiza las marcas de tiempo de tus registros. Si constantemente marcás los suplementos de la "Mañana" como tomados a las 2 PM, la app aprende tu hábito y sugiere actualizar permanentemente el horario.
 *   **Coach de Suplementación Proactivo:** Un motor de IA que revisa tus tendencias de volumen para sugerir ajustes al stack (ej: "Agregá Creatina" si el volumen semanal sube, o "Sacá el Pre-entreno" si estás lesionado).
+*   **Biblioteca Híbrida:** Combiná el plan generado por IA con entradas totalmente personalizadas. Agregá tus propios suplementos manualmente y rastrealos junto con las recomendaciones generadas.
 *   **Cronograma Inteligente:** Ajusta automáticamente los horarios de toma (ej: mueve la proteína del desayuno al almuerzo) si cambiás tu horario de entrenamiento.
 *   **Correlaciones:** Cruza los datos de tus entrenamientos con el registro de suplementos para encontrar patrones (ej: "Rendís un 5% más en volumen cuando tomás Creatina").
 *   **Alertas de Stock:** Indicadores visuales en tu agenda diaria cuando te quedan pocas porciones de algún producto.
@@ -78,7 +82,7 @@ $$
 $$
 
 $$
-\text{Frescura} = \max(0, 100 - \text{Fatiga}_{actual})
+\text{Frescura} = \max(0, 100 - \text{Fatigue}_{current})
 $$
 
 ### 3. Puntuación de ADN del Atleta
@@ -165,6 +169,16 @@ En lugar de interrumpir al usuario con popups de "¿Cómo estuvo?", inferimos el
 El motor de recomendación analiza el delta matemático entre registros históricos para determinar el equipamiento disponible.
 *   **Algoritmo:** Calcula el Máximo Común Divisor (MCD) de los cambios de peso en las últimas 10 sesiones.
 *   **Resultado:** Si un usuario nunca incrementa menos de 5kg, el sistema crea una restricción de "Ajuste a la Grilla", asegurando que los pesos sugeridos sean alcanzables con su equipo específico (ej: redondeando 72.5kg -> 75kg).
+
+### 9. Persistencia en Segundo Plano (iOS) (El Loop Silencioso)
+Para garantizar que los temporizadores funcionen de manera fiable en iOS cuando se bloquea la pantalla (donde el sistema operativo suele suspender el JavaScript), la app utiliza un `SilentAudioPlayer`.
+*   **Mecanismo:** Reproduce un bucle de MP3 codificado en base64 con volumen cero.
+*   **Efecto:** Fuerza al navegador a mantener activo el hilo de JavaScript y el `AudioContext` en estado "Running" en lugar de "Suspended", permitiendo que las notificaciones de audio procedimental suenen a tiempo.
+
+### 10. Fusión Inteligente de Datos
+El sistema de importación/exportación no es una simple sobrescritura de archivos.
+*   **Sincronización:** Al importar datos, el sistema preserva las personalizaciones del usuario (como notas o ejercicios personalizados) pero *impone* las definiciones biomecánicas más recientes (Músculos Primarios/Secundarios) del código fuente.
+*   **Resultado:** Esto permite que los datos antiguos se beneficien de las mejoras en el algoritmo de mapa de calor sin perder el contexto histórico.
 
 ---
 

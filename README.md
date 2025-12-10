@@ -23,13 +23,15 @@ Built with **React**, **TypeScript**, and **Tailwind CSS**.
 
 ### 🏋️‍♂️ Training & Tracking
 *   **Active Workout Mode:** Real-time tracking with support for **Supersets**, Drop Sets, Warmups, and Timed Sets.
-*   **Smart Timers:** Auto-calculating rest timers based on set intensity (Warmup vs. Failure) with background notification support.
+*   **Smart Timers:** Auto-calculating rest timers with granular control. Define specific defaults for **Effort**, **Failure**, **Drop**, and **Warmup** sets to match your intensity curve.
+*   **"Do One Moar!":** A dynamic feature in the Superset Player allowing you to instantly extend a circuit round on the fly when you feel you have extra energy.
+*   **Drag-and-Drop Reorganization:** Fully interactive UI allowing you to reorder exercises and move items in and out of Supersets instantly within an active session.
+*   **Dual-Language Search:** The exercise database is indexed bilingually. Searching for "Bench" will find "Press de Banca", and searching "Espalda" will find "Back" exercises, regardless of the app's selected language.
 *   **Interactive Visual Database:** Detailed SVG animations for exercises and dynamic anatomical maps highlighting primary vs. secondary muscle targets.
-*   **Voice Coach:** Anuncios Text-to-Speech (TTS) que te cantan las rondas, los intervalos de descanso y qué ejercicio sigue.
-*   **Audio Procedural:** Efectos de sonido sintetizados en tiempo real (ticks, campanas) para temporizadores, sin depender de archivos externos, asegurando un rendimiento ligero.
+*   **Voice Coach:** Text-to-Speech (TTS) announcements for rounds, rest intervals, and upcoming exercises.
+*   **Procedural Audio:** Real-time synthesized sound effects (ticks, bells) for timers, ensuring lightweight performance without external assets.
 *   **Quick HIIT Mode:** Dedicated interval timer for high-intensity sessions with customizable work/rest ratios.
 *   **Routine Management:** Create custom templates or use built-in programs (StrongLifts, PPL, PHUL).
-*   **Superset Player:** A dedicated UI for managing complex superset transitions and rest periods.
 *   **Stale Session Guard:** Auto-detection of abandoned workouts (>3 hours) to prevent skewing duration analytics.
 
 ### 📊 Analytics & Insights
@@ -44,14 +46,16 @@ Built with **React**, **TypeScript**, and **Tailwind CSS**.
 
 ### 💊 Nutrition & Health
 *   **Supplement Wizard:** Generates a personalized supplement schedule based on weight, gender, goals (cut/bulk), and medical conditions.
+*   **Behavioral Drift Detection:** A reactive system that analyzes your log timestamps. If you consistently mark "Morning" supplements as taken at 2 PM, the app learns your habit and suggests permanently updating the schedule to match your reality.
 *   **Proactive Supplement Coach:** An AI engine that actively reviews your training volume trends to suggest stack adjustments (e.g., "Add Creatine" if volume spikes, or "Remove Pre-workout" during injury deloads).
+*   **Hybrid Library:** Combine the AI-generated plan with fully custom entries. Add your own supplements manually and track them alongside generated recommendations.
 *   **Context-Aware Scheduling:** Automatically adjusts supplement timing (e.g., moving Protein from Breakfast to Lunch) based on your workout schedule.
 *   **Smart Correlations:** Analyzes workout history against supplement logs to find correlations (e.g., "You lift 5% more volume when taking Creatine").
 *   **In-App Stock Alerts:** Visual badges and reminders within the daily schedule when supplies run low.
 
 ---
 
-## 🧠 Technical Deep Dive: The Math Behind the App
+## 🧠 Technical Deep Dive: The Math & Tech Behind the App
 
 Fortachon runs entirely client-side using `localStorage`. Below are the core algorithms driving the analytics.
 
@@ -161,6 +165,16 @@ Instead of interrupting the user with "How was that?" popups, we infer exertion 
 The recommendation engine analyzes the mathematical delta between historical logs to determine available equipment.
 *   **Algorithm:** Calculate the Greatest Common Divisor (GCD) of weight changes over the last 10 sessions.
 *   **Result:** If a user never increments by less than 5kg, the system creates a "Snap-to-Grid" constraint, ensuring suggested weights are achievable with their specific equipment (e.g., rounding 72.5kg -> 75kg).
+
+### 9. iOS Background Persistence (Silent Loop Hack)
+To ensure timers work reliably on iOS when the screen locks (where `setTimeout` can throttle), the app utilizes a `SilentAudioPlayer`.
+*   **Mechanism:** Plays a zero-volume base64-encoded MP3 loop.
+*   **Effect:** Forces the browser to keep the JavaScript thread active, ensuring the `AudioContext` for procedural sounds remains "Running" instead of "Suspended" by the OS.
+
+### 10. Intelligent Data Merging
+The import/export system is not a simple file overwrite.
+*   **Synchronization:** When importing data, the system preserves user customizations (like notes or custom exercises) but *enforces* the latest biomechanical definitions (Primary/Secondary muscles) from the app source code.
+*   **Result:** This allows legacy data to benefit from improvements in the heatmap algorithm without losing historical context.
 
 ---
 
