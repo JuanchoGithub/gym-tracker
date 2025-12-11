@@ -237,6 +237,44 @@ export const detectImbalances = (
     let maxDeviation = 0.15; 
     let targetFocus: RoutineFocus = 'full_body';
 
+    const getRankedRoutineIds = (targetPatterns: string[]) => {
+        const scored = routines.map(r => {
+            const total = r.exercises.length;
+            if (total === 0) return { id: r.id, score: 0, lastUsed: 0, name: '' };
+
+            const matches = r.exercises.filter(e => targetPatterns.includes(e.exerciseId)).length;
+            const score = matches / total;
+
+            let name = r.name;
+            if (r.id.startsWith('rt-')) {
+                 const key = `${r.id.replace(/-/g, '_')}_name`;
+                 const val = t(key);
+                 if (val !== key) name = val;
+            }
+
+            return {
+                id: r.id,
+                score,
+                lastUsed: r.lastUsed || 0,
+                name
+            };
+        });
+        
+        const relevant = scored.filter(s => s.score > 0);
+        
+        relevant.sort((a, b) => {
+            // Rank by Impact % (Higher matches first)
+            if (Math.abs(b.score - a.score) > 0.01) return b.score - a.score;
+            // Sort by Last Used (Most recent first)
+            if (b.lastUsed !== a.lastUsed) return b.lastUsed - a.lastUsed;
+            // Sort Alphabetically
+            return a.name.localeCompare(b.name);
+        });
+        
+        // Return top 4
+        return relevant.slice(0, 4).map(x => x.id);
+    };
+
     const analyzePair = (
         liftA: keyof typeof currentProfile, 
         liftB: keyof typeof currentProfile, 
@@ -278,9 +316,7 @@ export const detectImbalances = (
                             reasonKey,
                             reasonParams: { [liftA.toLowerCase()]: Math.round(valA), [liftB.toLowerCase()]: Math.round(valB) },
                             suggestedBodyParts: bodyParts,
-                            relevantRoutineIds: routines.filter(r => 
-                                r.exercises.some(e => targetPatterns.includes(e.exerciseId))
-                            ).map(r => r.id)
+                            relevantRoutineIds: getRankedRoutineIds(targetPatterns)
                         };
                     }
                 }
@@ -325,7 +361,7 @@ export const detectImbalances = (
                     lower_level: levelSquat === 'Untrained' ? levelDeadlift : levelSquat 
                 },
                 suggestedBodyParts: ['Legs'],
-                relevantRoutineIds: routines.filter(r => r.exercises.some(e => MOVEMENT_PATTERNS.SQUAT.includes(e.exerciseId) || MOVEMENT_PATTERNS.DEADLIFT.includes(e.exerciseId))).map(r => r.id)
+                relevantRoutineIds: getRankedRoutineIds([...MOVEMENT_PATTERNS.SQUAT, ...MOVEMENT_PATTERNS.DEADLIFT])
             };
         } else if (scoreLower >= scoreUpper + 2) {
              targetFocus = 'upper';
@@ -338,7 +374,7 @@ export const detectImbalances = (
                     upper_level: levelBench === 'Untrained' ? levelOhp : levelBench
                 },
                 suggestedBodyParts: ['Chest', 'Shoulders', 'Back'],
-                relevantRoutineIds: routines.filter(r => r.exercises.some(e => MOVEMENT_PATTERNS.BENCH.includes(e.exerciseId) || MOVEMENT_PATTERNS.OHP.includes(e.exerciseId))).map(r => r.id)
+                relevantRoutineIds: getRankedRoutineIds([...MOVEMENT_PATTERNS.BENCH, ...MOVEMENT_PATTERNS.OHP])
             };
         }
     }
