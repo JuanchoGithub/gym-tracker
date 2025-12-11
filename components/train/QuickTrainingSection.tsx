@@ -30,6 +30,11 @@ const QuickTrainingSection: React.FC<QuickTrainingSectionProps> = ({ isOpen, onT
     const quickHiitTotalSeconds = quickHiitPrepare + (quickHiitWork * quickHiitRounds) + (quickHiitRest * (quickHiitRounds - 1));
     const quickHiitTotalMinutes = Math.round(quickHiitTotalSeconds / 60);
 
+    const handleStartQuickTimer = (seconds: number) => {
+        startQuickTimer(seconds);
+        window.location.hash = '/timers';
+    };
+
     const handleStartQuickHiit = () => {
         const quickHiitRoutine: Routine = {
             id: `quick-hiit-${Date.now()}`,
@@ -50,6 +55,7 @@ const QuickTrainingSection: React.FC<QuickTrainingSectionProps> = ({ isOpen, onT
             }))
         };
         startHiitSession(quickHiitRoutine);
+        window.location.hash = '/timers';
     };
 
     return (
@@ -66,7 +72,7 @@ const QuickTrainingSection: React.FC<QuickTrainingSectionProps> = ({ isOpen, onT
             {isOpen && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2">
                     {quickTimeOptions.map(opt => (
-                        <button key={opt.value} onClick={() => startQuickTimer(opt.value)} className="bg-surface hover:bg-slate-700 text-text-primary font-bold py-4 rounded-lg text-lg transition-colors">
+                        <button key={opt.value} onClick={() => handleStartQuickTimer(opt.value)} className="bg-surface hover:bg-slate-700 text-text-primary font-bold py-4 rounded-lg text-lg transition-colors">
                             {opt.label}
                         </button>
                     ))}
