@@ -1,5 +1,5 @@
 
-import { WorkoutSession, Routine, Exercise, BodyPart, Profile, UserGoal } from '../types';
+import { WorkoutSession, Routine, Exercise, BodyPart, Profile, UserGoal, MuscleGroup } from '../types';
 import { calculateMuscleFreshness, calculateSystemicFatigue } from './fatigueUtils';
 import { MUSCLES } from '../constants/muscles';
 import { generateSmartRoutine, RoutineFocus, RoutineLevel, SurveyAnswers } from './routineGenerator';
@@ -88,33 +88,23 @@ const RATIOS = {
 };
 
 export const detectGoalMismatch = (profile: Profile, history: WorkoutSession[]): Recommendation | null => {
-    // 1. Check if feature is enabled
     if (profile.smartGoalDetection === false) return null;
-
-    // 2. Check if snoozed
     if (profile.goalMismatchSnoozedUntil && Date.now() < profile.goalMismatchSnoozedUntil) return null;
-
-    // 3. Need enough history (e.g., 10 workouts)
     if (history.length < 10) return null;
 
-    // 4. Calculate Stats
     const lifterStats = calculateLifterDNA(history);
     
-    // 5. Determine Detected Goal from Archetype
-    let detectedGoal: UserGoal = 'muscle'; // Default fallback
+    let detectedGoal: UserGoal = 'muscle'; 
     if (lifterStats.archetype === 'powerbuilder') detectedGoal = 'strength';
     else if (lifterStats.archetype === 'bodybuilder') detectedGoal = 'muscle';
     else if (lifterStats.archetype === 'endurance') detectedGoal = 'endurance';
     
-    // 6. Compare with Current Profile Goal
     const currentGoal = profile.mainGoal || 'muscle';
 
-    // If they match, or if user is hybrid/beginner (hard to classify), return null
     if (detectedGoal === currentGoal || lifterStats.archetype === 'hybrid' || lifterStats.archetype === 'beginner') {
         return null;
     }
 
-    // 7. Get avg reps for context
     let repRange = "8-12";
     if (detectedGoal === 'strength') repRange = "< 6";
     else if (detectedGoal === 'endurance') repRange = "15+";
@@ -141,12 +131,9 @@ export const getAvailablePromotion = (
     currentBodyweight?: number
 ): string | null => {
     const now = Date.now();
-
-    // Find if this exercise is a base for any progression path
     const path = PROGRESSION_PATHS.find(p => p.baseExerciseId === currentExerciseId);
     if (!path) return null;
 
-    // Check snoozes
     if (profile?.promotionSnoozes?.[path.baseExerciseId] && now < profile.promotionSnoozes[path.baseExerciseId]) {
         return null;
     }
@@ -194,7 +181,6 @@ export const detectPromotions = (
             const toEx = exercises.find(e => e.id === targetId) || PREDEFINED_EXERCISES.find(e => e.id === targetId);
             
             if (fromEx && toEx) {
-                // Localize names if possible
                 const fromName = t(fromEx.id as any) !== fromEx.id ? t(fromEx.id as any) : fromEx.name;
                 const toName = t(toEx.id as any) !== toEx.id ? t(toEx.id as any) : toEx.name;
 
@@ -224,13 +210,12 @@ export const detectPromotions = (
 
 
 export const detectImbalances = (history: WorkoutSession[], routines: Routine[], currentBodyWeight?: number, gender?: 'male' | 'female'): Recommendation | null => {
-    // REQUIREMENT: Newbies should be on rails. 
     if (history.length < 15) {
         return null;
     }
 
     const currentProfile = calculateMaxStrengthProfile(history);
-    const MIN_STRENGTH_THRESHOLD = 40; // kg
+    const MIN_STRENGTH_THRESHOLD = 40; 
     const max1RM = Math.max(currentProfile.SQUAT, currentProfile.DEADLIFT, currentProfile.BENCH);
 
     if (max1RM < MIN_STRENGTH_THRESHOLD) {
@@ -243,8 +228,6 @@ export const detectImbalances = (history: WorkoutSession[], routines: Routine[],
 
     let worstImbalance: Recommendation | null = null;
     let maxDeviation = 0.15; 
-
-    // --- CHECK 1: RATIOS ---
 
     const analyzePair = (
         liftA: keyof typeof currentProfile, 
@@ -296,31 +279,23 @@ export const detectImbalances = (history: WorkoutSession[], routines: Routine[],
         return null;
     };
 
-
-    // 1a: Squat vs Deadlift (4:5 Ratio)
     const sqDl = analyzePair('SQUAT', 'DEADLIFT', RATIOS.SQ_DL, 'imbalance_squat_deadlift_title', 'imbalance_squat_deadlift_desc', ['Back', 'Legs'], MOVEMENT_PATTERNS.DEADLIFT);
     if (sqDl) { worstImbalance = sqDl; maxDeviation = (sqDl.reasonParams?.deadlift as number / sqDl.reasonParams?.squat as number); }
 
-    // 1b: Bench vs Squat (3:4 Ratio)
     const bnSq = analyzePair('BENCH', 'SQUAT', RATIOS.BN_SQ, 'imbalance_bench_squat_title', 'imbalance_bench_squat_desc', ['Legs'], MOVEMENT_PATTERNS.SQUAT);
     if (bnSq) { worstImbalance = bnSq; }
 
-    // 1c: OHP vs Bench (2:3 Ratio)
     const ohBn = analyzePair('BENCH', 'OHP', RATIOS.OH_BN, 'imbalance_ohp_bench_title', 'imbalance_ohp_bench_desc', ['Shoulders'], MOVEMENT_PATTERNS.OHP);
     if (ohBn) { worstImbalance = ohBn; }
 
-    // 1d: Horizontal Push (Bench) vs Pull (Row) (~1:1 Ratio)
     const pushPull = analyzePair('BENCH', 'ROW', 0.85, 'imbalance_push_pull_title', 'imbalance_push_pull_desc', ['Back', 'Shoulders'], MOVEMENT_PATTERNS.ROW);
     if (pushPull) { worstImbalance = pushPull; }
     
-    // 1e: Vertical Push (OHP) vs Vertical Pull (~1:1 Ratio)
     const vertBal = analyzePair('OHP', 'VERTICAL_PULL', 0.85, 'imbalance_vertical_balance_title', 'imbalance_vertical_balance_desc', ['Back'], MOVEMENT_PATTERNS.VERTICAL_PULL);
     if (vertBal) { worstImbalance = vertBal; }
     
-    // --- CHECK 2: PROFICIENCY GAPS ---
     if (currentBodyWeight && currentBodyWeight > 0 && gender && worstImbalance === null) {
         const profGender = gender;
-
         const levelSquat = getProficiency('SQUAT', currentProfile.SQUAT, currentBodyWeight, profGender);
         const levelBench = getProficiency('BENCH', currentProfile.BENCH, currentBodyWeight, profGender);
         const levelDeadlift = getProficiency('DEADLIFT', currentProfile.DEADLIFT, currentBodyWeight, profGender);
@@ -414,7 +389,21 @@ export const getWorkoutRecommendation = (
   
   const durationProfile = calculateMedianWorkoutDuration(history);
 
-  // --- PHASE 1: STICKY PLAN (Beginner / New User) ---
+  // --- PHASE 1: SYSTEMIC FATIGUE OVERRIDE (Safety First) ---
+  if (systemicFatigue.level === 'High') {
+      return {
+          type: 'deload',
+          titleKey: 'rec_title_deload',
+          reasonKey: 'rec_reason_cns_fatigue',
+          reasonParams: { score: systemicFatigue.score.toString() },
+          suggestedBodyParts: ['Mobility', 'Cardio'],
+          relevantRoutineIds: [],
+          generatedRoutine: generateGapSession([], exercises, history, t, userProfile, freshness, currentBodyweight), 
+          systemicFatigue
+      };
+  }
+
+  // --- PHASE 2: STICKY PLAN (Beginner / New User) ---
   if (isOnboardingPhase && customRoutines.length > 0) {
       if (history.length === 0) {
            return {
@@ -428,7 +417,12 @@ export const getWorkoutRecommendation = (
       }
       
       const lastRoutineIndex = customRoutines.findIndex(r => r.id === lastSession?.routineId);
-      const nextIndex = lastRoutineIndex === -1 ? 0 : (lastRoutineIndex + 1) % customRoutines.length;
+      let nextIndex = lastRoutineIndex === -1 ? 0 : (lastRoutineIndex + 1) % customRoutines.length;
+      
+      if (customRoutines.length > 1 && customRoutines[nextIndex].id === lastSession?.routineId) {
+          nextIndex = (nextIndex + 1) % customRoutines.length;
+      }
+      
       const nextRoutine = customRoutines[nextIndex];
 
       return {
@@ -442,51 +436,26 @@ export const getWorkoutRecommendation = (
           systemicFatigue
       };
   }
-  
-  // --- PHASE 0.5: SYSTEMIC FATIGUE OVERRIDE ---
-  if (systemicFatigue.level === 'High') {
-      return {
-          type: 'deload',
-          titleKey: 'rec_title_deload',
-          reasonKey: 'rec_reason_cns_fatigue',
-          reasonParams: { score: systemicFatigue.score.toString() },
-          suggestedBodyParts: ['Mobility', 'Cardio'],
-          relevantRoutineIds: [],
-          generatedRoutine: generateGapSession([], exercises, history, t, userProfile, freshness), 
-          systemicFatigue
-      };
-  }
 
-  // --- PHASE 2: SMART COACH (Advanced / No Custom Plan) ---
+  // --- PHASE 3: SMART COACH (Advanced / No Custom Plan) ---
   
   const scores = Object.values(freshness);
   const avgFreshness = scores.reduce((a, b) => a + b, 0) / (scores.length || 1);
   const hasFreshMuscles = scores.some(s => s > 80);
   const predictedNextRoutine = predictNextRoutine(history, routines);
   
-  const trainedYesterday = lastSession && (
-     lastSession.startTime >= yesterdayStart ||
-     (lastSession.endTime > 0 && lastSession.endTime >= yesterdayStart)
-  );
-
-  if ((avgFreshness < 60 && !hasFreshMuscles) || (trainedYesterday && predictedNextRoutine)) {
-     let protectedMuscles: any[] = [];
-     if (predictedNextRoutine) {
-         protectedMuscles = getProtectedMuscles(predictedNextRoutine, exercises);
-     } else {
-         protectedMuscles = Object.entries(freshness)
-            .filter(([_, score]) => score < 50)
-            .map(([muscle]) => muscle);
-     }
+  if ((avgFreshness < 60 && !hasFreshMuscles)) {
+     const protectedMuscles = Object.entries(freshness)
+        .filter(([_, score]) => score < 50)
+        .map(([muscle]) => muscle as MuscleGroup);
      
      return {
          type: 'active_recovery',
          titleKey: "rec_title_gap_workout",
-         reasonKey: predictedNextRoutine ? "rec_reason_gap_predict" : "rec_reason_fatigued",
-         reasonParams: { next_routine: predictedNextRoutine?.name || t('common_next_session') },
+         reasonKey: "rec_reason_fatigued",
          suggestedBodyParts: ['Cardio', 'Mobility', 'Core'],
          relevantRoutineIds: [],
-         generatedRoutine: generateGapSession(protectedMuscles, exercises, history, t, userProfile, freshness),
+         generatedRoutine: generateGapSession(protectedMuscles, exercises, history, t, userProfile, freshness, currentBodyweight),
          systemicFatigue
      };
   }
@@ -520,47 +489,30 @@ export const getWorkoutRecommendation = (
   const legsGroup = getGroupData('Legs', LEG_MUSCLES, ['Legs', 'Glutes', 'Calves'], 'legs');
   const fullBodyGroup = getGroupData('Full Body', FULL_BODY_MUSCLES, ['Full Body', 'Chest', 'Back', 'Legs'], 'full_body');
 
-  const groups = [pushGroup, pullGroup, legsGroup, fullBodyGroup];
-  
-  // Calculate Habit Bias based on routine CONTENT, not just name
-  const getHabitScore = (focusKey: RoutineFocus) => {
-      let count = 0;
-      for (const [rId, freq] of Object.entries(routineFrequency)) {
-          const r = routines.find(rout => rout.id === rId);
-          if (r) {
-              // Analyze routine content to classify it
-              let hasLegs = false;
-              let hasPush = false;
-              let hasPull = false;
-              
-              r.exercises.forEach(ex => {
-                  const def = exercises.find(e => e.id === ex.exerciseId) || PREDEFINED_EXERCISES.find(e => e.id === ex.exerciseId);
-                  if (def) {
-                      if (def.bodyPart === 'Legs' && def.category !== 'Cardio') hasLegs = true;
-                      if (['Chest', 'Shoulders', 'Triceps'].includes(def.bodyPart)) hasPush = true;
-                      if (['Back', 'Biceps'].includes(def.bodyPart)) hasPull = true;
-                  }
-              });
-
-              let routineType: RoutineFocus | null = null;
-              if (hasLegs && (hasPush || hasPull)) routineType = 'full_body';
-              else if (hasLegs && !hasPush && !hasPull) routineType = 'legs';
-              else if (!hasLegs && hasPush && !hasPull) routineType = 'push';
-              else if (!hasLegs && !hasPush && hasPull) routineType = 'pull';
-              else if (!hasLegs && hasPush && hasPull) routineType = 'upper';
-              
-              if (routineType === focusKey) {
-                  count += freq;
-              } else if (r.name.toLowerCase().includes(focusKey.replace('_', ' '))) {
-                   count += freq;
-              }
+  const getHabitScore = (focusKey: RoutineFocus): number => {
+      let score = 0;
+      let targetMuscles: string[] = [];
+      if (focusKey === 'push') targetMuscles = PUSH_MUSCLES;
+      else if (focusKey === 'pull') targetMuscles = PULL_MUSCLES;
+      else if (focusKey === 'legs') targetMuscles = LEG_MUSCLES;
+      else if (focusKey === 'full_body') targetMuscles = FULL_BODY_MUSCLES;
+      
+      Object.entries(exerciseFrequency).forEach(([exId, freq]) => {
+          const def = exercises.find(e => e.id === exId) || PREDEFINED_EXERCISES.find(e => e.id === exId);
+          if (def && def.primaryMuscles && def.primaryMuscles.some(m => targetMuscles.includes(m))) {
+              score += freq;
           }
-      }
-      return count;
+      });
+      return score;
   };
 
+  const groups = [pushGroup, pullGroup, legsGroup, fullBodyGroup];
+  
   const readyGroups = groups.filter(g => {
-      const threshold = 80; // Standard threshold for all groups to ensure sufficient recovery
+      const threshold = 80; 
+      // Enforce strict 48h rest rule. daysSince < 2 means trained today (0) or yesterday (1).
+      // This prevents "Traction Day" suggestions immediately after a "Pull" workout.
+      if (g.daysSince < 2) return false; 
       return g.score > threshold;
   });
 
@@ -632,7 +584,6 @@ export const getWorkoutRecommendation = (
         
         if (!r.id.startsWith('rt-')) score += 5;
         
-        // Anti-Repetition Penalty: Heavily penalize the routine just performed
         if (lastSession && r.id === lastSession.routineId) {
             score -= 50; 
         }
@@ -685,18 +636,16 @@ export const getWorkoutRecommendation = (
       };
   }
 
-  // Fallback (General Fatigue / No clear winner)
-  // Ensure we generate a custom gap session even in fallback so the user always has a main action button
-  const fallbackRoutine = generateGapSession([], exercises, history, t, userProfile, freshness);
+  const fallbackRoutine = generateGapSession([], exercises, history, t, userProfile, freshness, currentBodyweight);
   
   return {
-      type: 'active_recovery', // Changed from 'workout' to active_recovery to better reflect the state
+      type: 'active_recovery',
       titleKey: "rec_title_generic",
       titleParams: { focus: 'Cardio / Mobility' },
       reasonKey: "rec_reason_fatigued",
       suggestedBodyParts: ['Cardio', 'Mobility'],
       relevantRoutineIds: routines.filter(r => r.routineType === 'hiit' || r.name.includes('Cardio')).map(r => r.id),
-      generatedRoutine: fallbackRoutine, // Provide the custom routine here
+      generatedRoutine: fallbackRoutine,
       systemicFatigue
   };
 };

@@ -122,7 +122,8 @@ export const generateGapSession = (
     history: WorkoutSession[],
     t: (key: string, params?: any) => string,
     userProfile: SurveyAnswers,
-    freshnessMap: Record<string, number>
+    freshnessMap: Record<string, number>,
+    userBodyWeight?: number
 ): Routine => {
     
     const { experience, goal, equipment, time } = userProfile;
@@ -170,7 +171,7 @@ export const generateGapSession = (
     // Also respect protected muscles (from next workout)
     const excludedMuscles = new Set([...criticalMuscles, ...protectedMuscles]);
 
-    const candidates = allExercises.filter(ex => {
+    let candidates = allExercises.filter(ex => {
         // Equipment Check
         if (equipment === 'bodyweight' && !['Bodyweight', 'Assisted Bodyweight', 'Cardio', 'Plyometrics', 'Duration'].includes(ex.category)) return false;
         if (equipment === 'dumbbell' && ['Barbell', 'Machine', 'Cable', 'Smith Machine'].includes(ex.category)) return false;
@@ -192,6 +193,12 @@ export const generateGapSession = (
 
         return true;
     });
+
+    // SAFETY CHECK: If weight is unknown, prevent bodyweight intensity exercises on "rest" days
+    if (!userBodyWeight || userBodyWeight === 0) {
+        candidates = candidates.filter(ex => !['Bodyweight', 'Assisted Bodyweight', 'Plyometrics'].includes(ex.category));
+        sessionDesc += " " + t('coach_safety_no_weight_desc');
+    }
 
     // 4. Select Exercises based on Strategy
     const selectedExercises: WorkoutExercise[] = [];

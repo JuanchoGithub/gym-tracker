@@ -1,5 +1,5 @@
 
-import React, { useMemo, useContext } from 'react';
+import React, { useMemo, useContext, useState } from 'react';
 import { Icon } from '../common/Icon';
 import { useI18n } from '../../hooks/useI18n';
 import { Recommendation } from '../../utils/recommendationUtils';
@@ -8,6 +8,7 @@ import { Routine, UserGoal } from '../../types';
 import { useMeasureUnit } from '../../hooks/useWeight';
 import { getBodyPartTKey } from '../../utils/i18nUtils';
 import { AppContext } from '../../contexts/AppContext';
+import WeightInputModal from '../modals/WeightInputModal';
 
 interface SmartRecommendationCardProps {
   recommendation: Recommendation;
@@ -31,8 +32,9 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
   onSnooze1RM
 }) => {
   const { t } = useI18n();
-  const { displayWeight, weightUnit } = useMeasureUnit();
-  const { updateProfileInfo } = useContext(AppContext);
+  const { displayWeight, weightUnit, getStoredWeight } = useMeasureUnit();
+  const { updateProfileInfo, currentWeight, logWeight } = useContext(AppContext);
+  const [isWeightModalOpen, setIsWeightModalOpen] = useState(false);
 
   let gradientClass = 'from-violet-600/90 to-indigo-700/90 border-indigo-500/30';
   let iconName = 'dumbbell';
@@ -144,6 +146,13 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
       updateProfileInfo({ smartGoalDetection: false });
       onDismiss();
   };
+  
+  const handleWeightSave = (bwKg: number, extra: number) => {
+      logWeight(bwKg);
+      setIsWeightModalOpen(false);
+  }
+  
+  const showWeightMissingWarning = recommendation.type === 'active_recovery' && !currentWeight;
 
   return (
     <div className={`relative overflow-hidden rounded-2xl p-5 shadow-lg border bg-gradient-to-br ${gradientClass} mb-6 animate-fadeIn transition-all`}>
@@ -187,6 +196,23 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
             {t(recommendation.reasonKey as TranslationKey, formattedParams || recommendation.reasonParams)}
           </p>
         </div>
+        
+        {/* Safety Warning for Bodyweight Exercises */}
+        {showWeightMissingWarning && (
+            <div className="bg-yellow-500/20 border border-yellow-500/40 p-3 rounded-xl flex items-start gap-3">
+                <Icon name="warning" className="w-5 h-5 text-yellow-300 flex-shrink-0 mt-0.5" />
+                <div className="flex-grow">
+                    <p className="text-sm font-bold text-yellow-200">{t('coach_safety_no_weight_title')}</p>
+                    <p className="text-xs text-yellow-100/80 mb-2">{t('coach_safety_no_weight_desc')}</p>
+                    <button 
+                        onClick={() => setIsWeightModalOpen(true)}
+                        className="bg-yellow-500 text-black text-xs font-bold py-1.5 px-3 rounded-lg hover:bg-yellow-400 transition-colors shadow-sm"
+                    >
+                        {t('coach_safety_action_update')}
+                    </button>
+                </div>
+            </div>
+        )}
 
         {/* Action Buttons & Inline Routines */}
         <div className="flex flex-col gap-2 mt-1">
@@ -280,6 +306,12 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
             )}
         </div>
       </div>
+      
+      <WeightInputModal
+        isOpen={isWeightModalOpen}
+        onClose={() => setIsWeightModalOpen(false)}
+        onSave={handleWeightSave}
+      />
     </div>
   );
 };

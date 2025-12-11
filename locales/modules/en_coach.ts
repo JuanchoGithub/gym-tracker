@@ -69,6 +69,9 @@ export const en_coach = {
   rec_alternatives_label: "Or choose from these templates:",
   
   active_workout_suggestion_gap_override: "Generating a low-impact session to facilitate recovery while training.",
+  coach_safety_no_weight_title: "Safety Check",
+  coach_safety_no_weight_desc: "Bodyweight exercises skipped until we know your weight.",
+  coach_safety_action_update: "Add Weight",
 
   // Progression
   progression_reason_squat: "Your Goblet Squat is strong! Upgrade to Barbell Squat.",

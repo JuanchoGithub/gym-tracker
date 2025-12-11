@@ -69,6 +69,9 @@ export const es_coach = {
   rec_alternatives_label: "O elegí una de estas plantillas:",
   
   active_workout_suggestion_gap_override: "Generando una sesión de bajo impacto para facilitar la recuperación mientras entrenás.",
+  coach_safety_no_weight_title: "Control de Seguridad",
+  coach_safety_no_weight_desc: "Omitimos ejercicios de peso corporal porque nos falta tu peso.",
+  coach_safety_action_update: "Agregar Peso",
 
   // Progression
   progression_reason_squat: "¡Tu Sentadilla Copa es fuerte! Pasá a Sentadilla con Barra.",
