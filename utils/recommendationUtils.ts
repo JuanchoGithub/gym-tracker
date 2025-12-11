@@ -168,7 +168,7 @@ export const detectPromotions = (
     history: WorkoutSession[], 
     exercises: Exercise[], 
     routines: Routine[], 
-    t: (key: string) => string,
+    t: (key: string, replacements?: Record<string, string | number>) => string,
     currentBodyweight?: number, 
     profile?: Profile
 ): Recommendation | null => {
@@ -209,7 +209,14 @@ export const detectPromotions = (
 }
 
 
-export const detectImbalances = (history: WorkoutSession[], routines: Routine[], currentBodyWeight?: number, gender?: 'male' | 'female'): Recommendation | null => {
+export const detectImbalances = (
+    history: WorkoutSession[], 
+    routines: Routine[], 
+    exercises: Exercise[], 
+    t: (key: string, replacements?: Record<string, string | number>) => string,
+    currentBodyWeight?: number, 
+    profile?: Profile
+): Recommendation | null => {
     if (history.length < 15) {
         return null;
     }
@@ -228,6 +235,7 @@ export const detectImbalances = (history: WorkoutSession[], routines: Routine[],
 
     let worstImbalance: Recommendation | null = null;
     let maxDeviation = 0.15; 
+    let targetFocus: RoutineFocus = 'full_body';
 
     const analyzePair = (
         liftA: keyof typeof currentProfile, 
@@ -236,7 +244,8 @@ export const detectImbalances = (history: WorkoutSession[], routines: Routine[],
         titleKey: string, 
         reasonKey: string, 
         bodyParts: BodyPart[],
-        targetPatterns: string[]
+        targetPatterns: string[],
+        focusForWeakB: RoutineFocus
     ) => {
         const valA = currentProfile[liftA];
         const valB = currentProfile[liftB];
@@ -262,6 +271,7 @@ export const detectImbalances = (history: WorkoutSession[], routines: Routine[],
                     const histDeviation = histDiff / histTargetB;
 
                     if (histDeviation > 0.10 && currentDeviation >= histDeviation) {
+                        targetFocus = focusForWeakB;
                         return {
                             type: 'imbalance' as const,
                             titleKey,
@@ -279,23 +289,23 @@ export const detectImbalances = (history: WorkoutSession[], routines: Routine[],
         return null;
     };
 
-    const sqDl = analyzePair('SQUAT', 'DEADLIFT', RATIOS.SQ_DL, 'imbalance_squat_deadlift_title', 'imbalance_squat_deadlift_desc', ['Back', 'Legs'], MOVEMENT_PATTERNS.DEADLIFT);
+    const sqDl = analyzePair('SQUAT', 'DEADLIFT', RATIOS.SQ_DL, 'imbalance_squat_deadlift_title', 'imbalance_squat_deadlift_desc', ['Back', 'Legs'], MOVEMENT_PATTERNS.DEADLIFT, 'pull');
     if (sqDl) { worstImbalance = sqDl; maxDeviation = (sqDl.reasonParams?.deadlift as number / sqDl.reasonParams?.squat as number); }
 
-    const bnSq = analyzePair('BENCH', 'SQUAT', RATIOS.BN_SQ, 'imbalance_bench_squat_title', 'imbalance_bench_squat_desc', ['Legs'], MOVEMENT_PATTERNS.SQUAT);
+    const bnSq = analyzePair('BENCH', 'SQUAT', RATIOS.BN_SQ, 'imbalance_bench_squat_title', 'imbalance_bench_squat_desc', ['Legs'], MOVEMENT_PATTERNS.SQUAT, 'legs');
     if (bnSq) { worstImbalance = bnSq; }
 
-    const ohBn = analyzePair('BENCH', 'OHP', RATIOS.OH_BN, 'imbalance_ohp_bench_title', 'imbalance_ohp_bench_desc', ['Shoulders'], MOVEMENT_PATTERNS.OHP);
+    const ohBn = analyzePair('BENCH', 'OHP', RATIOS.OH_BN, 'imbalance_ohp_bench_title', 'imbalance_ohp_bench_desc', ['Shoulders'], MOVEMENT_PATTERNS.OHP, 'push');
     if (ohBn) { worstImbalance = ohBn; }
 
-    const pushPull = analyzePair('BENCH', 'ROW', 0.85, 'imbalance_push_pull_title', 'imbalance_push_pull_desc', ['Back', 'Shoulders'], MOVEMENT_PATTERNS.ROW);
+    const pushPull = analyzePair('BENCH', 'ROW', 0.85, 'imbalance_push_pull_title', 'imbalance_push_pull_desc', ['Back', 'Shoulders'], MOVEMENT_PATTERNS.ROW, 'pull');
     if (pushPull) { worstImbalance = pushPull; }
     
-    const vertBal = analyzePair('OHP', 'VERTICAL_PULL', 0.85, 'imbalance_vertical_balance_title', 'imbalance_vertical_balance_desc', ['Back'], MOVEMENT_PATTERNS.VERTICAL_PULL);
+    const vertBal = analyzePair('OHP', 'VERTICAL_PULL', 0.85, 'imbalance_vertical_balance_title', 'imbalance_vertical_balance_desc', ['Back'], MOVEMENT_PATTERNS.VERTICAL_PULL, 'pull');
     if (vertBal) { worstImbalance = vertBal; }
     
-    if (currentBodyWeight && currentBodyWeight > 0 && gender && worstImbalance === null) {
-        const profGender = gender;
+    if (currentBodyWeight && currentBodyWeight > 0 && profile?.gender && worstImbalance === null) {
+        const profGender = profile.gender;
         const levelSquat = getProficiency('SQUAT', currentProfile.SQUAT, currentBodyWeight, profGender);
         const levelBench = getProficiency('BENCH', currentProfile.BENCH, currentBodyWeight, profGender);
         const levelDeadlift = getProficiency('DEADLIFT', currentProfile.DEADLIFT, currentBodyWeight, profGender);
@@ -305,6 +315,7 @@ export const detectImbalances = (history: WorkoutSession[], routines: Routine[],
         const scoreLower = Math.max(LEVEL_SCORES[levelSquat], LEVEL_SCORES[levelDeadlift]);
 
         if (scoreUpper >= scoreLower + 2) {
+             targetFocus = 'legs';
              worstImbalance = {
                 type: 'imbalance',
                 titleKey: 'imbalance_upper_dominant_title',
@@ -317,6 +328,7 @@ export const detectImbalances = (history: WorkoutSession[], routines: Routine[],
                 relevantRoutineIds: routines.filter(r => r.exercises.some(e => MOVEMENT_PATTERNS.SQUAT.includes(e.exerciseId) || MOVEMENT_PATTERNS.DEADLIFT.includes(e.exerciseId))).map(r => r.id)
             };
         } else if (scoreLower >= scoreUpper + 2) {
+             targetFocus = 'upper';
              worstImbalance = {
                 type: 'imbalance',
                 titleKey: 'imbalance_lower_dominant_title',
@@ -331,6 +343,22 @@ export const detectImbalances = (history: WorkoutSession[], routines: Routine[],
         }
     }
     
+    // Generate correction routine if imbalance found
+    if (worstImbalance) {
+        const userProfile = inferUserProfile(history);
+        if (profile?.mainGoal) userProfile.goal = profile.mainGoal;
+        const habitData = analyzeUserHabits(history);
+        
+        const generatedRoutine = generateSmartRoutine(targetFocus, userProfile, t, exercises, habitData.exerciseFrequency);
+        // Custom name helps user understand why this routine exists
+        generatedRoutine.name = t('smart_routine_name', { focus: t(`focus_${targetFocus}`) });
+        
+        return {
+            ...worstImbalance,
+            generatedRoutine
+        };
+    }
+    
     return worstImbalance;
 }
 
@@ -338,7 +366,7 @@ export const getWorkoutRecommendation = (
   history: WorkoutSession[],
   routines: Routine[],
   exercises: Exercise[],
-  t: (key: string) => string,
+  t: (key: string, replacements?: Record<string, string | number>) => string,
   currentBodyweight?: number,
   profile?: Profile
 ): Recommendation | null => {
