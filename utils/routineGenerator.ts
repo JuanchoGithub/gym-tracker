@@ -1,5 +1,7 @@
 
-import { Routine, WorkoutExercise, PerformedSet, Exercise, BodyPart, ExerciseCategory } from '../types';
+import { Routine, WorkoutExercise, PerformedSet, Exercise, BodyPart, ExerciseCategory, MuscleGroup } from '../types';
+import { MUSCLES } from '../constants/muscles';
+import { PREDEFINED_EXERCISES } from '../constants/exercises';
 
 export type RoutineLevel = 'beginner' | 'intermediate' | 'advanced';
 
@@ -35,6 +37,115 @@ const createExercise = (exerciseId: string, sets: number, reps: number, rest: nu
         },
     };
 };
+
+// --- Smart Warmup Injection Logic ---
+
+// Determines if exercise qualifies as a heavy compound movement demanding extensive warmup
+const isHeavyCompound = (exercise: Exercise): boolean => {
+    // Priority check for specific big 4
+    if (['ex-1', 'ex-2', 'ex-3', 'ex-4', 'ex-101', 'ex-25'].includes(exercise.id)) return true;
+    
+    // Category check
+    if (exercise.category === 'Barbell') {
+        if (['Chest', 'Legs', 'Back', 'Shoulders'].includes(exercise.bodyPart)) return true;
+    }
+    // Dumbbell check for major compounds
+    if (exercise.category === 'Dumbbell') {
+        if (exercise.name.includes('Press') && ['Chest', 'Shoulders'].includes(exercise.bodyPart)) return true;
+        if (exercise.name.includes('Squat') || exercise.name.includes('Lunge')) return true;
+    }
+    return false;
+};
+
+// Modifies the exercises list in-place (or returns new) with injected warmups
+const applySmartWarmups = (exercises: WorkoutExercise[], allExercises: Exercise[]): WorkoutExercise[] => {
+    const warmedMuscles = new Set<string>();
+    const processedExercises: WorkoutExercise[] = [];
+
+    // Helper to check if muscle group is warm
+    const isMuscleWarm = (muscles?: string[]) => {
+        if (!muscles) return false;
+        // If ANY primary muscle is warm, we consider the group partially primed
+        return muscles.some(m => warmedMuscles.has(m));
+    };
+
+    exercises.forEach(workoutExercise => {
+        // Fallback to predefined if custom list doesn't have it (rare)
+        const def = allExercises.find(e => e.id === workoutExercise.exerciseId) || PREDEFINED_EXERCISES.find(e => e.id === workoutExercise.exerciseId);
+        
+        if (!def) {
+            processedExercises.push(workoutExercise);
+            return;
+        }
+
+        const isTimed = workoutExercise.sets.some(s => s.type === 'timed');
+        if (isTimed || ['Cardio', 'Mobility'].includes(def.bodyPart) || def.category === 'Bodyweight') {
+            // Skip warmups for timed/cardio/bodyweight (generally self-limiting)
+            processedExercises.push(workoutExercise);
+            // But they do warm you up!
+            def.primaryMuscles?.forEach(m => warmedMuscles.add(m));
+            def.secondaryMuscles?.forEach(m => warmedMuscles.add(m));
+            return;
+        }
+
+        const targetMuscles = [...(def.primaryMuscles || []), ...(def.secondaryMuscles || [])];
+        const alreadyWarm = isMuscleWarm(targetMuscles);
+        const isBigLift = isHeavyCompound(def);
+        
+        let warmupSetsCount = 0;
+        let warmupReps = [10];
+
+        // Decision Matrix
+        if (isBigLift) {
+            if (!alreadyWarm) {
+                // Heavy Compound + Cold -> Full Protocol
+                warmupSetsCount = 3;
+                warmupReps = [10, 5, 3];
+            } else {
+                // Heavy Compound + Warm -> Feeder Set
+                warmupSetsCount = 1;
+                warmupReps = [3];
+            }
+        } else {
+            // Accessory / Machine
+            if (!alreadyWarm) {
+                // Accessory + Cold -> Primer Set
+                warmupSetsCount = 1;
+                warmupReps = [10];
+            } else {
+                // Accessory + Warm -> Skip
+                warmupSetsCount = 0;
+            }
+        }
+
+        if (warmupSetsCount > 0) {
+            const newWarmupSets: PerformedSet[] = [];
+            for (let i = 0; i < warmupSetsCount; i++) {
+                newWarmupSets.push({
+                    id: `set-warmup-${Date.now()}-${Math.random()}`,
+                    reps: warmupReps[i] || 5,
+                    weight: 0, // Placeholder, calculated at runtime in ActiveWorkoutContext
+                    type: 'warmup',
+                    isComplete: false
+                });
+            }
+            // Prepend warmups to existing sets
+            const updatedExercise = {
+                ...workoutExercise,
+                sets: [...newWarmupSets, ...workoutExercise.sets]
+            };
+            processedExercises.push(updatedExercise);
+        } else {
+            processedExercises.push(workoutExercise);
+        }
+
+        // Update State
+        targetMuscles.forEach(m => warmedMuscles.add(m));
+    });
+
+    return processedExercises;
+};
+
 
 // --- Exercise Maps (Slots -> Exercise IDs) ---
 // Note: IDs must match constants/exercises.ts
@@ -245,6 +356,9 @@ export const generateSmartRoutine = (
         
         exercises.push(createExercise(id, sets, finalReps, rest, finalTime));
     });
+
+    // Apply Smart Warmups
+    const finalExercises = applySmartWarmups(exercises, allExercises || PREDEFINED_EXERCISES);
     
     const localizedFocus = t(`focus_${focus}`);
     
@@ -252,7 +366,7 @@ export const generateSmartRoutine = (
         id: `smart-${focus}-${Date.now()}`,
         name: t('smart_routine_name', { focus: localizedFocus }),
         description: t('smart_routine_desc', { focus: localizedFocus }),
-        exercises,
+        exercises: finalExercises,
         isTemplate: false, // It's a generated session, not necessarily a saved template yet
         routineType: 'strength',
     };
@@ -267,7 +381,7 @@ export const generateRoutines = (answers: SurveyAnswers, t: TranslateFunc): Rout
     // Helper to wrap the smart generator but customize IDs and Names for onboarding
     const addRoutine = (nameKey: string, descKey: string, focus: RoutineFocus, freqDesc: string = "") => {
         // Note: For initial wizard, we don't pass exercise history so it uses defaults (Dynamic Resolution off)
-        const routine = generateSmartRoutine(focus, answers, t);
+        const routine = generateSmartRoutine(focus, answers, t, PREDEFINED_EXERCISES);
         routineCounter++;
         routine.id = `gen-${Date.now()}-${routineCounter}-${Math.random().toString(36).substr(2, 9)}`;
         routine.name = t(nameKey);
@@ -296,12 +410,16 @@ export const generateRoutines = (answers: SurveyAnswers, t: TranslateFunc): Rout
                 const finalTime = isTimed ? (goal === 'strength' ? 60 : 45) : undefined;
                 exercises.push(createExercise(id, sets, finalReps, rest, finalTime));
             });
+            
+            // Apply warmups to beginner routines too!
+            const exercisesWithWarmups = applySmartWarmups(exercises, PREDEFINED_EXERCISES);
+
             routineCounter++;
             routines.push({
                 id: `gen-${Date.now()}-${routineCounter}-${Math.random().toString(36).substr(2, 9)}`,
                 name: t(nameKey),
                 description: `${t(descKey)} ${freqDesc}`,
-                exercises,
+                exercises: exercisesWithWarmups,
                 isTemplate: true,
                 routineType: 'strength',
             });

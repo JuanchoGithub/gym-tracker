@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import { PerformedSet, SetType } from '../../types';
 import { Icon } from '../common/Icon';
 import SetTypeModal from '../modals/SetTypeModal';
@@ -7,6 +7,7 @@ import { useMeasureUnit } from '../../hooks/useWeight';
 import { useI18n } from '../../hooks/useI18n';
 import { formatSecondsToMMSS, parseTimerInput } from '../../utils/timeUtils';
 import { unlockAudioContext } from '../../services/audioService';
+import { AppContext } from '../../contexts/AppContext';
 
 interface SetRowProps {
   set: PerformedSet;
@@ -22,6 +23,7 @@ interface SetRowProps {
 const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSet, onStartTimedSet, previousSetData, isWeightOptional, isValid = true }) => {
   const { displayWeight, getStoredWeight } = useMeasureUnit();
   const { t } = useI18n();
+  const { fontSize } = useContext(AppContext);
   
   // Local state for inputs to prevent cursor jumping/decimal issues
   const [weight, setWeight] = useState(set.weight > 0 ? displayWeight(set.weight) : '');
@@ -155,8 +157,11 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
     }
   }
 
+  // Adjust padding based on font size to prevent overflow
+  const inputPadding = fontSize === 'xl' ? 'p-1' : (fontSize === 'large' ? 'p-2' : 'p-3');
+
   const inputClasses = `
-    w-full max-w-[80px] text-center rounded-xl p-3 text-lg font-medium outline-none transition-all duration-200 shadow-sm
+    w-full max-w-[80px] text-center rounded-xl ${inputPadding} text-lg font-medium outline-none transition-all duration-200 shadow-sm
     focus:ring-2 focus:ring-primary focus:bg-surface-highlight
     disabled:opacity-50 disabled:cursor-not-allowed
   `;

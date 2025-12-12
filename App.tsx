@@ -1,3 +1,4 @@
+
 import React, { useState, useContext, useEffect, useRef } from 'react';
 import BottomNavBar from './components/common/BottomNavBar';
 import TrainPage from './pages/TrainPage';
@@ -37,6 +38,7 @@ const App: React.FC = () => {
   const { activeWorkout, updateActiveWorkout, endWorkout, isWorkoutMinimized, isAddingExercisesToWorkout } = useContext(ActiveWorkoutContext);
   const { activeHiitSession, activeQuickTimer } = useContext(TimerContext);
   const { t } = useI18n();
+  const { fontSize } = useContext(AppContext);
   const [isStaleModalOpen, setIsStaleModalOpen] = useState(false);
   const checkedStaleRef = useRef(false);
 
@@ -164,6 +166,9 @@ const App: React.FC = () => {
     return 'pb-8';
   })();
 
+  // Adjust side margins based on font size to maximize space for text
+  const paddingXClass = fontSize === 'xl' ? 'px-1 sm:px-2' : (fontSize === 'large' ? 'px-2 sm:px-3' : 'px-3 sm:px-4');
+
   return (
     <div className="fixed inset-0 h-[100dvh] w-full bg-background text-text-primary font-sans flex flex-col overflow-hidden bg-gradient-to-b from-background to-[#020617]">
       <SilentAudioPlayer />
@@ -185,7 +190,7 @@ const App: React.FC = () => {
         </div>
       )}
 
-      <main className={`flex-grow container mx-auto px-3 sm:px-4 py-6 overflow-y-auto overflow-x-hidden relative overscroll-y-none scroll-smooth ${paddingBottomClass}`}>
+      <main className={`flex-grow container mx-auto ${paddingXClass} py-6 overflow-y-auto overflow-x-hidden relative overscroll-y-none scroll-smooth ${paddingBottomClass}`}>
         {renderContent()}
         {editingExercise && <ExerciseEditorPage />}
       </main>

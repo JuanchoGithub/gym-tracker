@@ -1,9 +1,10 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import Modal from '../common/Modal';
 import { useI18n } from '../../hooks/useI18n';
 import { useMeasureUnit } from '../../hooks/useWeight';
 import { TranslationKey } from '../../contexts/I18nContext';
+import { AppContext } from '../../contexts/AppContext';
 
 interface WeightInputModalProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ interface WeightInputModalProps {
 const WeightInputModal: React.FC<WeightInputModalProps> = ({ isOpen, onClose, onSave, initialBodyWeight, initialExtraWeight }) => {
     const { t } = useI18n();
     const { measureUnit, getStoredWeight, displayWeight, weightUnit } = useMeasureUnit();
+    const { fontSize } = useContext(AppContext);
     
     const [bodyWeightInput, setBodyWeightInput] = useState('');
     const [extraWeightInput, setExtraWeightInput] = useState('');
@@ -59,6 +61,8 @@ const WeightInputModal: React.FC<WeightInputModalProps> = ({ isOpen, onClose, on
     const currentExtra = parseFloat(extraWeightInput) || 0;
     const totalDisplay = currentBw + currentExtra;
 
+    const inputPadding = fontSize === 'xl' ? 'p-2' : 'p-3';
+
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={t('weight_input_modal_title')}>
             <form onSubmit={handleSave} className="space-y-6">
@@ -75,7 +79,7 @@ const WeightInputModal: React.FC<WeightInputModalProps> = ({ isOpen, onClose, on
                             value={bodyWeightInput}
                             onChange={(e) => setBodyWeightInput(e.target.value)}
                             onFocus={(e) => e.target.select()}
-                            className="w-full bg-slate-900 border border-secondary/50 rounded-lg p-3 text-xl font-bold text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                            className={`w-full bg-slate-900 border border-secondary/50 rounded-lg ${inputPadding} text-xl font-bold text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none`}
                             placeholder="e.g. 75"
                             autoFocus
                             required
@@ -92,7 +96,7 @@ const WeightInputModal: React.FC<WeightInputModalProps> = ({ isOpen, onClose, on
                             value={extraWeightInput}
                             onChange={(e) => setExtraWeightInput(e.target.value)}
                             onFocus={(e) => e.target.select()}
-                            className="w-full bg-slate-900 border border-secondary/50 rounded-lg p-3 text-lg text-text-secondary focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                            className={`w-full bg-slate-900 border border-secondary/50 rounded-lg ${inputPadding} text-lg text-text-secondary focus:border-primary focus:ring-1 focus:ring-primary outline-none`}
                             placeholder="0"
                         />
                         <p className="text-[10px] text-text-secondary/60 mt-1">

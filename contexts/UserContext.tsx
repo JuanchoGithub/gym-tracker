@@ -1,9 +1,10 @@
 
-import React, { createContext, useState, ReactNode, useCallback, useMemo } from 'react';
+import React, { createContext, useState, ReactNode, useCallback, useMemo, useEffect } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { Profile } from '../types';
 
 export type WeightUnit = 'kg' | 'lbs';
+export type FontSize = 'normal' | 'large' | 'xl';
 
 export interface UserContextType {
   profile: Profile;
@@ -33,6 +34,10 @@ export interface UserContextType {
   selectedVoiceURI: string | null;
   setSelectedVoiceURI: React.Dispatch<React.SetStateAction<string | null>>;
   
+  // Appearance
+  fontSize: FontSize;
+  setFontSize: (size: FontSize) => void;
+  
   importUserData: (data: any) => void;
 }
 
@@ -46,6 +51,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [keepScreenAwake, setKeepScreenAwake] = useLocalStorage('keepScreenAwake', true);
   const [enableNotifications, setEnableNotifications] = useLocalStorage('enableNotifications', false);
   const [selectedVoiceURI, setSelectedVoiceURI] = useLocalStorage<string | null>('selectedVoiceURI', null);
+  const [fontSize, setFontSize] = useLocalStorage<FontSize>('fontSize', 'normal');
 
   const currentWeight = useMemo(() => {
       const sorted = [...profile.weightHistory].sort((a, b) => b.date - a.date);
@@ -114,6 +120,18 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }));
   }, [setProfile]);
 
+  // Apply Font Size Effect
+  useEffect(() => {
+    const root = document.documentElement;
+    if (fontSize === 'large') {
+        root.style.fontSize = '112.5%'; // ~18px base
+    } else if (fontSize === 'xl') {
+        root.style.fontSize = '125%'; // ~20px base
+    } else {
+        root.style.fontSize = '100%'; // ~16px base
+    }
+  }, [fontSize]);
+
   const importUserData = useCallback((data: any) => {
       if (data.profile) {
           setProfile(prev => ({ 
@@ -129,8 +147,9 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           if (typeof data.settings.keepScreenAwake === 'boolean') setKeepScreenAwake(data.settings.keepScreenAwake);
           if (typeof data.settings.enableNotifications === 'boolean') setEnableNotifications(data.settings.enableNotifications);
           if (data.settings.selectedVoiceURI !== undefined) setSelectedVoiceURI(data.settings.selectedVoiceURI);
+          if (data.settings.fontSize) setFontSize(data.settings.fontSize);
       }
-  }, [setProfile, setMeasureUnit, setDefaultRestTimes, setUseLocalizedExerciseNames, setKeepScreenAwake, setEnableNotifications, setSelectedVoiceURI]);
+  }, [setProfile, setMeasureUnit, setDefaultRestTimes, setUseLocalizedExerciseNames, setKeepScreenAwake, setEnableNotifications, setSelectedVoiceURI, setFontSize]);
 
   const value = useMemo(() => ({
     profile, updateProfileInfo, currentWeight, logWeight, measureUnit, setMeasureUnit,
@@ -140,6 +159,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     keepScreenAwake, setKeepScreenAwake,
     enableNotifications, setEnableNotifications,
     selectedVoiceURI, setSelectedVoiceURI,
+    fontSize, setFontSize,
     importUserData
   }), [
     profile, updateProfileInfo, currentWeight, logWeight, measureUnit, setMeasureUnit,
@@ -149,6 +169,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     keepScreenAwake, setKeepScreenAwake,
     enableNotifications, setEnableNotifications,
     selectedVoiceURI, setSelectedVoiceURI,
+    fontSize, setFontSize,
     importUserData
   ]);
 

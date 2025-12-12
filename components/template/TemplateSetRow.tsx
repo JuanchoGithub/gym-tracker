@@ -1,11 +1,12 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { PerformedSet, SetType } from '../../types';
 import { Icon } from '../common/Icon';
 import SetTypeModal from '../modals/SetTypeModal';
 import { useMeasureUnit } from '../../hooks/useWeight';
 import { formatSecondsToMMSS, parseTimerInput } from '../../utils/timeUtils';
 import { useI18n } from '../../hooks/useI18n';
+import { AppContext } from '../../contexts/AppContext';
 
 interface TemplateSetRowProps {
   set: PerformedSet;
@@ -19,6 +20,7 @@ interface TemplateSetRowProps {
 const TemplateSetRow: React.FC<TemplateSetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSet, restTime, onEditSetTimer }) => {
   const { displayWeight, getStoredWeight } = useMeasureUnit();
   const { t } = useI18n();
+  const { fontSize } = useContext(AppContext);
   const [weight, setWeight] = useState(set.weight > 0 ? displayWeight(set.weight) : '');
   const [reps, setReps] = useState(set.reps > 0 ? set.reps.toString() : '');
   const [time, setTime] = useState(set.time ? formatSecondsToMMSS(set.time) : '1:00');
@@ -114,8 +116,9 @@ const TemplateSetRow: React.FC<TemplateSetRowProps> = ({ set, setNumber, onUpdat
         default: return restTime.normal;
     }
   }
-
-  const inputClasses = "w-full bg-transparent border border-secondary/50 rounded-md p-2 text-center";
+  
+  const inputPadding = fontSize === 'xl' ? 'p-1' : (fontSize === 'large' ? 'p-1.5' : 'p-2');
+  const inputClasses = `w-full bg-transparent border border-secondary/50 rounded-md ${inputPadding} text-center`;
   const timePresets = [30, 60, 90, 120];
 
   return (

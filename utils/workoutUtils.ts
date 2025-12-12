@@ -389,3 +389,33 @@ export const createSmartWorkoutExercise = (
         supersetId
     };
 };
+
+/**
+ * Calculates suggested weights for warmup sets based on the working weight.
+ * Returns 3 values [50%, 75%, 90%] for Full Protocol.
+ */
+export const calculateWarmupWeights = (workingWeight: number, count: number, increment: number = 2.5): number[] => {
+    // Round to nearest increment
+    const round = (w: number) => {
+        if (increment === 0) return w; // Safety
+        return Math.round(w / increment) * increment;
+    };
+
+    if (workingWeight === 0) {
+        return Array(count).fill(0);
+    }
+
+    if (count === 3) {
+        return [
+            round(workingWeight * 0.5),
+            round(workingWeight * 0.75),
+            round(workingWeight * 0.9)
+        ];
+    } else if (count === 1) {
+        return [round(workingWeight * 0.6)]; // Generic feeder/primer
+    } else if (count === 2) {
+        return [round(workingWeight * 0.5), round(workingWeight * 0.8)];
+    }
+
+    return Array(count).fill(0);
+};

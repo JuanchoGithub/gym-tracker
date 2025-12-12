@@ -1,4 +1,5 @@
 
+
 export const en_profile = {
   // Profile Page
   profile_title: "Profile & Settings",
@@ -20,6 +21,11 @@ export const en_profile = {
   profile_measure_unit: "Units",
   profile_unit_metric: "Metric (kg)",
   profile_unit_imperial: "Imperial (lbs)",
+  profile_font_size: "Font Size",
+  profile_font_size_desc: "Scale UI text",
+  profile_font_normal: "Normal",
+  profile_font_large: "Large",
+  profile_font_xl: "Extra",
   profile_default_timers: "Default Rest Timers",
   profile_app_behaviour: "App Behavior",
   profile_keep_screen_awake: "Keep Screen Awake",

@@ -225,7 +225,7 @@ export interface WeightSuggestion {
 /**
  * Plate Detective: Infers the minimum plate increment based on history.
  */
-const detectPreferredIncrement = (historyEntries: { exerciseData: { sets: PerformedSet[] } }[]): number => {
+export const detectPreferredIncrement = (historyEntries: { exerciseData: { sets: PerformedSet[] } }[]): number => {
     // Collect all weights used
     const weights = new Set<number>();
     historyEntries.slice(0, 5).forEach(entry => {

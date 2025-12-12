@@ -1,4 +1,6 @@
 
+
+
 import React, { useContext, useState, useEffect, useMemo, useRef } from 'react';
 import { I18nContext, TranslationKey } from '../contexts/I18nContext';
 import { useI18n } from '../hooks/useI18n';
@@ -100,6 +102,8 @@ const ProfilePage: React.FC = () => {
     setEnableNotifications,
     selectedVoiceURI,
     setSelectedVoiceURI,
+    fontSize,
+    setFontSize,
     profile,
     updateProfileInfo,
     currentWeight,
@@ -669,6 +673,27 @@ const ProfilePage: React.FC = () => {
                         )}
                     </div>
                     <ToggleSwitch checked={enableNotifications && permissionStatus === 'granted'} onChange={handleNotificationToggle} />
+                </SettingsItem>
+                <SettingsItem>
+                    <div className="flex flex-col">
+                        <span className="text-text-primary font-medium">{t('profile_font_size')}</span>
+                        <span className="text-xs text-text-secondary">{t('profile_font_size_desc')}</span>
+                    </div>
+                    <div className="flex bg-background rounded-lg p-1 border border-white/10">
+                        {(['normal', 'large', 'xl'] as const).map((size) => (
+                            <button
+                                key={size}
+                                onClick={() => setFontSize(size)}
+                                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+                                    fontSize === size 
+                                        ? 'bg-primary text-white shadow-md' 
+                                        : 'text-text-secondary hover:text-text-primary'
+                                }`}
+                            >
+                                {t(`profile_font_${size}` as any)}
+                            </button>
+                        ))}
+                    </div>
                 </SettingsItem>
             </SettingsGroup>
 

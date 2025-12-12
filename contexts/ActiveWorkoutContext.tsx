@@ -5,10 +5,10 @@ import { Routine, WorkoutSession, WorkoutExercise, UserGoal } from '../types';
 import { TimerContext } from './TimerContext';
 import { AppContext } from './AppContext';
 import { SupplementContext } from './SupplementContext';
-import { getSmartStartingWeight } from '../services/analyticsService';
+import { getSmartStartingWeight, detectPreferredIncrement } from '../services/analyticsService';
 import { getDateString } from '../utils/timeUtils';
 import { PREDEFINED_EXERCISES } from '../constants/exercises';
-import { detectWorkoutIntensity, createSmartWorkoutExercise } from '../utils/workoutUtils';
+import { detectWorkoutIntensity, createSmartWorkoutExercise, calculateWarmupWeights, getExerciseHistory } from '../utils/workoutUtils';
 
 export interface ActiveWorkoutContextType {
   activeWorkout: WorkoutSession | null;
@@ -112,24 +112,51 @@ export const ActiveWorkoutProvider: React.FC<{ children: ReactNode }> = ({ child
               // If re-doing a history session (isTemplate=false), we preserve the original weights
               
               // FIX: Treat generated smart routines as templates for weight calculation purposes
-              const isGenerated = routine.id.startsWith('smart-') || routine.id.startsWith('gap-');
+              const isGenerated = routine.id.startsWith('smart-') || routine.id.startsWith('gap-') || routine.id.startsWith('gen-');
               const shouldPrefill = routine.isTemplate || isGenerated;
               
               let smartWeight = 0;
+              let calculatedWarmups: number[] = [];
+
               if (shouldPrefill) {
                  smartWeight = getSmartStartingWeight(ex.exerciseId, history, profile, rawExercises, profile.mainGoal);
+                 // If we have warmup sets, calculate weights for them relative to smartWeight
+                 const warmupSetCount = ex.sets.filter(s => s.type === 'warmup').length;
+                 if (warmupSetCount > 0 && smartWeight > 0) {
+                     // Detect user's preferred plate increment from history to avoid suggesting unavailable weights (e.g. 22.5kg)
+                     const exHistory = getExerciseHistory(history, ex.exerciseId);
+                     const increment = detectPreferredIncrement(exHistory);
+                     calculatedWarmups = calculateWarmupWeights(smartWeight, warmupSetCount, increment);
+                 }
               }
+
+              // Use a counter to assign warmup weights in order
+              let warmupIndex = 0;
 
               return {
                   ...ex,
                   id: `we-${Date.now()}-${Math.random()}`,
-                  sets: ex.sets.map(s => ({
-                      ...s,
-                      id: `set-${Date.now()}-${Math.random()}`,
-                      isComplete: false,
-                      // Apply smart weight if it's a normal set and the template weight is 0
-                      weight: (shouldPrefill && s.type === 'normal' && s.weight === 0) ? smartWeight : s.weight
-                  }))
+                  sets: ex.sets.map(s => {
+                      let setWeight = s.weight;
+                      
+                      if (shouldPrefill) {
+                          if (s.type === 'normal' && s.weight === 0) {
+                              setWeight = smartWeight;
+                          } else if (s.type === 'warmup') {
+                              if (calculatedWarmups[warmupIndex] !== undefined) {
+                                  setWeight = calculatedWarmups[warmupIndex];
+                                  warmupIndex++;
+                              }
+                          }
+                      }
+
+                      return {
+                        ...s,
+                        id: `set-${Date.now()}-${Math.random()}`,
+                        isComplete: false,
+                        weight: setWeight
+                      };
+                  })
               };
           }),
           supersets: routine.supersets
