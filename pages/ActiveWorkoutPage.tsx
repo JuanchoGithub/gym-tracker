@@ -60,6 +60,8 @@ const ActiveWorkoutPage: React.FC = () => {
   const [isConfirmingFinish, setIsConfirmingFinish] = useState(false);
   const [viewingExercise, setViewingExercise] = useState<Exercise | null>(null);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [isValidationErrorOpen, setIsValidationErrorOpen] = useState(false);
   
   const [isReorganizeMode, setIsReorganizeMode] = useState(false);
   const [tempExercises, setTempExercises] = useState<WorkoutExercise[]>([]);
@@ -119,30 +121,6 @@ const ActiveWorkoutPage: React.FC = () => {
 
   useWakeLock(keepScreenAwake || !!activeTimedSet || isReorganizeMode || (!!activeTimerInfo && !activeTimerInfo.isPaused) || !!activeSupersetPlayerId);
 
-  const hasInvalidCompletedSets = useMemo(() => {
-    if (!activeWorkout) return false;
-    for (const ex of activeWorkout.exercises) {
-      const exerciseInfo = getExerciseById(ex.exerciseId);
-      // Allow bodyweight categories to have 0 weight
-      const isWeightOptional = exerciseInfo && (
-          ['Reps Only', 'Cardio', 'Duration', 'Bodyweight', 'Assisted Bodyweight', 'Plyometrics'].includes(exerciseInfo.category)
-      );
-
-      for (const set of ex.sets) {
-        if (set.isComplete) {
-          if (set.type === 'timed') {
-            if ((set.time ?? 0) <= 0 || set.reps <= 0) return true;
-          } else {
-            const weightInvalid = !isWeightOptional && set.weight <= 0;
-            const repsInvalid = set.reps <= 0;
-            if (weightInvalid || repsInvalid) return true;
-          }
-        }
-      }
-    }
-    return false;
-  }, [activeWorkout, getExerciseById]);
-
   const availableSupersets = useMemo(() => {
       if (!activeWorkout || !activeWorkout.supersets) return [];
       return Object.values(activeWorkout.supersets).map((superset: SupersetDefinition) => ({
@@ -174,10 +152,10 @@ const ActiveWorkoutPage: React.FC = () => {
             const elementRect = element.getBoundingClientRect();
             const currentScrollTop = scroller.scrollTop;
             
+            // Scroll so the element is just below the sticky header (plus a little padding)
             // Calculate position relative to the top of the scroller content
             const relativeTop = elementRect.top - scrollerRect.top + currentScrollTop;
 
-            // Scroll so the element is just below the sticky header (plus a little padding)
             scroller.scrollTo({
                 top: relativeTop - headerHeight - 10, 
                 behavior: 'smooth'
@@ -632,11 +610,52 @@ const ActiveWorkoutPage: React.FC = () => {
     setIsWeightInputModalOpen(false);
   };
 
+  const validateWorkout = (): string[] => {
+    if (!activeWorkout) return [];
+    
+    const errors: string[] = [];
+
+    activeWorkout.exercises.forEach(ex => {
+        const exerciseInfo = getExerciseById(ex.exerciseId);
+        if (!exerciseInfo) return;
+
+        const isWeightOptional = ['Reps Only', 'Cardio', 'Duration', 'Bodyweight', 'Assisted Bodyweight', 'Plyometrics'].includes(exerciseInfo.category);
+        const name = getExerciseName(exerciseInfo);
+        
+        ex.sets.forEach((set, idx) => {
+            if (!set.isComplete) return;
+
+            let setErrors = [];
+            if (set.type === 'timed') {
+                 if ((set.time ?? 0) <= 0) setErrors.push(t('workout_error_time', { set: idx + 1 }));
+                 if (set.reps <= 0) setErrors.push(t('workout_error_reps', { set: idx + 1 }));
+            } else {
+                 if (!isWeightOptional && set.weight <= 0) setErrors.push(t('workout_error_weight', { set: idx + 1 }));
+                 if (set.reps <= 0) setErrors.push(t('workout_error_reps', { set: idx + 1 }));
+            }
+
+            if (setErrors.length > 0) {
+                errors.push(`${name}: ${setErrors.join(', ')}`);
+            }
+        });
+    });
+
+    return errors;
+  }
 
   const handleFinishWorkout = () => {
-    if (activeWorkout && activeWorkout.exercises.length === 0) {
-        endWorkout();
-        return;
+    if (activeWorkout) {
+        if (activeWorkout.exercises.length === 0) {
+            endWorkout();
+            return;
+        }
+
+        const errors = validateWorkout();
+        if (errors.length > 0) {
+            setValidationErrors(errors);
+            setIsValidationErrorOpen(true);
+            return;
+        }
     }
     setIsConfirmingFinish(true);
   };
@@ -1171,9 +1190,7 @@ const ActiveWorkoutPage: React.FC = () => {
             </button>
             <button
               onClick={confirmFinishWorkout}
-              className="bg-success hover:bg-green-600 text-white font-bold py-4 px-4 rounded-xl transition-colors disabled:bg-slate-500 disabled:cursor-not-allowed shadow-lg shadow-green-500/20"
-              disabled={hasInvalidCompletedSets}
-              title={hasInvalidCompletedSets ? t('finish_workout_disabled_tooltip') : undefined}
+              className="bg-success hover:bg-green-600 text-white font-bold py-4 px-4 rounded-xl transition-colors shadow-lg shadow-green-500/20"
             >
               {t('finish_workout_confirm_finish')}
             </button>
@@ -1185,6 +1202,26 @@ const ActiveWorkoutPage: React.FC = () => {
               {t('finish_workout_confirm_cancel')}
           </button>
         </div>
+      </Modal>
+
+      {/* Validation Error Modal */}
+      <Modal isOpen={isValidationErrorOpen} onClose={() => setIsValidationErrorOpen(false)} title={t('workout_validation_error_title')}>
+          <div className="space-y-4">
+              <p className="text-text-secondary">{t('workout_validation_error_msg')}</p>
+              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 max-h-60 overflow-y-auto custom-scrollbar">
+                  <ul className="list-disc list-inside space-y-2 text-sm text-red-300">
+                      {validationErrors.map((error, index) => (
+                          <li key={index}>{error}</li>
+                      ))}
+                  </ul>
+              </div>
+              <button 
+                  onClick={() => setIsValidationErrorOpen(false)} 
+                  className="w-full bg-surface hover:bg-white/10 text-white font-bold py-3 rounded-lg transition-colors"
+              >
+                  {t('common_close')}
+              </button>
+          </div>
       </Modal>
 
       <WeightInputModal

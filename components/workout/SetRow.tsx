@@ -16,9 +16,10 @@ interface SetRowProps {
   onStartTimedSet?: (set: PerformedSet) => void;
   previousSetData?: PerformedSet;
   isWeightOptional: boolean;
+  isValid?: boolean; // New prop for validation
 }
 
-const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSet, onStartTimedSet, previousSetData, isWeightOptional }) => {
+const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSet, onStartTimedSet, previousSetData, isWeightOptional, isValid = true }) => {
   const { displayWeight, getStoredWeight } = useMeasureUnit();
   const { t } = useI18n();
   
@@ -170,6 +171,15 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
   const isWeightInvalid = set.isComplete && set.type !== 'timed' && !isWeightOptional && set.weight <= 0;
   const isRepsInvalid = set.isComplete && set.reps <= 0;
   const isTimeInvalid = set.isComplete && set.type === 'timed' && (set.time ?? 0) <= 0;
+  
+  // Logic for the checkmark button style based on validation
+  const getCheckmarkButtonStyle = () => {
+      if (set.isComplete) {
+          if (!isValid) return 'bg-red-500 text-white shadow-lg shadow-red-500/20 hover:bg-red-600';
+          return 'bg-success text-white shadow-lg shadow-success/20 hover:bg-green-500';
+      }
+      return 'bg-surface-highlight/40 text-text-secondary hover:bg-success/20 hover:text-success border border-white/5';
+  };
 
   return (
     <>
@@ -218,8 +228,8 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
                 </div>
                 <div className="col-span-1 flex justify-center space-x-2">
                     {set.isComplete ? (
-                        <button onClick={handleComplete} className="w-11 h-11 rounded-xl bg-success text-white shadow-lg shadow-success/20 hover:bg-green-500 transition-all active:scale-95 flex items-center justify-center">
-                            <Icon name="check" className="w-6 h-6" />
+                        <button onClick={handleComplete} className={`w-11 h-11 rounded-xl transition-all active:scale-95 flex items-center justify-center ${getCheckmarkButtonStyle()}`}>
+                            <Icon name={isValid ? "check" : "warning"} className="w-6 h-6" />
                         </button>
                     ) : (
                         <button onClick={() => { unlockAudioContext(); onStartTimedSet?.(set); }} className="w-10 h-10 rounded-xl bg-surface-highlight text-primary hover:bg-surface-highlight/80 transition-colors flex items-center justify-center border border-white/5">
@@ -265,13 +275,9 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
                 <div className="col-span-1 flex justify-center items-center gap-1">
                     <button 
                         onClick={handleComplete} 
-                        className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-200 active:scale-95 ${
-                            set.isComplete 
-                                ? 'bg-success text-white shadow-lg shadow-success/20 hover:bg-green-500' 
-                                : 'bg-surface-highlight/40 text-text-secondary hover:bg-success/20 hover:text-success border border-white/5'
-                        }`}
+                        className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-200 active:scale-95 ${getCheckmarkButtonStyle()}`}
                     >
-                        <Icon name="check" className="w-6 h-6" />
+                        <Icon name={!set.isComplete ? "check" : (isValid ? "check" : "warning")} className="w-6 h-6" />
                     </button>
                 </div>
               </>

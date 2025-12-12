@@ -112,9 +112,26 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
   const isBodyweight = ['Bodyweight', 'Plyometrics'].includes(exerciseInfo.category);
   const isAssisted = exerciseInfo.category === 'Assisted Bodyweight';
   const isWeightOptional = useMemo(() => {
-    return ['Reps Only', 'Cardio', 'Duration'].includes(exerciseInfo.category);
+    return ['Reps Only', 'Cardio', 'Duration', 'Bodyweight', 'Assisted Bodyweight', 'Plyometrics'].includes(exerciseInfo.category);
   }, [exerciseInfo.category]);
   
+  // Check validity for the header coloring
+  const hasInvalidSets = useMemo(() => {
+      return workoutExercise.sets.some(set => {
+          if (!set.isComplete) return false;
+          
+          if (set.type === 'timed') {
+              return (set.time ?? 0) <= 0 || set.reps <= 0;
+          } else {
+              // Weight check
+              if (!isWeightOptional && set.weight <= 0) return true;
+              // Reps check
+              if (set.reps <= 0) return true;
+          }
+          return false;
+      });
+  }, [workoutExercise.sets, isWeightOptional]);
+
   const handleUpdateSet = (updatedSet: PerformedSet) => {
     const oldSetIndex = workoutExercise.sets.findIndex(s => s.id === updatedSet.id);
     if (oldSetIndex === -1) return;
@@ -123,24 +140,17 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
     let setForStorage = { ...updatedSet };
 
     // LOGIC: Handle Bodyweight / Assisted Calculations
-    // Prioritize storedBodyWeight from the set if available (for history edits), otherwise use current userBodyWeight
     const bw = oldSet.storedBodyWeight || userBodyWeight || 0;
     
     if (updatedSet.type !== 'timed' && bw > 0) {
          if (isBodyweight && updatedSet.weight >= 0) {
-             // Total = Body Weight + Extra
              setForStorage.weight = bw + updatedSet.weight;
-             // Snapshot bodyweight to prevent historical drift
              setForStorage.storedBodyWeight = bw;
          } else if (isAssisted && updatedSet.weight >= 0) {
-             // Total = Body Weight - Assistance
-             // If assistance > bodyweight, load is 0
              setForStorage.weight = Math.max(0, bw - updatedSet.weight);
              setForStorage.storedBodyWeight = bw;
          }
     }
-    // If bw is 0, we pass the input as is (0 for BW, 20 for Assisted). 
-    // For BW: ActiveWorkoutPage catches 0 total and asks for weight.
 
     let newSets = [...workoutExercise.sets];
     
@@ -279,6 +289,21 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
 
   const allSetsCompleted = completedSets === workoutExercise.sets.length && workoutExercise.sets.length > 0;
   
+  // Logic for card styling based on state
+  let borderClass = 'border-white/5';
+  let shadowClass = 'shadow-black/20';
+
+  if (isCollapsed && hasInvalidSets) {
+      borderClass = 'border-red-500/50';
+      shadowClass = 'shadow-red-500/10';
+  } else if (allSetsCompleted) {
+      borderClass = 'border-success/30';
+      shadowClass = 'shadow-success/5';
+  }
+
+  // Header background override for collapsed invalid
+  const headerBgClass = (isCollapsed && hasInvalidSets) ? 'bg-red-500/10' : 'bg-surface';
+  
   let normalSetCounter = 0;
 
   if (isReorganizeMode) {
@@ -303,10 +328,10 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
 
   return (
     <div 
-      className={`bg-surface rounded-2xl shadow-md transition-all duration-300 border ${allSetsCompleted ? 'border-success/30 shadow-success/5' : 'border-white/5 shadow-black/20'}`}
+      className={`bg-surface rounded-2xl shadow-md transition-all duration-300 border ${borderClass} ${shadowClass}`}
       onDragOver={(e) => isReorganizeMode && e.preventDefault()}
     >
-        <div className={`sticky top-12 bg-surface z-10 px-4 py-1.5 border-b border-white/5 transition-all duration-200 ${isCollapsed ? 'rounded-2xl' : 'rounded-t-2xl'}`}>
+        <div className={`sticky top-12 z-10 px-4 py-1.5 border-b border-white/5 transition-all duration-200 ${headerBgClass} ${isCollapsed ? 'rounded-2xl' : 'rounded-t-2xl'}`}>
              <ExerciseHeader 
                 workoutExercise={workoutExercise}
                 exerciseInfo={exerciseInfo}
@@ -434,6 +459,17 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
                         // Implicit 0 extra.
                         displaySet.weight = 0;
                     }
+                    
+                    // Determine if this specific set is invalid
+                    let isValid = true;
+                    if (set.isComplete) {
+                        if (set.type === 'timed') {
+                            if ((set.time ?? 0) <= 0 || set.reps <= 0) isValid = false;
+                        } else {
+                            if (!isWeightOptional && set.weight <= 0) isValid = false;
+                            if (set.reps <= 0) isValid = false;
+                        }
+                    }
 
                     return (
                       <React.Fragment key={set.id}>
@@ -445,6 +481,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
                               onStartTimedSet={(s) => onStartTimedSet?.(workoutExercise, s)}
                               previousSetData={previousSetData}
                               isWeightOptional={isWeightOptional}
+                              isValid={isValid}
                           />
                           {showFinishedTimer && set.actualRest !== undefined && (
                             <div className="w-full animate-fadeIn">
