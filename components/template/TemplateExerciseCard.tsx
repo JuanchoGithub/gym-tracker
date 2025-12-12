@@ -52,6 +52,12 @@ const TemplateExerciseCard: React.FC<TemplateExerciseCardProps> = (props) => {
     const oldSetIndex = workoutExercise.sets.findIndex(s => s.id === updatedSet.id);
     const oldSet = workoutExercise.sets[oldSetIndex];
     let newSets = [...workoutExercise.sets];
+    
+    // FIX: Ensure timed sets default to 1 rep (1 round/duration block) instead of 0
+    if (updatedSet.type === 'timed' && updatedSet.reps <= 0) {
+        updatedSet.reps = 1;
+    }
+    
     newSets[oldSetIndex] = updatedSet;
 
     // Cascade weight change if applicable.

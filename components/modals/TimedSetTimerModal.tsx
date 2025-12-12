@@ -109,6 +109,11 @@ const TimedSetTimerModal: React.FC<TimedSetTimerModalProps> = ({ isOpen, onFinis
     });
   };
 
+  const handleManualFinish = () => {
+      playEndSound();
+      onFinishRef.current();
+  };
+
   const progress = timerState.totalDuration > 0 ? ((timerState.totalDuration - timerState.timeLeft) / timerState.totalDuration) * 100 : 0;
   const { phase, timeLeft, currentRep } = timerState;
   const isFinished = phase === 'finished';
@@ -156,6 +161,18 @@ const TimedSetTimerModal: React.FC<TimedSetTimerModalProps> = ({ isOpen, onFinis
             </button>
           )}
         </div>
+        
+        {!isFinished && (
+            <div className="mt-4">
+                <button 
+                    onClick={handleManualFinish}
+                    className="w-full bg-success/20 hover:bg-success/30 text-success font-bold py-3 rounded-lg border border-success/30 transition-colors flex items-center justify-center gap-2"
+                >
+                    <Icon name="check" className="w-5 h-5" />
+                    <span>{t('workout_finish')}</span>
+                </button>
+            </div>
+        )}
       </div>
     </div>
   );

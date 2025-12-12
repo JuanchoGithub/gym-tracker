@@ -114,7 +114,12 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
   };
 
   const handleSelectSetType = (type: SetType) => {
-    onUpdateSet({ ...set, type });
+    const updates: Partial<PerformedSet> = { type };
+    // If switching to timed and reps are 0/empty, force to 1 to prevent validation errors
+    if (type === 'timed' && (set.reps <= 0 || !set.reps)) {
+        updates.reps = 1;
+    }
+    onUpdateSet({ ...set, ...updates });
     setIsTypeModalOpen(false);
   }
 

@@ -58,12 +58,15 @@ const TemplateSetRow: React.FC<TemplateSetRowProps> = ({ set, setNumber, onUpdat
   const handleSelectSetType = (type: SetType) => {
     const newDefaultRest = type === 'warmup' ? restTime.warmup : type === 'drop' ? restTime.drop : type === 'timed' ? restTime.timed : type === 'failure' ? restTime.failure : restTime.normal;
     
+    // Default timed sets to 1 rep if previously 0 to avoid errors
+    const defaultReps = (type === 'timed' && set.reps <= 0) ? 1 : set.reps;
+
     // If the set had an override, but the new default is the same, remove the override
     if (set.rest !== undefined && set.rest === newDefaultRest) {
       const { rest, ...setWithoutRest } = set;
-      onUpdateSet({ ...setWithoutRest, type, reps: type === 'timed' ? 1 : set.reps, weight: type === 'timed' ? 0 : set.weight, time: type === 'timed' ? (set.time || 60) : undefined });
+      onUpdateSet({ ...setWithoutRest, type, reps: defaultReps, weight: type === 'timed' ? 0 : set.weight, time: type === 'timed' ? (set.time || 60) : undefined });
     } else {
-      onUpdateSet({ ...set, type, reps: type === 'timed' ? 1 : set.reps, weight: type === 'timed' ? 0 : set.weight, time: type === 'timed' ? (set.time || 60) : undefined });
+      onUpdateSet({ ...set, type, reps: defaultReps, weight: type === 'timed' ? 0 : set.weight, time: type === 'timed' ? (set.time || 60) : undefined });
     }
     setIsTypeModalOpen(false);
   }

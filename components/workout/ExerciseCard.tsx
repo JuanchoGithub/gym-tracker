@@ -139,6 +139,11 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
 
     let setForStorage = { ...updatedSet };
 
+    // FIX: Ensure timed sets have at least 1 rep (representing "1 round")
+    if (setForStorage.type === 'timed' && setForStorage.reps <= 0) {
+        setForStorage.reps = 1;
+    }
+
     // LOGIC: Handle Bodyweight / Assisted Calculations
     const bw = oldSet.storedBodyWeight || userBodyWeight || 0;
     
