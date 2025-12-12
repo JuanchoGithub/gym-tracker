@@ -22,7 +22,9 @@ const GraphsTab: React.FC<GraphsTabProps> = ({ exercise, history }) => {
   const [fullScreenChart, setFullScreenChart] = useState<FullScreenChartData | null>(null);
 
   const chartData = useMemo(() => {
-    const reversedHistory = [...history].reverse(); // Oldest first
+    // Limit to last 40 sessions to avoid chart pollution
+    const recentHistory = history.slice(0, 40);
+    const reversedHistory = [...recentHistory].reverse(); // Oldest first
     const dateFormat: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
 
     const totalVolumeData: ChartDataPoint[] = reversedHistory.map(entry => ({

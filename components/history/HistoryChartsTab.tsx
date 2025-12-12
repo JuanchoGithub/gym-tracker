@@ -28,8 +28,11 @@ const HistoryChartsTab: React.FC<HistoryChartsTabProps> = ({ history }) => {
             return { totalVolume: [], topExercises: [] };
         }
 
+        // Limit to last 40 workouts to prevent chart pollution
+        const recentHistory = history.slice(0, 40);
+
         // Sort Ascending (Oldest -> Newest) for chronological charts
-        const chronologicalHistory = [...history].sort((a, b) => a.startTime - b.startTime);
+        const chronologicalHistory = [...recentHistory].sort((a, b) => a.startTime - b.startTime);
         const dateFormat: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
 
         // 1. Total Volume Over Time
@@ -44,9 +47,9 @@ const HistoryChartsTab: React.FC<HistoryChartsTabProps> = ({ history }) => {
             };
         });
 
-        // 2. Top Exercises by Frequency
+        // 2. Top Exercises by Frequency (based on recent history)
         const exerciseCounts = new Map<string, number>();
-        history.forEach(session => {
+        recentHistory.forEach(session => {
             // Use Set to count "sessions with exercise" rather than "total sets of exercise"
             const distinctExercises = new Set(session.exercises.map(ex => ex.exerciseId));
             distinctExercises.forEach((exerciseId: string) => {

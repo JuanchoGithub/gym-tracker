@@ -95,13 +95,21 @@ const TrainPage: React.FC = () => {
       
       const now = Date.now();
       
-      // Priority 1: Imbalances
-      if (stats.imbalanceRecommendation && now > imbalanceSnoozedUntil) {
-          return stats.imbalanceRecommendation;
-      } else {
-          // Priority 2: Standard Workout Suggestion
+      // Check if the standard recommendation is for recovery/safety
+      const isRecoveryRecommendation = stats.recommendation && ['rest', 'active_recovery', 'deload'].includes(stats.recommendation.type);
+
+      // Priority 1: Safety and Recovery (If fatigued/overreached, ignore imbalances for now)
+      if (isRecoveryRecommendation) {
           return stats.recommendation;
       }
+      
+      // Priority 2: Imbalances (Only if fresh)
+      if (stats.imbalanceRecommendation && now > imbalanceSnoozedUntil) {
+          return stats.imbalanceRecommendation;
+      } 
+      
+      // Priority 3: Standard Performance Suggestion
+      return stats.recommendation;
   }, [stats.recommendation, stats.imbalanceRecommendation, onboardingRoutines, imbalanceSnoozedUntil]);
 
   const { latestWorkouts, customTemplates, sampleWorkouts, sampleHiit } = useMemo(() => {
