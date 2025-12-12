@@ -8,7 +8,7 @@ import { SupplementContext } from './SupplementContext';
 import { getSmartStartingWeight } from '../services/analyticsService';
 import { getDateString } from '../utils/timeUtils';
 import { PREDEFINED_EXERCISES } from '../constants/exercises';
-import { detectWorkoutIntensity } from '../utils/workoutUtils';
+import { detectWorkoutIntensity, createSmartWorkoutExercise } from '../utils/workoutUtils';
 
 export interface ActiveWorkoutContextType {
   activeWorkout: WorkoutSession | null;
@@ -209,24 +209,20 @@ export const ActiveWorkoutProvider: React.FC<{ children: ReactNode }> = ({ child
 
           const newExercises: WorkoutExercise[] = ids.map(id => {
               const exerciseDef = rawExercises.find(e => e.id === id);
-              const isTimed = exerciseDef?.isTimed;
-              
+              // Use smart weight logic for manual adds too
               const smartWeight = getSmartStartingWeight(id, history, profile, rawExercises, profile.mainGoal);
 
-              return {
-                id: `we-${Date.now()}-${Math.random()}`,
-                exerciseId: id,
-                sets: [{ 
-                    id: `set-${Date.now()}-${Math.random()}`, 
-                    reps: isTimed ? 1 : defaultReps, 
-                    weight: isTimed ? 0 : smartWeight, 
-                    type: isTimed ? 'timed' : 'normal', 
-                    time: isTimed ? 60 : undefined,
-                    isComplete: false 
-                }],
-                restTime: defaultRestTimes,
-                supersetId: state.addingTargetSupersetId
-              };
+              // Use new smart creator
+              return createSmartWorkoutExercise(
+                  exerciseDef,
+                  { 
+                      sets: 1, 
+                      reps: defaultReps, 
+                      weight: smartWeight, 
+                      restTime: defaultRestTimes 
+                  },
+                  state.addingTargetSupersetId
+              );
           });
           
           let updatedExercises = [...state.activeWorkout.exercises];

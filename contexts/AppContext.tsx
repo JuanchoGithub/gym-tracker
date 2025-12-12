@@ -13,7 +13,7 @@ import { SupplementContext, DayMode } from './SupplementContext';
 import { EditorContext } from './EditorContext';
 import { getSmartStartingWeight } from '../services/analyticsService';
 import { getDateString } from '../utils/timeUtils';
-import { detectWorkoutIntensity } from '../utils/workoutUtils';
+import { detectWorkoutIntensity, createSmartWorkoutExercise } from '../utils/workoutUtils';
 
 export type CheckInReason = 'busy' | 'deload' | 'injury';
 export type WeightUnit = 'kg' | 'lbs';
@@ -180,25 +180,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
           const newExercises: any[] = ids.map(id => {
               const exerciseDef = data.rawExercises.find(e => e.id === id);
-              const isTimed = exerciseDef?.isTimed;
-              const defaults = user.defaultRestTimes;
-              
+              // Use Smart Weight logic for templates too? Mostly 0, but good to have capability.
               const smartWeight = getSmartStartingWeight(id, data.history, user.profile, data.rawExercises, user.profile.mainGoal);
 
-              return {
-                id: `we-${Date.now()}-${Math.random()}`,
-                exerciseId: id,
-                sets: [{ 
-                    id: `set-${Date.now()}-${Math.random()}`, 
-                    reps: isTimed ? 1 : defaultReps, 
-                    weight: isTimed ? 0 : smartWeight, 
-                    type: isTimed ? 'timed' : 'normal',
-                    time: isTimed ? 60 : undefined,
-                    isComplete: false 
-                }],
-                restTime: defaults,
-                supersetId: editor.addingTargetSupersetId
-              };
+              // Use new smart creator
+              return createSmartWorkoutExercise(
+                  exerciseDef,
+                  { 
+                      sets: 1, 
+                      reps: defaultReps, 
+                      weight: smartWeight, 
+                      restTime: user.defaultRestTimes 
+                  },
+                  editor.addingTargetSupersetId
+              );
           });
           
           let updatedExercises = [...editor.editingTemplate.exercises];

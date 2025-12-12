@@ -1,8 +1,9 @@
 
-import { Routine, WorkoutSession, Exercise, WorkoutExercise, PerformedSet, MuscleGroup, UserGoal } from '../types';
+import { Routine, WorkoutSession, Exercise, WorkoutExercise, PerformedSet, MuscleGroup, UserGoal, Profile } from '../types';
 import { PREDEFINED_EXERCISES } from '../constants/exercises';
 import { MUSCLES } from '../constants/muscles';
 import { SurveyAnswers } from './routineGenerator';
+import { getSmartStartingWeight } from '../services/analyticsService';
 
 // --- Configuration ---
 
@@ -20,38 +21,62 @@ const MAJOR_MOVERS = {
     CORE: [MUSCLES.ABS, MUSCLES.OBLIQUES]
 };
 
-// Exercise Categories for Logic
-const EX_TYPES = {
-    MOBILITY: ['Mobility'],
-    CORE: ['Core'],
-    CARDIO_LOW: ['Cycling (Stationary)', 'Walking', 'Elliptical'],
-    CARDIO_HIGH: ['Burpee', 'Jump Rope', 'Box Jump', 'Sprints', 'Running'],
-    METCON_UPPER: ['Battle Rope', 'Medicine Ball Slam', 'Rowing (Machine)'],
-    METCON_LOWER: ['Kettlebell Swing', 'Sled Push', 'High Knees']
-};
-
 // Helper to create a set
-const createSet = (type: 'normal' | 'timed', val: number): PerformedSet => ({
+const createSet = (type: 'normal' | 'timed', val: number, weight: number = 0): PerformedSet => ({
     id: `set-gen-${Math.random().toString(36).substr(2, 9)}`,
-    reps: type === 'normal' ? val : 0,
-    weight: 0,
+    reps: type === 'normal' ? Math.max(1, val) : 1, // Minimum 1 rep (implies 1 round for timed)
+    weight: weight,
     time: type === 'timed' ? val : undefined,
     type,
     isComplete: false,
 });
 
 // Helper to create an exercise entry
-const createGapExercise = (exerciseId: string, isTimed: boolean, sets: number, durationOrReps: number): WorkoutExercise => {
-    const setList = Array.from({ length: sets }, () => 
-        createSet(isTimed ? 'timed' : 'normal', durationOrReps)
+const createGapExercise = (
+    exercise: Exercise, 
+    isTimed: boolean, 
+    sets: number, 
+    durationOrReps: number,
+    weight: number = 0,
+    restConfig?: { normal: number }
+): WorkoutExercise => {
+    
+    // Logic for Unilateral Exercises: Double the sets or rely on app UI to hint?
+    // Spec says: Generate double the sets.
+    let finalSets = sets;
+    let finalDurationOrReps = durationOrReps;
+
+    if (exercise.isUnilateral) {
+        finalSets = sets * 2;
+        // If it's a timed stretch (e.g. 60s), splitting into 2 sets of 30s is often better for L/R
+        if (isTimed && durationOrReps >= 60) {
+            finalDurationOrReps = Math.round(durationOrReps / 2);
+        }
+    }
+
+    const setList = Array.from({ length: finalSets }, () => 
+        createSet(isTimed ? 'timed' : 'normal', finalDurationOrReps, weight)
     );
 
+    // Smart Timer Defaults for Recovery
+    // Default: 45s normal.
+    let normalRest = restConfig?.normal || 45;
+    
+    // Mobility/Stretching (Timed & Bodyweight)
+    if (exercise.bodyPart === 'Mobility' || (isTimed && exercise.category === 'Bodyweight')) {
+        normalRest = 15; // Fast transition
+    }
+    // Flows (Yoga) - ex-138 Sun Salutation
+    if (exercise.id === 'ex-138') {
+        normalRest = 60; 
+    }
+    
     return {
         id: `we-gap-${Math.random().toString(36).substr(2, 9)}`,
-        exerciseId,
+        exerciseId: exercise.id,
         sets: setList,
         restTime: {
-            normal: 45,
+            normal: normalRest,
             warmup: 30,
             drop: 30,
             timed: 10,
@@ -123,7 +148,8 @@ export const generateGapSession = (
     t: (key: string, params?: any) => string,
     userProfile: SurveyAnswers,
     freshnessMap: Record<string, number>,
-    userBodyWeight?: number
+    userBodyWeight?: number,
+    profile?: Profile // Optional for backward compatibility but needed for weights
 ): Routine => {
     
     const { experience, goal, equipment, time } = userProfile;
@@ -138,23 +164,19 @@ export const generateGapSession = (
     // 2. Configure Session Parameters based on Zone
     let sessionTitle = t('smart_recovery_mode');
     let sessionDesc = '';
-    let intensity = 'low';
     let volumeScale = 1.0;
     
     if (zone === 'critical') {
         sessionTitle = t('coach_routine_cns_reset_title');
         sessionDesc = t('coach_routine_cns_reset_desc', { score: systemicScore });
-        intensity = 'lowest';
         volumeScale = 0.5;
     } else if (zone === 'caution') {
         sessionTitle = t('coach_routine_metabolic_title');
         sessionDesc = t('coach_routine_metabolic_desc', { score: systemicScore });
-        intensity = 'medium';
         volumeScale = 0.75; // Cap volume
     } else {
         sessionTitle = t('coach_routine_active_recovery_title');
         sessionDesc = t('coach_routine_active_recovery_desc');
-        intensity = 'high';
         volumeScale = 1.0;
     }
 
@@ -211,7 +233,35 @@ export const generateGapSession = (
         const unique = shuffled.filter(p => !selectedExercises.some(se => se.exerciseId === p.id));
         
         unique.slice(0, count).forEach(ex => {
-            selectedExercises.push(createGapExercise(ex.id, isTimed, sets, repsOrTime));
+            let finalIsTimed = isTimed;
+            let finalRepsOrTime = repsOrTime;
+            let weight = 0;
+            
+            // SPECIFIC LOGIC OVERRIDES
+            if (ex.id === 'ex-138') { // Sun Salutation
+                finalIsTimed = false;
+                finalRepsOrTime = 5; // 3-5 reps
+            }
+            if (ex.id === 'ex-121') { // Bird Dog
+                finalIsTimed = false;
+                finalRepsOrTime = 10; // 10-12 reps per side
+            }
+            
+            // Weight Logic for Gap Sessions (50% Load)
+            const isWeightedCategory = ['Barbell', 'Dumbbell', 'Machine', 'Cable', 'Smith Machine'].includes(ex.category);
+            if (isWeightedCategory && profile) {
+                const normalWeight = getSmartStartingWeight(ex.id, history, profile, allExercises, userProfile.goal);
+                if (normalWeight > 0) {
+                    // Apply 50% factor for active recovery
+                    weight = Math.round((normalWeight * 0.5) / 2.5) * 2.5;
+                    // Force higher reps for light weight pump
+                    if (!finalIsTimed && finalRepsOrTime < 15) {
+                        finalRepsOrTime = 15; 
+                    }
+                }
+            }
+
+            selectedExercises.push(createGapExercise(ex, finalIsTimed, sets, finalRepsOrTime, weight));
         });
     };
 

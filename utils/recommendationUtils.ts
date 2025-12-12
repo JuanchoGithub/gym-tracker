@@ -462,7 +462,7 @@ export const getWorkoutRecommendation = (
           reasonParams: { score: systemicFatigue.score.toString() },
           suggestedBodyParts: ['Mobility', 'Cardio'],
           relevantRoutineIds: [],
-          generatedRoutine: generateGapSession([], exercises, history, t, userProfile, freshness, currentBodyweight), 
+          generatedRoutine: generateGapSession([], exercises, history, t, userProfile, freshness, currentBodyweight, profile), 
           systemicFatigue
       };
   }
@@ -519,7 +519,7 @@ export const getWorkoutRecommendation = (
          reasonKey: "rec_reason_fatigued",
          suggestedBodyParts: ['Cardio', 'Mobility', 'Core'],
          relevantRoutineIds: [],
-         generatedRoutine: generateGapSession(protectedMuscles, exercises, history, t, userProfile, freshness, currentBodyweight),
+         generatedRoutine: generateGapSession(protectedMuscles, exercises, history, t, userProfile, freshness, currentBodyweight, profile),
          systemicFatigue
      };
   }
@@ -700,7 +700,7 @@ export const getWorkoutRecommendation = (
       };
   }
 
-  const fallbackRoutine = generateGapSession([], exercises, history, t, userProfile, freshness, currentBodyweight);
+  const fallbackRoutine = generateGapSession([], exercises, history, t, userProfile, freshness, currentBodyweight, profile);
   
   return {
       type: 'active_recovery',

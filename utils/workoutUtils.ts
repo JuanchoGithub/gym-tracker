@@ -315,3 +315,77 @@ export const detectWorkoutIntensity = (workout: WorkoutSession, allExercises: Ex
     
     return isHeavy ? 'heavy' : 'light';
 };
+
+/**
+ * Factory for creating a smart WorkoutExercise with defaults and overrides.
+ */
+export const createSmartWorkoutExercise = (
+    exercise: Exercise | undefined,
+    defaults: { sets: number, reps: number, weight: number, restTime: any },
+    supersetId?: string
+): WorkoutExercise => {
+    if (!exercise) {
+        // Fallback for missing definition
+        return {
+             id: `we-${Date.now()}-${Math.random()}`,
+             exerciseId: 'unknown',
+             sets: [],
+             restTime: defaults.restTime,
+             supersetId
+        };
+    }
+
+    let finalSetsCount = defaults.sets;
+    let finalReps = defaults.reps;
+    let finalWeight = defaults.weight;
+    let finalTime = exercise.isTimed ? 60 : undefined;
+    let finalType: 'normal' | 'timed' = exercise.isTimed ? 'timed' : 'normal';
+
+    // Unilateral Logic: Double sets by default
+    if (exercise.isUnilateral) {
+        finalSetsCount *= 2;
+    }
+    
+    // Generic Default Logic for Timed Sets
+    if (finalType === 'timed') {
+        finalReps = 1; // 1 round implies duration
+        finalWeight = 0; // Usually 0 for timed, unless weighted plank etc
+    }
+
+    // Specific Overrides for "Flow" type exercises
+    // IMPORTANT: These come AFTER generic defaults to ensure specific behavior sticks.
+    if (exercise.id === 'ex-138') { // Sun Salutation
+        finalType = 'timed'; // Treat as timed (user request) but with 3 reps
+        finalReps = 3;       // Specific: 3 Reps
+        finalWeight = 0;
+    }
+    if (exercise.id === 'ex-121') { // Bird Dog
+        finalType = 'normal'; // Do for reps
+        finalReps = 10;
+        finalTime = undefined;
+        finalWeight = 0;
+    }
+
+    // Rest Time Tuning
+    const restTime = { ...defaults.restTime };
+    if (exercise.bodyPart === 'Mobility' || (finalType === 'timed' && exercise.category === 'Bodyweight')) {
+         restTime.normal = 30; // Shorter rest for mobility/timed bodyweight
+    }
+
+    const sets = Array.from({ length: finalSetsCount }, () => ({
+        id: `set-${Date.now()}-${Math.random()}`,
+        reps: finalReps,
+        weight: finalWeight,
+        time: finalTime,
+        type: finalType,
+        isComplete: false
+    }));
+
+    return {
+        id: `we-${Date.now()}-${Math.random()}`,
+        exerciseId: exercise.id,
+        sets,
+        restTime,
+        supersetId
+    };
+};

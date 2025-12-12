@@ -16,6 +16,7 @@ export interface Exercise {
   category: ExerciseCategory;
   notes?: string;
   isTimed?: boolean;
+  isUnilateral?: boolean; // If true, the exercise is performed one side at a time
   primaryMuscles?: MuscleGroup[];
   secondaryMuscles?: MuscleGroup[];
 }

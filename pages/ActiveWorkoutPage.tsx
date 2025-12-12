@@ -833,7 +833,7 @@ const ActiveWorkoutPage: React.FC = () => {
                if (profile.mainGoal) inferredProfile.goal = profile.mainGoal;
                const freshness = calculateMuscleFreshness(history, exercises, profile.mainGoal);
                
-               routineToSuggest = generateGapSession([], exercises, history, t, inferredProfile, freshness);
+               routineToSuggest = generateGapSession([], exercises, history, t, inferredProfile, freshness, currentWeight, profile);
                routineToSuggest.name = t('smart_gap_session');
            }
            
