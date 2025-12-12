@@ -1160,6 +1160,7 @@ const ActiveWorkoutPage: React.FC = () => {
             set={activeTimedSet.set}
             restTime={activeTimedSet.exercise.restTime.timed}
             exerciseName={getExerciseById(activeTimedSet.exercise.exerciseId)?.name || ''}
+            isUnilateral={getExerciseById(activeTimedSet.exercise.exerciseId)?.isUnilateral}
         />
       )}
 
