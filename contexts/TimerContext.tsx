@@ -1,5 +1,5 @@
 
-import React, { createContext, useState, useContext, ReactNode, useCallback, useMemo } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { Routine, ActiveTimerInfo, TimedSetInfo } from '../types';
 
@@ -29,6 +29,29 @@ export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [activeTimedSet, setActiveTimedSet] = useState<TimedSetInfo | null>(null);
   const [activeQuickTimer, setActiveQuickTimer] = useState<number | null>(null);
   const [activeHiitSession, setActiveHiitSession] = useState<{ routine: Routine, startTime: number } | null>(null);
+
+  // Ref to access latest timer info inside setTimeout without adding it to dependencies
+  const activeTimerInfoRef = useRef(activeTimerInfo);
+  useEffect(() => {
+      activeTimerInfoRef.current = activeTimerInfo;
+  }, [activeTimerInfo]);
+
+  // Logic to stop rest timer if timed set is active for > 5 seconds
+  useEffect(() => {
+      let timeoutId: number;
+
+      if (activeTimedSet) {
+          timeoutId = window.setTimeout(() => {
+              if (activeTimerInfoRef.current && !activeTimerInfoRef.current.isPaused) {
+                  setActiveTimerInfo(null);
+              }
+          }, 5000);
+      }
+
+      return () => {
+          window.clearTimeout(timeoutId);
+      };
+  }, [activeTimedSet, setActiveTimerInfo]);
 
   const startQuickTimer = useCallback((seconds: number) => setActiveQuickTimer(seconds), []);
   const endQuickTimer = useCallback(() => setActiveQuickTimer(null), []);

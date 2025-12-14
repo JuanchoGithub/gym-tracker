@@ -131,8 +131,11 @@ const Timer: React.FC<TimerProps> = ({ timerInfo, effortTime, failureTime, onFin
   const seconds = timeLeft % 60;
   const progress = timerInfo.totalDuration > 0 ? (elapsedSeconds / timerInfo.totalDuration) * 100 : 0;
 
-  const presetButtonClass = "flex-1 bg-secondary text-text-primary font-semibold py-3 rounded-lg flex flex-col items-center justify-center text-sm";
-  const infoButtonClass = "absolute top-1 right-1 text-text-secondary/50 hover:text-text-secondary";
+  const baseButtonClass = "flex-1 font-semibold py-3 rounded-lg flex flex-col items-center justify-center text-sm transition-colors shadow-sm active:scale-95";
+  const resetButtonClass = `${baseButtonClass} bg-secondary text-text-primary hover:bg-slate-500`;
+  const effortButtonClass = `${baseButtonClass} bg-amber-600 text-white hover:bg-amber-500`;
+  const failureButtonClass = `${baseButtonClass} bg-purple-600 text-white hover:bg-purple-500`;
+  const infoButtonClass = "absolute top-1 right-1 text-white/50 hover:text-white p-1";
 
   return (
     <div className="my-2 bg-slate-700 rounded-lg">
@@ -177,18 +180,18 @@ const Timer: React.FC<TimerProps> = ({ timerInfo, effortTime, failureTime, onFin
                 </div>
 
                  <div className="flex gap-2 w-full">
-                    <button onClick={handleReset} className={presetButtonClass}>
+                    <button onClick={handleReset} className={resetButtonClass}>
                         <span>{t('timer_reset')}</span>
                         <span className="font-mono">{formatSecondsToMMSS(timerInfo.initialDuration)}</span>
                     </button>
-                    <button onClick={() => handleChangeDurationWrapper(effortTime)} className={`${presetButtonClass} relative`}>
+                    <button onClick={() => handleChangeDurationWrapper(effortTime)} className={`${effortButtonClass} relative`}>
                         <span>{t('timer_effort')}</span>
                         <span className="font-mono">{formatSecondsToMMSS(effortTime)}</span>
                         <div className={infoButtonClass} onClick={(e) => { e.stopPropagation(); setInfoModalContent({title: t('timer_effort_desc_title'), message: t('timer_effort_desc')})}}>
                             <Icon name="question-mark-circle" className="w-4 h-4" />
                         </div>
                     </button>
-                    <button onClick={() => handleChangeDurationWrapper(failureTime)} className={`${presetButtonClass} relative`}>
+                    <button onClick={() => handleChangeDurationWrapper(failureTime)} className={`${failureButtonClass} relative`}>
                         <span>{t('timer_failure')}</span>
                         <span className="font-mono">{formatSecondsToMMSS(failureTime)}</span>
                         <div className={infoButtonClass} onClick={(e) => { e.stopPropagation(); setInfoModalContent({title: t('timer_failure_desc_title'), message: t('timer_failure_desc')})}}>
