@@ -97,6 +97,11 @@ const ActiveWorkoutPage: React.FC = () => {
   // Logic helpers for Page-level orchestration (Coach, Finish, Upgrade)
   
   const handleFinishWorkout = () => {
+      // Simply open the confirmation modal. Validation happens on "Finish" click inside.
+      modals.actions.setIsConfirmingFinish(true);
+  };
+
+  const handleConfirmFinishWithValidation = () => {
       if (activeWorkout) {
           if (activeWorkout.exercises.length === 0) {
               interactions.endWorkout();
@@ -104,12 +109,13 @@ const ActiveWorkoutPage: React.FC = () => {
           }
           const errors = interactions.validateWorkout(t);
           if (errors.length > 0) {
+              modals.actions.setIsConfirmingFinish(false);
               modals.actions.setValidationErrors(errors);
               modals.actions.setIsValidationErrorOpen(true);
               return;
           }
       }
-      modals.actions.setIsConfirmingFinish(true);
+      interactions.endWorkout();
   };
 
   const handleStartTimedSet = (exercise: WorkoutExercise, set: PerformedSet) => {
@@ -404,7 +410,7 @@ const ActiveWorkoutPage: React.FC = () => {
                   modals.actions.setIsDetailsModalOpen(false);
               },
               handleDiscardWorkout: interactions.discardActiveWorkout,
-              confirmFinishWorkout: interactions.endWorkout,
+              confirmFinishWorkout: handleConfirmFinishWithValidation,
               handleFinishTimedSet: () => {
                   if (!activeTimedSet) return;
                   const { exercise, set } = activeTimedSet;
