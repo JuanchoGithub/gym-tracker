@@ -519,7 +519,7 @@ const ActiveWorkoutPage: React.FC = () => {
       updateActiveWorkout(prev => {
           if (!prev) return null;
           const currentExercise = prev.exercises.find(ex => ex.id === exerciseId);
-          if (currentExercise) return prev;
+          if (!currentExercise) return prev; 
 
           const exercisesWithoutItem = prev.exercises.filter(ex => ex.id !== exerciseId);
           

@@ -229,6 +229,9 @@ export const ActiveWorkoutProvider: React.FC<{ children: ReactNode }> = ({ child
   }, []);
 
   const endAddExercisesToWorkout = useCallback((ids?: string[]) => {
+      // Capture targetSupersetId locally to be safe, though state is consistent in this scope
+      const targetSupersetId = state.addingTargetSupersetId;
+      
       dispatch({ type: 'SET_ADDING_EXERCISES', payload: false });
       
       if (ids && state.activeWorkout) {
@@ -248,16 +251,16 @@ export const ActiveWorkoutProvider: React.FC<{ children: ReactNode }> = ({ child
                       weight: smartWeight, 
                       restTime: defaultRestTimes 
                   },
-                  state.addingTargetSupersetId
+                  targetSupersetId
               );
           });
           
           let updatedExercises = [...state.activeWorkout.exercises];
           
-          if (state.addingTargetSupersetId) {
+          if (targetSupersetId) {
               let lastIndex = -1;
               for (let i = updatedExercises.length - 1; i >= 0; i--) {
-                  if (updatedExercises[i].supersetId === state.addingTargetSupersetId) {
+                  if (updatedExercises[i].supersetId === targetSupersetId) {
                       lastIndex = i;
                       break;
                   }

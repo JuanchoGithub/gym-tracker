@@ -7,7 +7,7 @@ import {
 import { exportToJson } from '../services/dataService';
 import { PREDEFINED_ROUTINES } from '../constants/routines';
 import { PREDEFINED_EXERCISES } from '../constants/exercises';
-import { UserContext } from './UserContext';
+import { UserContext, FontSize } from './UserContext';
 import { DataContext } from './DataContext';
 import { SupplementContext, DayMode } from './SupplementContext';
 import { EditorContext } from './EditorContext';
@@ -81,6 +81,8 @@ export interface AppContextType {
   setEnableNotifications: React.Dispatch<React.SetStateAction<boolean>>;
   selectedVoiceURI: string | null;
   setSelectedVoiceURI: React.Dispatch<React.SetStateAction<string | null>>;
+  fontSize: FontSize;
+  setFontSize: (size: FontSize) => void;
 
   // From SupplementContext
   supplementPlan: SupplementPlan | null;
@@ -174,7 +176,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Wrapper for endAddExercisesToTemplate
   const endAddExercisesToTemplateWrapper = useCallback((ids?: string[]) => {
+      // Capture ID before clearing state to ensure we have the target superset
+      const targetSupersetId = editor.addingTargetSupersetId;
+      
       editor.endAddExercisesToTemplate();
+      
       if (ids && editor.editingTemplate) {
           const defaultReps = getDefaultReps(user.profile.mainGoal);
 
@@ -192,15 +198,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                       weight: smartWeight, 
                       restTime: user.defaultRestTimes 
                   },
-                  editor.addingTargetSupersetId
+                  targetSupersetId
               );
           });
           
           let updatedExercises = [...editor.editingTemplate.exercises];
-          if (editor.addingTargetSupersetId) {
+          if (targetSupersetId) {
               let lastIndex = -1;
               for (let i = updatedExercises.length - 1; i >= 0; i--) {
-                  if (updatedExercises[i].supersetId === editor.addingTargetSupersetId) {
+                  if (updatedExercises[i].supersetId === targetSupersetId) {
                       lastIndex = i;
                       break;
                   }
