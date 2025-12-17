@@ -191,6 +191,9 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
       return 'bg-surface-highlight/40 text-text-secondary hover:bg-success/20 hover:text-success border border-white/5';
   };
 
+  const prevIsFailure = previousSetData?.type === 'failure';
+  const prevDataStyle = prevIsFailure ? 'text-purple-400 font-bold opacity-100' : 'text-slate-400 opacity-70';
+
   return (
     <>
       <div className={`grid grid-cols-5 items-center gap-3 p-2 rounded-2xl border transition-all duration-300 ${getSetTypeStyles(set.type, !!set.isComplete)}`}>
@@ -203,7 +206,7 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
             </button>
           </div>
           
-          <div className="col-span-1 text-center text-slate-400 text-xs font-mono truncate px-1 opacity-70">
+          <div className={`col-span-1 text-center text-xs font-mono truncate px-1 ${prevDataStyle}`}>
             {set.type !== 'timed' && (previousSetData ? `${displayWeight(previousSetData.weight)}x${previousSetData.reps}` : '-')}
           </div>
 

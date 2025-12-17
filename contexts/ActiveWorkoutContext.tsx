@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, ReactNode, useCallback, useMemo, useReducer, useEffect, useState } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import { Routine, WorkoutSession, WorkoutExercise, UserGoal } from '../types';
+import { Routine, WorkoutSession, WorkoutExercise, UserGoal, SetType } from '../types';
 import { TimerContext } from './TimerContext';
 import { AppContext } from './AppContext';
 import { SupplementContext } from './SupplementContext';
@@ -150,11 +150,23 @@ export const ActiveWorkoutProvider: React.FC<{ children: ReactNode }> = ({ child
                           }
                       }
 
+                      // Convert 'failure' sets back to 'normal' when starting a new session.
+                      // Failure is a result/transitional state, not a permanent plan.
+                      let setType: SetType = s.type;
+                      let setReps = s.reps;
+
+                      if (setType === 'failure') {
+                          setType = 'normal';
+                          setReps = getDefaultReps(profile.mainGoal); // Reset reps for failure sets
+                      }
+
                       return {
                         ...s,
                         id: `set-${Date.now()}-${Math.random()}`,
                         isComplete: false,
-                        weight: setWeight
+                        weight: setWeight,
+                        reps: setReps,
+                        type: setType
                       };
                   })
               };
