@@ -21,7 +21,7 @@ import { getSmartStartingWeight, analyzeUserHabits, inferUserProfile } from '../
 import { calculateMuscleFreshness } from '../utils/fatigueUtils';
 import { generateSmartRoutine, RoutineFocus } from '../utils/routineGenerator';
 import { generateGapSession } from '../utils/smartCoachUtils';
-import { Routine, WorkoutExercise, Exercise, PerformedSet } from '../types';
+import { Routine, WorkoutExercise, Exercise, PerformedSet, SupersetDefinition } from '../types';
 import { MUSCLES } from '../constants/muscles';
 
 // Muscle constants needed for coach logic
@@ -316,7 +316,7 @@ const ActiveWorkoutPage: React.FC = () => {
 
   if (!activeWorkout) return <div>{t('active_workout_no_active')}</div>;
 
-  const availableSupersets = activeWorkout.supersets ? Object.values(activeWorkout.supersets).map(s => ({
+  const availableSupersets = activeWorkout.supersets ? Object.values(activeWorkout.supersets).map((s: SupersetDefinition) => ({
       id: s.id,
       name: s.name,
       exercises: activeWorkout.exercises.filter(e => e.supersetId === s.id).map(e => {

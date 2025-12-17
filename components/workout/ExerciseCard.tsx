@@ -439,7 +439,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
               
               <div className="space-y-2.5">
                   {workoutExercise.sets.map((set, setIndex) => {
-                    if (set.type === 'normal') {
+                    if (['normal', 'failure', 'timed'].includes(set.type)) {
                       normalSetCounter++;
                     }
                     const isActiveTimer = activeTimerInfo?.exerciseId === workoutExercise.id && activeTimerInfo?.setId === set.id;

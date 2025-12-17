@@ -48,7 +48,7 @@ const RoutinePreviewModal: React.FC<RoutinePreviewModalProps> = ({ routine, isOp
               const exerciseInfo = getExerciseById(ex.exerciseId);
               if (!exerciseInfo) return null;
               
-              const normalSetsCount = ex.sets.filter(s => s.type === 'normal').length;
+              const normalSetsCount = ex.sets.filter(s => ['normal', 'failure', 'timed'].includes(s.type)).length;
 
               return (
                 <div key={ex.id} className="bg-slate-900/50 p-3 rounded flex justify-between items-center">

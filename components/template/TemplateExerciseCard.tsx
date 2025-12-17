@@ -246,7 +246,9 @@ const TemplateExerciseCard: React.FC<TemplateExerciseCardProps> = (props) => {
 
           <div className="space-y-2">
             {workoutExercise.sets.map((set) => {
-              if (set.type === 'normal') normalSetCounter++;
+              if (['normal', 'failure', 'timed'].includes(set.type)) {
+                 normalSetCounter++;
+              }
               return (
                   <TemplateSetRow 
                       key={set.id}

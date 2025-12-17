@@ -274,7 +274,7 @@ const SupersetView: React.FC<SupersetViewProps> = ({
                             if (!set || !exerciseInfo) return null;
                             
                             // Determine set number for this specific exercise type
-                            const normalSetCount = ex.sets.slice(0, setIndex + 1).filter(s => s.type === 'normal').length;
+                            const normalSetCount = ex.sets.slice(0, setIndex + 1).filter(s => ['normal', 'failure', 'timed'].includes(s.type)).length;
                             const prevSetData = (() => {
                                 const hist = getExerciseHistory(allHistory, ex.exerciseId);
                                 return hist.length > 0 ? hist[0].exerciseData.sets[setIndex] : undefined;

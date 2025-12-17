@@ -1,5 +1,5 @@
 
-import { useState, useRef, useContext } from 'react';
+import React, { useState, useRef, useContext } from 'react';
 import { WorkoutSession, WorkoutExercise } from '../../types';
 import { ActiveWorkoutContext } from '../../contexts/ActiveWorkoutContext';
 import { groupExercises } from '../../utils/workoutUtils';
