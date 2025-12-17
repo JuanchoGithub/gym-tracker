@@ -1,4 +1,3 @@
-
 import React, { useState, useContext, useMemo } from 'react';
 import { WorkoutExercise, Exercise, PerformedSet } from '../../types';
 import { AppContext } from '../../contexts/AppContext';
@@ -46,9 +45,9 @@ const SupersetView: React.FC<SupersetViewProps> = ({
   const { t } = useI18n();
   const [expandedHeaderId, setExpandedHeaderId] = useState<string | null>(null);
 
-  // Helper to update a specific set within a workout exercise, handling cascading values
   const handleUpdateSet = (workoutExercise: WorkoutExercise, updatedSet: PerformedSet) => {
     const oldSetIndex = workoutExercise.sets.findIndex(s => s.id === updatedSet.id);
+    if (oldSetIndex === -1) return;
     const oldSet = workoutExercise.sets[oldSetIndex];
     let newSets = [...workoutExercise.sets];
     
@@ -56,7 +55,21 @@ const SupersetView: React.FC<SupersetViewProps> = ({
     let needsWeightCascade = false;
     let needsRepsCascade = false;
 
-    // Handle value reset signals
+    // Logic to re-calculate inheritance for the set being edited
+    const prevSet = oldSetIndex > 0 ? newSets[oldSetIndex - 1] : null;
+    if (prevSet) {
+        if (setAfterValueReset.type !== 'timed') {
+            setAfterValueReset.isWeightInherited = setAfterValueReset.weight === prevSet.weight && setAfterValueReset.type === prevSet.type;
+        } else {
+            setAfterValueReset.isTimeInherited = setAfterValueReset.time === prevSet.time && setAfterValueReset.type === prevSet.type;
+        }
+        setAfterValueReset.isRepsInherited = setAfterValueReset.reps === prevSet.reps && setAfterValueReset.type === prevSet.type;
+    } else {
+        setAfterValueReset.isWeightInherited = false;
+        setAfterValueReset.isRepsInherited = false;
+        setAfterValueReset.isTimeInherited = false;
+    }
+
     if (updatedSet.weight < 0) {
         const sourceSet = oldSetIndex > 0 ? newSets[oldSetIndex - 1] : null;
         const fallbackWeight = oldSet.historicalWeight ?? 0;
@@ -64,7 +77,7 @@ const SupersetView: React.FC<SupersetViewProps> = ({
         setAfterValueReset = { ...setAfterValueReset, weight: newWeight, isWeightInherited: true };
         needsWeightCascade = true;
     } else {
-        needsWeightCascade = updatedSet.type !== 'timed' && oldSet.weight !== updatedSet.weight && updatedSet.isWeightInherited === false && !updatedSet.isComplete;
+        needsWeightCascade = updatedSet.type !== 'timed' && oldSet.weight !== updatedSet.weight && setAfterValueReset.isWeightInherited === false && !updatedSet.isComplete;
     }
 
     if (updatedSet.reps < 0) {
@@ -74,13 +87,12 @@ const SupersetView: React.FC<SupersetViewProps> = ({
         setAfterValueReset = { ...setAfterValueReset, reps: newReps, isRepsInherited: true };
         needsRepsCascade = true;
     } else {
-        needsRepsCascade = oldSet.reps !== updatedSet.reps && updatedSet.isRepsInherited === false && !updatedSet.isComplete;
+        needsRepsCascade = oldSet.reps !== updatedSet.reps && setAfterValueReset.isRepsInherited === false && !updatedSet.isComplete;
     }
     
     newSets[oldSetIndex] = setAfterValueReset;
     const finalUpdatedSet = newSets[oldSetIndex];
 
-    // Cascade logic
     if (needsWeightCascade) {
         for (let i = oldSetIndex + 1; i < newSets.length; i++) {
             const currentSet = newSets[i];
@@ -100,7 +112,7 @@ const SupersetView: React.FC<SupersetViewProps> = ({
         }
     }
     
-    const manualTimeChange = updatedSet.type === 'timed' && oldSet.time !== updatedSet.time && updatedSet.isTimeInherited === false && !updatedSet.isComplete;
+    const manualTimeChange = updatedSet.type === 'timed' && oldSet.time !== updatedSet.time && setAfterValueReset.isTimeInherited === false && !updatedSet.isComplete;
     if (manualTimeChange) {
         for (let i = oldSetIndex + 1; i < newSets.length; i++) {
             const currentSet = newSets[i];
@@ -113,12 +125,10 @@ const SupersetView: React.FC<SupersetViewProps> = ({
   };
 
   const handleDeleteSet = (workoutExercise: WorkoutExercise, setId: string) => {
-     // Same logic as ExerciseCard but simplified call
     const deletedIndex = workoutExercise.sets.findIndex(s => s.id === setId);
     if (deletedIndex === -1) return;
 
     let newSets = workoutExercise.sets.filter(s => s.id !== setId);
-    // Inheritance fix logic
     for (let i = deletedIndex; i < newSets.length; i++) {
         const currentSet = newSets[i];
         if (currentSet.isComplete) continue;
@@ -163,15 +173,12 @@ const SupersetView: React.FC<SupersetViewProps> = ({
     if (onUpdateExercises) {
         onUpdateExercises(updatedExercises);
     } else {
-        // Fallback if parent doesn't support bulk update
         updatedExercises.forEach(ex => onUpdateExercise(ex));
     }
   };
 
-  // Determine max sets to render rows
   const maxSets = Math.max(...exercises.map(ex => ex.sets.length), 0);
 
-  // In reorganize mode, just show the headers as draggable items
   if (isReorganizeMode) {
       return (
           <div className="space-y-2">
@@ -204,7 +211,6 @@ const SupersetView: React.FC<SupersetViewProps> = ({
 
   return (
     <div className="bg-surface/30 rounded-b-2xl">
-        {/* Exercises Headers List */}
         <div className="divide-y divide-white/5 border-b border-white/10">
             {exercises.map((ex, i) => {
                 const exerciseInfo = getExerciseById(ex.exerciseId);
@@ -220,17 +226,16 @@ const SupersetView: React.FC<SupersetViewProps> = ({
                                 exerciseInfo={exerciseInfo}
                                 onUpdate={onUpdateExercise}
                                 onAddNote={() => {
-                                     // Force update to add note field if missing, logic handled inside Header usually but we need UI
                                      if(!ex.note) onUpdateExercise({...ex, note: ' '}); 
                                      setExpandedHeaderId(ex.id); 
                                 }}
-                                onOpenTimerModal={() => { /* Modal logic handled in Header */ }}
+                                onOpenTimerModal={() => { }}
                                 onToggleCollapse={() => setExpandedHeaderId(isExpanded ? null : ex.id)}
                                 onMoveUp={() => onMoveExercise(globalIndex, globalIndex - 1)}
                                 onMoveDown={() => onMoveExercise(globalIndex, globalIndex + 1)}
-                                isMoveUpDisabled={globalIndex === 0} // Should check against total workout
-                                isMoveDownDisabled={false} // Simplification
-                                onReorganize={() => { /* Handled by parent */ }}
+                                isMoveUpDisabled={globalIndex === 0}
+                                isMoveDownDisabled={false}
+                                onReorganize={() => { }}
                                 onRemove={() => onRemoveExercise(ex.id)}
                                 onShowDetails={() => onShowDetails?.(ex.exerciseId)}
                             />
@@ -256,7 +261,6 @@ const SupersetView: React.FC<SupersetViewProps> = ({
             })}
         </div>
 
-        {/* Interleaved Sets */}
         <div className="p-2 sm:p-3 space-y-6">
              {Array.from({ length: maxSets }).map((_, setIndex) => (
                  <div key={setIndex} className="bg-black/20 rounded-xl p-3 border border-white/5">
@@ -273,7 +277,6 @@ const SupersetView: React.FC<SupersetViewProps> = ({
                             
                             if (!set || !exerciseInfo) return null;
                             
-                            // Determine set number for this specific exercise type
                             const normalSetCount = ex.sets.slice(0, setIndex + 1).filter(s => ['normal', 'failure', 'timed'].includes(s.type)).length;
                             const prevSetData = (() => {
                                 const hist = getExerciseHistory(allHistory, ex.exerciseId);

@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, ReactNode, useCallback, useMemo, useReducer, useEffect, useState } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import { Routine, WorkoutSession, WorkoutExercise, UserGoal, SetType } from '../types';
+import { Routine, WorkoutSession, WorkoutExercise, UserGoal, SetType, PerformedSet } from '../types';
 import { TimerContext } from './TimerContext';
 import { AppContext } from './AppContext';
 import { SupplementContext } from './SupplementContext';
@@ -50,7 +50,6 @@ const workoutReducer = (state: WorkoutState, action: WorkoutAction): WorkoutStat
         case 'SET_WORKOUT':
             return { ...state, activeWorkout: action.payload };
         case 'UPDATE_WORKOUT':
-             // Automatically update lastUpdated timestamp
             return { ...state, activeWorkout: { ...action.payload, lastUpdated: Date.now() } };
         case 'MINIMIZE':
             return { ...state, isWorkoutMinimized: action.payload };
@@ -63,7 +62,6 @@ const workoutReducer = (state: WorkoutState, action: WorkoutAction): WorkoutStat
     }
 };
 
-// Helper for default reps
 const getDefaultReps = (goal?: UserGoal): number => {
     switch (goal) {
         case 'strength': return 5;
@@ -76,7 +74,6 @@ const getDefaultReps = (goal?: UserGoal): number => {
 export const ActiveWorkoutContext = createContext<ActiveWorkoutContextType>({} as ActiveWorkoutContextType);
 
 export const ActiveWorkoutProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // We still use useLocalStorage to persist the state, but we wrap updates via reducer
   const [persistedWorkout, setPersistedWorkout] = useLocalStorage<WorkoutSession | null>('activeWorkout', null);
   
   const [state, dispatch] = useReducer(workoutReducer, {
@@ -86,7 +83,6 @@ export const ActiveWorkoutProvider: React.FC<{ children: ReactNode }> = ({ child
       addingTargetSupersetId: undefined
   });
   
-  // Sync state back to local storage when activeWorkout changes
   useEffect(() => {
       setPersistedWorkout(state.activeWorkout);
   }, [state.activeWorkout, setPersistedWorkout]);
@@ -107,11 +103,6 @@ export const ActiveWorkoutProvider: React.FC<{ children: ReactNode }> = ({ child
           lastUpdated: Date.now(),
           endTime: 0,
           exercises: routine.exercises.map(ex => {
-              // Calculate smart weight for this exercise if it's a template or generated routine
-              // We only apply this if the set weight is 0 (which is true for templates)
-              // If re-doing a history session (isTemplate=false), we preserve the original weights
-              
-              // FIX: Treat generated smart routines as templates for weight calculation purposes
               const isGenerated = routine.id.startsWith('smart-') || routine.id.startsWith('gap-') || routine.id.startsWith('gen-');
               const shouldPrefill = routine.isTemplate || isGenerated;
               
@@ -120,55 +111,61 @@ export const ActiveWorkoutProvider: React.FC<{ children: ReactNode }> = ({ child
 
               if (shouldPrefill) {
                  smartWeight = getSmartStartingWeight(ex.exerciseId, history, profile, rawExercises, profile.mainGoal);
-                 // If we have warmup sets, calculate weights for them relative to smartWeight
                  const warmupSetCount = ex.sets.filter(s => s.type === 'warmup').length;
                  if (warmupSetCount > 0 && smartWeight > 0) {
-                     // Detect user's preferred plate increment from history to avoid suggesting unavailable weights (e.g. 22.5kg)
                      const exHistory = getExerciseHistory(history, ex.exerciseId);
                      const increment = detectPreferredIncrement(exHistory);
                      calculatedWarmups = calculateWarmupWeights(smartWeight, warmupSetCount, increment);
                  }
               }
 
-              // Use a counter to assign warmup weights in order
               let warmupIndex = 0;
+              const newSets: PerformedSet[] = [];
+
+              ex.sets.forEach((s, sIdx) => {
+                  let setWeight = s.weight;
+                  let setReps = s.reps;
+                  
+                  if (shouldPrefill) {
+                      if (s.type === 'normal' && s.weight === 0) {
+                          setWeight = smartWeight;
+                      } else if (s.type === 'warmup') {
+                          if (calculatedWarmups[warmupIndex] !== undefined) {
+                              setWeight = calculatedWarmups[warmupIndex];
+                              warmupIndex++;
+                          }
+                      }
+                  }
+
+                  let setType: SetType = s.type;
+                  if (setType === 'failure') {
+                      setType = 'normal';
+                      setReps = getDefaultReps(profile.mainGoal);
+                  }
+
+                  // Compute inheritance flags by comparing with the resulting values of the previous set
+                  const prev = sIdx > 0 ? newSets[sIdx - 1] : null;
+                  const isWeightInherited = prev ? (setWeight === prev.weight && setType === prev.type) : false;
+                  const isRepsInherited = prev ? (setReps === prev.reps && setType === prev.type) : false;
+                  const isTimeInherited = prev ? (s.time === prev.time && setType === prev.type) : false;
+
+                  newSets.push({
+                    ...s,
+                    id: `set-${Date.now()}-${Math.random()}`,
+                    isComplete: false,
+                    weight: setWeight,
+                    reps: setReps,
+                    type: setType,
+                    isWeightInherited,
+                    isRepsInherited,
+                    isTimeInherited
+                  });
+              });
 
               return {
                   ...ex,
                   id: `we-${Date.now()}-${Math.random()}`,
-                  sets: ex.sets.map(s => {
-                      let setWeight = s.weight;
-                      
-                      if (shouldPrefill) {
-                          if (s.type === 'normal' && s.weight === 0) {
-                              setWeight = smartWeight;
-                          } else if (s.type === 'warmup') {
-                              if (calculatedWarmups[warmupIndex] !== undefined) {
-                                  setWeight = calculatedWarmups[warmupIndex];
-                                  warmupIndex++;
-                              }
-                          }
-                      }
-
-                      // Convert 'failure' sets back to 'normal' when starting a new session.
-                      // Failure is a result/transitional state, not a permanent plan.
-                      let setType: SetType = s.type;
-                      let setReps = s.reps;
-
-                      if (setType === 'failure') {
-                          setType = 'normal';
-                          setReps = getDefaultReps(profile.mainGoal); // Reset reps for failure sets
-                      }
-
-                      return {
-                        ...s,
-                        id: `set-${Date.now()}-${Math.random()}`,
-                        isComplete: false,
-                        weight: setWeight,
-                        reps: setReps,
-                        type: setType
-                      };
-                  })
+                  sets: newSets
               };
           }),
           supersets: routine.supersets
@@ -177,14 +174,7 @@ export const ActiveWorkoutProvider: React.FC<{ children: ReactNode }> = ({ child
       dispatch({ type: 'MINIMIZE', payload: false });
   }, [history, profile, rawExercises]);
 
-  // Legacy support wrapper for direct updates
   const updateActiveWorkout = useCallback((workoutOrFn: WorkoutSession | ((prev: WorkoutSession | null) => WorkoutSession | null)) => {
-      // We need access to current state to resolve function updates
-      // Since we are inside the provider, we can access `state.activeWorkout` directly from closure, 
-      // but to be safe with stale closures in callbacks, we should use a functional update if dispatch supported it.
-      // However, standard useReducer dispatch doesn't support functional updates for payload.
-      // We will assume the caller passes the latest object or we resolve it.
-      
       let newWorkout: WorkoutSession | null = null;
       if (typeof workoutOrFn === 'function') {
            newWorkout = workoutOrFn(state.activeWorkout);
@@ -204,18 +194,11 @@ export const ActiveWorkoutProvider: React.FC<{ children: ReactNode }> = ({ child
           if (state.activeWorkout.exercises.length > 0) {
               const finishedWorkout = { ...state.activeWorkout, endTime: endTime || Date.now() };
               saveCompletedWorkout(finishedWorkout);
-              
-              // --- Auto-Detect Day Type for Supplements ---
               const today = getDateString(new Date(finishedWorkout.startTime));
-              
-              // Prepare full list of exercises (predefined + custom)
-              // NOTE: rawExercises usually contains custom ones, PREDEFINED is static fallback
               const allExercises = [...rawExercises, ...PREDEFINED_EXERCISES]; 
-              
               const dayMode = detectWorkoutIntensity(finishedWorkout, allExercises);
               setDayOverride(today, dayMode);
           }
-          
           dispatch({ type: 'SET_WORKOUT', payload: null });
           dispatch({ type: 'MINIMIZE', payload: false });
           stopAllTimers();
@@ -241,9 +224,7 @@ export const ActiveWorkoutProvider: React.FC<{ children: ReactNode }> = ({ child
   }, []);
 
   const endAddExercisesToWorkout = useCallback((ids?: string[]) => {
-      // Capture targetSupersetId locally to be safe, though state is consistent in this scope
       const targetSupersetId = state.addingTargetSupersetId;
-      
       dispatch({ type: 'SET_ADDING_EXERCISES', payload: false });
       
       if (ids && state.activeWorkout) {
@@ -251,16 +232,14 @@ export const ActiveWorkoutProvider: React.FC<{ children: ReactNode }> = ({ child
 
           const newExercises: WorkoutExercise[] = ids.map(id => {
               const exerciseDef = rawExercises.find(e => e.id === id);
-              // Use smart weight logic for manual adds too
               const smartWeight = getSmartStartingWeight(id, history, profile, rawExercises, profile.mainGoal);
-
-              // Use new smart creator
               return createSmartWorkoutExercise(
                   exerciseDef,
                   { 
                       sets: 1, 
                       reps: defaultReps, 
                       weight: smartWeight, 
+                      // FIX: use defaultRestTimes directly as 'user' is not defined in this scope.
                       restTime: defaultRestTimes 
                   },
                   targetSupersetId

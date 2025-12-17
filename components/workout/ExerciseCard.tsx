@@ -1,4 +1,3 @@
-
 import React, { useState, useContext, useMemo, useEffect } from 'react';
 import { Exercise, WorkoutExercise, PerformedSet } from '../../types';
 import SetRow from './SetRow';
@@ -67,7 +66,6 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
   const [note, setNote] = useState(workoutExercise.note || '');
   const [isDefaultsTimerModalOpen, setIsDefaultsTimerModalOpen] = useState(false);
   
-  // Insight State
   const [insight, setInsight] = useState<WeightSuggestion | null>(null);
   const [isInsightDismissed, setIsInsightDismissed] = useState(false);
   const [isPromotionDismissed, setIsPromotionDismissed] = useState(false);
@@ -77,15 +75,10 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
     return history.length > 0 ? history[0] : null;
   }, [allHistory, exerciseInfo.id]);
   
-  // Calculate Insight on Mount
   useEffect(() => {
-     // Only calculate if not bodyweight/timed (mostly for weighted exercises)
      const isTimed = workoutExercise.sets.some(s => s.type === 'timed');
      if (!isTimed && !isInsightDismissed) {
          const suggestion = getSmartWeightSuggestion(exerciseInfo.id, allHistory, profile, rawExercises, profile.mainGoal);
-         
-         // Only show if there is a suggestion and it differs from current set weight (check first set)
-         // And if reason is compelling (not just maintain default 0)
          if (suggestion.weight > 0 && suggestion.reason && suggestion.trend !== 'maintain') {
              const currentFirstSet = workoutExercise.sets.find(s => s.type === 'normal');
              if (currentFirstSet && currentFirstSet.weight !== suggestion.weight && !currentFirstSet.isComplete) {
@@ -97,16 +90,14 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
 
   const handleApplyInsight = () => {
       if (!insight) return;
-      
       const newSets = workoutExercise.sets.map(set => {
           if (set.type === 'normal' && !set.isComplete) {
               return { ...set, weight: insight.weight, isWeightInherited: true };
           }
           return set;
       });
-      
       onUpdate({ ...workoutExercise, sets: newSets });
-      setInsight(null); // Dismiss after applying
+      setInsight(null);
   };
   
   const isBodyweight = ['Bodyweight', 'Plyometrics'].includes(exerciseInfo.category);
@@ -115,17 +106,13 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
     return ['Reps Only', 'Cardio', 'Duration', 'Bodyweight', 'Assisted Bodyweight', 'Plyometrics'].includes(exerciseInfo.category);
   }, [exerciseInfo.category]);
   
-  // Check validity for the header coloring
   const hasInvalidSets = useMemo(() => {
       return workoutExercise.sets.some(set => {
           if (!set.isComplete) return false;
-          
           if (set.type === 'timed') {
               return (set.time ?? 0) <= 0 || set.reps <= 0;
           } else {
-              // Weight check
               if (!isWeightOptional && set.weight <= 0) return true;
-              // Reps check
               if (set.reps <= 0) return true;
           }
           return false;
@@ -138,15 +125,11 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
     const oldSet = workoutExercise.sets[oldSetIndex];
 
     let setForStorage = { ...updatedSet };
-
-    // FIX: Ensure timed sets have at least 1 rep (representing "1 round")
     if (setForStorage.type === 'timed' && setForStorage.reps <= 0) {
         setForStorage.reps = 1;
     }
 
-    // LOGIC: Handle Bodyweight / Assisted Calculations
     const bw = oldSet.storedBodyWeight || userBodyWeight || 0;
-    
     if (updatedSet.type !== 'timed' && bw > 0) {
          if (isBodyweight && updatedSet.weight >= 0) {
              setForStorage.weight = bw + updatedSet.weight;
@@ -158,12 +141,22 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
     }
 
     let newSets = [...workoutExercise.sets];
-    
     let setAfterValueReset = { ...setForStorage };
     let needsWeightCascade = false;
     let needsRepsCascade = false;
 
-    // Handle weight reset signal
+    // Logic to re-calculate inheritance for the set being edited
+    const prevSet = oldSetIndex > 0 ? newSets[oldSetIndex - 1] : null;
+    if (prevSet) {
+        setAfterValueReset.isWeightInherited = setAfterValueReset.weight === prevSet.weight && setAfterValueReset.type === prevSet.type;
+        setAfterValueReset.isRepsInherited = setAfterValueReset.reps === prevSet.reps && setAfterValueReset.type === prevSet.type;
+        setAfterValueReset.isTimeInherited = setAfterValueReset.time === prevSet.time && setAfterValueReset.type === prevSet.type;
+    } else {
+        setAfterValueReset.isWeightInherited = false;
+        setAfterValueReset.isRepsInherited = false;
+        setAfterValueReset.isTimeInherited = false;
+    }
+
     if (updatedSet.weight < 0) {
         const sourceSet = oldSetIndex > 0 ? newSets[oldSetIndex - 1] : null;
         const fallbackWeight = oldSet.historicalWeight ?? 0;
@@ -171,10 +164,9 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
         setAfterValueReset = { ...setAfterValueReset, weight: newWeight, isWeightInherited: true };
         needsWeightCascade = true;
     } else {
-        needsWeightCascade = setForStorage.type !== 'timed' && oldSet.weight !== setForStorage.weight && setForStorage.isWeightInherited === false && !setForStorage.isComplete;
+        needsWeightCascade = setForStorage.type !== 'timed' && oldSet.weight !== setForStorage.weight && setAfterValueReset.isWeightInherited === false && !setForStorage.isComplete;
     }
 
-    // Handle reps reset signal
     if (updatedSet.reps < 0) {
         const sourceSet = oldSetIndex > 0 ? newSets[oldSetIndex - 1] : null;
         const fallbackReps = oldSet.historicalReps ?? 0;
@@ -182,12 +174,11 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
         setAfterValueReset = { ...setAfterValueReset, reps: newReps, isRepsInherited: true };
         needsRepsCascade = true;
     } else {
-        needsRepsCascade = oldSet.reps !== updatedSet.reps && updatedSet.isRepsInherited === false && !updatedSet.isComplete;
+        needsRepsCascade = oldSet.reps !== updatedSet.reps && setAfterValueReset.isRepsInherited === false && !updatedSet.isComplete;
     }
     
     newSets[oldSetIndex] = setAfterValueReset;
 
-    // Cascade changes
     const finalUpdatedSet = newSets[oldSetIndex];
     if (needsWeightCascade) {
         for (let i = oldSetIndex + 1; i < newSets.length; i++) {
@@ -209,7 +200,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
         }
     }
     
-    const manualTimeChange = updatedSet.type === 'timed' && oldSet.time !== updatedSet.time && updatedSet.isTimeInherited === false && !updatedSet.isComplete;
+    const manualTimeChange = updatedSet.type === 'timed' && oldSet.time !== updatedSet.time && setAfterValueReset.isTimeInherited === false && !updatedSet.isComplete;
     if (manualTimeChange) {
         for (let i = oldSetIndex + 1; i < newSets.length; i++) {
             const currentSet = newSets[i];
@@ -233,13 +224,11 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
 
     let newSets = workoutExercise.sets.filter(s => s.id !== setId);
 
-    // Start fixing inheritance from the point of deletion onwards
     for (let i = deletedIndex; i < newSets.length; i++) {
         const currentSet = newSets[i];
         if (currentSet.isComplete) continue;
 
         const sourceSet = i > 0 ? newSets[i - 1] : null;
-        
         const newInheritedSet: PerformedSet = {
             ...currentSet,
             isWeightInherited: true,
@@ -294,7 +283,6 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
 
   const allSetsCompleted = completedSets === workoutExercise.sets.length && workoutExercise.sets.length > 0;
   
-  // Logic for card styling based on state
   let borderClass = 'border-white/5';
   let shadowClass = 'shadow-black/20';
 
@@ -306,7 +294,6 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
       shadowClass = 'shadow-success/5';
   }
 
-  // Header background override for collapsed invalid
   const headerBgClass = (isCollapsed && hasInvalidSets) ? 'bg-red-500/10' : 'bg-surface';
   
   let normalSetCounter = 0;
@@ -360,7 +347,6 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
             />
         </div>
         
-        {/* Promotion Banner */}
         {!isCollapsed && promotionSuggestion && !isPromotionDismissed && onUpgrade && (
             <PromotionBanner 
                 targetExercise={promotionSuggestion}
@@ -369,7 +355,6 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
             />
         )}
         
-        {/* Undo Rollback Banner */}
         {!isCollapsed && workoutExercise.previousVersion && onRollback && (
             <div className="mx-3 sm:mx-4 mt-3 rounded-lg border border-slate-500/20 bg-gradient-to-r from-slate-500/10 to-gray-500/10 p-3 flex items-center justify-between animate-fadeIn">
                 <div className="flex items-center gap-3 min-w-0 flex-grow">
@@ -391,7 +376,6 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
             </div>
         )}
         
-        {/* Active Insight Banner */}
         {!isCollapsed && insight && (
              <InsightBanner 
                  suggestion={insight} 
@@ -446,26 +430,19 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
                     const showFinishedTimer = set.isComplete && !isActiveTimer;
                     const previousSetData = lastPerformance?.exerciseData.sets[setIndex];
                     
-                    // UI Transformation for Display
                     let displaySet = { ...set };
-                    
-                    // Use storedBodyWeight for consistent historical data if available, otherwise fall back to current userBodyWeight
                     const referenceBodyWeight = set.storedBodyWeight ?? userBodyWeight;
                     
                     if (set.type !== 'timed' && referenceBodyWeight && referenceBodyWeight > 0 && set.weight > 0) {
                          if (isBodyweight) {
-                             // Display Extra Weight (Total - Body)
                              displaySet.weight = Math.max(0, set.weight - referenceBodyWeight);
                          } else if (isAssisted) {
-                             // Display Assistance Weight (Body - Total)
                              displaySet.weight = Math.max(0, referenceBodyWeight - set.weight);
                          }
                     } else if (isBodyweight && set.weight === 0) {
-                        // Implicit 0 extra.
                         displaySet.weight = 0;
                     }
                     
-                    // Determine if this specific set is invalid
                     let isValid = true;
                     if (set.isComplete) {
                         if (set.type === 'timed') {
