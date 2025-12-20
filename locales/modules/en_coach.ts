@@ -68,6 +68,10 @@ export const en_coach = {
   rec_action_disable_detection: "Don't ask again",
   rec_alternatives_label: "Or choose from these templates:",
   
+  // Bio-Adaptive
+  coach_warning_density_drop_title: "Efficiency Leak",
+  coach_warning_density_drop_desc: "Your workout density dropped by {percent}% recently. This is often a sign of incoming fatigue. A light session today could prevent a burnout.",
+  
   active_workout_suggestion_gap_override: "Generating a low-impact session to facilitate recovery while training.",
   coach_safety_no_weight_title: "Safety Check",
   coach_safety_no_weight_desc: "Bodyweight exercises skipped until we know your weight.",

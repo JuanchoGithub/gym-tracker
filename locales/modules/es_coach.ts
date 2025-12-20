@@ -68,6 +68,10 @@ export const es_coach = {
   rec_action_disable_detection: "No volver a preguntar",
   rec_alternatives_label: "O elegí una de estas plantillas:",
   
+  // Bio-Adaptive
+  coach_warning_density_drop_title: "Fuga de Eficiencia",
+  coach_warning_density_drop_desc: "Tu densidad de entrenamiento cayó un {percent}% recientemente. Suele ser señal de fatiga acumulada. Una sesión ligera hoy evitaría un agotamiento mayor.",
+
   active_workout_suggestion_gap_override: "Generando una sesión de bajo impacto para facilitar la recuperación mientras entrenás.",
   coach_safety_no_weight_title: "Control de Seguridad",
   coach_safety_no_weight_desc: "Omitimos ejercicios de peso corporal porque nos falta tu peso.",

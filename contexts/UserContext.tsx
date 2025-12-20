@@ -44,7 +44,10 @@ export interface UserContextType {
 export const UserContext = createContext<UserContextType>({} as UserContextType);
 
 export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [profile, setProfile] = useLocalStorage<Profile>('profile', { weightHistory: [] });
+  const [profile, setProfile] = useLocalStorage<Profile>('profile', { 
+    weightHistory: [],
+    bioAdaptiveEngine: true // Defaults to true
+  });
   const [measureUnit, setMeasureUnit] = useLocalStorage<'metric' | 'imperial'>('measureUnit', 'metric');
   const [defaultRestTimes, setDefaultRestTimes] = useLocalStorage('defaultRestTimes', { normal: 90, warmup: 60, drop: 30, timed: 60, effort: 180, failure: 300 });
   const [useLocalizedExerciseNames, setUseLocalizedExerciseNames] = useLocalStorage('useLocalizedExerciseNames', false);
@@ -120,15 +123,14 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }));
   }, [setProfile]);
 
-  // Apply Font Size Effect
   useEffect(() => {
     const root = document.documentElement;
     if (fontSize === 'large') {
-        root.style.fontSize = '112.5%'; // ~18px base
+        root.style.fontSize = '112.5%'; 
     } else if (fontSize === 'xl') {
-        root.style.fontSize = '125%'; // ~20px base
+        root.style.fontSize = '125%'; 
     } else {
-        root.style.fontSize = '100%'; // ~16px base
+        root.style.fontSize = '100%'; 
     }
   }, [fontSize]);
 

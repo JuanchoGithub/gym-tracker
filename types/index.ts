@@ -6,7 +6,6 @@ export type BodyPart = 'Chest' | 'Back' | 'Legs' | 'Glutes' | 'Shoulders' | 'Bic
 
 export type MuscleGroup = typeof MUSCLES[keyof typeof MUSCLES];
 
-// FIX: Added 'Duration' to the ExerciseCategory type to match its usage in the application.
 export type ExerciseCategory = 'Barbell' | 'Dumbbell' | 'Machine' | 'Cable' | 'Bodyweight' | 'Assisted Bodyweight' | 'Kettlebell' | 'Plyometrics' | 'Reps Only' | 'Cardio' | 'Duration' | 'Smith Machine';
 
 export interface Exercise {
@@ -16,7 +15,7 @@ export interface Exercise {
   category: ExerciseCategory;
   notes?: string;
   isTimed?: boolean;
-  isUnilateral?: boolean; // If true, the exercise is performed one side at a time
+  isUnilateral?: boolean;
   primaryMuscles?: MuscleGroup[];
   secondaryMuscles?: MuscleGroup[];
 }
@@ -27,23 +26,23 @@ export interface PerformedSet {
   id: string;
   reps: number;
   weight: number;
-  time?: number; // duration in seconds for timed sets
+  time?: number;
   type: SetType;
-  isComplete?: boolean; // Added for tracking during workout
-  completedAt?: number; // Timestamp when the set was marked complete
-  rest?: number; // Optional override for rest time in seconds
+  isComplete?: boolean;
+  completedAt?: number;
+  rest?: number;
   isWeightInherited?: boolean;
   isRepsInherited?: boolean;
   isTimeInherited?: boolean;
-  actualRest?: number; // The actual rest time taken after this set
+  actualRest?: number;
   historicalWeight?: number;
   historicalReps?: number;
   historicalTime?: number;
-  storedBodyWeight?: number; // Snapshot of user bodyweight when set was completed
+  storedBodyWeight?: number;
 }
 
 export interface WorkoutExercise {
-  id: string; // Unique ID for this instance in the routine/workout
+  id: string;
   exerciseId: string;
   sets: PerformedSet[];
   restTime: {
@@ -76,26 +75,26 @@ export interface Routine {
   description: string;
   exercises: WorkoutExercise[];
   supersets?: Record<string, SupersetDefinition>;
-  isTemplate?: boolean; // true for templates
-  lastUsed?: number; // timestamp for latest workouts
-  originId?: string; // The ID of the template this was based on
+  isTemplate?: boolean;
+  lastUsed?: number;
+  originId?: string;
   routineType?: 'strength' | 'hiit';
   hiitConfig?: {
     workTime: number;
     restTime: number;
     prepareTime?: number;
   };
-  tags?: string[]; // e.g., ['recovery', 'generated', 'gap_session']
+  tags?: string[];
 }
 
 export interface WorkoutSession {
   id:string;
-  routineId: string; // ID of the routine this session was started from
+  routineId: string;
   routineName: string;
   startTime: number;
-  endTime: number; // timestamp
-  lastUpdated?: number; // Timestamp of last interaction/update to prevent stale timeouts
-  exercises: WorkoutExercise[]; // This will store the completed sets
+  endTime: number;
+  lastUpdated?: number;
+  exercises: WorkoutExercise[];
   supersets?: Record<string, SupersetDefinition>;
   prCount?: number;
 }
@@ -112,8 +111,8 @@ export interface ChartDataPoint {
 }
 
 export interface WeightEntry {
-  date: number; // timestamp
-  weight: number; // in kg
+  date: number;
+  weight: number;
 }
 
 export interface UnlockEvent {
@@ -124,9 +123,9 @@ export interface UnlockEvent {
 
 export interface OneRepMaxEntry {
   exerciseId: string;
-  weight: number; // in kg
+  weight: number;
   date: number;
-  method: 'calculated' | 'tested'; // 'calculated' from e.g. a 5x5 set, 'tested' via the wizard
+  method: 'calculated' | 'tested';
 }
 
 export interface AutoUpdateEntry {
@@ -139,17 +138,18 @@ export type UserGoal = 'strength' | 'muscle' | 'endurance';
 
 export interface Profile {
   gender?: 'male' | 'female';
-  height?: number; // in cm
+  height?: number;
   weightHistory: WeightEntry[];
   unlocks?: UnlockEvent[];
-  oneRepMaxes?: Record<string, OneRepMaxEntry>; // Keyed by Exercise ID
-  oneRepMaxSnoozes?: Record<string, number>; // Keyed by Exercise ID, value is timestamp until which to snooze updates
-  autoUpdated1RMs?: Record<string, AutoUpdateEntry>; // Keyed by Exercise ID, tracks pending notifications for auto-updates
-  promotionSnoozes?: Record<string, number>; // Keyed by Base Exercise ID, value is timestamp until which to snooze promotion
+  oneRepMaxes?: Record<string, OneRepMaxEntry>;
+  oneRepMaxSnoozes?: Record<string, number>;
+  autoUpdated1RMs?: Record<string, AutoUpdateEntry>;
+  promotionSnoozes?: Record<string, number>;
   mainGoal?: UserGoal;
-  smartGoalDetection?: boolean; // Defaults to true
-  goalMismatchSnoozedUntil?: number; // Timestamp
-  lastImported?: number; // Timestamp of last full profile import
+  smartGoalDetection?: boolean;
+  bioAdaptiveEngine?: boolean; // New: Toggle for individual recovery/density logic
+  goalMismatchSnoozedUntil?: number;
+  lastImported?: number;
 }
 
 export interface SupplementInfo {
@@ -180,7 +180,7 @@ export interface SupplementPlanItem {
     isCustom?: boolean;
     trainingDayOnly?: boolean;
     restDayOnly?: boolean;
-    stock?: number; // Number of servings remaining
+    stock?: number;
 }
 
 export interface SupplementPlan {
@@ -216,7 +216,6 @@ export interface RejectedSuggestion {
   rejectedAt: number;
 }
 
-// Timer Types
 export interface ActiveTimerInfo {
   exerciseId: string;
   setId: string;
@@ -232,7 +231,6 @@ export interface TimedSetInfo {
     set: PerformedSet;
 }
 
-// Stats Types
 export interface UserStatistics {
     recommendation: Recommendation | null;
     activePromotion: Recommendation | null;
@@ -240,4 +238,5 @@ export interface UserStatistics {
     imbalanceRecommendation: Recommendation | null;
     goalMismatchRecommendation: Recommendation | null;
     lastCalculated: number;
+    performanceEfficiency?: number; // New: 0-100 score based on density trend
 }
