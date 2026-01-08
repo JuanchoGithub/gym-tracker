@@ -137,6 +137,9 @@ const App: React.FC = () => {
     if (editingTemplate) {
       return <TemplateEditorPage />;
     }
+    if (editingExercise) {
+      return <ExerciseEditorPage />;
+    }
     if (activeWorkout && !isWorkoutMinimized) {
       return <ActiveWorkoutPage />;
     }
@@ -192,7 +195,6 @@ const App: React.FC = () => {
 
       <main className={`flex-grow container mx-auto ${paddingXClass} py-6 overflow-y-auto overflow-x-hidden relative overscroll-y-none scroll-smooth ${paddingBottomClass}`}>
         {renderContent()}
-        {editingExercise && <ExerciseEditorPage />}
       </main>
       
       {/* Z-Index Management: Nav wrapper is z-40, Modals are z-100 */}
