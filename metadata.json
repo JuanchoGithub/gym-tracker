@@ -1,5 +1,7 @@
 {
   "name": "Fortachon",
   "description": "A comprehensive gym application to create, track, and manage your workout routines with detailed history and customizable features.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [
+    "camera"
+  ]
 }
