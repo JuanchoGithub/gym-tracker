@@ -1,4 +1,5 @@
 
+
 export const en_templates = {
   // Template Editor
   template_editor_edit_title: "Edit Template",
@@ -48,21 +49,6 @@ export const en_templates = {
   create_template_mode_wizard: "Smart Generator",
   create_template_mode_wizard_desc: "Generate a plan based on your goals",
   
-  // Sharing
-  share_workout: "Share Workout",
-  share_workout_desc: "Let others scan this code to import your routine.",
-  share_workout_file_btn: "Send to App",
-  share_workout_payload_error: "Workout too large to share via QR. Try removing long notes or using 'Send to App'.",
-  import_workout: "Import Workout",
-  import_workout_title: "Import Routine",
-  import_workout_scan_tab: "Scan QR",
-  import_workout_file_tab: "Open File",
-  import_workout_file_btn: "Select Workout File",
-  import_workout_instructions: "Align the QR code within the frame",
-  import_workout_success: "Workout '{name}' imported successfully!",
-  import_workout_error: "Invalid workout code.",
-  import_workout_camera_error: "Camera access denied or unavailable.",
-
   // Routine Names & Descs
   rt_anatoly_squat_name: "Anatoly - Squat (Day A)",
   rt_anatoly_squat_desc: "Maximal leg strength and explosive power. Squats at 80% 1RM.",

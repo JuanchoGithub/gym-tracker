@@ -8,7 +8,6 @@ import { useI18n } from '../../hooks/useI18n';
 import ConfirmModal from '../modals/ConfirmModal';
 import { useClickOutside } from '../../hooks/useClickOutside';
 import { useExerciseName } from '../../hooks/useExerciseName';
-import ShareWorkoutModal from '../modals/ShareWorkoutModal';
 
 interface RoutinePanelProps {
   routine: Routine;
@@ -25,7 +24,6 @@ const RoutinePanel: React.FC<RoutinePanelProps> = ({ routine, onClick, onEdit, o
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
-  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [newName, setNewName] = useState(routine.name);
   const [newNote, setNewNote] = useState(routine.description);
   
@@ -39,7 +37,7 @@ const RoutinePanel: React.FC<RoutinePanelProps> = ({ routine, onClick, onEdit, o
 
   const routineDescKey = `${routine.id.replace(/-/g, '_')}_desc`;
   const localizedDesc = t(routineDescKey as any);
-  const displayDescription = newNote || (localizedDesc !== routineDescKey ? localizedDesc : routine.description);
+  const displayDescription = localizedDesc !== routineDescKey ? localizedDesc : routine.description;
 
   const routineType = routine.routineType || 'strength';
   const typeLabel = routineType === 'hiit' ? t('template_editor_type_hiit') : t('template_editor_type_strength');
@@ -80,12 +78,6 @@ const RoutinePanel: React.FC<RoutinePanelProps> = ({ routine, onClick, onEdit, o
     setIsMenuOpen(false);
   };
 
-  const handleShare = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsShareModalOpen(true);
-    setIsMenuOpen(false);
-  }
-
   const handleSaveRename = (e: React.FormEvent) => {
     e.preventDefault();
     if (newName.trim()) {
@@ -117,7 +109,6 @@ const RoutinePanel: React.FC<RoutinePanelProps> = ({ routine, onClick, onEdit, o
   if (isCustomTemplate) {
     menuItems.push({ id: 'edit', label: t('routine_panel_edit_exercises'), action: handleEdit, className: 'text-text-primary', icon: 'edit' });
     menuItems.push({ id: 'duplicate', label: t('common_duplicate'), action: handleDuplicate, className: 'text-text-primary', icon: 'duplicate' });
-    menuItems.push({ id: 'share', label: t('share_workout'), action: handleShare, className: 'text-indigo-400', icon: 'share' });
     menuItems.push({ id: 'note', label: t('routine_panel_edit_note'), action: (e: React.MouseEvent) => { e.stopPropagation(); setIsNoteModalOpen(true); setNewNote(displayDescription); setIsMenuOpen(false); }, className: 'text-text-primary', icon: 'clipboard-list' });
   }
 
@@ -216,14 +207,6 @@ const RoutinePanel: React.FC<RoutinePanelProps> = ({ routine, onClick, onEdit, o
               </div>
           </form>
       </Modal>
-
-      {isShareModalOpen && (
-          <ShareWorkoutModal 
-            isOpen={isShareModalOpen} 
-            onClose={() => setIsShareModalOpen(false)} 
-            routine={routine} 
-          />
-      )}
     </>
   );
 };

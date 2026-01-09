@@ -26,7 +26,6 @@ import { useMeasureUnit } from '../hooks/useWeight';
 import { TranslationKey } from '../contexts/I18nContext';
 import { TimerContext } from '../contexts/TimerContext';
 import PromotionReviewModal from '../components/modals/PromotionReviewModal';
-import ImportWorkoutModal from '../components/modals/ImportWorkoutModal';
 
 // Updated Regex to catch both translation keys and plain text words
 const timeKeywords = {
@@ -64,7 +63,6 @@ const TrainPage: React.FC = () => {
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [onboardingRoutines, setOnboardingRoutines] = useState<Routine[]>([]);
   const [imbalanceSnoozedUntil, setImbalanceSnoozedUntil] = useLocalStorage('imbalanceSnooze', 0);
-  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   
   const isNewUser = useMemo(() => {
       const hasHistory = history.length > 0;
@@ -558,8 +556,7 @@ const TrainPage: React.FC = () => {
                 title={smartStack.title}
                 items={smartStack.items}
                 onLog={handleLogStack}
-                onSnoozeAll={handleLogStack} // Note: UI allows snoozing, implementation needs careful handling if actually snoozing
-                // Re-using onSnooze logic if implemented
+                onSnoozeAll={handleSnoozeStack}
             />
         )}
 
@@ -621,22 +618,13 @@ const TrainPage: React.FC = () => {
             onRoutineEdit={startTemplateEdit}
             onRoutineDuplicate={startTemplateDuplicate}
             headerAction={
-                <div className="flex gap-2">
-                    <button
-                        onClick={() => setIsImportModalOpen(true)}
-                        className="text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20 px-4 py-1.5 rounded-full transition-colors flex items-center space-x-1.5 text-sm font-semibold border border-indigo-500/20"
-                    >
-                        <Icon name="import" className="w-4 h-4" />
-                        <span>{t('import_workout')}</span>
-                    </button>
-                    <button
-                        onClick={() => setIsCreateOptionModalOpen(true)}
-                        className="text-primary bg-primary/10 hover:bg-primary/20 px-4 py-1.5 rounded-full transition-colors flex items-center space-x-1.5 text-sm font-semibold"
-                    >
-                        <Icon name="plus" className="w-4 h-4" />
-                        <span>{t('common_create')}</span>
-                    </button>
-                </div>
+                <button
+                    onClick={() => setIsCreateOptionModalOpen(true)}
+                    className="text-primary bg-primary/10 hover:bg-primary/20 px-4 py-1.5 rounded-full transition-colors flex items-center space-x-1.5 text-sm font-semibold"
+                >
+                    <Icon name="plus" className="w-4 h-4" />
+                    <span>{t('common_create')}</span>
+                </button>
             }
         />
         
@@ -726,11 +714,6 @@ const TrainPage: React.FC = () => {
             </button>
         </div>
       </Modal>
-
-      <ImportWorkoutModal 
-        isOpen={isImportModalOpen} 
-        onClose={() => setIsImportModalOpen(false)} 
-      />
     </div>
   );
 };

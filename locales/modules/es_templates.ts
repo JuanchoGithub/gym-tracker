@@ -1,4 +1,5 @@
 
+
 export const es_templates = {
   // Template Editor
   template_editor_edit_title: "Editar Plantilla",
@@ -47,21 +48,6 @@ export const es_templates = {
   create_template_mode_manual_desc: "Construir desde cero",
   create_template_mode_wizard: "Generador Inteligente",
   create_template_mode_wizard_desc: "Generar plan basado en tus metas",
-
-  // Sharing
-  share_workout: "Compartir Entrenamiento",
-  share_workout_desc: "Dejá que otros escaneen este código para importar tu rutina.",
-  share_workout_file_btn: "Enviar a App",
-  share_workout_payload_error: "El entrenamiento es muy grande para compartir por QR. Probá acortando las notas o usá 'Enviar a App'.",
-  import_workout: "Importar Entrenamiento",
-  import_workout_title: "Importar Rutina",
-  import_workout_scan_tab: "Escanear QR",
-  import_workout_file_tab: "Abrir Archivo",
-  import_workout_file_btn: "Seleccionar Archivo de Rutina",
-  import_workout_instructions: "Alineá el código QR dentro del marco",
-  import_workout_success: "¡Entrenamiento '{name}' importado con éxito!",
-  import_workout_error: "Código de entrenamiento inválido.",
-  import_workout_camera_error: "Acceso a cámara denegado o no disponible.",
 
   // Routine Names & Descs
   rt_anatoly_squat_name: "Anatoly - Sentadilla (Día A)",
