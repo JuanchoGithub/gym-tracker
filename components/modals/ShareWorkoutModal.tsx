@@ -12,56 +12,92 @@ interface ShareWorkoutModalProps {
     routine: Routine;
 }
 
+declare var LZString: any;
+
 const ShareWorkoutModal: React.FC<ShareWorkoutModalProps> = ({ isOpen, onClose, routine }) => {
     const { t } = useI18n();
     const { rawExercises } = useContext(AppContext);
 
-    const sharePayload = useMemo(() => {
+    const fullPayloadObject = useMemo(() => {
         // Collect custom exercises used in this routine
         const usedExerciseIds = new Set(routine.exercises.map(ex => ex.exerciseId));
         const customExercises = rawExercises.filter(ex => 
             usedExerciseIds.has(ex.id) && !ex.id.startsWith('ex-')
         );
 
-        // Strip heavy fields to keep payload small for QR
+        // Strip heavy fields to keep payload small
         const routineCopy = {
             ...routine,
             lastUsed: undefined,
             id: `template-${Date.now()}` // Give it a fresh ID for the recipient
         };
 
-        const payload = {
+        return {
             type: 'fortachon_workout',
             version: 1,
             routine: routineCopy,
             customExercises
         };
+    }, [routine, rawExercises]);
 
-        const json = JSON.stringify(payload);
+    const qrData = useMemo(() => {
+        const json = JSON.stringify(fullPayloadObject);
+        // Use LZ compression for QR code to maximize data capacity
+        const compressed = typeof LZString !== 'undefined' 
+            ? LZString.compressToEncodedURIComponent(json)
+            : encodeURIComponent(json);
         
         // QR character limit safety (approx 2.9k for standard high-density QR)
-        if (json.length > 2800) {
+        // With LZ, we can usually fit much more, but let's stay safe
+        if (compressed.length > 2800) {
             return null;
         }
 
-        return encodeURIComponent(json);
-    }, [routine, rawExercises]);
+        return compressed;
+    }, [fullPayloadObject]);
+
+    const handleShareToFile = async () => {
+        const json = JSON.stringify(fullPayloadObject, null, 2);
+        const fileName = `${routine.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
+        
+        if (navigator.share) {
+            try {
+                const file = new File([json], fileName, { type: 'application/json' });
+                await navigator.share({
+                    files: [file],
+                    title: `Fortachon Workout: ${routine.name}`,
+                    text: `Import this workout into the Fortachon app!`
+                });
+            } catch (err) {
+                console.error("Share failed", err);
+            }
+        } else {
+            // Fallback: Download
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    };
 
     if (!isOpen) return null;
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={t('share_workout')}>
             <div className="flex flex-col items-center justify-center p-4 space-y-6">
-                {!sharePayload ? (
-                    <div className="text-center space-y-4">
-                        <Icon name="warning" className="w-12 h-12 text-warning mx-auto" />
-                        <p className="text-red-400 font-bold">{t('share_workout_payload_error')}</p>
+                {!qrData ? (
+                    <div className="text-center space-y-4 p-8 bg-red-500/10 rounded-2xl border border-red-500/20">
+                        <Icon name="warning" className="w-12 h-12 text-red-400 mx-auto" />
+                        <p className="text-red-400 text-sm font-medium leading-relaxed">{t('share_workout_payload_error')}</p>
                     </div>
                 ) : (
                     <>
                         <div className="bg-white p-4 rounded-2xl shadow-xl">
                             <img 
-                                src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${sharePayload}`} 
+                                src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${qrData}`} 
                                 alt="Workout QR Code" 
                                 className="w-56 h-56 sm:w-64 sm:h-64" 
                             />
@@ -72,12 +108,23 @@ const ShareWorkoutModal: React.FC<ShareWorkoutModalProps> = ({ isOpen, onClose, 
                         </div>
                     </>
                 )}
-                <button 
-                    onClick={onClose}
-                    className="w-full bg-secondary hover:bg-slate-600 text-white font-bold py-3 rounded-xl transition-colors"
-                >
-                    {t('common_close')}
-                </button>
+
+                <div className="w-full space-y-3">
+                    <button 
+                        onClick={handleShareToFile}
+                        className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 rounded-xl transition-all shadow-lg flex items-center justify-center gap-3 active:scale-95"
+                    >
+                        <Icon name="share" className="w-5 h-5" />
+                        <span>{t('share_workout_file_btn')}</span>
+                    </button>
+                    
+                    <button 
+                        onClick={onClose}
+                        className="w-full bg-surface border border-white/10 hover:bg-surface-highlight text-text-secondary font-bold py-3 rounded-xl transition-colors"
+                    >
+                        {t('common_close')}
+                    </button>
+                </div>
             </div>
         </Modal>
     );

@@ -12,11 +12,13 @@ interface ImportWorkoutModalProps {
 }
 
 declare var jsQR: any; // Global from script tag
+declare var LZString: any;
 
 const ImportWorkoutModal: React.FC<ImportWorkoutModalProps> = ({ isOpen, onClose }) => {
     const { t } = useI18n();
     const { upsertRoutine, rawExercises, setRawExercises } = useContext(AppContext);
     
+    const [activeTab, setActiveTab] = useState<'scan' | 'file'>('scan');
     const [status, setStatus] = useState<'idle' | 'scanning' | 'error' | 'success'>('idle');
     const [errorMessage, setErrorMessage] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
@@ -24,18 +26,21 @@ const ImportWorkoutModal: React.FC<ImportWorkoutModalProps> = ({ isOpen, onClose
     
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const requestRef = useRef<number | null>(null);
 
     useEffect(() => {
         if (isOpen) {
             setStatus('idle');
             setIsVideoReady(false);
-            startCamera();
+            if (activeTab === 'scan') {
+                startCamera();
+            }
         } else {
             stopCamera();
         }
         return () => stopCamera();
-    }, [isOpen]);
+    }, [isOpen, activeTab]);
 
     const stopCamera = () => {
         if (requestRef.current) cancelAnimationFrame(requestRef.current);
@@ -58,7 +63,6 @@ const ImportWorkoutModal: React.FC<ImportWorkoutModalProps> = ({ isOpen, onClose
             
             if (videoRef.current) {
                 videoRef.current.srcObject = stream;
-                // Scanner loop will be triggered by onLoadedMetadata in JSX
             }
         } catch (err) {
             setStatus('error');
@@ -81,6 +85,8 @@ const ImportWorkoutModal: React.FC<ImportWorkoutModalProps> = ({ isOpen, onClose
     };
 
     const scan = () => {
+        if (activeTab !== 'scan') return;
+        
         if (videoRef.current && videoRef.current.readyState === videoRef.current.HAVE_ENOUGH_DATA && canvasRef.current) {
             const canvas = canvasRef.current;
             const context = canvas.getContext("2d", { willReadFrequently: true });
@@ -97,18 +103,48 @@ const ImportWorkoutModal: React.FC<ImportWorkoutModalProps> = ({ isOpen, onClose
 
                 if (code) {
                     try {
-                        const payload = JSON.parse(decodeURIComponent(code.data));
+                        let decoded = code.data;
+                        // Try LZ decompression first
+                        if (typeof LZString !== 'undefined') {
+                            const decompressed = LZString.decompressFromEncodedURIComponent(code.data);
+                            if (decompressed) decoded = decompressed;
+                        }
+
+                        const payload = JSON.parse(decoded);
                         if (payload.type === 'fortachon_workout' && payload.routine) {
                             handleImport(payload);
                             return; 
                         }
                     } catch (e) {
-                        // Not a valid JSON, keep scanning
+                        // Not a valid JSON or decompressed correctly, keep scanning
                     }
                 }
             }
         }
         requestRef.current = requestAnimationFrame(scan);
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const json = JSON.parse(event.target?.result as string);
+                if (json.type === 'fortachon_workout' && json.routine) {
+                    handleImport(json);
+                } else {
+                    setStatus('error');
+                    setErrorMessage(t('import_workout_error'));
+                }
+            } catch (err) {
+                setStatus('error');
+                setErrorMessage(t('import_workout_error'));
+            }
+        };
+        reader.readAsText(file);
+        if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
     const handleImport = (payload: any) => {
@@ -135,9 +171,26 @@ const ImportWorkoutModal: React.FC<ImportWorkoutModalProps> = ({ isOpen, onClose
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={t('import_workout_title')}>
-            <div className="flex flex-col space-y-4">
-                {(status === 'scanning' || status === 'idle') && (
-                    <div className="relative overflow-hidden rounded-2xl bg-black aspect-square w-full shadow-inner border border-white/5">
+            <div className="flex flex-col space-y-6">
+                {status !== 'success' && status !== 'error' && (
+                     <div className="flex bg-slate-900 rounded-lg p-1">
+                        <button 
+                            onClick={() => setActiveTab('scan')}
+                            className={`flex-1 py-2 rounded-md text-xs font-bold transition-all ${activeTab === 'scan' ? 'bg-primary text-white shadow-md' : 'text-text-secondary hover:text-white'}`}
+                        >
+                            {t('import_workout_scan_tab')}
+                        </button>
+                        <button 
+                            onClick={() => setActiveTab('file')}
+                            className={`flex-1 py-2 rounded-md text-xs font-bold transition-all ${activeTab === 'file' ? 'bg-primary text-white shadow-md' : 'text-text-secondary hover:text-white'}`}
+                        >
+                            {t('import_workout_file_tab')}
+                        </button>
+                    </div>
+                )}
+
+                {activeTab === 'scan' && (status === 'scanning' || status === 'idle') && (
+                    <div className="relative overflow-hidden rounded-2xl bg-black aspect-square w-full shadow-inner border border-white/5 animate-fadeIn">
                         <video 
                             ref={videoRef} 
                             autoPlay 
@@ -148,14 +201,12 @@ const ImportWorkoutModal: React.FC<ImportWorkoutModalProps> = ({ isOpen, onClose
                         />
                         <canvas ref={canvasRef} className="hidden" />
                         
-                        {/* Loading Spinner while video starts */}
                         {!isVideoReady && status !== 'error' && (
                             <div className="absolute inset-0 flex items-center justify-center">
                                 <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
                             </div>
                         )}
 
-                        {/* Overlay frame */}
                         <div className="absolute inset-0 border-[3rem] border-black/40 flex items-center justify-center pointer-events-none">
                             <div className="w-full h-full border-2 border-primary/50 rounded-lg relative">
                                 <div className="absolute top-0 left-0 w-4 h-4 border-t-4 border-l-4 border-primary"></div>
@@ -163,7 +214,6 @@ const ImportWorkoutModal: React.FC<ImportWorkoutModalProps> = ({ isOpen, onClose
                                 <div className="absolute bottom-0 left-0 w-4 h-4 border-b-4 border-l-4 border-primary"></div>
                                 <div className="absolute bottom-0 right-0 w-4 h-4 border-b-4 border-r-4 border-primary"></div>
                                 
-                                {/* Animated scan line */}
                                 <div className="absolute top-0 left-0 right-0 h-0.5 bg-primary/50 shadow-[0_0_10px_rgba(56,189,248,0.5)] animate-[scan_2s_linear_infinite]"></div>
                             </div>
                         </div>
@@ -173,13 +223,40 @@ const ImportWorkoutModal: React.FC<ImportWorkoutModalProps> = ({ isOpen, onClose
                     </div>
                 )}
 
+                {activeTab === 'file' && (status === 'idle' || status === 'scanning') && (
+                    <div className="py-10 flex flex-col items-center justify-center border-2 border-dashed border-white/10 rounded-2xl bg-black/20 animate-fadeIn">
+                        <div className="p-4 bg-indigo-500/10 rounded-full mb-4">
+                            <Icon name="import" className="w-10 h-10 text-indigo-400" />
+                        </div>
+                        <p className="text-text-secondary text-sm text-center mb-6 px-6">
+                            Choose a workout file shared with you via email or message.
+                        </p>
+                        <button 
+                            onClick={() => fileInputRef.current?.click()}
+                            className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-8 rounded-xl shadow-lg transition-all active:scale-95"
+                        >
+                            {t('import_workout_file_btn')}
+                        </button>
+                        <input 
+                            type="file" 
+                            ref={fileInputRef} 
+                            onChange={handleFileChange} 
+                            accept=".json" 
+                            className="hidden" 
+                        />
+                    </div>
+                )}
+
                 {status === 'error' && (
                     <div className="text-center py-8 space-y-4">
                         <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto">
                             <Icon name="warning" className="w-8 h-8 text-red-500" />
                         </div>
                         <p className="text-red-400 font-bold">{errorMessage}</p>
-                        <button onClick={startCamera} className="bg-primary text-white font-bold py-3 px-8 rounded-xl shadow-lg transition-transform active:scale-95">
+                        <button 
+                            onClick={() => { setStatus('idle'); setIsVideoReady(false); }} 
+                            className="bg-primary text-white font-bold py-3 px-8 rounded-xl shadow-lg transition-transform active:scale-95"
+                        >
                             {t('common_undo')}
                         </button>
                     </div>
@@ -191,7 +268,12 @@ const ImportWorkoutModal: React.FC<ImportWorkoutModalProps> = ({ isOpen, onClose
                             <Icon name="check" className="w-8 h-8 text-success" />
                         </div>
                         <p className="text-white font-bold text-lg leading-snug px-4">{successMessage}</p>
-                        <button onClick={onClose} className="w-full bg-primary text-white font-bold py-4 rounded-xl shadow-lg transition-transform active:scale-95">{t('common_close')}</button>
+                        <button 
+                            onClick={onClose} 
+                            className="w-full bg-primary text-white font-bold py-4 rounded-xl shadow-lg transition-transform active:scale-95"
+                        >
+                            {t('common_close')}
+                        </button>
                     </div>
                 )}
                 
