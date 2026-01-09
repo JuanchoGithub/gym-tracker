@@ -20,17 +20,19 @@ const ImportWorkoutModal: React.FC<ImportWorkoutModalProps> = ({ isOpen, onClose
     const [status, setStatus] = useState<'idle' | 'scanning' | 'error' | 'success'>('idle');
     const [errorMessage, setErrorMessage] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
+    const [isVideoReady, setIsVideoReady] = useState(false);
     
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const requestRef = useRef<number | null>(null);
 
     useEffect(() => {
-        if (isOpen && status === 'idle') {
-            startCamera();
-        } else if (!isOpen) {
-            stopCamera();
+        if (isOpen) {
             setStatus('idle');
+            setIsVideoReady(false);
+            startCamera();
+        } else {
+            stopCamera();
         }
         return () => stopCamera();
     }, [isOpen]);
@@ -46,13 +48,17 @@ const ImportWorkoutModal: React.FC<ImportWorkoutModalProps> = ({ isOpen, onClose
 
     const startCamera = async () => {
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                    facingMode: "environment",
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                } 
+            });
+            
             if (videoRef.current) {
                 videoRef.current.srcObject = stream;
-                videoRef.current.setAttribute("playsinline", "true");
-                videoRef.current.play();
-                setStatus('scanning');
-                requestRef.current = requestAnimationFrame(scan);
+                // Scanner loop will be triggered by onLoadedMetadata in JSX
             }
         } catch (err) {
             setStatus('error');
@@ -60,17 +66,31 @@ const ImportWorkoutModal: React.FC<ImportWorkoutModalProps> = ({ isOpen, onClose
         }
     };
 
+    const handleLoadedMetadata = () => {
+        if (videoRef.current) {
+            videoRef.current.play().then(() => {
+                setIsVideoReady(true);
+                setStatus('scanning');
+                requestRef.current = requestAnimationFrame(scan);
+            }).catch(err => {
+                console.error("Video play failed", err);
+                setStatus('error');
+                setErrorMessage(t('import_workout_camera_error'));
+            });
+        }
+    };
+
     const scan = () => {
         if (videoRef.current && videoRef.current.readyState === videoRef.current.HAVE_ENOUGH_DATA && canvasRef.current) {
             const canvas = canvasRef.current;
             const context = canvas.getContext("2d", { willReadFrequently: true });
-            if (context) {
+            
+            if (context && videoRef.current.videoWidth > 0) {
                 canvas.height = videoRef.current.videoHeight;
                 canvas.width = videoRef.current.videoWidth;
                 context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
                 const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
                 
-                // Use the global jsQR library
                 const code = typeof jsQR !== 'undefined' ? jsQR(imageData.data, imageData.width, imageData.height, {
                     inversionAttempts: "dontInvert",
                 }) : null;
@@ -80,10 +100,10 @@ const ImportWorkoutModal: React.FC<ImportWorkoutModalProps> = ({ isOpen, onClose
                         const payload = JSON.parse(decodeURIComponent(code.data));
                         if (payload.type === 'fortachon_workout' && payload.routine) {
                             handleImport(payload);
-                            return; // Stop scanning on success
+                            return; 
                         }
                     } catch (e) {
-                        // Not a valid JSON or not our format, keep scanning
+                        // Not a valid JSON, keep scanning
                     }
                 }
             }
@@ -96,7 +116,6 @@ const ImportWorkoutModal: React.FC<ImportWorkoutModalProps> = ({ isOpen, onClose
         const routine: Routine = payload.routine;
         const customExercises: Exercise[] = payload.customExercises || [];
 
-        // 1. Merge custom exercises if they don't exist
         if (customExercises.length > 0) {
             setRawExercises(prev => {
                 const newExs = [...prev];
@@ -109,9 +128,7 @@ const ImportWorkoutModal: React.FC<ImportWorkoutModalProps> = ({ isOpen, onClose
             });
         }
 
-        // 2. Save the routine
         upsertRoutine(routine);
-        
         setStatus('success');
         setSuccessMessage(t('import_workout_success', { name: routine.name }));
     };
@@ -119,50 +136,81 @@ const ImportWorkoutModal: React.FC<ImportWorkoutModalProps> = ({ isOpen, onClose
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={t('import_workout_title')}>
             <div className="flex flex-col space-y-4">
-                {status === 'scanning' && (
-                    <div className="relative overflow-hidden rounded-2xl bg-black aspect-square">
-                        <video ref={videoRef} className="absolute inset-0 w-full h-full object-cover" />
+                {(status === 'scanning' || status === 'idle') && (
+                    <div className="relative overflow-hidden rounded-2xl bg-black aspect-square w-full shadow-inner border border-white/5">
+                        <video 
+                            ref={videoRef} 
+                            autoPlay 
+                            muted 
+                            playsInline 
+                            onLoadedMetadata={handleLoadedMetadata}
+                            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${isVideoReady ? 'opacity-100' : 'opacity-0'}`} 
+                        />
                         <canvas ref={canvasRef} className="hidden" />
+                        
+                        {/* Loading Spinner while video starts */}
+                        {!isVideoReady && status !== 'error' && (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+                            </div>
+                        )}
+
                         {/* Overlay frame */}
-                        <div className="absolute inset-0 border-[3rem] border-black/40 flex items-center justify-center">
+                        <div className="absolute inset-0 border-[3rem] border-black/40 flex items-center justify-center pointer-events-none">
                             <div className="w-full h-full border-2 border-primary/50 rounded-lg relative">
                                 <div className="absolute top-0 left-0 w-4 h-4 border-t-4 border-l-4 border-primary"></div>
                                 <div className="absolute top-0 right-0 w-4 h-4 border-t-4 border-r-4 border-primary"></div>
                                 <div className="absolute bottom-0 left-0 w-4 h-4 border-b-4 border-l-4 border-primary"></div>
                                 <div className="absolute bottom-0 right-0 w-4 h-4 border-b-4 border-r-4 border-primary"></div>
+                                
+                                {/* Animated scan line */}
+                                <div className="absolute top-0 left-0 right-0 h-0.5 bg-primary/50 shadow-[0_0_10px_rgba(56,189,248,0.5)] animate-[scan_2s_linear_infinite]"></div>
                             </div>
                         </div>
                         <div className="absolute bottom-4 left-0 right-0 text-center">
-                            <span className="bg-black/60 text-white text-xs px-3 py-1 rounded-full">{t('import_workout_instructions')}</span>
+                            <span className="bg-black/60 text-white text-[10px] px-3 py-1 rounded-full uppercase tracking-wider font-bold">{t('import_workout_instructions')}</span>
                         </div>
                     </div>
                 )}
 
                 {status === 'error' && (
                     <div className="text-center py-8 space-y-4">
-                        <Icon name="warning" className="w-16 h-16 text-red-500 mx-auto" />
+                        <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto">
+                            <Icon name="warning" className="w-8 h-8 text-red-500" />
+                        </div>
                         <p className="text-red-400 font-bold">{errorMessage}</p>
-                        <button onClick={startCamera} className="bg-primary text-white font-bold py-2 px-6 rounded-lg">{t('common_undo')}</button>
+                        <button onClick={startCamera} className="bg-primary text-white font-bold py-3 px-8 rounded-xl shadow-lg transition-transform active:scale-95">
+                            {t('common_undo')}
+                        </button>
                     </div>
                 )}
 
                 {status === 'success' && (
                     <div className="text-center py-8 space-y-4 animate-fadeIn">
-                        <Icon name="check" className="w-16 h-16 text-success mx-auto" />
-                        <p className="text-white font-bold text-lg">{successMessage}</p>
-                        <button onClick={onClose} className="w-full bg-primary text-white font-bold py-3 rounded-xl">{t('common_close')}</button>
+                        <div className="w-16 h-16 bg-success/20 rounded-full flex items-center justify-center mx-auto">
+                            <Icon name="check" className="w-8 h-8 text-success" />
+                        </div>
+                        <p className="text-white font-bold text-lg leading-snug px-4">{successMessage}</p>
+                        <button onClick={onClose} className="w-full bg-primary text-white font-bold py-4 rounded-xl shadow-lg transition-transform active:scale-95">{t('common_close')}</button>
                     </div>
                 )}
                 
                 {status !== 'success' && (
                     <button 
                         onClick={onClose}
-                        className="w-full bg-secondary hover:bg-slate-600 text-white font-bold py-3 rounded-xl transition-colors"
+                        className="w-full bg-surface border border-white/10 hover:bg-surface-highlight text-text-secondary font-bold py-3 rounded-xl transition-all"
                     >
                         {t('common_cancel')}
                     </button>
                 )}
             </div>
+            
+            <style>{`
+                @keyframes scan {
+                    0% { top: 0; }
+                    100% { top: 100%; }
+                }
+            `}</style>
         </Modal>
     );
 };
