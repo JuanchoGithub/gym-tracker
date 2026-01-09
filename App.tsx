@@ -21,103 +21,130 @@ import ConfirmModal from './components/modals/ConfirmModal';
 import { useI18n } from './hooks/useI18n';
 import SilentAudioPlayer from './components/common/SilentAudioPlayer';
 import NotificationManager from './components/managers/NotificationManager';
+import Modal from './components/common/Modal';
+// FIX: Added missing import for Icon component
+import { Icon } from './components/common/Icon';
+import { Routine, Exercise } from './types';
 
 export type Page = 'TRAIN' | 'HISTORY' | 'EXERCISES' | 'SUPPLEMENTS' | 'PROFILE' | 'ACTIVE_WORKOUT' | 'TIMERS';
+
+declare var LZString: any;
 
 const App: React.FC = () => {
   // Routing Logic: Initialize state from Hash
   const getPageFromHash = (): Page => {
-    const hash = window.location.hash.replace('#/', '').toUpperCase();
+    const hash = window.location.hash.split('?')[0].replace('#/', '').toUpperCase();
     const validPages: Page[] = ['TRAIN', 'HISTORY', 'EXERCISES', 'SUPPLEMENTS', 'PROFILE', 'TIMERS'];
     return validPages.includes(hash as Page) ? (hash as Page) : 'TRAIN';
   };
 
   const [currentPage, setCurrentPage] = useState<Page>(getPageFromHash());
-  
+  const { upsertRoutine, rawExercises, setRawExercises, fontSize } = useContext(AppContext);
   const { editingTemplate, editingExercise, editingHistorySession, isAddingExercisesToTemplate } = useContext(EditorContext);
   const { activeWorkout, updateActiveWorkout, endWorkout, isWorkoutMinimized, isAddingExercisesToWorkout } = useContext(ActiveWorkoutContext);
   const { activeHiitSession, activeQuickTimer } = useContext(TimerContext);
   const { t } = useI18n();
-  const { fontSize } = useContext(AppContext);
+  
   const [isStaleModalOpen, setIsStaleModalOpen] = useState(false);
   const checkedStaleRef = useRef(false);
 
-  // Listen for Hash Changes (Back Button Support)
+  // Deep Link Import State
+  const [pendingImport, setPendingImport] = useState<any>(null);
+
+  // Listen for Hash Changes (Back Button & Deep Links)
   useEffect(() => {
     const handleHashChange = () => {
+      const hash = window.location.hash;
+      
+      // Handle Deep Link Import
+      if (hash.startsWith('#/import/')) {
+        const compressedData = hash.replace('#/import/', '');
+        try {
+          const decoded = LZString.decompressFromEncodedURIComponent(compressedData);
+          if (decoded) {
+            const payload = JSON.parse(decoded);
+            if (payload.type === 'fortachon_workout' && payload.routine) {
+              setPendingImport(payload);
+            }
+          }
+        } catch (e) {
+          console.error("Deep link import failed", e);
+        }
+        // Clean up hash to prevent double-import on refresh/back
+        window.history.replaceState(null, '', window.location.pathname + window.location.search + '#/train');
+      }
+
       setCurrentPage(getPageFromHash());
     };
+    
     window.addEventListener('hashchange', handleHashChange);
+    // Initial check on mount
+    handleHashChange();
+    
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  // If a timer starts and we aren't on the timer page, go there automatically
-  useEffect(() => {
-      if ((activeHiitSession || activeQuickTimer) && currentPage !== 'TIMERS') {
-          // Optional: Automatically navigate to timer when it starts
-          // window.location.hash = '/timers';
-      }
-  }, [activeHiitSession, activeQuickTimer]);
+  const handleConfirmImport = () => {
+    if (!pendingImport) return;
+    
+    const routine: Routine = pendingImport.routine;
+    const customExercises: Exercise[] = pendingImport.customExercises || [];
+
+    if (customExercises.length > 0) {
+      setRawExercises(prev => {
+        const newExs = [...prev];
+        customExercises.forEach(ce => {
+          if (!newExs.some(e => e.id === ce.id)) {
+            newExs.push(ce);
+          }
+        });
+        return newExs;
+      });
+    }
+
+    upsertRoutine(routine);
+    setPendingImport(null);
+    window.location.hash = '/train';
+  };
 
   useEffect(() => {
     const checkStale = () => {
       if (activeWorkout) {
-        // Use lastUpdated if available, otherwise fallback to startTime
         const lastActivity = activeWorkout.lastUpdated || activeWorkout.startTime;
         const duration = Date.now() - lastActivity;
-        
-        // 3 hours in milliseconds of INACTIVITY
         if (duration > 3 * 60 * 60 * 1000 && !checkedStaleRef.current) {
           setIsStaleModalOpen(true);
           checkedStaleRef.current = true;
         }
       }
     };
-
-    const interval = setInterval(checkStale, 60000); // Check every minute
-    
-    // Also check on mount/change
+    const interval = setInterval(checkStale, 60000);
     checkStale();
-    
     return () => clearInterval(interval);
   }, [activeWorkout]);
 
   const handleCloseStale = () => {
-    // Default to workout start if nothing else
     let lastActivityTime = activeWorkout?.startTime || Date.now();
-
     if (activeWorkout) {
-        // Check last explicit interaction
         if (activeWorkout.lastUpdated && activeWorkout.lastUpdated > lastActivityTime) {
             lastActivityTime = activeWorkout.lastUpdated;
         }
-        
-        // Also check for completed sets in case lastUpdated wasn't triggered (rare)
         activeWorkout.exercises.forEach(ex => {
             ex.sets.forEach(set => {
-                if (set.isComplete && set.completedAt) {
-                    if (set.completedAt > lastActivityTime) {
-                        lastActivityTime = set.completedAt;
-                    }
+                if (set.isComplete && set.completedAt && set.completedAt > lastActivityTime) {
+                    lastActivityTime = set.completedAt;
                 }
             });
         });
-        
-        // Sanity check: End time shouldn't be in future (should be impossible given logic, but safe)
-        if (lastActivityTime > Date.now()) {
-            lastActivityTime = Date.now();
-        }
+        if (lastActivityTime > Date.now()) lastActivityTime = Date.now();
     }
-    
     endWorkout(lastActivityTime);
     setIsStaleModalOpen(false);
   };
 
   const handleContinueStale = () => {
     setIsStaleModalOpen(false);
-    // Reset ref to prevent immediate re-trigger
     checkedStaleRef.current = false;
-    // Update the workout timestamp to prevent the check from firing again immediately
     if (activeWorkout) {
         updateActiveWorkout({ ...activeWorkout, lastUpdated: Date.now() });
     }
@@ -128,48 +155,25 @@ const App: React.FC = () => {
   }
 
   const renderContent = () => {
-    if (isAddingExercisesToWorkout || isAddingExercisesToTemplate) {
-      return <AddExercisePage />;
-    }
-    if (editingHistorySession) {
-      return <HistoryWorkoutEditorPage />;
-    }
-    if (editingTemplate) {
-      return <TemplateEditorPage />;
-    }
-    if (editingExercise) {
-      return <ExerciseEditorPage />;
-    }
-    if (activeWorkout && !isWorkoutMinimized) {
-      return <ActiveWorkoutPage />;
-    }
+    if (isAddingExercisesToWorkout || isAddingExercisesToTemplate) return <AddExercisePage />;
+    if (editingHistorySession) return <HistoryWorkoutEditorPage />;
+    if (editingTemplate) return <TemplateEditorPage />;
+    if (editingExercise) return <ExerciseEditorPage />;
+    if (activeWorkout && !isWorkoutMinimized) return <ActiveWorkoutPage />;
     
-    // Standard Navigation
     switch (currentPage) {
       case 'TRAIN': return <TrainPage />;
       case 'HISTORY': return <HistoryPage />;
       case 'EXERCISES': return <ExercisesPage />;
       case 'SUPPLEMENTS': return <SupplementPage />;
       case 'PROFILE': return <ProfilePage />;
-      // Timer page is handled outside to keep it mounted
       default: return <TrainPage />;
     }
   }
 
   const showBottomNav = (!activeWorkout || isWorkoutMinimized) && !editingTemplate && !editingExercise && !editingHistorySession;
   const isTimerActive = !!(activeHiitSession || activeQuickTimer);
-
-  // Determine padding
-  const paddingBottomClass = (() => {
-    if (showBottomNav) {
-        if (activeWorkout && isWorkoutMinimized) return 'pb-52'; 
-        return 'pb-32';
-    }
-    if (activeWorkout && isWorkoutMinimized) return 'pb-24';
-    return 'pb-8';
-  })();
-
-  // Adjust side margins based on font size to maximize space for text
+  const paddingBottomClass = showBottomNav ? (activeWorkout && isWorkoutMinimized ? 'pb-52' : 'pb-32') : (activeWorkout && isWorkoutMinimized ? 'pb-24' : 'pb-8');
   const paddingXClass = fontSize === 'xl' ? 'px-1 sm:px-2' : (fontSize === 'large' ? 'px-2 sm:px-3' : 'px-3 sm:px-4');
 
   return (
@@ -177,18 +181,11 @@ const App: React.FC = () => {
       <SilentAudioPlayer />
       <NotificationManager />
       
-      {/* Persistent Timer View: Kept mounted but hidden if not on 'TIMERS' page */}
       {isTimerActive && (
         <div className={currentPage === 'TIMERS' ? 'fixed inset-0 z-50 bg-background' : 'hidden'}>
             <TimersPage />
-            {/* Floating button to leave timer view without stopping it */}
-            <button 
-                onClick={() => window.history.back()} 
-                className="absolute top-4 right-4 p-2 bg-white/10 rounded-full text-white z-50"
-            >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+            <button onClick={() => window.history.back()} className="absolute top-4 right-4 p-2 bg-white/10 rounded-full text-white z-50">
+                <Icon name="x" className="h-6 w-6" />
             </button>
         </div>
       )}
@@ -197,21 +194,14 @@ const App: React.FC = () => {
         {renderContent()}
       </main>
       
-      {/* Z-Index Management: Nav wrapper is z-40, Modals are z-100 */}
       <div className="flex-shrink-0 relative z-40">
         {activeWorkout && isWorkoutMinimized && <MinimizedWorkoutBar withBottomNav={showBottomNav} />}
         {showBottomNav && <BottomNavBar currentPage={currentPage} onNavigate={handleNavigate} />}
       </div>
       
-      {/* Floating Timer Button (if active but not on timer page) */}
       {isTimerActive && currentPage !== 'TIMERS' && (
-          <button 
-            onClick={() => handleNavigate('TIMERS')}
-            className="fixed bottom-24 right-4 z-40 w-14 h-14 bg-indigo-600 rounded-full shadow-lg flex items-center justify-center animate-bounce text-white border-2 border-white/20"
-          >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+          <button onClick={() => handleNavigate('TIMERS')} className="fixed bottom-24 right-4 z-40 w-14 h-14 bg-indigo-600 rounded-full shadow-lg flex items-center justify-center animate-bounce text-white border-2 border-white/20">
+              <Icon name="stopwatch" className="h-8 w-8" />
           </button>
       )}
 
@@ -225,6 +215,17 @@ const App: React.FC = () => {
         cancelText={t('stale_workout_cancel')}
         confirmButtonClass="bg-primary hover:bg-sky-600"
       />
+
+      {/* Deep Link Import Modal */}
+      <Modal isOpen={!!pendingImport} onClose={() => setPendingImport(null)} title={t('import_workout_title')}>
+         <div className="space-y-4">
+            <p className="text-text-secondary">{t('import_workout_success', { name: pendingImport?.routine?.name })}</p>
+            <div className="flex gap-3">
+              <button onClick={() => setPendingImport(null)} className="flex-1 bg-surface border border-white/10 text-text-secondary font-bold py-3 rounded-xl">{t('common_cancel')}</button>
+              <button onClick={handleConfirmImport} className="flex-1 bg-primary text-white font-bold py-3 rounded-xl shadow-lg">{t('common_confirm')}</button>
+            </div>
+         </div>
+      </Modal>
     </div>
   );
 };

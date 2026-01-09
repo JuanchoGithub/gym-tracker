@@ -25,11 +25,11 @@ const ShareWorkoutModal: React.FC<ShareWorkoutModalProps> = ({ isOpen, onClose, 
             usedExerciseIds.has(ex.id) && !ex.id.startsWith('ex-')
         );
 
-        // Strip heavy fields to keep payload small
+        // Strip heavy transient fields
         const routineCopy = {
             ...routine,
             lastUsed: undefined,
-            id: `template-${Date.now()}` // Give it a fresh ID for the recipient
+            id: `template-${Date.now()}` 
         };
 
         return {
@@ -40,21 +40,22 @@ const ShareWorkoutModal: React.FC<ShareWorkoutModalProps> = ({ isOpen, onClose, 
         };
     }, [routine, rawExercises]);
 
-    const qrData = useMemo(() => {
+    const shareUrl = useMemo(() => {
         const json = JSON.stringify(fullPayloadObject);
-        // Use LZ compression for QR code to maximize data capacity
         const compressed = typeof LZString !== 'undefined' 
             ? LZString.compressToEncodedURIComponent(json)
             : encodeURIComponent(json);
         
-        // QR character limit safety (approx 2.9k for standard high-density QR)
-        // With LZ, we can usually fit much more, but let's stay safe
-        if (compressed.length > 2800) {
-            return null;
-        }
-
-        return compressed;
+        // Construct the universal link
+        const base = window.location.origin + window.location.pathname;
+        return `${base}#/import/${compressed}`;
     }, [fullPayloadObject]);
+
+    const qrImageUrl = useMemo(() => {
+        // Use a high-quality encoding (size 300+) for high density
+        // Encoding the full URL allows system cameras to pick it up as a link
+        return `https://api.qrserver.com/v1/create-qr-code/?size=350x350&data=${encodeURIComponent(shareUrl)}`;
+    }, [shareUrl]);
 
     const handleShareToFile = async () => {
         const json = JSON.stringify(fullPayloadObject, null, 2);
@@ -72,7 +73,6 @@ const ShareWorkoutModal: React.FC<ShareWorkoutModalProps> = ({ isOpen, onClose, 
                 console.error("Share failed", err);
             }
         } else {
-            // Fallback: Download
             const blob = new Blob([json], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -88,26 +88,28 @@ const ShareWorkoutModal: React.FC<ShareWorkoutModalProps> = ({ isOpen, onClose, 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={t('share_workout')}>
             <div className="flex flex-col items-center justify-center p-4 space-y-6">
-                {!qrData ? (
-                    <div className="text-center space-y-4 p-8 bg-red-500/10 rounded-2xl border border-red-500/20">
-                        <Icon name="warning" className="w-12 h-12 text-red-400 mx-auto" />
-                        <p className="text-red-400 text-sm font-medium leading-relaxed">{t('share_workout_payload_error')}</p>
+                {shareUrl.length > 2500 && (
+                    <div className="bg-amber-500/10 border border-amber-500/20 p-3 rounded-xl mb-2">
+                        <p className="text-[10px] text-amber-200 font-medium leading-tight">
+                            <Icon name="warning" className="w-3 h-3 inline mr-1" />
+                            Routine is large. If the QR doesn't scan, use "Send to App" below.
+                        </p>
                     </div>
-                ) : (
-                    <>
-                        <div className="bg-white p-4 rounded-2xl shadow-xl">
-                            <img 
-                                src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${qrData}`} 
-                                alt="Workout QR Code" 
-                                className="w-56 h-56 sm:w-64 sm:h-64" 
-                            />
-                        </div>
-                        <div className="text-center space-y-2">
-                            <p className="text-white font-bold text-lg">{routine.name}</p>
-                            <p className="text-text-secondary text-sm max-w-xs">{t('share_workout_desc')}</p>
-                        </div>
-                    </>
                 )}
+                
+                <div className="bg-white p-3 rounded-2xl shadow-xl">
+                    <img 
+                        src={qrImageUrl} 
+                        alt="Workout QR Code" 
+                        className="w-56 h-56 sm:w-64 sm:h-64" 
+                    />
+                </div>
+                
+                <div className="text-center space-y-2">
+                    <p className="text-white font-bold text-lg">{routine.name}</p>
+                    <p className="text-text-secondary text-sm max-w-xs">{t('share_workout_desc')}</p>
+                    <p className="text-[10px] text-text-secondary/40 font-mono mt-1">Universal Link v2</p>
+                </div>
 
                 <div className="w-full space-y-3">
                     <button 

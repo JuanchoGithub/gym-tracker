@@ -55,11 +55,12 @@ const ImportWorkoutModal: React.FC<ImportWorkoutModalProps> = ({ isOpen, onClose
 
     const startCamera = async () => {
         try {
+            // Ask for high quality to resolve dense QR dots
             const stream = await navigator.mediaDevices.getUserMedia({ 
                 video: { 
                     facingMode: "environment",
-                    width: { ideal: 1280 },
-                    height: { ideal: 1280 } // Higher res for high-density QR
+                    width: { ideal: 1920 },
+                    height: { ideal: 1080 }
                 } 
             });
             
@@ -97,7 +98,6 @@ const ImportWorkoutModal: React.FC<ImportWorkoutModalProps> = ({ isOpen, onClose
             const videoHeight = videoRef.current.videoHeight;
 
             if (context && videoWidth > 0 && videoHeight > 0) {
-                // Ensure canvas matches video frame size
                 if (canvas.width !== videoWidth || canvas.height !== videoHeight) {
                     canvas.width = videoWidth;
                     canvas.height = videoHeight;
@@ -113,33 +113,39 @@ const ImportWorkoutModal: React.FC<ImportWorkoutModalProps> = ({ isOpen, onClose
                 if (code && code.data) {
                     setIsCodeDetected(true);
                     try {
+                        let rawData = code.data;
+                        
+                        // Handle URL format: find the part after #/import/
+                        if (rawData.includes('#/import/')) {
+                            rawData = rawData.split('#/import/')[1];
+                        }
+
                         let decoded = null;
                         
-                        // 1. Try LZ Decompression (Primary path for large workouts)
+                        // 1. Try LZ Decompression
                         if (typeof LZString !== 'undefined') {
                             try {
-                                decoded = LZString.decompressFromEncodedURIComponent(code.data);
+                                decoded = LZString.decompressFromEncodedURIComponent(rawData);
                             } catch (e) {}
                         }
 
-                        // 2. Fallback to standard decode if LZ failed or returned null
+                        // 2. Fallback
                         if (!decoded) {
                             try {
-                                decoded = decodeURIComponent(code.data);
+                                decoded = decodeURIComponent(rawData);
                             } catch (e) {
-                                decoded = code.data;
+                                decoded = rawData;
                             }
                         }
 
                         const payload = JSON.parse(decoded!);
                         if (payload.type === 'fortachon_workout' && payload.routine) {
-                            // Haptic Feedback
                             if ('vibrate' in navigator) navigator.vibrate(50);
                             handleImport(payload);
                             return; 
                         }
                     } catch (e) {
-                        // Keep scanning if it's not a valid JSON yet
+                        // Not valid yet, keep scanning
                     }
                 } else {
                     setIsCodeDetected(false);
