@@ -23,6 +23,7 @@ const ImportWorkoutModal: React.FC<ImportWorkoutModalProps> = ({ isOpen, onClose
     const [errorMessage, setErrorMessage] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
     const [isVideoReady, setIsVideoReady] = useState(false);
+    const [isCodeDetected, setIsCodeDetected] = useState(false);
     
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -33,6 +34,7 @@ const ImportWorkoutModal: React.FC<ImportWorkoutModalProps> = ({ isOpen, onClose
         if (isOpen) {
             setStatus('idle');
             setIsVideoReady(false);
+            setIsCodeDetected(false);
             if (activeTab === 'scan') {
                 startCamera();
             }
@@ -57,7 +59,7 @@ const ImportWorkoutModal: React.FC<ImportWorkoutModalProps> = ({ isOpen, onClose
                 video: { 
                     facingMode: "environment",
                     width: { ideal: 1280 },
-                    height: { ideal: 720 }
+                    height: { ideal: 1280 } // Higher res for high-density QR
                 } 
             });
             
@@ -85,15 +87,22 @@ const ImportWorkoutModal: React.FC<ImportWorkoutModalProps> = ({ isOpen, onClose
     };
 
     const scan = () => {
-        if (activeTab !== 'scan') return;
+        if (activeTab !== 'scan' || !isOpen) return;
         
         if (videoRef.current && videoRef.current.readyState === videoRef.current.HAVE_ENOUGH_DATA && canvasRef.current) {
             const canvas = canvasRef.current;
             const context = canvas.getContext("2d", { willReadFrequently: true });
             
-            if (context && videoRef.current.videoWidth > 0) {
-                canvas.height = videoRef.current.videoHeight;
-                canvas.width = videoRef.current.videoWidth;
+            const videoWidth = videoRef.current.videoWidth;
+            const videoHeight = videoRef.current.videoHeight;
+
+            if (context && videoWidth > 0 && videoHeight > 0) {
+                // Ensure canvas matches video frame size
+                if (canvas.width !== videoWidth || canvas.height !== videoHeight) {
+                    canvas.width = videoWidth;
+                    canvas.height = videoHeight;
+                }
+                
                 context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
                 const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
                 
@@ -101,23 +110,39 @@ const ImportWorkoutModal: React.FC<ImportWorkoutModalProps> = ({ isOpen, onClose
                     inversionAttempts: "dontInvert",
                 }) : null;
 
-                if (code) {
+                if (code && code.data) {
+                    setIsCodeDetected(true);
                     try {
-                        let decoded = code.data;
-                        // Try LZ decompression first
+                        let decoded = null;
+                        
+                        // 1. Try LZ Decompression (Primary path for large workouts)
                         if (typeof LZString !== 'undefined') {
-                            const decompressed = LZString.decompressFromEncodedURIComponent(code.data);
-                            if (decompressed) decoded = decompressed;
+                            try {
+                                decoded = LZString.decompressFromEncodedURIComponent(code.data);
+                            } catch (e) {}
                         }
 
-                        const payload = JSON.parse(decoded);
+                        // 2. Fallback to standard decode if LZ failed or returned null
+                        if (!decoded) {
+                            try {
+                                decoded = decodeURIComponent(code.data);
+                            } catch (e) {
+                                decoded = code.data;
+                            }
+                        }
+
+                        const payload = JSON.parse(decoded!);
                         if (payload.type === 'fortachon_workout' && payload.routine) {
+                            // Haptic Feedback
+                            if ('vibrate' in navigator) navigator.vibrate(50);
                             handleImport(payload);
                             return; 
                         }
                     } catch (e) {
-                        // Not a valid JSON or decompressed correctly, keep scanning
+                        // Keep scanning if it's not a valid JSON yet
                     }
+                } else {
+                    setIsCodeDetected(false);
                 }
             }
         }
@@ -208,17 +233,19 @@ const ImportWorkoutModal: React.FC<ImportWorkoutModalProps> = ({ isOpen, onClose
                         )}
 
                         <div className="absolute inset-0 border-[3rem] border-black/40 flex items-center justify-center pointer-events-none">
-                            <div className="w-full h-full border-2 border-primary/50 rounded-lg relative">
-                                <div className="absolute top-0 left-0 w-4 h-4 border-t-4 border-l-4 border-primary"></div>
-                                <div className="absolute top-0 right-0 w-4 h-4 border-t-4 border-r-4 border-primary"></div>
-                                <div className="absolute bottom-0 left-0 w-4 h-4 border-b-4 border-l-4 border-primary"></div>
-                                <div className="absolute bottom-0 right-0 w-4 h-4 border-b-4 border-r-4 border-primary"></div>
+                            <div className={`w-full h-full border-2 rounded-lg relative transition-colors duration-300 ${isCodeDetected ? 'border-success' : 'border-primary/50'}`}>
+                                <div className={`absolute top-0 left-0 w-4 h-4 border-t-4 border-l-4 transition-colors ${isCodeDetected ? 'border-success' : 'border-primary'}`}></div>
+                                <div className={`absolute top-0 right-0 w-4 h-4 border-t-4 border-r-4 transition-colors ${isCodeDetected ? 'border-success' : 'border-primary'}`}></div>
+                                <div className={`absolute bottom-0 left-0 w-4 h-4 border-b-4 border-l-4 transition-colors ${isCodeDetected ? 'border-success' : 'border-primary'}`}></div>
+                                <div className={`absolute bottom-0 right-0 w-4 h-4 border-b-4 border-r-4 transition-colors ${isCodeDetected ? 'border-success' : 'border-primary'}`}></div>
                                 
-                                <div className="absolute top-0 left-0 right-0 h-0.5 bg-primary/50 shadow-[0_0_10px_rgba(56,189,248,0.5)] animate-[scan_2s_linear_infinite]"></div>
+                                <div className={`absolute top-0 left-0 right-0 h-0.5 shadow-[0_0_10px_rgba(56,189,248,0.5)] animate-[scan_2s_linear_infinite] ${isCodeDetected ? 'bg-success' : 'bg-primary/50'}`}></div>
                             </div>
                         </div>
                         <div className="absolute bottom-4 left-0 right-0 text-center">
-                            <span className="bg-black/60 text-white text-[10px] px-3 py-1 rounded-full uppercase tracking-wider font-bold">{t('import_workout_instructions')}</span>
+                            <span className={`px-3 py-1 rounded-full text-[10px] uppercase tracking-wider font-bold transition-colors ${isCodeDetected ? 'bg-success text-white' : 'bg-black/60 text-white'}`}>
+                                {isCodeDetected ? 'Code Detected...' : t('import_workout_instructions')}
+                            </span>
                         </div>
                     </div>
                 )}
@@ -254,7 +281,7 @@ const ImportWorkoutModal: React.FC<ImportWorkoutModalProps> = ({ isOpen, onClose
                         </div>
                         <p className="text-red-400 font-bold">{errorMessage}</p>
                         <button 
-                            onClick={() => { setStatus('idle'); setIsVideoReady(false); }} 
+                            onClick={() => { setStatus('idle'); setIsVideoReady(false); setIsCodeDetected(false); }} 
                             className="bg-primary text-white font-bold py-3 px-8 rounded-xl shadow-lg transition-transform active:scale-95"
                         >
                             {t('common_undo')}
