@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getDb } from './db';
+import { getDb } from './db.js';
 
 // One-time schema initialization endpoint
 // Visit /api/init-schema?secret=YOUR_SECRET to initialize tables

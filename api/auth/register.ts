@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import bcrypt from 'bcryptjs';
-import { getDb } from '../db';
-import { createToken, generateUserId } from '../jwt';
+import { getDb } from '../db.js';
+import { createToken, generateUserId } from '../jwt.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Enable CORS

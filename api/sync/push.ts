@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getDb } from '../db';
-import { verifyToken } from '../jwt';
+import { getDb } from '../db.js';
+import { verifyToken } from '../jwt.js';
 
 // Valid data keys that can be synced
 const VALID_KEYS = ['history', 'routines', 'exercises', 'profile', 'settings'];
