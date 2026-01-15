@@ -5,9 +5,15 @@ import { getDb } from './db.js';
 // Visit /api/init-schema?secret=YOUR_SECRET to initialize tables
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Simple protection - require a secret query param
-  const secret = req.query.secret;
-  if (secret !== process.env.TURSO_AUTH_TOKEN?.slice(0, 16)) {
-    return res.status(403).json({ error: 'Forbidden' });
+  const secret = typeof req.query.secret === 'string' ? req.query.secret : '';
+  const expectedSecret = process.env.TURSO_AUTH_TOKEN?.slice(0, 16);
+
+  if (!expectedSecret) {
+    return res.status(500).json({ error: 'Server configuration error: TURSO_AUTH_TOKEN missing' });
+  }
+
+  if (secret !== expectedSecret) {
+    return res.status(403).json({ error: 'Forbidden: Secret mismatch' });
   }
 
   try {
