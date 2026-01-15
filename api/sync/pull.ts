@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import db from '../db';
+import { getDb } from '../db';
 import { verifyToken } from '../jwt';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -31,6 +31,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         // Fetch all user data
+        const db = getDb();
         const result = await db.execute({
             sql: 'SELECT data_key, data_value, updated_at FROM user_data WHERE user_id = ?',
             args: [payload.userId]

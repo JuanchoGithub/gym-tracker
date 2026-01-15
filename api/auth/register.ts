@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import bcrypt from 'bcryptjs';
-import db from '../db';
+import { getDb } from '../db';
 import { createToken, generateUserId } from '../jwt';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -34,6 +34,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         // Check if user already exists
+        const db = getDb();
         const existing = await db.execute({
             sql: 'SELECT id FROM users WHERE email = ?',
             args: [email.toLowerCase().trim()]

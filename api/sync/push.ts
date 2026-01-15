@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import db from '../db';
+import { getDb } from '../db';
 import { verifyToken } from '../jwt';
 
 // Valid data keys that can be synced
@@ -43,6 +43,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const savedKeys: string[] = [];
 
         // Save each data key
+        const db = getDb();
         for (const key of VALID_KEYS) {
             if (data[key] !== undefined) {
                 const value = JSON.stringify(data[key]);

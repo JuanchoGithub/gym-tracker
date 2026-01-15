@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import bcrypt from 'bcryptjs';
-import db from '../db';
+import { getDb } from '../db';
 import { createToken } from '../jwt';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -26,6 +26,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         // Find user
+        const db = getDb();
         const result = await db.execute({
             sql: 'SELECT id, email, password_hash FROM users WHERE email = ?',
             args: [email.toLowerCase().trim()]
