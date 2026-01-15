@@ -3,8 +3,8 @@ const API_BASE = '';
 
 interface SyncResponse {
     success?: boolean;
-    data?: Record<string, any>;
-    savedKeys?: string[];
+    data?: any;
+    results?: Record<string, number>;
     syncedAt?: number;
     lastUpdated?: number;
     isEmpty?: boolean;
@@ -27,9 +27,10 @@ export async function pushData(token: string, data: Record<string, any>): Promis
     }
 }
 
-export async function pullData(token: string): Promise<SyncResponse> {
+export async function pullData(token: string, since: number = 0): Promise<SyncResponse> {
     try {
-        const res = await fetch(`${API_BASE}/api/sync/pull`, {
+        const url = since > 0 ? `${API_BASE}/api/sync/pull?since=${since}` : `${API_BASE}/api/sync/pull`;
+        const res = await fetch(url, {
             method: 'GET',
             headers: { 'Authorization': `Bearer ${token}` },
         });

@@ -29,7 +29,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       )
     `);
 
-    // Create user_data table for storing sync data
+    // Create user_data table for storing sync data (settings, profile, etc.)
     await db.execute(`
       CREATE TABLE IF NOT EXISTS user_data (
         user_id TEXT NOT NULL,
@@ -41,10 +41,47 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       )
     `);
 
-    // Create index for faster lookups
+    // Create sync_history table for individual workout sessions
     await db.execute(`
-      CREATE INDEX IF NOT EXISTS idx_user_data_user_id ON user_data(user_id)
+      CREATE TABLE IF NOT EXISTS sync_history (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        data_json TEXT NOT NULL,
+        updated_at INTEGER NOT NULL,
+        deleted_at INTEGER DEFAULT NULL,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
     `);
+
+    // Create sync_routines table for user routines
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS sync_routines (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        data_json TEXT NOT NULL,
+        updated_at INTEGER NOT NULL,
+        deleted_at INTEGER DEFAULT NULL,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+
+    // Create sync_exercises table for custom exercises
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS sync_exercises (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        data_json TEXT NOT NULL,
+        updated_at INTEGER NOT NULL,
+        deleted_at INTEGER DEFAULT NULL,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+
+    // Create indexes for performance
+    await db.execute(`CREATE INDEX IF NOT EXISTS idx_user_data_id ON user_data(user_id)`);
+    await db.execute(`CREATE INDEX IF NOT EXISTS idx_history_updated ON sync_history(user_id, updated_at)`);
+    await db.execute(`CREATE INDEX IF NOT EXISTS idx_routines_updated ON sync_routines(user_id, updated_at)`);
+    await db.execute(`CREATE INDEX IF NOT EXISTS idx_exercises_updated ON sync_exercises(user_id, updated_at)`);
 
     return res.status(200).json({
       success: true,

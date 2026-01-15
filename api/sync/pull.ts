@@ -30,37 +30,65 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.status(401).json({ error: 'Invalid or expired token' });
         }
 
-        // Fetch all user data
+        // Support incremental pull
+        const since = parseInt(req.query.since as string) || 0;
         const db = getDb();
-        const result = await db.execute({
-            sql: 'SELECT data_key, data_value, updated_at FROM user_data WHERE user_id = ?',
-            args: [payload.userId]
+        const data: Record<string, any> = {
+            history: [],
+            routines: [],
+            exercises: []
+        };
+        let maxUpdatedAt = since;
+
+        // 1. Fetch from row-level tables
+        const rowTables: Record<string, string> = {
+            history: 'sync_history',
+            routines: 'sync_routines',
+            exercises: 'sync_exercises'
+        };
+
+        for (const [key, tableName] of Object.entries(rowTables)) {
+            const result = await db.execute({
+                sql: `SELECT data_json, updated_at FROM ${tableName} WHERE user_id = ? AND updated_at > ?`,
+                args: [payload.userId, since]
+            });
+
+            for (const row of result.rows) {
+                try {
+                    const item = JSON.parse(row.data_json as string);
+                    data[key].push(item);
+                    if ((row.updated_at as number) > maxUpdatedAt) {
+                        maxUpdatedAt = row.updated_at as number;
+                    }
+                } catch (e) {
+                    console.error(`Error parsing ${key} row:`, e);
+                }
+            }
+        }
+
+        // 2. Fetch from blob-level table (user_data)
+        const blobResult = await db.execute({
+            sql: 'SELECT data_key, data_value, updated_at FROM user_data WHERE user_id = ? AND updated_at > ?',
+            args: [payload.userId, since]
         });
 
-        const data: Record<string, any> = {};
-        let lastUpdated = 0;
-
-        for (const row of result.rows) {
-            const key = row.data_key as string;
-            const value = row.data_value as string;
-            const updatedAt = row.updated_at as number;
-
+        for (const row of blobResult.rows) {
             try {
-                data[key] = JSON.parse(value);
-            } catch {
-                data[key] = value;
-            }
-
-            if (updatedAt > lastUpdated) {
-                lastUpdated = updatedAt;
+                const key = row.data_key as string;
+                data[key] = JSON.parse(row.data_value as string);
+                if ((row.updated_at as number) > maxUpdatedAt) {
+                    maxUpdatedAt = row.updated_at as number;
+                }
+            } catch (e) {
+                console.error(`Error parsing blob ${row.data_key}:`, e);
             }
         }
 
         return res.status(200).json({
             success: true,
             data,
-            lastUpdated,
-            isEmpty: result.rows.length === 0
+            lastUpdated: maxUpdatedAt,
+            isEmpty: maxUpdatedAt === since
         });
     } catch (error) {
         console.error('Pull sync error:', error);

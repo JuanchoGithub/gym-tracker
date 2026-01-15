@@ -11,7 +11,7 @@ import SyncChoiceModal from '../auth/SyncChoiceModal';
 const AccountSection: React.FC = () => {
     const { t } = useI18n();
     const { user, isAuthenticated, logout, token, isLoading: authLoading } = useContext(AuthContext);
-    const { history, routines, rawExercises, importDataData } = useContext(DataContext);
+    const { history, routines, rawExercises, importDataData, syncWithCloud } = useContext(DataContext);
     const { profile, measureUnit, defaultRestTimes, useLocalizedExerciseNames, keepScreenAwake, enableNotifications, selectedVoiceURI, fontSize, importUserData } = useContext(UserContext);
 
     const [showAuthModal, setShowAuthModal] = useState(false);
@@ -47,11 +47,31 @@ const AccountSection: React.FC = () => {
         }
     });
 
+    const handleSync = async () => {
+        if (!token) return;
+        setIsSyncing(true);
+        setSyncMessage(null);
+
+        const result = await syncWithCloud(token);
+
+        if (result.success) {
+            setSyncMessage(t('sync_success') || 'Data synced successfully!');
+        } else {
+            setSyncMessage(result.error || 'Sync failed');
+        }
+
+        setIsSyncing(false);
+        setShowSyncChoice(false);
+        setTimeout(() => setSyncMessage(null), 3000);
+    };
+
     const handlePushData = async () => {
         if (!token) return;
         setIsSyncing(true);
         setSyncMessage(null);
 
+        // One-time full push (using blobs or individual row push)
+        // For convenience on login, we still do a push but marked as v2
         const result = await pushData(token, getAllData());
 
         if (result.success && result.syncedAt) {
@@ -151,7 +171,7 @@ const AccountSection: React.FC = () => {
                         {/* Action buttons */}
                         <div className="flex gap-2 flex-wrap">
                             <button
-                                onClick={handlePushData}
+                                onClick={handleSync}
                                 disabled={isSyncing}
                                 className="flex items-center gap-2 bg-primary hover:bg-sky-600 disabled:bg-gray-500 text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm"
                             >

@@ -39,30 +39,64 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.status(400).json({ error: 'Data object is required' });
         }
 
-        const now = Date.now();
-        const savedKeys: string[] = [];
-
-        // Save each data key
         const db = getDb();
-        for (const key of VALID_KEYS) {
-            if (data[key] !== undefined) {
-                const value = JSON.stringify(data[key]);
+        const now = Date.now();
+        const results: Record<string, number> = {};
 
+        // 1. Handle row-level tables (history, routines, exercises)
+        const rowTables: Record<string, string> = {
+            history: 'sync_history',
+            routines: 'sync_routines',
+            exercises: 'sync_exercises'
+        };
+
+        for (const [key, tableName] of Object.entries(rowTables)) {
+            const items = data[key];
+            if (Array.isArray(items)) {
+                let count = 0;
+                for (const item of items) {
+                    if (!item.id || !item.updatedAt) continue;
+
+                    await db.execute({
+                        sql: `INSERT INTO ${tableName} (id, user_id, data_json, updated_at, deleted_at)
+                              VALUES (?, ?, ?, ?, ?)
+                              ON CONFLICT(id) DO UPDATE SET
+                                data_json = excluded.data_json,
+                                updated_at = excluded.updated_at,
+                                deleted_at = excluded.deleted_at
+                              WHERE excluded.updated_at > ${tableName}.updated_at`,
+                        args: [
+                            item.id,
+                            payload.userId,
+                            JSON.stringify(item),
+                            item.updatedAt,
+                            item.deletedAt || null
+                        ]
+                    });
+                    count++;
+                }
+                results[key] = count;
+            }
+        }
+
+        // 2. Handle blob-level data (profile, settings - kept in user_data for backward compat)
+        const blobKeys = ['profile', 'settings'];
+        for (const key of blobKeys) {
+            if (data[key] !== undefined) {
                 await db.execute({
                     sql: `INSERT INTO user_data (user_id, data_key, data_value, updated_at) 
-                VALUES (?, ?, ?, ?)
-                ON CONFLICT(user_id, data_key) 
-                DO UPDATE SET data_value = excluded.data_value, updated_at = excluded.updated_at`,
-                    args: [payload.userId, key, value, now]
+                        VALUES (?, ?, ?, ?)
+                        ON CONFLICT(user_id, data_key) 
+                        DO UPDATE SET data_value = excluded.data_value, updated_at = excluded.updated_at`,
+                    args: [payload.userId, key, JSON.stringify(data[key]), now]
                 });
-
-                savedKeys.push(key);
+                results[key] = 1;
             }
         }
 
         return res.status(200).json({
             success: true,
-            savedKeys,
+            results,
             syncedAt: now
         });
     } catch (error) {
