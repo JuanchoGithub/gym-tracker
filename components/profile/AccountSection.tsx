@@ -173,28 +173,28 @@ const AccountSection: React.FC = () => {
                             <button
                                 onClick={handleSync}
                                 disabled={isSyncing}
-                                className="flex items-center justify-center gap-2 bg-primary hover:bg-sky-600 disabled:bg-gray-500 text-white font-medium py-2.5 px-4 rounded-lg transition-colors text-sm"
+                                className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-sky-600 disabled:bg-gray-500 text-white font-bold py-3 px-4 rounded-xl transition-all text-sm shadow-lg shadow-primary/20 active:scale-[0.98]"
                             >
-                                <Icon name="upload" className="w-4 h-4" />
-                                {isSyncing ? t('sync_syncing') : t('sync_now')}
+                                <Icon name="upload" className="w-5 h-5" />
+                                <span>{isSyncing ? t('sync_syncing') : t('sync_now')}</span>
                             </button>
 
                             <button
                                 onClick={handlePullData}
                                 disabled={isSyncing}
-                                className="flex items-center justify-center gap-2 bg-secondary hover:bg-slate-500 disabled:bg-gray-500 text-white font-medium py-2.5 px-4 rounded-lg transition-colors text-sm"
+                                className="w-full flex items-center justify-center gap-2 bg-secondary hover:bg-slate-600 disabled:bg-gray-500 text-white font-bold py-3 px-4 rounded-xl transition-all text-sm border border-white/5 active:scale-[0.98]"
                             >
-                                <Icon name="download" className="w-4 h-4" />
-                                {t('sync_download')}
+                                <Icon name="download" className="w-5 h-5" />
+                                <span>{t('sync_download')}</span>
                             </button>
 
                             <button
                                 onClick={handleLogout}
                                 disabled={isSyncing}
-                                className="sm:col-span-2 flex items-center justify-center gap-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 font-medium py-2 px-4 rounded-lg transition-colors text-sm"
+                                className="sm:col-span-2 w-full flex items-center justify-center gap-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 font-bold py-3 px-4 rounded-xl transition-all text-sm border border-red-500/20 active:scale-[0.98]"
                             >
-                                <Icon name="log-out" className="w-4 h-4" />
-                                {t('profile_account_logout')}
+                                <Icon name="log-out" className="w-5 h-5" />
+                                <span>{t('profile_account_logout')}</span>
                             </button>
                         </div>
                     </div>

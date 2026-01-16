@@ -112,7 +112,7 @@ interface IconProps extends React.SVGProps<SVGSVGElement> {
 export const Icon: React.FC<IconProps> = ({ name, className, ...props }) => {
   // Only apply default width/height if not present in className
   const hasSize = className?.match(/\b[wh]-\d+\b/);
-  const defaultClasses = hasSize ? "" : "w-6 h-6";
+  const defaultClasses = hasSize ? "flex-shrink-0" : "w-6 h-6 flex-shrink-0";
 
   return (
     <svg
