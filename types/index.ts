@@ -18,6 +18,8 @@ export interface Exercise {
   isUnilateral?: boolean;
   primaryMuscles?: MuscleGroup[];
   secondaryMuscles?: MuscleGroup[];
+  updatedAt?: number;
+  deletedAt?: number | null;
 }
 
 export type SetType = 'normal' | 'warmup' | 'drop' | 'failure' | 'timed';
@@ -57,9 +59,9 @@ export interface WorkoutExercise {
   barWeight?: number;
   supersetId?: string;
   previousVersion?: {
-      exerciseId: string;
-      sets: PerformedSet[];
-      note?: string;
+    exerciseId: string;
+    sets: PerformedSet[];
+    note?: string;
   };
 }
 
@@ -70,7 +72,7 @@ export interface SupersetDefinition {
 }
 
 export interface Routine {
-  id:string;
+  id: string;
   name: string;
   description: string;
   exercises: WorkoutExercise[];
@@ -85,10 +87,12 @@ export interface Routine {
     prepareTime?: number;
   };
   tags?: string[];
+  updatedAt?: number;
+  deletedAt?: number | null;
 }
 
 export interface WorkoutSession {
-  id:string;
+  id: string;
   routineId: string;
   routineName: string;
   startTime: number;
@@ -97,17 +101,19 @@ export interface WorkoutSession {
   exercises: WorkoutExercise[];
   supersets?: Record<string, SupersetDefinition>;
   prCount?: number;
+  updatedAt?: number;
+  deletedAt?: number | null;
 }
 
 export interface ActiveHiitSession {
-    routine: Routine;
-    startTime: number;
+  routine: Routine;
+  startTime: number;
 }
 
 export interface ChartDataPoint {
-    date: number;
-    label: string;
-    value: number;
+  date: number;
+  label: string;
+  value: number;
 }
 
 export interface WeightEntry {
@@ -129,9 +135,9 @@ export interface OneRepMaxEntry {
 }
 
 export interface AutoUpdateEntry {
-    oldWeight: number;
-    newWeight: number;
-    date: number;
+  oldWeight: number;
+  newWeight: number;
+  date: number;
 }
 
 export type UserGoal = 'strength' | 'muscle' | 'endurance';
@@ -172,23 +178,23 @@ export interface SupplementInfo {
 }
 
 export interface SupplementPlanItem {
-    id: string;
-    time: string;
-    supplement: string;
-    dosage: string;
-    notes: string;
-    isCustom?: boolean;
-    trainingDayOnly?: boolean;
-    restDayOnly?: boolean;
-    stock?: number;
+  id: string;
+  time: string;
+  supplement: string;
+  dosage: string;
+  notes: string;
+  isCustom?: boolean;
+  trainingDayOnly?: boolean;
+  restDayOnly?: boolean;
+  stock?: number;
 }
 
 export interface SupplementPlan {
-    info: SupplementInfo;
-    plan: SupplementPlanItem[];
-    warnings: string[];
-    general_tips: string[];
-    createdAt: number;
+  info: SupplementInfo;
+  plan: SupplementPlanItem[];
+  warnings: string[];
+  general_tips: string[];
+  createdAt: number;
 }
 
 export type SupplementSuggestionAction = {
@@ -227,16 +233,16 @@ export interface ActiveTimerInfo {
 }
 
 export interface TimedSetInfo {
-    exercise: WorkoutExercise;
-    set: PerformedSet;
+  exercise: WorkoutExercise;
+  set: PerformedSet;
 }
 
 export interface UserStatistics {
-    recommendation: Recommendation | null;
-    activePromotion: Recommendation | null;
-    freshness: Record<string, number>;
-    imbalanceRecommendation: Recommendation | null;
-    goalMismatchRecommendation: Recommendation | null;
-    lastCalculated: number;
-    performanceEfficiency?: number; // New: 0-100 score based on density trend
+  recommendation: Recommendation | null;
+  activePromotion: Recommendation | null;
+  freshness: Record<string, number>;
+  imbalanceRecommendation: Recommendation | null;
+  goalMismatchRecommendation: Recommendation | null;
+  lastCalculated: number;
+  performanceEfficiency?: number; // New: 0-100 score based on density trend
 }

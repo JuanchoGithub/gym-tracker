@@ -10,6 +10,7 @@ import { UserProvider } from './contexts/UserContext';
 import { DataProvider } from './contexts/DataContext';
 import { SupplementProvider } from './contexts/SupplementContext';
 import { EditorProvider } from './contexts/EditorContext';
+import { AuthProvider } from './contexts/AuthContext';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -20,23 +21,25 @@ const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
     <I18nProvider>
-      <UserProvider>
-        <DataProvider>
-          <EditorProvider>
-            <SupplementProvider>
-              <TimerProvider>
-                <AppProvider>
-                  <ActiveWorkoutProvider>
-                    <StatsProvider>
-                      <App />
-                    </StatsProvider>
-                  </ActiveWorkoutProvider>
-                </AppProvider>
-              </TimerProvider>
-            </SupplementProvider>
-          </EditorProvider>
-        </DataProvider>
-      </UserProvider>
+      <AuthProvider>
+        <UserProvider>
+          <DataProvider>
+            <EditorProvider>
+              <SupplementProvider>
+                <TimerProvider>
+                  <AppProvider>
+                    <ActiveWorkoutProvider>
+                      <StatsProvider>
+                        <App />
+                      </StatsProvider>
+                    </ActiveWorkoutProvider>
+                  </AppProvider>
+                </TimerProvider>
+              </SupplementProvider>
+            </EditorProvider>
+          </DataProvider>
+        </UserProvider>
+      </AuthProvider>
     </I18nProvider>
   </React.StrictMode>
 );

@@ -42,7 +42,7 @@ export const es_profile = {
   profile_weight_history_chart_title: "Historial de Peso",
   profile_unlock_history_title: "Historial de Desbloqueos",
   profile_unlock_message: "Desbloqueaste {to} desde {from}",
-  
+
   // Goals
   profile_goal_section: "Metas y Preferencias",
   profile_main_goal: "Meta Principal",
@@ -98,4 +98,33 @@ export const es_profile = {
   profile_import_error: "Error de Importación",
   profile_import_error_invalid: "Formato de archivo inválido. Faltan historiales o rutinas.",
   profile_import_error_parse: "Error al analizar el archivo.",
+
+  // Account & Sync
+  profile_account: "Cuenta",
+  profile_account_email: "Email",
+  profile_account_password: "Contraseña",
+  profile_account_confirm_password: "Confirmar Contraseña",
+  profile_account_signin: "Iniciar Sesión",
+  profile_account_create_account: "Crear Cuenta",
+  profile_account_no_account: "¿No tenés cuenta?",
+  profile_account_create: "Creá una",
+  profile_account_have_account: "¿Ya tenés cuenta?",
+  profile_account_signin_or_create: "Iniciar Sesión o Crear Cuenta",
+  profile_account_logout: "Cerrar Sesión",
+  profile_account_description: "Iniciá sesión para sincronizar tus entrenamientos entre dispositivos",
+  profile_account_passwords_mismatch: "Las contraseñas no coinciden",
+  profile_account_password_too_short: "La contraseña debe tener al menos 6 caracteres",
+  auth_login_failed: "Error al iniciar sesión. Vericá tus credenciales.",
+  auth_register_failed: "Error al registrarse. Probá con otro email.",
+  sync_now: "Sincronizar",
+  sync_download: "Descargar de la Nube",
+  sync_last_sync: "Última sincronización:",
+  sync_success: "¡Datos sincronizados con éxito!",
+  sync_download_success: "¡Datos descargados con éxito!",
+  sync_choice_title: "Sincronizar Datos",
+  sync_choice_description: "Tenés datos en este dispositivo y en la nube. ¿Cuál querés usar?",
+  sync_choice_use_cloud: "Usar Datos de la Nube",
+  sync_choice_use_cloud_desc: "Descargar tus datos desde la nube",
+  sync_choice_use_local: "Usar Datos de Este Dispositivo",
+  sync_choice_use_local_desc: "Subir tus datos locales a la nube",
 };

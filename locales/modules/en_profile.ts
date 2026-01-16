@@ -42,7 +42,7 @@ export const en_profile = {
   profile_weight_history_chart_title: "Weight History",
   profile_unlock_history_title: "Unlock History",
   profile_unlock_message: "Unlocked {to} from {from}",
-  
+
   // Goals
   profile_goal_section: "Goals & Preferences",
   profile_main_goal: "Main Goal",
@@ -51,7 +51,7 @@ export const en_profile = {
   profile_goal_endurance: "Endurance (High Reps)",
   profile_smart_goal_detect: "Smart Goal Detection",
   profile_smart_goal_detect_desc: "Suggest goal updates based on your training history",
-  
+
   // Share
   profile_about: "About",
   profile_share_app: "Share App",
@@ -64,7 +64,7 @@ export const en_profile = {
   checkin_option_busy: "Busy",
   checkin_option_deload: "Deload",
   checkin_option_injury: "Injury",
-  
+
   // Fatigue Monitor
   fatigue_title: "Training Readiness",
   fatigue_level_optimal: "Optimal",
@@ -81,7 +81,7 @@ export const en_profile = {
   fatigue_desc: "Combined score of your CNS health and muscle freshness.",
   fatigue_info_title: "About Readiness",
   fatigue_info_content: "Your Readiness Score is the 'Weakest Link' between your Systemic CNS Load and your local Muscle Recovery.\n\nEven if your nervous system is fresh (Optimal CNS), you may be advised to rest if specific muscle groups are still damaged from previous workouts.\n\nThis ensures you don't train heavy on a foundation that hasn't recovered.",
-  
+
   // Data Management
   profile_data_title: "Data Management",
   profile_data_desc: "Backup or restore your full app data.",
@@ -98,4 +98,33 @@ export const en_profile = {
   profile_import_error: "Import Error",
   profile_import_error_invalid: "Invalid file format. Missing history or routines.",
   profile_import_error_parse: "Failed to parse file.",
+
+  // Account & Sync
+  profile_account: "Account",
+  profile_account_email: "Email",
+  profile_account_password: "Password",
+  profile_account_confirm_password: "Confirm Password",
+  profile_account_signin: "Sign In",
+  profile_account_create_account: "Create Account",
+  profile_account_no_account: "Don't have an account?",
+  profile_account_create: "Create one",
+  profile_account_have_account: "Already have an account?",
+  profile_account_signin_or_create: "Sign In or Create Account",
+  profile_account_logout: "Logout",
+  profile_account_description: "Sign in to sync your workouts across devices",
+  profile_account_passwords_mismatch: "Passwords do not match",
+  profile_account_password_too_short: "Password must be at least 6 characters",
+  auth_login_failed: "Login failed. Please check your credentials.",
+  auth_register_failed: "Registration failed. Try a different email.",
+  sync_now: "Sync Now",
+  sync_download: "Download from Cloud",
+  sync_last_sync: "Last sync:",
+  sync_success: "Data synced successfully!",
+  sync_download_success: "Data downloaded successfully!",
+  sync_choice_title: "Sync Your Data",
+  sync_choice_description: "You have data on this device and in the cloud. Which would you like to use?",
+  sync_choice_use_cloud: "Use Cloud Data",
+  sync_choice_use_cloud_desc: "Download your data from the cloud",
+  sync_choice_use_local: "Use This Device's Data",
+  sync_choice_use_local_desc: "Upload your local data to the cloud",
 };
