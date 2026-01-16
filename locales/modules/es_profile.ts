@@ -114,6 +114,8 @@ export const es_profile = {
   profile_account_description: "Iniciá sesión para sincronizar tus entrenamientos entre dispositivos",
   profile_account_passwords_mismatch: "Las contraseñas no coinciden",
   profile_account_password_too_short: "La contraseña debe tener al menos 6 caracteres",
+  auth_login_failed: "Error al iniciar sesión. Vericá tus credenciales.",
+  auth_register_failed: "Error al registrarse. Probá con otro email.",
   sync_now: "Sincronizar",
   sync_download: "Descargar de la Nube",
   sync_last_sync: "Última sincronización:",

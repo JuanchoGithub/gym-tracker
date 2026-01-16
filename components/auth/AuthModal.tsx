@@ -28,7 +28,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSuccess }
             onClose();
             onLoginSuccess?.();
         } else {
-            setError(result.error || 'Login failed');
+            setError(result.error || t('auth_login_failed'));
         }
     };
 
@@ -42,7 +42,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSuccess }
             onClose();
             onLoginSuccess?.();
         } else {
-            setError(result.error || 'Registration failed');
+            setError(result.error || t('auth_register_failed'));
         }
     };
 

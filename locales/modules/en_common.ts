@@ -35,4 +35,6 @@ export const en_common = {
   common_yes: "Yes",
   common_no: "No",
   common_success: "Success",
+  common_loading: "Loading...",
+  sync_syncing: "Syncing...",
 };

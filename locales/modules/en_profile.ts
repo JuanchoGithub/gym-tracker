@@ -114,6 +114,8 @@ export const en_profile = {
   profile_account_description: "Sign in to sync your workouts across devices",
   profile_account_passwords_mismatch: "Passwords do not match",
   profile_account_password_too_short: "Password must be at least 6 characters",
+  auth_login_failed: "Login failed. Please check your credentials.",
+  auth_register_failed: "Registration failed. Try a different email.",
   sync_now: "Sync Now",
   sync_download: "Download from Cloud",
   sync_last_sync: "Last sync:",

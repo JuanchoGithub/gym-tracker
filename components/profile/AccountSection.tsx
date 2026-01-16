@@ -55,9 +55,9 @@ const AccountSection: React.FC = () => {
         const result = await syncWithCloud(token);
 
         if (result.success) {
-            setSyncMessage(t('sync_success') || 'Data synced successfully!');
+            setSyncMessage(t('sync_success'));
         } else {
-            setSyncMessage(result.error || 'Sync failed');
+            setSyncMessage(result.error || t('profile_import_error'));
         }
 
         setIsSyncing(false);
@@ -76,9 +76,9 @@ const AccountSection: React.FC = () => {
 
         if (result.success && result.syncedAt) {
             setLastSyncTime(result.syncedAt);
-            setSyncMessage(t('sync_success') || 'Data synced successfully!');
+            setSyncMessage(t('sync_success'));
         } else {
-            setSyncMessage(result.error || 'Sync failed');
+            setSyncMessage(result.error || t('profile_import_error'));
         }
 
         setIsSyncing(false);
@@ -111,9 +111,9 @@ const AccountSection: React.FC = () => {
             if (result.lastUpdated) {
                 setLastSyncTime(result.lastUpdated);
             }
-            setSyncMessage(t('sync_download_success') || 'Data downloaded successfully!');
+            setSyncMessage(t('sync_download_success'));
         } else {
-            setSyncMessage(result.error || 'Download failed');
+            setSyncMessage(result.error || t('profile_import_error'));
         }
 
         setIsSyncing(false);
@@ -128,7 +128,7 @@ const AccountSection: React.FC = () => {
 
     const formatSyncTime = (time: number) => {
         const date = new Date(time);
-        return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        return date.toLocaleString(); // Better default localization
     };
 
     if (authLoading) {
@@ -169,46 +169,46 @@ const AccountSection: React.FC = () => {
                         )}
 
                         {/* Action buttons */}
-                        <div className="flex gap-2 flex-wrap">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             <button
                                 onClick={handleSync}
                                 disabled={isSyncing}
-                                className="flex items-center gap-2 bg-primary hover:bg-sky-600 disabled:bg-gray-500 text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm"
+                                className="flex items-center justify-center gap-2 bg-primary hover:bg-sky-600 disabled:bg-gray-500 text-white font-medium py-2.5 px-4 rounded-lg transition-colors text-sm"
                             >
                                 <Icon name="upload" className="w-4 h-4" />
-                                {isSyncing ? (t('common_loading') || 'Syncing...') : (t('sync_now') || 'Sync Now')}
+                                {isSyncing ? t('sync_syncing') : t('sync_now')}
                             </button>
 
                             <button
                                 onClick={handlePullData}
                                 disabled={isSyncing}
-                                className="flex items-center gap-2 bg-secondary hover:bg-slate-500 disabled:bg-gray-500 text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm"
+                                className="flex items-center justify-center gap-2 bg-secondary hover:bg-slate-500 disabled:bg-gray-500 text-white font-medium py-2.5 px-4 rounded-lg transition-colors text-sm"
                             >
                                 <Icon name="download" className="w-4 h-4" />
-                                {t('sync_download') || 'Download from Cloud'}
+                                {t('sync_download')}
                             </button>
 
                             <button
                                 onClick={handleLogout}
                                 disabled={isSyncing}
-                                className="flex items-center gap-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 font-medium py-2 px-4 rounded-lg transition-colors text-sm"
+                                className="sm:col-span-2 flex items-center justify-center gap-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 font-medium py-2 px-4 rounded-lg transition-colors text-sm"
                             >
                                 <Icon name="log-out" className="w-4 h-4" />
-                                {t('profile_account_logout') || 'Logout'}
+                                {t('profile_account_logout')}
                             </button>
                         </div>
                     </div>
                 ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                         <p className="text-text-secondary text-sm">
-                            {t('profile_account_description') || 'Sign in to sync your workouts across devices'}
+                            {t('profile_account_description')}
                         </p>
                         <button
                             onClick={() => setShowAuthModal(true)}
-                            className="w-full bg-primary hover:bg-sky-600 text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                            className="w-full bg-primary hover:bg-sky-600 text-white font-semibold py-3.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
                         >
                             <Icon name="log-in" className="w-5 h-5" />
-                            {t('profile_account_signin_or_create') || 'Sign In or Create Account'}
+                            {t('profile_account_signin_or_create')}
                         </button>
                     </div>
                 )}

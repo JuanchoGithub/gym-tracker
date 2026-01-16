@@ -22,7 +22,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, onSwitchToRegister, isL
         <form onSubmit={handleSubmit} className="space-y-4">
             <div>
                 <label htmlFor="login-email" className="block text-sm font-medium text-text-secondary mb-1">
-                    {t('profile_account_email') || 'Email'}
+                    {t('profile_account_email')}
                 </label>
                 <input
                     id="login-email"
@@ -38,7 +38,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, onSwitchToRegister, isL
 
             <div>
                 <label htmlFor="login-password" className="block text-sm font-medium text-text-secondary mb-1">
-                    {t('profile_account_password') || 'Password'}
+                    {t('profile_account_password')}
                 </label>
                 <input
                     id="login-password"
@@ -62,17 +62,17 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, onSwitchToRegister, isL
                 disabled={isLoading}
                 className="w-full bg-primary hover:bg-sky-600 disabled:bg-gray-500 text-white font-bold py-3 px-4 rounded-lg transition-colors"
             >
-                {isLoading ? (t('common_loading') || 'Loading...') : (t('profile_account_signin') || 'Sign In')}
+                {isLoading ? t('common_loading') : t('profile_account_signin')}
             </button>
 
             <p className="text-center text-text-secondary text-sm">
-                {t('profile_account_no_account') || "Don't have an account?"}{' '}
+                {t('profile_account_no_account')}{' '}
                 <button
                     type="button"
                     onClick={onSwitchToRegister}
                     className="text-primary hover:underline font-medium"
                 >
-                    {t('profile_account_create') || 'Create one'}
+                    {t('profile_account_create')}
                 </button>
             </p>
         </form>

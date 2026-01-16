@@ -20,12 +20,12 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, onSwitchToLogin, 
         setLocalError(null);
 
         if (password !== confirmPassword) {
-            setLocalError(t('profile_account_passwords_mismatch') || 'Passwords do not match');
+            setLocalError(t('profile_account_passwords_mismatch'));
             return;
         }
 
         if (password.length < 6) {
-            setLocalError(t('profile_account_password_too_short') || 'Password must be at least 6 characters');
+            setLocalError(t('profile_account_password_too_short'));
             return;
         }
 
@@ -38,7 +38,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, onSwitchToLogin, 
         <form onSubmit={handleSubmit} className="space-y-4">
             <div>
                 <label htmlFor="register-email" className="block text-sm font-medium text-text-secondary mb-1">
-                    {t('profile_account_email') || 'Email'}
+                    {t('profile_account_email')}
                 </label>
                 <input
                     id="register-email"
@@ -54,7 +54,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, onSwitchToLogin, 
 
             <div>
                 <label htmlFor="register-password" className="block text-sm font-medium text-text-secondary mb-1">
-                    {t('profile_account_password') || 'Password'}
+                    {t('profile_account_password')}
                 </label>
                 <input
                     id="register-password"
@@ -71,7 +71,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, onSwitchToLogin, 
 
             <div>
                 <label htmlFor="register-confirm" className="block text-sm font-medium text-text-secondary mb-1">
-                    {t('profile_account_confirm_password') || 'Confirm Password'}
+                    {t('profile_account_confirm_password')}
                 </label>
                 <input
                     id="register-confirm"
@@ -95,17 +95,17 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, onSwitchToLogin, 
                 disabled={isLoading}
                 className="w-full bg-primary hover:bg-sky-600 disabled:bg-gray-500 text-white font-bold py-3 px-4 rounded-lg transition-colors"
             >
-                {isLoading ? (t('common_loading') || 'Loading...') : (t('profile_account_create_account') || 'Create Account')}
+                {isLoading ? t('common_loading') : t('profile_account_create_account')}
             </button>
 
             <p className="text-center text-text-secondary text-sm">
-                {t('profile_account_have_account') || 'Already have an account?'}{' '}
+                {t('profile_account_have_account')}{' '}
                 <button
                     type="button"
                     onClick={onSwitchToLogin}
                     className="text-primary hover:underline font-medium"
                 >
-                    {t('profile_account_signin') || 'Sign In'}
+                    {t('profile_account_signin')}
                 </button>
             </p>
         </form>

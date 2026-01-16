@@ -24,11 +24,11 @@ const SyncChoiceModal: React.FC<SyncChoiceModalProps> = ({
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            title={t('sync_choice_title') || 'Sync Your Data'}
+            title={t('sync_choice_title')}
         >
             <div className="space-y-4">
                 <p className="text-text-secondary">
-                    {t('sync_choice_description') || 'You have data on this device and in the cloud. Which would you like to use?'}
+                    {t('sync_choice_description')}
                 </p>
 
                 <div className="space-y-3">
@@ -39,9 +39,9 @@ const SyncChoiceModal: React.FC<SyncChoiceModalProps> = ({
                     >
                         <Icon name="cloud" className="w-6 h-6" />
                         <div className="text-left">
-                            <div>{t('sync_choice_use_cloud') || 'Use Cloud Data'}</div>
+                            <div>{t('sync_choice_use_cloud')}</div>
                             <div className="text-sm font-normal opacity-80">
-                                {t('sync_choice_use_cloud_desc') || 'Download your data from the cloud'}
+                                {t('sync_choice_use_cloud_desc')}
                             </div>
                         </div>
                     </button>
@@ -53,9 +53,9 @@ const SyncChoiceModal: React.FC<SyncChoiceModalProps> = ({
                     >
                         <Icon name="smartphone" className="w-6 h-6" />
                         <div className="text-left">
-                            <div>{t('sync_choice_use_local') || "Use This Device's Data"}</div>
+                            <div>{t('sync_choice_use_local')}</div>
                             <div className="text-sm font-normal opacity-80">
-                                {t('sync_choice_use_local_desc') || 'Upload your local data to the cloud'}
+                                {t('sync_choice_use_local_desc')}
                             </div>
                         </div>
                     </button>
@@ -63,7 +63,7 @@ const SyncChoiceModal: React.FC<SyncChoiceModalProps> = ({
 
                 {isLoading && (
                     <p className="text-center text-text-secondary text-sm">
-                        {t('common_loading') || 'Syncing...'}
+                        {t('sync_syncing')}
                     </p>
                 )}
             </div>
