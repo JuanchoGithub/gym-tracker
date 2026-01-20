@@ -126,5 +126,7 @@ export const en_profile = {
   sync_choice_use_cloud: "Use Cloud Data",
   sync_choice_use_cloud_desc: "Download your data from the cloud",
   sync_choice_use_local: "Use This Device's Data",
-  sync_choice_use_local_desc: "Upload your local data to the cloud",
+  sync_choice_use_local_desc: "Use the data from this device and sync it to the cloud",
+  profile_account_show_password: "Show password",
+  profile_account_hide_password: "Hide password",
 };

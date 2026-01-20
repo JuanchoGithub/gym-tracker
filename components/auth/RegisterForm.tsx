@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useI18n } from '../../hooks/useI18n';
+import { Icon } from '../common/Icon';
 
 interface RegisterFormProps {
     onSubmit: (email: string, password: string) => Promise<void>;
@@ -13,6 +14,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, onSwitchToLogin, 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [localError, setLocalError] = useState<string | null>(null);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -56,34 +59,54 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, onSwitchToLogin, 
                 <label htmlFor="register-password" className="block text-sm font-medium text-text-secondary mb-1">
                     {t('profile_account_password')}
                 </label>
-                <input
-                    id="register-password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-background border border-border rounded-lg px-4 py-3 text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
-                    placeholder="••••••••"
-                    required
-                    disabled={isLoading}
-                    minLength={6}
-                />
+                <div className="relative">
+                    <input
+                        id="register-password"
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full bg-background border border-border rounded-lg pl-4 pr-12 py-3 text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+                        placeholder="••••••••"
+                        required
+                        disabled={isLoading}
+                        minLength={6}
+                    />
+                    <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-text-secondary hover:text-text-primary transition-colors focus:outline-none"
+                        aria-label={showPassword ? t('profile_account_hide_password') : t('profile_account_show_password')}
+                    >
+                        <Icon name={showPassword ? "eye-off" : "eye"} className="w-5 h-5" />
+                    </button>
+                </div>
             </div>
 
             <div>
                 <label htmlFor="register-confirm" className="block text-sm font-medium text-text-secondary mb-1">
                     {t('profile_account_confirm_password')}
                 </label>
-                <input
-                    id="register-confirm"
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full bg-background border border-border rounded-lg px-4 py-3 text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
-                    placeholder="••••••••"
-                    required
-                    disabled={isLoading}
-                    minLength={6}
-                />
+                <div className="relative">
+                    <input
+                        id="register-confirm"
+                        type={showConfirmPassword ? "text" : "password"}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        className="w-full bg-background border border-border rounded-lg pl-4 pr-12 py-3 text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+                        placeholder="••••••••"
+                        required
+                        disabled={isLoading}
+                        minLength={6}
+                    />
+                    <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-text-secondary hover:text-text-primary transition-colors focus:outline-none"
+                        aria-label={showConfirmPassword ? t('profile_account_hide_password') : t('profile_account_show_password')}
+                    >
+                        <Icon name={showConfirmPassword ? "eye-off" : "eye"} className="w-5 h-5" />
+                    </button>
+                </div>
             </div>
 
             {displayError && (
