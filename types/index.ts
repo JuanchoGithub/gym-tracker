@@ -142,6 +142,12 @@ export interface AutoUpdateEntry {
 
 export type UserGoal = 'strength' | 'muscle' | 'endurance';
 
+export interface HistoryChartConfig {
+  id: string; // 'total-volume' or exerciseId
+  type: 'total-volume' | 'exercise-volume';
+  exerciseId?: string;
+}
+
 export interface Profile {
   gender?: 'male' | 'female';
   height?: number;
@@ -156,6 +162,7 @@ export interface Profile {
   bioAdaptiveEngine?: boolean; // New: Toggle for individual recovery/density logic
   goalMismatchSnoozedUntil?: number;
   lastImported?: number;
+  historyChartConfigs?: HistoryChartConfig[];
 }
 
 export interface SupplementInfo {

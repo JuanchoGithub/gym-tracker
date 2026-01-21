@@ -1,11 +1,13 @@
 
 import React, { useMemo, useContext, useState } from 'react';
 import { AppContext } from '../../contexts/AppContext';
-import { WorkoutSession, ChartDataPoint } from '../../types';
+import { WorkoutSession, ChartDataPoint, HistoryChartConfig } from '../../types';
 import { useI18n } from '../../hooks/useI18n';
 import ChartBlock from '../common/ChartBlock';
 import FullScreenChartModal from '../common/FullScreenChartModal';
 import { useExerciseName } from '../../hooks/useExerciseName';
+import { Icon } from '../common/Icon';
+import AddExercisesModal from '../modals/AddExercisesModal';
 
 interface HistoryChartsTabProps {
     history: WorkoutSession[];
@@ -18,132 +20,262 @@ interface FullScreenChartData {
 }
 
 const HistoryChartsTab: React.FC<HistoryChartsTabProps> = ({ history }) => {
-    const { getExerciseById } = useContext(AppContext);
+    const { getExerciseById, profile, updateHistoryChartConfigs, rawExercises } = useContext(AppContext);
     const { t } = useI18n();
     const getExerciseName = useExerciseName();
     const [fullScreenChart, setFullScreenChart] = useState<FullScreenChartData | null>(null);
+    const [isEditing, setIsEditing] = useState(false);
+    const [isAddingExercise, setIsAddingExercise] = useState(false);
 
-    const chartData = useMemo(() => {
-        if (history.length === 0) {
-            return { totalVolume: [], topExercises: [] };
-        }
+    const colors = ["#818cf8", "#f87171", "#4ade80", "#fbbf24", "#a78bfa", "#f472b6", "#2dd4bf", "#fb923c", "#94a3b8", "#c084fc"];
 
-        // Limit to last 40 workouts to prevent chart pollution
-        const recentHistory = history.slice(0, 40);
+    const recentHistory = useMemo(() => history.slice(0, 40), [history]);
+    const chronologicalHistory = useMemo(() => [...recentHistory].sort((a, b) => a.startTime - b.startTime), [recentHistory]);
+    const dateFormat: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
 
-        // Sort Ascending (Oldest -> Newest) for chronological charts
-        const chronologicalHistory = [...recentHistory].sort((a, b) => a.startTime - b.startTime);
-        const dateFormat: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
-
-        // 1. Total Volume Over Time
-        const totalVolumeData: ChartDataPoint[] = chronologicalHistory.map(session => {
-            const totalVolume = session.exercises.reduce((total, ex) => {
-                return total + ex.sets.reduce((exTotal, set) => exTotal + (set.isComplete ? (set.weight * set.reps) : 0), 0);
-            }, 0);
-            return {
-                date: session.startTime,
-                label: new Date(session.startTime).toLocaleDateString(undefined, dateFormat),
-                value: totalVolume,
-            };
-        });
-
-        // 2. Top Exercises by Frequency (based on recent history)
-        const exerciseCounts = new Map<string, number>();
+    const exerciseFrequency = useMemo(() => {
+        const counts = new Map<string, number>();
         recentHistory.forEach(session => {
-            // Use Set to count "sessions with exercise" rather than "total sets of exercise"
             const distinctExercises = new Set(session.exercises.map(ex => ex.exerciseId));
             distinctExercises.forEach((exerciseId: string) => {
-                exerciseCounts.set(exerciseId, (exerciseCounts.get(exerciseId) || 0) + 1);
+                counts.set(exerciseId, (counts.get(exerciseId) || 0) + 1);
+            });
+        });
+        return counts;
+    }, [recentHistory]);
+
+    const chartConfigs = useMemo((): HistoryChartConfig[] => {
+        if (profile.historyChartConfigs && profile.historyChartConfigs.length > 0) {
+            return profile.historyChartConfigs;
+        }
+
+        // Default: Total Volume + Top 5 frequent exercises
+        const defaultConfigs: HistoryChartConfig[] = [{ id: 'total-volume', type: 'total-volume' }];
+
+        const sortedExercises = Array.from(exerciseFrequency.entries())
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5);
+
+        sortedExercises.forEach(([exerciseId]) => {
+            defaultConfigs.push({ id: exerciseId, type: 'exercise-volume', exerciseId });
+        });
+
+        return defaultConfigs;
+    }, [profile.historyChartConfigs, exerciseFrequency]);
+
+    const preparedCharts = useMemo(() => {
+        return chartConfigs.map((config, index) => {
+            if (config.type === 'total-volume') {
+                const data: ChartDataPoint[] = chronologicalHistory.map(session => {
+                    const totalVolume = session.exercises.reduce((total, ex) => {
+                        return total + ex.sets.reduce((exTotal, set) => exTotal + (set.isComplete ? (set.weight * set.reps) : 0), 0);
+                    }, 0);
+                    return {
+                        date: session.startTime,
+                        label: new Date(session.startTime).toLocaleDateString(undefined, dateFormat),
+                        value: totalVolume,
+                    };
+                });
+                return {
+                    config,
+                    title: t('graphs_total_volume'),
+                    data,
+                    color: '#38bdf8',
+                    filenamePrefix: 'History'
+                };
+            } else {
+                const exerciseId = config.exerciseId!;
+                const exerciseInfo = getExerciseById(exerciseId);
+                const data: ChartDataPoint[] = [];
+
+                chronologicalHistory.forEach(session => {
+                    const exercisesInSession = session.exercises.filter(ex => ex.exerciseId === exerciseId);
+                    if (exercisesInSession.length > 0) {
+                        const exerciseVolume = exercisesInSession.reduce((vol, ex) => {
+                            return vol + ex.sets.reduce((sum, set) => sum + (set.isComplete ? (set.weight * set.reps) : 0), 0);
+                        }, 0);
+
+                        if (exerciseVolume > 0) {
+                            data.push({
+                                date: session.startTime,
+                                label: new Date(session.startTime).toLocaleDateString(undefined, dateFormat),
+                                value: exerciseVolume
+                            });
+                        }
+                    }
+                });
+
+                const name = exerciseInfo ? getExerciseName(exerciseInfo) : t('history_page_unknown_exercise');
+                return {
+                    config,
+                    title: `${name} - Volume`,
+                    data,
+                    color: colors[index % colors.length],
+                    filenamePrefix: name,
+                    exerciseInfo
+                };
+            }
+        });
+    }, [chartConfigs, chronologicalHistory, t, getExerciseById, getExerciseName, colors]);
+
+    const handleRemove = (id: string) => {
+        const nextConfigs = chartConfigs.filter(c => c.id !== id);
+        updateHistoryChartConfigs(nextConfigs);
+    };
+
+    const handleMove = (index: number, direction: 'up' | 'down') => {
+        const nextConfigs = [...chartConfigs];
+        const targetIndex = direction === 'up' ? index - 1 : index + 1;
+        if (targetIndex < 0 || targetIndex >= nextConfigs.length) return;
+
+        const temp = nextConfigs[index];
+        nextConfigs[index] = nextConfigs[targetIndex];
+        nextConfigs[targetIndex] = temp;
+
+        updateHistoryChartConfigs(nextConfigs);
+    };
+
+    const handleAddExercise = (exerciseIds: string[]) => {
+        const currentIds = new Set(chartConfigs.map(c => c.id));
+        const newConfigs = [...chartConfigs];
+
+        exerciseIds.forEach(id => {
+            if (!currentIds.has(id)) {
+                newConfigs.push({ id, type: 'exercise-volume', exerciseId: id });
+            }
+        });
+
+        updateHistoryChartConfigs(newConfigs.slice(0, 10));
+        setIsAddingExercise(false);
+    };
+
+    const handleQuickAdd = () => {
+        // Find last few routines (say 5)
+        const lastRoutines = history.slice(0, 5);
+        const exercisesFromLastRoutines = new Map<string, number>();
+
+        lastRoutines.forEach(session => {
+            const distinct = new Set(session.exercises.map(ex => ex.exerciseId));
+            distinct.forEach(id => {
+                exercisesFromLastRoutines.set(id, (exercisesFromLastRoutines.get(id) || 0) + 1);
             });
         });
 
-        const exercisesWithCounts = Array.from(exerciseCounts.keys()).map(exerciseId => ({
-            exerciseId,
-            count: exerciseCounts.get(exerciseId) || 0
-        }));
-        
-        // Sort descending by count
-        const sortedExercises = exercisesWithCounts.sort((a, b) => b.count - a.count);
-        
-        // Take top 5 most frequent
-        const topIds = sortedExercises.slice(0, 5).map(entry => entry.exerciseId);
+        const sortedByFreq = Array.from(exercisesFromLastRoutines.entries())
+            .sort((a, b) => b[1] - a[1]);
 
-        const topExercisesChartData = topIds.map(exerciseId => {
-            const exerciseInfo = getExerciseById(exerciseId);
-            const data: ChartDataPoint[] = [];
+        const nextConfigs: HistoryChartConfig[] = [{ id: 'total-volume', type: 'total-volume' }];
+        const currentIds = new Set(['total-volume']);
 
-            chronologicalHistory.forEach(session => {
-                // Aggregate all instances of this exercise in the session (e.g. if done twice or in superset)
-                const exercisesInSession = session.exercises.filter(ex => ex.exerciseId === exerciseId);
-                
-                if (exercisesInSession.length > 0) {
-                    const exerciseVolume = exercisesInSession.reduce((vol, ex) => {
-                         return vol + ex.sets.reduce((sum, set) => sum + (set.isComplete ? (set.weight * set.reps) : 0), 0);
-                    }, 0);
+        // Fill up to 10
+        sortedByFreq.forEach(([id]) => {
+            if (nextConfigs.length < 10 && !currentIds.has(id)) {
+                nextConfigs.push({ id, type: 'exercise-volume', exerciseId: id });
+                currentIds.add(id);
+            }
+        });
 
-                    // Only plot if there was volume (skip empty entries if any)
-                    if (exerciseVolume > 0) {
-                        data.push({
-                            date: session.startTime,
-                            label: new Date(session.startTime).toLocaleDateString(undefined, dateFormat),
-                            value: exerciseVolume
-                        });
-                    }
-                }
-            });
-
-            return {
-                exerciseInfo,
-                data,
-            };
-        }).filter(item => item.exerciseInfo && item.data.length > 1); // Only show charts with at least 2 points for a line
-
-        return { totalVolume: totalVolumeData, topExercises: topExercisesChartData };
-    }, [history, getExerciseById]);
+        updateHistoryChartConfigs(nextConfigs);
+    };
 
     if (history.length === 0) {
         return (
-          <div className="text-center text-text-secondary py-8">
-            <p>{t('history_no_data')}</p>
-          </div>
+            <div className="text-center text-text-secondary py-8">
+                <p>{t('history_no_data')}</p>
+            </div>
         );
     }
-    
-    const colors = ["#818cf8", "#f87171", "#4ade80", "#fbbf24", "#a78bfa"];
 
     return (
         <div className="space-y-4">
-            <ChartBlock 
-                title={t('graphs_total_volume')} 
-                data={chartData.totalVolume} 
-                color="#38bdf8" 
-                filenamePrefix="History"
-                onFullScreen={() => setFullScreenChart({ title: t('graphs_total_volume'), data: chartData.totalVolume, color: '#38bdf8' })}
-            />
+            <div className="flex justify-between items-center px-1">
+                <h2 className="text-xl font-bold text-text-primary">{isEditing ? t('common_edit') : t('tab_graphs')}</h2>
+                <button
+                    onClick={() => setIsEditing(!isEditing)}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${isEditing ? 'bg-primary text-white' : 'bg-surface-highlight/20 text-text-secondary hover:bg-surface-highlight/40'}`}
+                >
+                    <Icon name={isEditing ? 'check' : 'edit'} className="w-4 h-4" />
+                    <span>{isEditing ? t('common_save') : t('common_edit')}</span>
+                </button>
+            </div>
 
-            {chartData.topExercises.map(({ exerciseInfo, data }, index) => {
-                if (!exerciseInfo) return null;
-                const name = getExerciseName(exerciseInfo);
-                const title = `${name} - Volume`;
-                const color = colors[index % colors.length];
+            {isEditing && (
+                <div className="bg-surface p-4 rounded-lg space-y-4 border border-primary/20">
+                    <div className="flex flex-wrap gap-2">
+                        <button
+                            onClick={() => setIsAddingExercise(true)}
+                            className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium transition-colors"
+                        >
+                            <Icon name="plus" className="w-4 h-4" />
+                            {t('history_menu_edit')} Exercises
+                        </button>
+                        <button
+                            onClick={handleQuickAdd}
+                            className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium transition-colors border border-blue-500/30"
+                        >
+                            <Icon name="history" className="w-4 h-4 text-blue-400" />
+                            Add Last Exercises
+                        </button>
+                    </div>
+
+                    <div className="space-y-2">
+                        {preparedCharts.map((item, index) => (
+                            <div key={item.config.id} className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg group">
+                                <div className="flex items-center gap-3 overflow-hidden">
+                                    <div className="w-2 h-8 rounded-full" style={{ backgroundColor: item.color }} />
+                                    <span className="font-medium truncate">{item.title}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    <button
+                                        onClick={() => handleMove(index, 'up')}
+                                        disabled={index === 0}
+                                        className="p-1.5 text-text-secondary hover:text-primary disabled:opacity-30"
+                                    >
+                                        <Icon name="chevron-up" className="w-5 h-5" />
+                                    </button>
+                                    <button
+                                        onClick={() => handleMove(index, 'down')}
+                                        disabled={index === preparedCharts.length - 1}
+                                        className="p-1.5 text-text-secondary hover:text-primary disabled:opacity-30"
+                                    >
+                                        <Icon name="chevron-down" className="w-5 h-5" />
+                                    </button>
+                                    <button
+                                        onClick={() => handleRemove(item.config.id)}
+                                        className="p-1.5 text-text-secondary hover:text-red-400"
+                                    >
+                                        <Icon name="trash" className="w-5 h-5" />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    {preparedCharts.length >= 10 && (
+                        <p className="text-xs text-yellow-500/80 italic">Limit of 10 charts reached.</p>
+                    )}
+                </div>
+            )}
+
+            {!isEditing && preparedCharts.map((item) => {
+                if (item.config.type === 'exercise-volume' && !item.exerciseInfo) return null;
                 return (
-                    <ChartBlock 
-                        key={exerciseInfo.id}
-                        title={title}
-                        data={data}
-                        color={color}
-                        filenamePrefix={name}
-                        onFullScreen={() => setFullScreenChart({ title, data, color })}
+                    <ChartBlock
+                        key={item.config.id}
+                        title={item.title}
+                        data={item.data}
+                        color={item.color}
+                        filenamePrefix={item.filenamePrefix}
+                        onFullScreen={() => setFullScreenChart({ title: item.title, data: item.data, color: item.color })}
                     />
                 );
             })}
 
-            {chartData.topExercises.length === 0 && chartData.totalVolume.length > 0 && (
-                <div className="text-center text-text-secondary py-4">
-                    <p>Keep training to unlock specific exercise trends!</p>
+            {!isEditing && preparedCharts.length === 0 && (
+                <div className="text-center text-text-secondary py-8">
+                    <p>No charts configured. Add some in Edit mode!</p>
                 </div>
             )}
-            
+
             {fullScreenChart && (
                 <FullScreenChartModal
                     isOpen={!!fullScreenChart}
@@ -153,6 +285,13 @@ const HistoryChartsTab: React.FC<HistoryChartsTabProps> = ({ history }) => {
                     color={fullScreenChart.color}
                 />
             )}
+
+            <AddExercisesModal
+                isOpen={isAddingExercise}
+                onClose={() => setIsAddingExercise(false)}
+                onAdd={handleAddExercise}
+                initialExercises={rawExercises}
+            />
         </div>
     );
 };
