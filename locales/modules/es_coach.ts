@@ -99,6 +99,13 @@ export const es_coach = {
   imbalance_lower_dominant_title: "Síndrome T-Rex",
   imbalance_lower_dominant_desc: "Tu fuerza inferior está clasificada como '{lower_level}', pero tu tren superior como '{upper_level}'. Gran base, ahora construyamos el torso para igualar.",
   strength_symmetry_subtext: "Basado en ratios de simetría de fuerza",
+  symmetry_details_title: "Desglose de Simetría",
+  symmetry_ideal_ratio: "Relación Ideal",
+  symmetry_current_max: "Máximo Actual",
+  symmetry_expected_max: "Máx. Sugerido",
+  symmetry_desc: "Se utilizan relaciones de fuerza estandarizadas (Sentadilla:Pecho 4:3, Peso Muerto:Sentadilla 5:4) para detectar eslabones débiles. Equilibrarlos previene lesiones y optimiza la potencia atlética.",
+  symmetry_ratio_label: "Relación Objetivo: {ratio}",
+  symmetry_pattern_posterior: "Peso Muerto / Posterior",
 
   // CNS
   cns_load_label: "Carga Sistémica",

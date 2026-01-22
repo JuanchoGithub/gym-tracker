@@ -99,6 +99,13 @@ export const en_coach = {
   imbalance_lower_dominant_title: "T-Rex Syndrome",
   imbalance_lower_dominant_desc: "Your lower body strength is rated '{lower_level}', but your upper body is rated '{upper_level}'. Great foundation, now let's build the upper body to match.",
   strength_symmetry_subtext: "Based on strength symmetry ratios",
+  symmetry_details_title: "Symmetry Breakdown",
+  symmetry_ideal_ratio: "Ideal Ratio",
+  symmetry_current_max: "Current Max",
+  symmetry_expected_max: "Sug. Max",
+  symmetry_desc: "Standardized strength ratios (Squat:Bench 4:3, DL:Squat 5:4) are used to detect weak links. Balancing these prevents injury and optimizes athletic power.",
+  symmetry_ratio_label: "Target Ratio: {ratio}",
+  symmetry_pattern_posterior: "Deadlift / Posterior",
 
   // CNS
   cns_load_label: "Systemic Load",
