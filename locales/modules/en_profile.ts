@@ -81,6 +81,15 @@ export const en_profile = {
   fatigue_desc: "Combined score of your CNS health and muscle freshness.",
   fatigue_info_title: "About Readiness",
   fatigue_info_content: "Your Readiness Score is the 'Weakest Link' between your Systemic CNS Load and your local Muscle Recovery.\n\nEven if your nervous system is fresh (Optimal CNS), you may be advised to rest if specific muscle groups are still damaged from previous workouts.\n\nThis ensures you don't train heavy on a foundation that hasn't recovered.",
+  fatigue_details_title: "Readiness Breakdown",
+  fatigue_cns_points: "CNS Score ({points} pts)",
+  fatigue_cns_equation: "Formula: Σ(SessionCost × Decay) / 150",
+  fatigue_muscle_score: "Muscle Fatigue (Max)",
+  fatigue_muscle_equation: "Formula: (Stress / Capacity) × RecoveryDecay",
+  fatigue_algorithm_interaction: "Interaction Algorithm",
+  fatigue_algorithm_interaction_desc: "We use the 'Weakest Link' principle: Readiness = 100% - MAX(CNS Load, Muscle Fatigue). Your body is only as ready as its' most tired system.",
+  fatigue_last_14_days: "Last 14 Days Load",
+  fatigue_top_fatigued_muscles: "Top Fatigued Muscles",
 
   // Data Management
   profile_data_title: "Data Management",
