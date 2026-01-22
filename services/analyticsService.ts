@@ -258,10 +258,24 @@ export const getSmartStartingWeight = (
 
 export const calculateNormalizedStrengthScores = (history: WorkoutSession[]) => {
     const maxLifts = calculateMaxStrengthProfile(history);
-    const scores = { SQUAT: maxLifts.SQUAT / 4, DEADLIFT: maxLifts.DEADLIFT / 5, BENCH: maxLifts.BENCH / 3, OHP: maxLifts.OHP / 2, ROW: maxLifts.ROW / 3 };
+    const scores = {
+        SQUAT: maxLifts.SQUAT / 4,
+        DEADLIFT: maxLifts.DEADLIFT / 5,
+        BENCH: maxLifts.BENCH / 3,
+        OHP: maxLifts.OHP / 2,
+        ROW: maxLifts.ROW / 3,
+        VERTICAL_PULL: maxLifts.VERTICAL_PULL / 3
+    };
     const maxScore = Math.max(...Object.values(scores));
     const scale = maxScore > 0 ? (100 / maxScore) : 0;
-    return { SQUAT: scores.SQUAT * scale, DEADLIFT: scores.DEADLIFT * scale, BENCH: scores.BENCH * scale, OHP: scores.OHP * scale, ROW: scores.ROW * scale };
+    return {
+        SQUAT: scores.SQUAT * scale,
+        DEADLIFT: scores.DEADLIFT * scale,
+        BENCH: scores.BENCH * scale,
+        OHP: scores.OHP * scale,
+        ROW: scores.ROW * scale,
+        VERTICAL_PULL: scores.VERTICAL_PULL * scale
+    };
 };
 
 export interface SupplementCorrelation {

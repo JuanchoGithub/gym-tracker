@@ -28,15 +28,18 @@ const StrengthProfile: React.FC = () => {
 
         // Denominators from analyticsService.ts
         const idealDenominators = {
-            OHP: 2,
-            ROW: 3,
-            SQUAT: 4,
             DEADLIFT: 5,
-            BENCH: 3
+            SQUAT: 4,
+            BENCH: 3,
+            ROW: 3,
+            VERTICAL_PULL: 3,
+            OHP: 2
         };
 
         const maxImpactEntry = Object.entries(rawMaxes).reduce((best, [k, v]) => {
-            const denom = idealDenominators[k as keyof typeof idealDenominators] || 1;
+            const denom = idealDenominators[k as keyof typeof idealDenominators];
+            if (!denom) return best;
+
             const impact = (v as number) / denom;
             return impact > best.impact ? { key: k, value: v, impact } : best;
         }, { key: '', value: 0, impact: 0 });
@@ -44,17 +47,19 @@ const StrengthProfile: React.FC = () => {
         const maxImpact = maxImpactEntry.impact;
         const driverLabel = maxImpactEntry.key === 'OHP' ? t('body_part_shoulders') :
             maxImpactEntry.key === 'ROW' ? t('body_part_back') :
-                maxImpactEntry.key === 'SQUAT' ? t('body_part_legs') :
-                    maxImpactEntry.key === 'DEADLIFT' ? t('symmetry_pattern_posterior') :
-                        maxImpactEntry.key === 'BENCH' ? t('body_part_chest') :
-                            '';
+                maxImpactEntry.key === 'VERTICAL_PULL' ? t('symmetry_pattern_vertical') :
+                    maxImpactEntry.key === 'SQUAT' ? t('body_part_legs') :
+                        maxImpactEntry.key === 'DEADLIFT' ? t('symmetry_pattern_posterior') :
+                            maxImpactEntry.key === 'BENCH' ? t('body_part_chest') :
+                                '';
 
         const details = [
             { key: 'OHP', label: t('body_part_shoulders'), value: scores.OHP, raw: Math.round(rawMaxes.OHP), target: Math.round(idealDenominators.OHP * maxImpact), ratio: '2.0' },
+            { key: 'BENCH', label: t('body_part_chest'), value: scores.BENCH, raw: Math.round(rawMaxes.BENCH), target: Math.round(idealDenominators.BENCH * maxImpact), ratio: '3.0' },
             { key: 'ROW', label: t('body_part_back'), value: scores.ROW, raw: Math.round(rawMaxes.ROW), target: Math.round(idealDenominators.ROW * maxImpact), ratio: '3.0' },
+            { key: 'VERTICAL_PULL', label: t('symmetry_pattern_vertical'), value: scores.VERTICAL_PULL, raw: Math.round(rawMaxes.VERTICAL_PULL), target: Math.round(idealDenominators.VERTICAL_PULL * maxImpact), ratio: '3.0' },
             { key: 'SQUAT', label: t('body_part_legs'), value: scores.SQUAT, raw: Math.round(rawMaxes.SQUAT), target: Math.round(idealDenominators.SQUAT * maxImpact), ratio: '4.0' },
             { key: 'DEADLIFT', label: t('symmetry_pattern_posterior'), value: scores.DEADLIFT, raw: Math.round(rawMaxes.DEADLIFT), target: Math.round(idealDenominators.DEADLIFT * maxImpact), ratio: '5.0' },
-            { key: 'BENCH', label: t('body_part_chest'), value: scores.BENCH, raw: Math.round(rawMaxes.BENCH), target: Math.round(idealDenominators.BENCH * maxImpact), ratio: '3.0' },
         ];
 
         return { scores, details, driverLabel, driverValue: Math.round(maxImpactEntry.value as number) };

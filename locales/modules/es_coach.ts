@@ -107,6 +107,7 @@ export const es_coach = {
   symmetry_ratio_label: "Relación Objetivo: {ratio}",
   symmetry_driver_lift: "Líder (Patrón más fuerte)",
   symmetry_pattern_posterior: "Peso Muerto / Posterior",
+  symmetry_pattern_vertical: "Tracción Vertical",
 
   // CNS
   cns_load_label: "Carga Sistémica",

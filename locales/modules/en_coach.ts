@@ -107,6 +107,7 @@ export const en_coach = {
   symmetry_ratio_label: "Target Ratio: {ratio}",
   symmetry_driver_lift: "Leader (Strongest Pattern)",
   symmetry_pattern_posterior: "Deadlift / Posterior",
+  symmetry_pattern_vertical: "Vertical Pull",
 
   // CNS
   cns_load_label: "Systemic Load",
