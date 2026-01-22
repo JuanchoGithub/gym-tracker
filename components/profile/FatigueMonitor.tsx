@@ -127,7 +127,7 @@ const FatigueMonitor: React.FC<FatigueMonitorProps> = ({ history, exercises, mus
     return (
         <>
             <div
-                className={`bg-surface border border-white/10 rounded-2xl p-5 shadow-lg mb-6 transition-all duration-300 ${isExpanded ? 'ring-2 ring-primary/20' : ''}`}
+                className={`bg-surface border border-white/10 rounded-2xl p-4 shadow-lg transition-all duration-300 ${isExpanded ? 'ring-2 ring-primary/20' : ''}`}
             >
                 <div
                     className="flex items-center justify-between mb-3 cursor-pointer group"
@@ -174,9 +174,9 @@ const FatigueMonitor: React.FC<FatigueMonitorProps> = ({ history, exercises, mus
                 )}
 
                 {isExpanded && (
-                    <div className="mt-6 space-y-6 animate-fadeIn">
+                    <div className="mt-5 space-y-4 animate-fadeIn">
                         {/* CNS Breakdown */}
-                        <div className="bg-white/5 rounded-xl p-4 border border-white/5">
+                        <div className="bg-white/5 rounded-xl p-3 border border-white/5">
                             <div className="flex items-center justify-between mb-4">
                                 <h4 className="text-sm font-bold text-white flex items-center gap-2">
                                     <Icon name="activity" className="w-4 h-4 text-primary" />
@@ -214,7 +214,7 @@ const FatigueMonitor: React.FC<FatigueMonitorProps> = ({ history, exercises, mus
                         </div>
 
                         {/* Muscle Breakdown */}
-                        <div className="bg-white/5 rounded-xl p-4 border border-white/5">
+                        <div className="bg-white/5 rounded-xl p-3 border border-white/5">
                             <div className="flex items-center justify-between mb-3">
                                 <h4 className="text-sm font-bold text-white flex items-center gap-2">
                                     <Icon name="dumbbell" className="w-4 h-4 text-success" />
@@ -247,7 +247,7 @@ const FatigueMonitor: React.FC<FatigueMonitorProps> = ({ history, exercises, mus
                         </div>
 
                         {/* Interaction Explanation */}
-                        <div className="bg-primary/5 rounded-xl p-4 border border-primary/10">
+                        <div className="bg-primary/5 rounded-xl p-3 border border-primary/10">
                             <h4 className="text-sm font-bold text-primary flex items-center gap-2 mb-2">
                                 <Icon name="sparkles" className="w-4 h-4" />
                                 {t('fatigue_algorithm_interaction')}

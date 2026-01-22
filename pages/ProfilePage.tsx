@@ -382,7 +382,7 @@ const ProfilePage: React.FC = () => {
             )}
 
             {activeTab === 'you' && (
-                <div className="animate-fadeIn space-y-8">
+                <div className="animate-fadeIn space-y-4">
                     <FatigueMonitor history={history} exercises={exercises} muscleFreshness={muscleFreshness} />
                     <div>
                         <h3 className="text-xl font-bold text-text-primary mb-4 px-4">{t('insights_recovery_heatmap_title')}</h3>

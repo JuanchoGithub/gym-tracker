@@ -57,7 +57,7 @@ const StrengthProfile: React.FC = () => {
 
     return (
         <div
-            className={`bg-surface border border-white/10 rounded-2xl p-5 shadow-lg mb-6 transition-all duration-300 ${isExpanded ? 'ring-2 ring-primary/20' : ''}`}
+            className={`bg-surface border border-white/10 rounded-2xl p-4 shadow-lg transition-all duration-300 ${isExpanded ? 'ring-2 ring-primary/20' : ''}`}
         >
             <div
                 className="flex items-center justify-between mb-4 border-b border-white/5 pb-4 cursor-pointer group"
@@ -85,8 +85,8 @@ const StrengthProfile: React.FC = () => {
             </div>
 
             {isExpanded && (
-                <div className="mt-6 space-y-6 animate-fadeIn">
-                    <div className="bg-primary/5 rounded-xl p-4 border border-primary/10">
+                <div className="mt-5 space-y-4 animate-fadeIn">
+                    <div className="bg-primary/5 rounded-xl p-3 border border-primary/10">
                         <h4 className="text-sm font-bold text-primary flex items-center gap-2 mb-2">
                             <Icon name="sparkles" className="w-4 h-4" />
                             {t('symmetry_details_title')}
@@ -105,7 +105,7 @@ const StrengthProfile: React.FC = () => {
                                         </span>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-2 gap-3">
                                         <div>
                                             <p className="text-[10px] text-text-secondary uppercase font-bold mb-1">{t('symmetry_current_max')}</p>
                                             <p className="text-sm font-mono font-black text-white">{item.raw} {unitLabel}</p>
