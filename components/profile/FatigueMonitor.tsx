@@ -189,7 +189,7 @@ const FatigueMonitor: React.FC<FatigueMonitorProps> = ({ history, exercises, mus
                             <div className="flex items-end justify-between h-20 gap-1 mb-2 px-1 relative">
                                 {!hasCnsData && (
                                     <div className="absolute inset-0 flex items-center justify-center">
-                                        <p className="text-[10px] text-text-secondary/30 uppercase tracking-widest">{t('common_no_data') || 'No Recent Activity'}</p>
+                                        <p className="text-[10px] text-text-secondary/30 uppercase tracking-widest">{t('fatigue_no_recent_activity')}</p>
                                     </div>
                                 )}
                                 {dailyLoadPoints.map((pts, i) => (
@@ -200,7 +200,7 @@ const FatigueMonitor: React.FC<FatigueMonitorProps> = ({ history, exercises, mus
                                         ></div>
                                         {pts > 0 && (
                                             <div className="absolute -top-6 bg-surface border border-white/10 px-1.5 py-0.5 rounded text-[10px] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10 shadow-xl">
-                                                {pts} pts
+                                                {t('common_points', { points: pts })}
                                             </div>
                                         )}
                                     </div>
@@ -225,7 +225,7 @@ const FatigueMonitor: React.FC<FatigueMonitorProps> = ({ history, exercises, mus
                             <div className="space-y-3 relative min-h-[60px]">
                                 {topFatiguedMuscles.length === 0 && (
                                     <div className="flex flex-col items-center justify-center pt-2">
-                                        <p className="text-[10px] text-text-secondary/30 uppercase tracking-widest">{t('common_no_data') || 'Fully Recovered'}</p>
+                                        <p className="text-[10px] text-text-secondary/30 uppercase tracking-widest">{t('fatigue_fully_recovered')}</p>
                                         <Icon name="check" className="w-4 h-4 text-success/20 mt-1" />
                                     </div>
                                 )}
@@ -282,7 +282,7 @@ const FatigueMonitor: React.FC<FatigueMonitorProps> = ({ history, exercises, mus
                             onClick={() => setIsExpanded(true)}
                             className="text-[10px] text-primary/60 hover:text-primary uppercase font-bold tracking-widest flex items-center justify-center gap-1 mx-auto"
                         >
-                            <span>{t('common_see_more') || 'See Breakdown'}</span>
+                            <span>{t('common_see_more')}</span>
                             <Icon name="expand" className="w-2.5 h-2.5" />
                         </button>
                     </div>

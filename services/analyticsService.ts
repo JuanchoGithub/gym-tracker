@@ -58,8 +58,8 @@ export const calculateMaxStrengthProfile = (history: WorkoutSession[], cutoffDat
                 if (entry.session.startTime < sixMonthsBeforeCutoff) return;
                 entry.exerciseData.sets.forEach(set => {
                     if (set.type === 'normal' && set.isComplete && set.reps <= 12) {
-                         const e1rm = calculate1RM(set.weight, set.reps);
-                         if (e1rm > maxE1RM) maxE1RM = e1rm;
+                        const e1rm = calculate1RM(set.weight, set.reps);
+                        if (e1rm > maxE1RM) maxE1RM = e1rm;
                     }
                 });
             });
@@ -105,8 +105,8 @@ export const calculateSyntheticAnchors = (history: WorkoutSession[], allExercise
             let maxSetE1RM = 0;
             ex.sets.forEach(set => {
                 if (set.type === 'normal' && set.isComplete && set.weight > 0 && set.reps > 0 && set.reps <= 12) {
-                     const e1rm = calculate1RM(set.weight, set.reps);
-                     if (e1rm > maxSetE1RM) maxSetE1RM = e1rm;
+                    const e1rm = calculate1RM(set.weight, set.reps);
+                    if (e1rm > maxSetE1RM) maxSetE1RM = e1rm;
                 }
             });
             if (maxSetE1RM > 0) {
@@ -165,12 +165,12 @@ export const detectPreferredIncrement = (historyEntries: { exerciseData: { sets:
 
     // Use float-friendly GCD logic
     const inferredGcd = weightDeltas.reduce((acc, val) => floatGcd(acc, val), weightDeltas[0]);
-    
+
     // Sanitize results: common increments are 1.25, 2.5, 5
     if (inferredGcd >= 4.5) return 5;
     if (inferredGcd >= 2.2) return 2.5;
     if (inferredGcd >= 1.0) return 1.25;
-    
+
     return 2.5;
 };
 
@@ -305,7 +305,7 @@ export const analyzeCorrelations = (
             const getAvgPRs = (sessions: WorkoutSession[]) => sessions.reduce((acc, s) => acc + (s.prCount || 0), 0) / sessions.length;
             const avgPrOn = getAvgPRs(onSessions);
             const avgPrOff = getAvgPRs(offSessions);
-             if (avgPrOff > 0) {
+            if (avgPrOff > 0) {
                 const prDiff = ((avgPrOn - avgPrOff) / avgPrOff) * 100;
                 if (Math.abs(prDiff) >= 10) insights.push({ supplementId: suppId, supplementName: supplementName, metric: 'prs', differencePercentage: Math.round(prDiff), sampleSizeOn: onSessions.length, sampleSizeOff: offSessions.length });
             }
@@ -324,11 +324,25 @@ export interface LifterStats {
     archetype: LifterArchetype;
     favMuscle: string;
     efficiencyScore: number; // New: Workout Density efficiency
+    rawConsistency: number;  // Workouts in last 30d
+    rawVolume: number;       // Avg session volume
+    rawIntensity: number;    // Avg reps
 }
 
 export const calculateLifterDNA = (history: WorkoutSession[], currentBodyWeight: number = 70): LifterStats => {
     if (history.length < 5) {
-        return { consistencyScore: 0, volumeScore: 0, intensityScore: 0, experienceLevel: history.length, archetype: 'beginner', favMuscle: 'N/A', efficiencyScore: 0 };
+        return {
+            consistencyScore: 0,
+            volumeScore: 0,
+            intensityScore: 0,
+            experienceLevel: history.length,
+            archetype: 'beginner',
+            favMuscle: 'N/A',
+            efficiencyScore: 0,
+            rawConsistency: 0,
+            rawVolume: 0,
+            rawIntensity: 0
+        };
     }
 
     const now = Date.now();
@@ -344,7 +358,7 @@ export const calculateLifterDNA = (history: WorkoutSession[], currentBodyWeight:
     const muscleCounts: Record<string, number> = {};
     const analyzedHistory = history.slice(0, 20);
 
-    analyzedHistory.forEach(s => { 
+    analyzedHistory.forEach(s => {
         s.exercises.forEach(ex => {
             const def = PREDEFINED_EXERCISES.find(p => p.id === ex.exerciseId);
             if (def) muscleCounts[def.bodyPart] = (muscleCounts[def.bodyPart] || 0) + 1;
@@ -366,7 +380,7 @@ export const calculateLifterDNA = (history: WorkoutSession[], currentBodyWeight:
 
     const globalAvgReps = totalVolumeForWeightedAvg > 0 ? weightedRepSum / totalVolumeForWeightedAvg : 0;
     const compoundAvgReps = compoundTotalVolume > 0 ? compoundWeightedRepSum / compoundTotalVolume : 0;
-    
+
     let archetype: LifterArchetype = 'hybrid';
     if (compoundAvgReps > 0 && compoundAvgReps <= 6.5) archetype = 'powerbuilder';
     else {
@@ -399,7 +413,7 @@ export const calculateLifterDNA = (history: WorkoutSession[], currentBodyWeight:
         const vol = h.exercises.reduce((a, e) => a + e.sets.reduce((sa, s) => sa + (s.isComplete ? s.weight * s.reps : 0), 0), 0);
         return duration > 5 ? vol / duration : 0;
     }).filter(d => d > 0);
-    
+
     let efficiencyScore = 100;
     if (recentDensities.length >= 4) {
         const currentDensity = recentDensities[0];
@@ -407,13 +421,24 @@ export const calculateLifterDNA = (history: WorkoutSession[], currentBodyWeight:
         efficiencyScore = Math.min(100, Math.round((currentDensity / avgDensity) * 100));
     }
 
-    return { consistencyScore, volumeScore, intensityScore, experienceLevel: history.length, archetype, favMuscle, efficiencyScore };
+    return {
+        consistencyScore,
+        volumeScore,
+        intensityScore,
+        experienceLevel: history.length,
+        archetype,
+        favMuscle,
+        efficiencyScore,
+        rawConsistency: monthlyCount,
+        rawVolume: Math.round(avgSessionVolume),
+        rawIntensity: Math.round(effectiveAvgReps * 10) / 10
+    };
 };
 
 export const inferUserProfile = (history: WorkoutSession[]): SurveyAnswers => {
     const defaultProfile: SurveyAnswers = { experience: 'intermediate', goal: 'muscle', equipment: 'gym', time: 'medium' };
     if (history.length === 0) return defaultProfile;
-    const recentSessions = history.slice(0, 10); 
+    const recentSessions = history.slice(0, 10);
     let barbellCount = 0, dumbbellCount = 0, machineCount = 0, bodyweightCount = 0, totalExercises = 0;
     recentSessions.forEach(s => {
         s.exercises.forEach(we => {

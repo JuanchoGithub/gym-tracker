@@ -37,4 +37,7 @@ export const en_common = {
   common_success: "Success",
   common_loading: "Loading...",
   sync_syncing: "Syncing...",
+  common_see_more: "See Breakdown",
+  common_no_data: "No Data",
+  common_points: "{points} pts",
 };

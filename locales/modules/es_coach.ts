@@ -67,7 +67,7 @@ export const es_coach = {
   rec_action_keep_goal: "Mantener {current}",
   rec_action_disable_detection: "No volver a preguntar",
   rec_alternatives_label: "O elegí una de estas plantillas:",
-  
+
   // Bio-Adaptive
   coach_warning_density_drop_title: "Fuga de Eficiencia",
   coach_warning_density_drop_desc: "Tu densidad de entrenamiento cayó un {percent}% recientemente. Suele ser señal de fatiga acumulada. Una sesión ligera hoy evitaría un agotamiento mayor.",
@@ -175,7 +175,14 @@ export const es_coach = {
   dna_stats_intensity: "Intensidad",
   dna_stats_favorite_muscle: "Músculo Fav",
   dna_stats_lifetime_workouts: "Entrenamientos Totales",
-  
+  dna_stats_consistency_desc: "Calculado por el total de entrenamientos en los últimos 30 días. Alta consistencia genera momentum a largo plazo.",
+  dna_stats_volume_desc: "Tonelaje promedio movido por sesión. Mide la capacidad de trabajo total a través de tu historial.",
+  dna_stats_intensity_desc: "Repeticiones promedio por serie. Menos repeticiones (más peso relativo al 1RM) significa mayor intensidad.",
+  dna_details_title: "Detalle de ADN de Rendimiento",
+  dna_consistency_workouts: "{count} sesiones / 30d",
+  dna_volume_tonnage: "{count} {unit} por sesión",
+  dna_intensity_reps: "{count} reps prom.",
+
   // Promotion Modal
   promotion_modal_title: "Mejora Disponible",
   promotion_modal_current: "Actual",

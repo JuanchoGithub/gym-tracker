@@ -90,6 +90,8 @@ export const es_profile = {
   fatigue_algorithm_interaction_desc: "Usamos el principio del 'Eslabón Más Débil': Recuperación = 100% - MÁX(Carga SNC, Fatiga Muscular). Tu cuerpo está tan listo como su sistema más cansado.",
   fatigue_last_14_days: "Carga de los últimos 14 días",
   fatigue_top_fatigued_muscles: "Músculos más fatigados",
+  fatigue_fully_recovered: "Totalmente Recuperado",
+  fatigue_no_recent_activity: "Sin Actividad Reciente",
 
   // Data Management
   profile_data_title: "Gestión de Datos",

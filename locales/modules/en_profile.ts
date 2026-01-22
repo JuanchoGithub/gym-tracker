@@ -90,6 +90,8 @@ export const en_profile = {
   fatigue_algorithm_interaction_desc: "We use the 'Weakest Link' principle: Readiness = 100% - MAX(CNS Load, Muscle Fatigue). Your body is only as ready as its' most tired system.",
   fatigue_last_14_days: "Last 14 Days Load",
   fatigue_top_fatigued_muscles: "Top Fatigued Muscles",
+  fatigue_fully_recovered: "Fully Recovered",
+  fatigue_no_recent_activity: "No Recent Activity",
 
   // Data Management
   profile_data_title: "Data Management",
