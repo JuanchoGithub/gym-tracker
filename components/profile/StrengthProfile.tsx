@@ -35,7 +35,19 @@ const StrengthProfile: React.FC = () => {
             BENCH: 3
         };
 
-        const maxImpact = Math.max(...Object.entries(rawMaxes).map(([k, v]) => (v as number) / (idealDenominators[k as keyof typeof idealDenominators] || 1)));
+        const maxImpactEntry = Object.entries(rawMaxes).reduce((best, [k, v]) => {
+            const denom = idealDenominators[k as keyof typeof idealDenominators] || 1;
+            const impact = (v as number) / denom;
+            return impact > best.impact ? { key: k, value: v, impact } : best;
+        }, { key: '', value: 0, impact: 0 });
+
+        const maxImpact = maxImpactEntry.impact;
+        const driverLabel = maxImpactEntry.key === 'OHP' ? t('body_part_shoulders') :
+            maxImpactEntry.key === 'ROW' ? t('body_part_back') :
+                maxImpactEntry.key === 'SQUAT' ? t('body_part_legs') :
+                    maxImpactEntry.key === 'DEADLIFT' ? t('symmetry_pattern_posterior') :
+                        maxImpactEntry.key === 'BENCH' ? t('body_part_chest') :
+                            '';
 
         const details = [
             { key: 'OHP', label: t('body_part_shoulders'), value: scores.OHP, raw: Math.round(rawMaxes.OHP), target: Math.round(idealDenominators.OHP * maxImpact), ratio: '2.0' },
@@ -45,7 +57,7 @@ const StrengthProfile: React.FC = () => {
             { key: 'BENCH', label: t('body_part_chest'), value: scores.BENCH, raw: Math.round(rawMaxes.BENCH), target: Math.round(idealDenominators.BENCH * maxImpact), ratio: '3.0' },
         ];
 
-        return { scores, details };
+        return { scores, details, driverLabel, driverValue: Math.round(maxImpactEntry.value as number) };
     }, [history, t]);
 
     const chartData = useMemo(() => {
@@ -94,6 +106,11 @@ const StrengthProfile: React.FC = () => {
                         <p className="text-xs text-text-secondary leading-relaxed mb-4">
                             {t('symmetry_desc')}
                         </p>
+
+                        <div className="bg-white/5 border border-white/5 rounded-lg p-2.5 mb-4 flex items-center justify-between">
+                            <span className="text-[10px] text-text-secondary uppercase font-bold">{t('symmetry_driver_lift')}</span>
+                            <span className="text-[10px] text-primary font-mono font-bold">{stats.driverLabel}: {stats.driverValue} {unitLabel}</span>
+                        </div>
 
                         <div className="space-y-4">
                             {stats.details.map(item => (

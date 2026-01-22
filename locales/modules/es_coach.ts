@@ -105,6 +105,7 @@ export const es_coach = {
   symmetry_expected_max: "Máx. Sugerido",
   symmetry_desc: "Se utilizan relaciones de fuerza estandarizadas (Sentadilla:Pecho 4:3, Peso Muerto:Sentadilla 5:4) para detectar eslabones débiles. Equilibrarlos previene lesiones y optimiza la potencia atlética.",
   symmetry_ratio_label: "Relación Objetivo: {ratio}",
+  symmetry_driver_lift: "Líder (Patrón más fuerte)",
   symmetry_pattern_posterior: "Peso Muerto / Posterior",
 
   // CNS

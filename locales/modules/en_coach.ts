@@ -105,6 +105,7 @@ export const en_coach = {
   symmetry_expected_max: "Sug. Max",
   symmetry_desc: "Standardized strength ratios (Squat:Bench 4:3, DL:Squat 5:4) are used to detect weak links. Balancing these prevents injury and optimizes athletic power.",
   symmetry_ratio_label: "Target Ratio: {ratio}",
+  symmetry_driver_lift: "Leader (Strongest Pattern)",
   symmetry_pattern_posterior: "Deadlift / Posterior",
 
   // CNS

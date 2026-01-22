@@ -50,21 +50,26 @@ export const calculateMaxStrengthProfile = (history: WorkoutSession[], cutoffDat
     const profile: Record<string, number> = { SQUAT: 0, DEADLIFT: 0, BENCH: 0, OHP: 0, ROW: 0, VERTICAL_PULL: 0 };
     const sixMonthsBeforeCutoff = cutoffDate - (180 * 24 * 60 * 60 * 1000);
     Object.entries(MOVEMENT_PATTERNS).forEach(([patternName, ids]) => {
-        let maxE1RM = 0;
+        let maxNormalizedE1RM = 0;
         ids.forEach(id => {
             const exHistory = getExerciseHistory(history, id);
+            const ratioData = EXERCISE_RATIOS[id];
+            const ratio = ratioData ? ratioData.ratio : 1.0;
+
             exHistory.forEach(entry => {
                 if (entry.session.startTime > cutoffDate) return;
                 if (entry.session.startTime < sixMonthsBeforeCutoff) return;
+
                 entry.exerciseData.sets.forEach(set => {
-                    if (set.type === 'normal' && set.isComplete && set.reps <= 12) {
+                    if (set.type === 'normal' && set.isComplete && set.reps > 0 && set.reps <= 12) {
                         const e1rm = calculate1RM(set.weight, set.reps);
-                        if (e1rm > maxE1RM) maxE1RM = e1rm;
+                        const normalized = e1rm / ratio;
+                        if (normalized > maxNormalizedE1RM) maxNormalizedE1RM = normalized;
                     }
                 });
             });
         });
-        profile[patternName] = maxE1RM;
+        profile[patternName] = maxNormalizedE1RM;
     });
     return profile;
 }
