@@ -27,35 +27,43 @@ const FatigueMonitor: React.FC<FatigueMonitorProps> = ({ history, exercises, mus
     // Calculate daily points for the chart
     const dailyLoadPoints = useMemo(() => {
         const now = Date.now();
+        const MS_PER_DAY = 24 * 3600 * 1000;
+
         return Array.from({ length: 14 }, (_, i) => {
+            const windowEnd = now - (i * MS_PER_DAY);
+            const windowStart = now - ((i + 1) * MS_PER_DAY);
+
             const daySessions = history.filter(s => {
-                const start = s.startTime;
-                return start >= now - ((i + 1) * 24 * 3600 * 1000) && start < now - (i * 24 * 3600 * 1000);
+                const start = Number(s.startTime);
+                return start >= windowStart && start < windowEnd;
             });
 
-            let dayPoints = 0;
+            let totalDayPoints = 0;
             daySessions.forEach(s => {
                 let sessionCost = 5;
-                const sets = s.exercises.reduce((acc, ex) => acc + ex.sets.filter(set => set.isComplete).length, 0);
+                const completedSets = s.exercises?.reduce((acc, ex) => acc + (ex.sets?.filter(set => set.isComplete).length || 0), 0) || 0;
+
                 let compoundFactor = 0;
-                s.exercises.forEach(ex => {
+                s.exercises?.forEach(ex => {
                     const def = exercises.find(e => e.id === ex.exerciseId) || PREDEFINED_EXERCISES.find(e => e.id === ex.exerciseId);
-                    if (def && ['Barbell', 'Dumbbell'].includes(def.category) && ['Legs', 'Back', 'Chest'].includes(def.bodyPart)) {
+                    if (def && (def.category === 'Barbell' || def.category === 'Dumbbell') && ['Legs', 'Back', 'Chest'].includes(def.bodyPart)) {
                         compoundFactor += 1;
                     }
                 });
-                sessionCost += (sets * 1) + (compoundFactor * 2);
-                dayPoints += sessionCost;
+
+                sessionCost += completedSets + (compoundFactor * 2);
+                totalDayPoints += sessionCost;
             });
-            return dayPoints;
+            return totalDayPoints;
         }).reverse();
     }, [history, exercises]);
 
-    const maxDayPoints = Math.max(20, ...dailyLoadPoints);
+    const maxDayScore = Math.max(20, ...dailyLoadPoints);
+    const hasCnsData = dailyLoadPoints.some(p => p > 0);
 
     const topFatiguedMuscles = useMemo(() => {
         return Object.entries(muscleFreshness)
-            .map(([muscle, score]) => ({ muscle, fatigue: 100 - score }))
+            .map(([muscle, score]) => ({ muscle, fatigue: 100 - (score as number) }))
             .sort((a, b) => b.fatigue - a.fatigue)
             .slice(0, 5);
     }, [muscleFreshness]);
@@ -172,16 +180,23 @@ const FatigueMonitor: React.FC<FatigueMonitorProps> = ({ history, exercises, mus
                             </div>
 
                             {/* Daily Bar Chart */}
-                            <div className="flex items-end justify-between h-20 gap-1 mb-2 px-1">
+                            <div className="flex items-end justify-between h-20 gap-1 mb-2 px-1 relative">
+                                {!hasCnsData && (
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                        <p className="text-[10px] text-text-secondary/30 uppercase tracking-widest">{t('common_no_data') || 'No Recent Activity'}</p>
+                                    </div>
+                                )}
                                 {dailyLoadPoints.map((pts, i) => (
-                                    <div key={i} className="flex-1 flex flex-col items-center group relative">
+                                    <div key={i} className="flex-1 flex flex-col items-center group relative h-full justify-end">
                                         <div
-                                            className={`w-full rounded-t-sm transition-all duration-500 ${pts > 30 ? 'bg-red-500/60' : pts > 15 ? 'bg-yellow-500/60' : 'bg-primary/40'}`}
-                                            style={{ height: `${(pts / maxDayPoints) * 100}%` }}
+                                            className={`w-full rounded-t-sm transition-all duration-500 ${pts > 30 ? 'bg-red-500/60' : pts > 15 ? 'bg-yellow-500/60' : 'bg-primary/40'} ${pts === 0 ? 'opacity-10' : 'opacity-100'}`}
+                                            style={{ height: pts > 0 ? `${(pts / maxDayScore) * 100}%` : '2px' }}
                                         ></div>
-                                        <div className="absolute -top-6 bg-surface border border-white/10 px-1.5 py-0.5 rounded text-[10px] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
-                                            {pts} pts
-                                        </div>
+                                        {pts > 0 && (
+                                            <div className="absolute -top-6 bg-surface border border-white/10 px-1.5 py-0.5 rounded text-[10px] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10 shadow-xl">
+                                                {pts} pts
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                             </div>
