@@ -61,6 +61,12 @@ const FatigueMonitor: React.FC<FatigueMonitorProps> = ({ history, exercises, mus
     const maxDayScore = Math.max(20, ...dailyLoadPoints);
     const hasCnsData = dailyLoadPoints.some(p => p > 0);
 
+    const getMuscleDisplayName = (muscle: string) => {
+        const key = `muscle_${muscle.toLowerCase().replace(/ /g, '_')}` as TranslationKey;
+        const translated = t(key);
+        return translated !== key ? translated : muscle;
+    };
+
     const topFatiguedMuscles = useMemo(() => {
         return Object.entries(muscleFreshness)
             .map(([muscle, score]) => ({ muscle, fatigue: 100 - (score as number) }))
@@ -216,11 +222,17 @@ const FatigueMonitor: React.FC<FatigueMonitorProps> = ({ history, exercises, mus
                                 </h4>
                                 <span className="text-[10px] text-text-secondary/60 font-mono">{t('fatigue_muscle_equation')}</span>
                             </div>
-                            <div className="space-y-3">
+                            <div className="space-y-3 relative min-h-[60px]">
+                                {topFatiguedMuscles.length === 0 && (
+                                    <div className="flex flex-col items-center justify-center pt-2">
+                                        <p className="text-[10px] text-text-secondary/30 uppercase tracking-widest">{t('common_no_data') || 'Fully Recovered'}</p>
+                                        <Icon name="check" className="w-4 h-4 text-success/20 mt-1" />
+                                    </div>
+                                )}
                                 {topFatiguedMuscles.map(({ muscle, fatigue }) => (
                                     <div key={muscle} className="space-y-1">
                                         <div className="flex justify-between text-[11px]">
-                                            <span className="text-text-secondary">{t(muscle as TranslationKey) || muscle}</span>
+                                            <span className="text-text-secondary">{getMuscleDisplayName(muscle)}</span>
                                             <span className={`font-mono font-bold ${fatigue > 60 ? 'text-red-400' : 'text-text-primary'}`}>{Math.round(fatigue)}%</span>
                                         </div>
                                         <div className="h-1 bg-black/40 rounded-full overflow-hidden">
