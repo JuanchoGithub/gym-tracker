@@ -24,12 +24,12 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
   const { displayWeight, getStoredWeight } = useMeasureUnit();
   const { t } = useI18n();
   const { fontSize } = useContext(AppContext);
-  
+
   // Local state for inputs to prevent cursor jumping/decimal issues
   const [weight, setWeight] = useState(set.weight > 0 ? displayWeight(set.weight) : '');
   const [reps, setReps] = useState(set.reps > 0 ? set.reps.toString() : '');
   const [time, setTime] = useState(set.time ? formatSecondsToMMSS(set.time) : '0:00');
-  
+
   const [isTypeModalOpen, setIsTypeModalOpen] = useState(false);
   const [isWeightFocused, setIsWeightFocused] = useState(false);
   const [isRepsFocused, setIsRepsFocused] = useState(false);
@@ -44,52 +44,52 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
   // Sync props to state only when props actually change from outside
   useEffect(() => {
     if (!isWeightFocused && set.weight !== prevPropWeight.current) {
-       setWeight(set.weight > 0 ? displayWeight(set.weight) : '');
-       prevPropWeight.current = set.weight;
+      setWeight(set.weight > 0 ? displayWeight(set.weight) : '');
+      prevPropWeight.current = set.weight;
     }
   }, [set.weight, isWeightFocused, displayWeight]);
 
   useEffect(() => {
     if (!isRepsFocused && set.reps !== prevPropReps.current) {
-       setReps(set.reps > 0 ? set.reps.toString() : '');
-       prevPropReps.current = set.reps;
+      setReps(set.reps > 0 ? set.reps.toString() : '');
+      prevPropReps.current = set.reps;
     }
   }, [set.reps, isRepsFocused]);
 
   useEffect(() => {
     if (!isTimeFocused && set.time !== prevPropTime.current) {
-       setTime(set.time ? formatSecondsToMMSS(set.time) : '0:00');
-       prevPropTime.current = set.time;
+      setTime(set.time ? formatSecondsToMMSS(set.time) : '0:00');
+      prevPropTime.current = set.time;
     }
   }, [set.time, isTimeFocused]);
 
   const handleWeightChange = (e: React.ChangeEvent<HTMLInputElement>) => setWeight(e.target.value);
   const handleRepsChange = (e: React.ChangeEvent<HTMLInputElement>) => setReps(e.target.value);
   const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => setTime(e.target.value);
-  
+
   const commitChanges = (overrides: Partial<PerformedSet> = {}) => {
-      const parsedWeight = parseFloat(weight);
-      const finalWeight = isNaN(parsedWeight) ? 0 : getStoredWeight(parsedWeight);
-      
-      const parsedReps = parseInt(reps, 10);
-      const finalReps = isNaN(parsedReps) ? 0 : parsedReps;
+    const parsedWeight = parseFloat(weight);
+    const finalWeight = isNaN(parsedWeight) ? 0 : getStoredWeight(parsedWeight);
 
-      const finalTime = parseTimerInput(time);
+    const parsedReps = parseInt(reps, 10);
+    const finalReps = isNaN(parsedReps) ? 0 : parsedReps;
 
-      const updatedSet = {
-          ...set,
-          weight: finalWeight,
-          reps: finalReps,
-          time: finalTime,
-          ...overrides
-      };
+    const finalTime = parseTimerInput(time);
 
-      // Break inheritance if values changed explicitly
-      if (finalWeight !== set.weight) updatedSet.isWeightInherited = false;
-      if (finalReps !== set.reps) updatedSet.isRepsInherited = false;
-      if (finalTime !== set.time) updatedSet.isTimeInherited = false;
+    const updatedSet = {
+      ...set,
+      weight: finalWeight,
+      reps: finalReps,
+      time: finalTime,
+      ...overrides
+    };
 
-      onUpdateSet(updatedSet);
+    // Break inheritance if values changed explicitly
+    if (finalWeight !== set.weight) updatedSet.isWeightInherited = false;
+    if (finalReps !== set.reps) updatedSet.isRepsInherited = false;
+    if (finalTime !== set.time) updatedSet.isTimeInherited = false;
+
+    onUpdateSet(updatedSet);
   };
 
   const handleWeightBlur = () => {
@@ -119,7 +119,7 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
     const updates: Partial<PerformedSet> = { type };
     // If switching to timed and reps are 0/empty, force to 1 to prevent validation errors
     if (type === 'timed' && (set.reps <= 0 || !set.reps)) {
-        updates.reps = 1;
+      updates.reps = 1;
     }
     onUpdateSet({ ...set, ...updates });
     setIsTypeModalOpen(false);
@@ -127,45 +127,46 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
 
   const getSetTypeStyles = (type: SetType, isComplete: boolean) => {
     if (isComplete) return 'bg-success/10 border-success/20';
-    
-    switch(type) {
-        case 'warmup': return 'bg-sky-500/5 border-sky-500/10';
-        case 'drop': return 'bg-slate-500/5 border-slate-500/10';
-        case 'failure': return 'bg-purple-500/5 border-purple-500/10';
-        case 'timed': return 'bg-amber-500/5 border-amber-500/10';
-        default: return 'bg-surface/40 border-transparent';
+
+    switch (type) {
+      case 'warmup': return 'bg-sky-500/5 border-sky-500/10';
+      case 'drop': return 'bg-slate-500/5 border-slate-500/10';
+      case 'failure': return 'bg-purple-500/5 border-purple-500/10';
+      case 'timed': return 'bg-amber-500/5 border-amber-500/10';
+      default: return 'bg-surface/40 border-transparent';
     }
   }
-  
+
   const getSetIdentifierStyles = (type: SetType) => {
-    switch(type) {
-        case 'warmup': return 'text-sky-400 font-bold bg-sky-500/10 border border-sky-500/20';
-        case 'drop': return 'text-slate-400 font-bold bg-slate-500/10 border border-slate-500/20';
-        case 'failure': return 'text-purple-400 font-bold bg-purple-500/10 border border-purple-500/20';
-        case 'timed': return 'text-amber-400 font-bold bg-amber-500/10 border border-amber-500/20';
-        default: return 'text-text-secondary font-semibold bg-white/5 border border-white/5';
+    switch (type) {
+      case 'warmup': return 'text-sky-400 font-bold bg-sky-500/10 border border-sky-500/20';
+      case 'drop': return 'text-slate-400 font-bold bg-slate-500/10 border border-slate-500/20';
+      case 'failure': return 'text-purple-400 font-bold bg-purple-500/10 border border-purple-500/20';
+      case 'timed': return 'text-amber-400 font-bold bg-amber-500/10 border border-amber-500/20';
+      default: return 'text-text-secondary font-semibold bg-white/5 border border-white/5';
     }
   }
-  
+
   const renderSetIdentifier = () => {
-    switch(set.type) {
-        case 'warmup': return 'W';
-        case 'drop': return 'D';
-        case 'failure': return 'F';
-        case 'timed': return 'T';
-        default: return setNumber;
+    switch (set.type) {
+      case 'warmup': return 'W';
+      case 'drop': return 'D';
+      case 'failure': return 'F';
+      case 'timed': return 'T';
+      default: return setNumber;
     }
   }
 
   // Adjust padding based on font size to prevent overflow
-  const inputPadding = fontSize === 'xl' ? 'p-1' : (fontSize === 'large' ? 'p-2' : 'p-3');
+  // Adjust padding based on font size to prevent overflow - focus on reducing horizontal squeeze
+  const inputPadding = fontSize === 'xl' ? 'px-0.5 py-2.5' : (fontSize === 'large' ? 'px-1 py-3' : 'px-1.5 py-3');
 
   const inputClasses = `
-    w-full max-w-[80px] text-center rounded-xl ${inputPadding} text-lg font-medium outline-none transition-all duration-200 shadow-sm
+    w-full max-w-[90px] text-center rounded-xl ${inputPadding} text-lg font-medium outline-none transition-all duration-200 shadow-sm
     focus:ring-2 focus:ring-primary focus:bg-surface-highlight
     disabled:opacity-50 disabled:cursor-not-allowed
   `;
-  
+
   const activeInputClass = "bg-black/20 border border-white/10 text-text-primary placeholder-slate-600 hover:bg-black/30";
   const inheritedInputClass = "bg-transparent border border-transparent text-slate-400 placeholder-slate-600 hover:bg-white/5";
   const invalidInputClass = "border-danger bg-danger/10 text-danger";
@@ -181,14 +182,14 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
   const isWeightInvalid = set.isComplete && set.type !== 'timed' && !isWeightOptional && set.weight <= 0;
   const isRepsInvalid = set.isComplete && set.reps <= 0;
   const isTimeInvalid = set.isComplete && set.type === 'timed' && (set.time ?? 0) <= 0;
-  
+
   // Logic for the checkmark button style based on validation
   const getCheckmarkButtonStyle = () => {
-      if (set.isComplete) {
-          if (!isValid) return 'bg-red-500 text-white shadow-lg shadow-red-500/20 hover:bg-red-600';
-          return 'bg-success text-white shadow-lg shadow-success/20 hover:bg-green-500';
-      }
-      return 'bg-surface-highlight/40 text-text-secondary hover:bg-success/20 hover:text-success border border-white/5';
+    if (set.isComplete) {
+      if (!isValid) return 'bg-red-500 text-white shadow-lg shadow-red-500/20 hover:bg-red-600';
+      return 'bg-success text-white shadow-lg shadow-success/20 hover:bg-green-500';
+    }
+    return 'bg-surface-highlight/40 text-text-secondary hover:bg-success/20 hover:text-success border border-white/5';
   };
 
   const prevIsFailure = previousSetData?.type === 'failure';
@@ -196,112 +197,112 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
 
   return (
     <>
-      <div className={`grid grid-cols-5 items-center gap-3 p-2 rounded-2xl border transition-all duration-300 ${getSetTypeStyles(set.type, !!set.isComplete)}`}>
-          <div className="col-span-1 flex justify-center">
-            <button 
-                onClick={() => setIsTypeModalOpen(true)} 
-                className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm hover:scale-110 transition-transform shadow-sm ${getSetIdentifierStyles(set.type)}`}
-            >
-                {renderSetIdentifier()}
-            </button>
-          </div>
-          
-          <div className={`col-span-1 text-center text-xs font-mono truncate px-1 ${prevDataStyle}`}>
-            {set.type !== 'timed' && (previousSetData ? `${displayWeight(previousSetData.weight)}x${previousSetData.reps}` : '-')}
-          </div>
-
-          {set.type === 'timed' ? (
-              <>
-                <div className="col-span-1 flex justify-center">
-                    <input
-                        type="text"
-                        inputMode="numeric"
-                        value={time}
-                        onChange={handleTimeChange}
-                        onFocus={(e) => { setIsTimeFocused(true); e.target.select(); }}
-                        onBlur={handleTimeBlur}
-                        className={`${inputClasses} ${getInputStyle(!!set.isTimeInherited, isTimeFocused, isTimeInvalid, !!set.isComplete)}`}
-                        disabled={!!set.isComplete}
-                        placeholder="m:ss"
-                    />
-                </div>
-                <div className="col-span-1 flex justify-center">
-                    <input
-                        type="number"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        min="0"
-                        value={reps}
-                        onChange={handleRepsChange}
-                        onFocus={(e) => { setIsRepsFocused(true); e.target.select(); }}
-                        onBlur={handleRepsBlur}
-                        className={`${inputClasses} ${getInputStyle(!!set.isRepsInherited, isRepsFocused, isRepsInvalid, !!set.isComplete)}`}
-                        disabled={!!set.isComplete}
-                    />
-                </div>
-                <div className="col-span-1 flex justify-center space-x-2">
-                    {set.isComplete ? (
-                        <button onClick={handleComplete} className={`w-11 h-11 rounded-xl transition-all active:scale-95 flex items-center justify-center ${getCheckmarkButtonStyle()}`}>
-                            <Icon name={isValid ? "check" : "warning"} className="w-6 h-6" />
-                        </button>
-                    ) : (
-                        <button onClick={() => { unlockAudioContext(); onStartTimedSet?.(set); }} className="w-10 h-10 rounded-xl bg-surface-highlight text-primary hover:bg-surface-highlight/80 transition-colors flex items-center justify-center border border-white/5">
-                            <Icon name="play" className="w-5 h-5" />
-                        </button>
-                    )}
-                </div>
-              </>
-          ) : (
-              <>
-                <div className="col-span-1 flex justify-center">
-                    <input 
-                        type="number"
-                        inputMode="decimal"
-                        step="0.5"
-                        min="0"
-                        value={weight}
-                        onChange={handleWeightChange}
-                        onFocus={(e) => { setIsWeightFocused(true); e.target.select(); }}
-                        onBlur={handleWeightBlur}
-                        className={`${inputClasses} ${getInputStyle(!!set.isWeightInherited, isWeightFocused, isWeightInvalid, !!set.isComplete)}`}
-                        disabled={!!set.isComplete}
-                        placeholder="-"
-                    />
-                </div>
-
-                <div className="col-span-1 flex justify-center">
-                    <input
-                        type="number"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        min="0"
-                        value={reps}
-                        onChange={handleRepsChange}
-                        onFocus={(e) => { setIsRepsFocused(true); e.target.select(); }}
-                        onBlur={handleRepsBlur}
-                        className={`${inputClasses} ${getInputStyle(!!set.isRepsInherited, isRepsFocused, isRepsInvalid, !!set.isComplete)}`}
-                        disabled={!!set.isComplete}
-                        placeholder="-"
-                    />
-                </div>
-
-                <div className="col-span-1 flex justify-center items-center gap-1">
-                    <button 
-                        onClick={handleComplete} 
-                        className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-200 active:scale-95 ${getCheckmarkButtonStyle()}`}
-                    >
-                        <Icon name={!set.isComplete ? "check" : (isValid ? "check" : "warning")} className="w-6 h-6" />
-                    </button>
-                </div>
-              </>
-          )}
+      <div className={`grid grid-cols-[38px_1fr_1.1fr_0.9fr_48px] items-center gap-1.5 p-1.5 rounded-2xl border transition-all duration-300 ${getSetTypeStyles(set.type, !!set.isComplete)}`}>
+        <div className="col-span-1 flex justify-center">
+          <button
+            onClick={() => setIsTypeModalOpen(true)}
+            className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm hover:scale-110 transition-transform shadow-sm ${getSetIdentifierStyles(set.type)}`}
+          >
+            {renderSetIdentifier()}
+          </button>
         </div>
+
+        <div className={`col-span-1 text-center text-xs font-mono px-0.5 whitespace-nowrap overflow-hidden text-ellipsis ${prevDataStyle}`}>
+          {set.type !== 'timed' && (previousSetData ? `${displayWeight(previousSetData.weight)}x${previousSetData.reps}` : '-')}
+        </div>
+
+        {set.type === 'timed' ? (
+          <>
+            <div className="col-span-1 flex justify-center">
+              <input
+                type="text"
+                inputMode="numeric"
+                value={time}
+                onChange={handleTimeChange}
+                onFocus={(e) => { setIsTimeFocused(true); e.target.select(); }}
+                onBlur={handleTimeBlur}
+                className={`${inputClasses} ${getInputStyle(!!set.isTimeInherited, isTimeFocused, isTimeInvalid, !!set.isComplete)}`}
+                disabled={!!set.isComplete}
+                placeholder="m:ss"
+              />
+            </div>
+            <div className="col-span-1 flex justify-center">
+              <input
+                type="number"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                min="0"
+                value={reps}
+                onChange={handleRepsChange}
+                onFocus={(e) => { setIsRepsFocused(true); e.target.select(); }}
+                onBlur={handleRepsBlur}
+                className={`${inputClasses} ${getInputStyle(!!set.isRepsInherited, isRepsFocused, isRepsInvalid, !!set.isComplete)}`}
+                disabled={!!set.isComplete}
+              />
+            </div>
+            <div className="col-span-1 flex justify-center space-x-2">
+              {set.isComplete ? (
+                <button onClick={handleComplete} className={`w-11 h-11 rounded-xl transition-all active:scale-95 flex items-center justify-center ${getCheckmarkButtonStyle()}`}>
+                  <Icon name={isValid ? "check" : "warning"} className="w-6 h-6" />
+                </button>
+              ) : (
+                <button onClick={() => { unlockAudioContext(); onStartTimedSet?.(set); }} className="w-10 h-10 rounded-xl bg-surface-highlight text-primary hover:bg-surface-highlight/80 transition-colors flex items-center justify-center border border-white/5">
+                  <Icon name="play" className="w-5 h-5" />
+                </button>
+              )}
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="col-span-1 flex justify-center">
+              <input
+                type="number"
+                inputMode="decimal"
+                step="0.5"
+                min="0"
+                value={weight}
+                onChange={handleWeightChange}
+                onFocus={(e) => { setIsWeightFocused(true); e.target.select(); }}
+                onBlur={handleWeightBlur}
+                className={`${inputClasses} ${getInputStyle(!!set.isWeightInherited, isWeightFocused, isWeightInvalid, !!set.isComplete)}`}
+                disabled={!!set.isComplete}
+                placeholder="-"
+              />
+            </div>
+
+            <div className="col-span-1 flex justify-center">
+              <input
+                type="number"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                min="0"
+                value={reps}
+                onChange={handleRepsChange}
+                onFocus={(e) => { setIsRepsFocused(true); e.target.select(); }}
+                onBlur={handleRepsBlur}
+                className={`${inputClasses} ${getInputStyle(!!set.isRepsInherited, isRepsFocused, isRepsInvalid, !!set.isComplete)}`}
+                disabled={!!set.isComplete}
+                placeholder="-"
+              />
+            </div>
+
+            <div className="col-span-1 flex justify-center items-center gap-1">
+              <button
+                onClick={handleComplete}
+                className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-200 active:scale-95 ${getCheckmarkButtonStyle()}`}
+              >
+                <Icon name={!set.isComplete ? "check" : (isValid ? "check" : "warning")} className="w-6 h-6" />
+              </button>
+            </div>
+          </>
+        )}
+      </div>
       <SetTypeModal
-          isOpen={isTypeModalOpen}
-          onClose={() => setIsTypeModalOpen(false)}
-          currentType={set.type}
-          onSelectType={handleSelectSetType}
-          onDelete={onDeleteSet}
+        isOpen={isTypeModalOpen}
+        onClose={() => setIsTypeModalOpen(false)}
+        currentType={set.type}
+        onSelectType={handleSelectSetType}
+        onDelete={onDeleteSet}
       />
     </>
   );
