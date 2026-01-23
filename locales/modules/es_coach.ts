@@ -110,7 +110,8 @@ export const es_coach = {
   symmetry_base_unit: "Unidad Base Calculada",
   symmetry_relative_level: "Nivel Relativo",
   symmetry_pattern_posterior: "Cadera y Posterior (Peso Muerto)",
-  symmetry_pattern_vertical: "Dorsales y Tracción",
+  symmetry_pattern_vertical: "Dorsales (Tracción Vertical)",
+  symmetry_pattern_horizontal: "Espalda (Remo Horizontal)",
 
   // CNS
   cns_load_label: "Carga Sistémica",

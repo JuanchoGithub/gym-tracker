@@ -110,7 +110,8 @@ export const en_coach = {
   symmetry_base_unit: "Calculated Base Unit",
   symmetry_relative_level: "Relative Level",
   symmetry_pattern_posterior: "Hips & Posterior (Deadlift)",
-  symmetry_pattern_vertical: "Lats & Pullups",
+  symmetry_pattern_vertical: "Lats (Vertical Pull)",
+  symmetry_pattern_horizontal: "Back (Horizontal Row)",
 
   // CNS
   cns_load_label: "Systemic Load",

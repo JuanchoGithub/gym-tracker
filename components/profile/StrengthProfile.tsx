@@ -46,7 +46,7 @@ const StrengthProfile: React.FC = () => {
             switch (key) {
                 case 'OHP': return t('body_part_shoulders');
                 case 'BENCH': return t('body_part_chest');
-                case 'ROW': return t('body_part_back');
+                case 'ROW': return t('symmetry_pattern_horizontal');
                 case 'VERTICAL_PULL': return t('symmetry_pattern_vertical');
                 case 'SQUAT': return t('body_part_legs');
                 case 'DEADLIFT': return t('symmetry_pattern_posterior');
