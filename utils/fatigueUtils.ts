@@ -39,9 +39,9 @@ export const calculateSessionDensity = (session: WorkoutSession): number => {
     const durationMinutes = (session.endTime - session.startTime) / 60000;
     if (durationMinutes < 5) return 0;
 
-    const totalVolume = session.exercises.reduce((acc, ex) => 
+    const totalVolume = session.exercises.reduce((acc, ex) =>
         acc + ex.sets.reduce((sAcc, s) => sAcc + (s.isComplete ? (s.weight * s.reps) : 0), 0)
-    , 0);
+        , 0);
 
     return totalVolume / durationMinutes;
 };
@@ -58,7 +58,7 @@ export const calculateAverageDensity = (history: WorkoutSession[], limit: number
 export const getFreshnessColor = (score: number): string => {
     let hue = 0;
     if (score <= 20) {
-        hue = (score / 20) * 10; 
+        hue = (score / 20) * 10;
     } else if (score <= 60) {
         hue = 10 + ((score - 20) / 40) * 50;
     } else {
@@ -68,21 +68,21 @@ export const getFreshnessColor = (score: number): string => {
 };
 
 export const calculateMuscleFreshness = (
-    history: WorkoutSession[], 
-    exercises: Exercise[], 
+    history: WorkoutSession[],
+    exercises: Exercise[],
     userGoal: UserGoal = 'muscle',
     profile?: Profile
 ): Record<string, number> => {
     const freshness: Record<string, number> = {};
     const now = Date.now();
     const MS_PER_HOUR = 3600000;
-    
+
     let capacityBaseline = 15;
     if (userGoal === 'strength') capacityBaseline = 10;
     if (userGoal === 'endurance') capacityBaseline = 20;
 
     const MAX_LOOKBACK = 6 * 24 * MS_PER_HOUR;
-    const relevantHistory = history.filter(s => (now - s.startTime) < MAX_LOOKBACK);
+    const relevantHistory = history.filter(s => (now - Number(s.startTime)) < MAX_LOOKBACK);
 
     // Bio-Adaptive Modification: Efficiency Score
     // If the user's density in the last session was high, we "boost" recovery speed 
@@ -101,7 +101,7 @@ export const calculateMuscleFreshness = (
     const muscleFatigueAccumulation: Record<string, number> = {};
 
     relevantHistory.forEach(session => {
-        const hoursAgo = (now - session.startTime) / MS_PER_HOUR;
+        const hoursAgo = (now - Number(session.startTime)) / MS_PER_HOUR;
 
         session.exercises.forEach(ex => {
             const def = exercises.find(e => e.id === ex.exerciseId) || PREDEFINED_EXERCISES.find(e => e.id === ex.exerciseId);
@@ -130,12 +130,12 @@ export const calculateMuscleFreshness = (
                 const fatigue = (appliedStress / capacityBaseline) * 100 * timeFactor;
                 muscleFatigueAccumulation[m] = (muscleFatigueAccumulation[m] || 0) + fatigue;
             });
-            
+
             def.secondaryMuscles?.forEach(m => {
                 const recoveryDuration = RECOVERY_TIMES[m] || DEFAULT_RECOVERY_HOURS;
                 if (hoursAgo >= recoveryDuration) return;
                 const timeFactor = 1 - (hoursAgo / recoveryDuration);
-                const fatigue = ((appliedStress * 0.5) / capacityBaseline) * 100 * timeFactor; 
+                const fatigue = ((appliedStress * 0.5) / capacityBaseline) * 100 * timeFactor;
                 muscleFatigueAccumulation[m] = (muscleFatigueAccumulation[m] || 0) + fatigue;
             });
         });
@@ -154,12 +154,12 @@ export const calculateSystemicFatigue = (history: WorkoutSession[], exercises: E
     const now = Date.now();
     const TWO_WEEKS = 14 * 24 * 3600 * 1000;
     const recent = history.filter(s => (now - s.startTime) < TWO_WEEKS);
-    
+
     let fatiguePoints = 0;
     recent.forEach(s => {
         const daysAgo = (now - s.startTime) / (24 * 3600 * 1000);
-        const decay = Math.max(0, 1 - (daysAgo / 10)); 
-        let sessionCost = 5; 
+        const decay = Math.max(0, 1 - (daysAgo / 10));
+        let sessionCost = 5;
         const sets = s.exercises.reduce((acc, ex) => acc + ex.sets.filter(set => set.isComplete).length, 0);
         let compoundFactor = 0;
         s.exercises.forEach(ex => {
@@ -171,7 +171,7 @@ export const calculateSystemicFatigue = (history: WorkoutSession[], exercises: E
         sessionCost += (sets * 1) + (compoundFactor * 2);
         fatiguePoints += sessionCost * decay;
     });
-    
+
     const score = Math.min(100, Math.round((fatiguePoints / 150) * 100));
     let level: 'Low' | 'Medium' | 'High' = 'Low';
     if (score > 60) level = 'High';
@@ -187,15 +187,15 @@ export const calculateBurnoutAnalysis = (history: WorkoutSession[], exercises: E
     const week2History = history.filter(s => s.startTime <= now - oneWeek && s.startTime > now - 2 * oneWeek);
     const vol1 = week1History.length;
     const vol2 = week2History.length;
-    
+
     let trend: 'accumulating' | 'recovering' | 'stable' = 'stable';
     if (vol1 > vol2 + 1) trend = 'accumulating';
     else if (vol1 < vol2 - 1) trend = 'recovering';
-    
+
     let daysToBurnout = undefined;
     if (trend === 'accumulating' && currentLoad > 70) {
-        daysToBurnout = Math.max(1, Math.round((100 - currentLoad) / 5)); 
+        daysToBurnout = Math.max(1, Math.round((100 - currentLoad) / 5));
     }
-    
+
     return { currentLoad, maxLoad: 100, trend, daysToBurnout };
 };

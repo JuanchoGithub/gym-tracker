@@ -118,7 +118,7 @@ const ProfilePage: React.FC = () => {
     const { displayWeight, getStoredWeight, weightUnit, setMeasureUnit } = useMeasureUnit();
     const [localWeight, setLocalWeight] = useState(() => currentWeight ? displayWeight(currentWeight) : '');
     const [isWeightChartOpen, setIsWeightChartOpen] = useState(false);
-    const [activeTab, setActiveTab] = useState<'you' | 'options'>('you');
+    const [activeTab, setActiveTab] = useState<'you' | 'options' | 'account'>('you');
     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -352,11 +352,15 @@ const ProfilePage: React.FC = () => {
 
     return (
         <div className="space-y-6 pb-8">
-            <h1 className="text-3xl font-bold text-center mb-6">{t('profile_title')}</h1>
+            <h1 className="text-3xl font-bold text-center">{t('profile_title')}</h1>
 
-            <AccountSection />
-
-            <div className="flex justify-center border-b border-secondary/20 mb-6">
+            <div className="flex justify-center border-b border-secondary/20">
+                <button
+                    onClick={() => setActiveTab('account')}
+                    className={`px-6 py-2 font-medium transition-colors ${activeTab === 'account' ? 'border-b-2 border-primary text-primary' : 'text-text-secondary'}`}
+                >
+                    {t('profile_account')}
+                </button>
                 <button
                     onClick={() => setActiveTab('you')}
                     className={`px-6 py-2 font-medium transition-colors ${activeTab === 'you' ? 'border-b-2 border-primary text-primary' : 'text-text-secondary'}`}
@@ -371,8 +375,14 @@ const ProfilePage: React.FC = () => {
                 </button>
             </div>
 
+            {activeTab === 'account' && (
+                <div className="animate-fadeIn">
+                    <AccountSection />
+                </div>
+            )}
+
             {activeTab === 'you' && (
-                <div className="animate-fadeIn space-y-8">
+                <div className="animate-fadeIn space-y-4">
                     <FatigueMonitor history={history} exercises={exercises} muscleFreshness={muscleFreshness} />
                     <div>
                         <h3 className="text-xl font-bold text-text-primary mb-4 px-4">{t('insights_recovery_heatmap_title')}</h3>

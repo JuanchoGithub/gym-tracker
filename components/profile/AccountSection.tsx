@@ -141,7 +141,7 @@ const AccountSection: React.FC = () => {
 
     return (
         <>
-            <div className="bg-surface rounded-xl p-4 mb-6">
+            <div className="bg-surface rounded-xl p-4">
                 <h3 className="text-lg font-semibold text-text-primary mb-3 flex items-center gap-2">
                     <Icon name="user" className="w-5 h-5" />
                     {t('profile_account') || 'Account'}

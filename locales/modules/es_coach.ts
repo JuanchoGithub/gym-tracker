@@ -67,7 +67,7 @@ export const es_coach = {
   rec_action_keep_goal: "Mantener {current}",
   rec_action_disable_detection: "No volver a preguntar",
   rec_alternatives_label: "O elegí una de estas plantillas:",
-  
+
   // Bio-Adaptive
   coach_warning_density_drop_title: "Fuga de Eficiencia",
   coach_warning_density_drop_desc: "Tu densidad de entrenamiento cayó un {percent}% recientemente. Suele ser señal de fatiga acumulada. Una sesión ligera hoy evitaría un agotamiento mayor.",
@@ -99,6 +99,19 @@ export const es_coach = {
   imbalance_lower_dominant_title: "Síndrome T-Rex",
   imbalance_lower_dominant_desc: "Tu fuerza inferior está clasificada como '{lower_level}', pero tu tren superior como '{upper_level}'. Gran base, ahora construyamos el torso para igualar.",
   strength_symmetry_subtext: "Basado en ratios de simetría de fuerza",
+  symmetry_details_title: "Desglose de Simetría",
+  symmetry_ideal_ratio: "Relación Ideal",
+  symmetry_current_max: "Máximo Actual",
+  symmetry_expected_max: "Máx. Sugerido",
+  symmetry_desc: "Se utilizan relaciones de fuerza estandarizadas (Sentadilla:Pecho 4:3, Peso Muerto:Sentadilla 5:4) para detectar eslabones débiles. Equilibrarlos previene lesiones y optimiza la potencia atlética.",
+  symmetry_ratio_label: "Relación Objetivo: {ratio}",
+  symmetry_driver_lift: "Líder (Patrón más fuerte)",
+  symmetry_leader_desc: "El líder es el levantamiento que actualmente es más alto en relación con las proporciones ideales de tu cuerpo. Todos los demás 'Máximos sugeridos' se basan en alcanzar este nivel.",
+  symmetry_base_unit: "Unidad Base Calculada",
+  symmetry_relative_level: "Nivel Relativo",
+  symmetry_pattern_posterior: "Cadera y Posterior (Peso Muerto)",
+  symmetry_pattern_vertical: "Dorsales (Tracción Vertical)",
+  symmetry_pattern_horizontal: "Espalda (Remo Horizontal)",
 
   // CNS
   cns_load_label: "Carga Sistémica",
@@ -175,7 +188,14 @@ export const es_coach = {
   dna_stats_intensity: "Intensidad",
   dna_stats_favorite_muscle: "Músculo Fav",
   dna_stats_lifetime_workouts: "Entrenamientos Totales",
-  
+  dna_stats_consistency_desc: "Calculado por el total de entrenamientos en los últimos 30 días. Alta consistencia genera momentum a largo plazo.",
+  dna_stats_volume_desc: "Tonelaje promedio movido por sesión. Mide la capacidad de trabajo total a través de tu historial.",
+  dna_stats_intensity_desc: "Repeticiones promedio por serie. Menos repeticiones (más peso relativo al 1RM) significa mayor intensidad.",
+  dna_details_title: "Detalle de ADN de Rendimiento",
+  dna_consistency_workouts: "{count} sesiones / 30d",
+  dna_volume_tonnage: "{count} {unit} por sesión",
+  dna_intensity_reps: "{count} reps prom.",
+
   // Promotion Modal
   promotion_modal_title: "Mejora Disponible",
   promotion_modal_current: "Actual",

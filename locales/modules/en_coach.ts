@@ -67,11 +67,11 @@ export const en_coach = {
   rec_action_keep_goal: "Keep {current}",
   rec_action_disable_detection: "Don't ask again",
   rec_alternatives_label: "Or choose from these templates:",
-  
+
   // Bio-Adaptive
   coach_warning_density_drop_title: "Efficiency Leak",
   coach_warning_density_drop_desc: "Your workout density dropped by {percent}% recently. This is often a sign of incoming fatigue. A light session today could prevent a burnout.",
-  
+
   active_workout_suggestion_gap_override: "Generating a low-impact session to facilitate recovery while training.",
   coach_safety_no_weight_title: "Safety Check",
   coach_safety_no_weight_desc: "Bodyweight exercises skipped until we know your weight.",
@@ -99,7 +99,20 @@ export const en_coach = {
   imbalance_lower_dominant_title: "T-Rex Syndrome",
   imbalance_lower_dominant_desc: "Your lower body strength is rated '{lower_level}', but your upper body is rated '{upper_level}'. Great foundation, now let's build the upper body to match.",
   strength_symmetry_subtext: "Based on strength symmetry ratios",
-  
+  symmetry_details_title: "Symmetry Breakdown",
+  symmetry_ideal_ratio: "Ideal Ratio",
+  symmetry_current_max: "Current Max",
+  symmetry_expected_max: "Sug. Max",
+  symmetry_desc: "Standardized strength ratios (Squat:Bench 4:3, DL:Squat 5:4) are used to detect weak links. Balancing these prevents injury and optimizes athletic power.",
+  symmetry_ratio_label: "Target Ratio: {ratio}",
+  symmetry_driver_lift: "Leader (Strongest Pattern)",
+  symmetry_leader_desc: "The leader is the lift that is currently highest relative to your body's ideal ratios. All other 'Suggested Maxes' are based on catching up to this level.",
+  symmetry_base_unit: "Calculated Base Unit",
+  symmetry_relative_level: "Relative Level",
+  symmetry_pattern_posterior: "Hips & Posterior (Deadlift)",
+  symmetry_pattern_vertical: "Lats (Vertical Pull)",
+  symmetry_pattern_horizontal: "Back (Horizontal Row)",
+
   // CNS
   cns_load_label: "Systemic Load",
   cns_level_low: "Low",
@@ -175,7 +188,14 @@ export const en_coach = {
   dna_stats_intensity: "Intensity",
   dna_stats_favorite_muscle: "Fav Muscle",
   dna_stats_lifetime_workouts: "Lifetime Workouts",
-  
+  dna_stats_consistency_desc: "Calculated by total workouts in the last 30 days. High consistency builds long-term momentum.",
+  dna_stats_volume_desc: "Average tonnage moved per session. Measures the total work capacity across your training history.",
+  dna_stats_intensity_desc: "Average reps per set. Lower average reps (higher weight relative to 1RM) means higher intensity.",
+  dna_details_title: "Performance DNA Details",
+  dna_consistency_workouts: "{count} sessions / 30d",
+  dna_volume_tonnage: "{count} {unit} per session",
+  dna_intensity_reps: "{count} reps avg",
+
   // Promotion Modal
   promotion_modal_title: "Upgrade Available",
   promotion_modal_current: "Current",

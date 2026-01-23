@@ -81,6 +81,17 @@ export const es_profile = {
   fatigue_desc: "Puntaje combinado de salud del SNC y frescura muscular.",
   fatigue_info_title: "Sobre la Recuperación",
   fatigue_info_content: "Tu Puntaje de Recuperación se basa en el 'Eslabón Más Débil' entre tu Carga Sistémica del SNC y tu Recuperación Muscular local.\n\nIncluso si tu sistema nervioso está fresco (SNC Óptimo), se te puede aconsejar descansar si grupos musculares específicos aún están dañados por entrenamientos anteriores.\n\nEsto asegura que no entrenes pesado sobre una base que no se ha recuperado.",
+  fatigue_details_title: "Detalle de Recuperación",
+  fatigue_cns_points: "Carga SNC ({points} pts)",
+  fatigue_cns_equation: "Fórmula: Σ(Costo × Desgaste) / 150",
+  fatigue_muscle_score: "Fatiga Muscular (Máx)",
+  fatigue_muscle_equation: "Fórmula: (Estrés / Capacidad) × DesgasteRecuperación",
+  fatigue_algorithm_interaction: "Algoritmo de Interacción",
+  fatigue_algorithm_interaction_desc: "Usamos el principio del 'Eslabón Más Débil': Recuperación = 100% - MÁX(Carga SNC, Fatiga Muscular). Tu cuerpo está tan listo como su sistema más cansado.",
+  fatigue_last_14_days: "Carga de los últimos 14 días",
+  fatigue_top_fatigued_muscles: "Músculos más fatigados",
+  fatigue_fully_recovered: "Totalmente Recuperado",
+  fatigue_no_recent_activity: "Sin Actividad Reciente",
 
   // Data Management
   profile_data_title: "Gestión de Datos",
