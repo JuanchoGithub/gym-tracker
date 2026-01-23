@@ -37,6 +37,15 @@ export const analyzeUserHabits = (history: WorkoutSession[]): HabitData => {
     return { exerciseFrequency, routineFrequency };
 };
 
+export const STRENGTH_SYMMETRY_RATIOS = {
+    OHP: 2,           // Shoulders
+    BENCH: 3,         // Chest
+    ROW: 3,           // Back / Horizontal
+    VERTICAL_PULL: 3, // Lats / Vertical
+    SQUAT: 4,         // Legs / Quads
+    DEADLIFT: 5       // Posterior / Hinge
+};
+
 export const MOVEMENT_PATTERNS = {
     SQUAT: ['ex-2', 'ex-101', 'ex-108', 'ex-109', 'ex-113', 'ex-160'],
     DEADLIFT: ['ex-3', 'ex-98', 'ex-43'],
@@ -282,24 +291,20 @@ export const getSmartStartingWeight = (
 
 export const calculateNormalizedStrengthScores = (history: WorkoutSession[], allExercises: Exercise[] = []) => {
     const maxLifts = calculateMaxStrengthProfile(history, allExercises);
-    const scores = {
-        SQUAT: maxLifts.SQUAT.weight / 4,
-        DEADLIFT: maxLifts.DEADLIFT.weight / 5,
-        BENCH: maxLifts.BENCH.weight / 3,
-        OHP: maxLifts.OHP.weight / 2,
-        ROW: maxLifts.ROW.weight / 3,
-        VERTICAL_PULL: maxLifts.VERTICAL_PULL.weight / 3
-    };
+    const scores: Record<string, number> = {};
+
+    Object.entries(STRENGTH_SYMMETRY_RATIOS).forEach(([key, denom]) => {
+        scores[key] = (maxLifts[key]?.weight || 0) / denom;
+    });
+
     const maxScore = Math.max(...Object.values(scores));
     const scale = maxScore > 0 ? (100 / maxScore) : 0;
-    return {
-        SQUAT: scores.SQUAT * scale,
-        DEADLIFT: scores.DEADLIFT * scale,
-        BENCH: scores.BENCH * scale,
-        OHP: scores.OHP * scale,
-        ROW: scores.ROW * scale,
-        VERTICAL_PULL: scores.VERTICAL_PULL * scale
-    };
+
+    const results: Record<string, number> = {};
+    Object.keys(scores).forEach(key => {
+        results[key] = scores[key] * scale;
+    });
+    return results;
 };
 
 export interface SupplementCorrelation {

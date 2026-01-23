@@ -3,7 +3,7 @@ import React, { useContext, useMemo, useState } from 'react';
 import { AppContext } from '../../contexts/AppContext';
 import { useI18n } from '../../hooks/useI18n';
 import RadarChart from '../common/RadarChart';
-import { calculateNormalizedStrengthScores, calculateMaxStrengthProfile } from '../../services/analyticsService';
+import { calculateNormalizedStrengthScores, calculateMaxStrengthProfile, STRENGTH_SYMMETRY_RATIOS } from '../../services/analyticsService';
 import { Icon } from '../common/Icon';
 
 const StrengthProfile: React.FC = () => {
@@ -26,43 +26,53 @@ const StrengthProfile: React.FC = () => {
 
         const rawMaxes = calculateMaxStrengthProfile(history, exercises);
 
-        // Denominators from analyticsService.ts
-        const idealDenominators = {
-            DEADLIFT: 5,
-            SQUAT: 4,
-            BENCH: 3,
-            ROW: 3,
-            VERTICAL_PULL: 3,
-            OHP: 2
+        // Calculate base "Impact" (Highest normalized strength level)
+        const impactResults = Object.entries(STRENGTH_SYMMETRY_RATIOS).map(([pattern, denom]) => {
+            const patternData = rawMaxes[pattern];
+            const weight = patternData?.weight || 0;
+            return {
+                key: pattern,
+                weight,
+                exerciseName: patternData?.exerciseName || '',
+                impact: weight / denom,
+                denom
+            };
+        });
+
+        const leader = impactResults.reduce((best, curr) => curr.impact > best.impact ? curr : best, { key: '', weight: 0, exerciseName: '', impact: 0, denom: 1 });
+        const maxImpact = leader.impact;
+
+        const getPatternLabel = (key: string) => {
+            switch (key) {
+                case 'OHP': return t('body_part_shoulders');
+                case 'BENCH': return t('body_part_chest');
+                case 'ROW': return t('body_part_back');
+                case 'VERTICAL_PULL': return t('symmetry_pattern_vertical');
+                case 'SQUAT': return t('body_part_legs');
+                case 'DEADLIFT': return t('symmetry_pattern_posterior');
+                default: return key;
+            }
         };
 
-        const maxImpactEntry = Object.entries(rawMaxes).reduce((best, [k, v]) => {
-            const denom = idealDenominators[k as keyof typeof idealDenominators];
-            if (!denom) return best;
+        const details = impactResults
+            .filter(item => item.weight > 0 || item.key === leader.key)
+            .map(item => ({
+                key: item.key,
+                label: getPatternLabel(item.key),
+                value: scores[item.key] || 0,
+                raw: Math.round(item.weight),
+                exName: item.exerciseName,
+                target: Math.round(item.denom * maxImpact),
+                ratio: item.denom.toFixed(1)
+            }));
 
-            const impact = (v.weight as number) / denom;
-            return impact > best.impact ? { key: k, weight: v.weight, name: v.exerciseName || '', impact } : best;
-        }, { key: '', weight: 0, name: '', impact: 0 });
-
-        const maxImpact = maxImpactEntry.impact;
-        const driverLabel = maxImpactEntry.key === 'OHP' ? t('body_part_shoulders') :
-            maxImpactEntry.key === 'ROW' ? t('body_part_back') :
-                maxImpactEntry.key === 'VERTICAL_PULL' ? t('symmetry_pattern_vertical') :
-                    maxImpactEntry.key === 'SQUAT' ? t('body_part_legs') :
-                        maxImpactEntry.key === 'DEADLIFT' ? t('symmetry_pattern_posterior') :
-                            maxImpactEntry.key === 'BENCH' ? t('body_part_chest') :
-                                '';
-
-        const details = [
-            { key: 'OHP', label: t('body_part_shoulders'), value: scores.OHP, raw: Math.round(rawMaxes.OHP.weight), exName: rawMaxes.OHP.exerciseName, target: Math.round(idealDenominators.OHP * maxImpact), ratio: '2.0' },
-            { key: 'BENCH', label: t('body_part_chest'), value: scores.BENCH, raw: Math.round(rawMaxes.BENCH.weight), exName: rawMaxes.BENCH.exerciseName, target: Math.round(idealDenominators.BENCH * maxImpact), ratio: '3.0' },
-            { key: 'ROW', label: t('body_part_back'), value: scores.ROW, raw: Math.round(rawMaxes.ROW.weight), exName: rawMaxes.ROW.exerciseName, target: Math.round(idealDenominators.ROW * maxImpact), ratio: '3.0' },
-            { key: 'VERTICAL_PULL', label: t('symmetry_pattern_vertical'), value: scores.VERTICAL_PULL, raw: Math.round(rawMaxes.VERTICAL_PULL.weight), exName: rawMaxes.VERTICAL_PULL.exerciseName, target: Math.round(idealDenominators.VERTICAL_PULL * maxImpact), ratio: '3.0' },
-            { key: 'SQUAT', label: t('body_part_legs'), value: scores.SQUAT, raw: Math.round(rawMaxes.SQUAT.weight), exName: rawMaxes.SQUAT.exerciseName, target: Math.round(idealDenominators.SQUAT * maxImpact), ratio: '4.0' },
-            { key: 'DEADLIFT', label: t('symmetry_pattern_posterior'), value: scores.DEADLIFT, raw: Math.round(rawMaxes.DEADLIFT.weight), exName: rawMaxes.DEADLIFT.exerciseName, target: Math.round(idealDenominators.DEADLIFT * maxImpact), ratio: '5.0' },
-        ];
-
-        return { scores, details, driverLabel, driverValue: Math.round(maxImpactEntry.weight as number), driverExName: maxImpactEntry.name };
+        return {
+            scores,
+            details,
+            driverLabel: getPatternLabel(leader.key),
+            driverValue: Math.round(leader.weight),
+            driverExName: leader.exerciseName
+        };
     }, [history, exercises, t]);
 
     const chartData = useMemo(() => {
