@@ -75,7 +75,7 @@ const LifterDNA: React.FC<LifterDNAProps> = ({ stats }) => {
     };
 
     const DetailItem = ({ icon, label, value, description }: { icon: string, label: string, value: string, description: string }) => (
-        <div className="bg-white/5 rounded-xl p-3 border border-white/5 space-y-1.5">
+        <div className="bg-white/5 rounded-xl px-2.5 py-3 border border-white/5 space-y-1.5">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <Icon name={icon as any} className="w-4 h-4 text-primary" />
@@ -91,7 +91,7 @@ const LifterDNA: React.FC<LifterDNAProps> = ({ stats }) => {
 
     return (
         <div
-            className={`bg-surface border border-white/10 rounded-2xl p-4 shadow-lg transition-all duration-300 ${isExpanded ? 'ring-2 ring-primary/20' : ''}`}
+            className={`bg-surface border border-white/10 rounded-2xl px-3 py-4 shadow-lg transition-all duration-300 ${isExpanded ? 'ring-2 ring-primary/20' : ''}`}
         >
             <div
                 className="flex items-center justify-between mb-6 border-b border-white/5 pb-4 cursor-pointer group"
@@ -153,7 +153,7 @@ const LifterDNA: React.FC<LifterDNAProps> = ({ stats }) => {
                         description={t('dna_stats_intensity_desc')}
                     />
 
-                    <div className="bg-primary/5 rounded-xl p-3 border border-primary/10 mt-4">
+                    <div className="bg-primary/5 rounded-xl px-2.5 py-3 border border-primary/10 mt-4">
                         <h4 className="text-xs font-bold text-primary flex items-center gap-2 mb-1">
                             <Icon name="sparkles" className="w-3.5 h-3.5" />
                             {t('dna_stats_lifetime_workouts')}

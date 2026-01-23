@@ -106,8 +106,11 @@ export const en_coach = {
   symmetry_desc: "Standardized strength ratios (Squat:Bench 4:3, DL:Squat 5:4) are used to detect weak links. Balancing these prevents injury and optimizes athletic power.",
   symmetry_ratio_label: "Target Ratio: {ratio}",
   symmetry_driver_lift: "Leader (Strongest Pattern)",
-  symmetry_pattern_posterior: "Deadlift / Posterior",
-  symmetry_pattern_vertical: "Vertical Pull",
+  symmetry_leader_desc: "The leader is the lift that is currently highest relative to your body's ideal ratios. All other 'Suggested Maxes' are based on catching up to this level.",
+  symmetry_base_unit: "Calculated Base Unit",
+  symmetry_relative_level: "Relative Level",
+  symmetry_pattern_posterior: "Hips & Posterior (Deadlift)",
+  symmetry_pattern_vertical: "Lats & Pullups",
 
   // CNS
   cns_load_label: "Systemic Load",

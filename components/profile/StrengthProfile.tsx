@@ -69,9 +69,11 @@ const StrengthProfile: React.FC = () => {
         return {
             scores,
             details,
+            driverKey: leader.key,
             driverLabel: getPatternLabel(leader.key),
             driverValue: Math.round(leader.weight),
-            driverExName: leader.exerciseName
+            driverExName: leader.exerciseName,
+            maxImpact: leader.impact
         };
     }, [history, exercises, t]);
 
@@ -84,7 +86,7 @@ const StrengthProfile: React.FC = () => {
 
     return (
         <div
-            className={`bg-surface border border-white/10 rounded-2xl p-4 shadow-lg transition-all duration-300 ${isExpanded ? 'ring-2 ring-primary/20' : ''}`}
+            className={`bg-surface border border-white/10 rounded-2xl px-3 py-4 shadow-lg transition-all duration-300 ${isExpanded ? 'ring-2 ring-primary/20' : ''}`}
         >
             <div
                 className="flex items-center justify-between mb-4 border-b border-white/5 pb-4 cursor-pointer group"
@@ -113,16 +115,18 @@ const StrengthProfile: React.FC = () => {
 
             {isExpanded && (
                 <div className="mt-5 space-y-4 animate-fadeIn">
-                    <div className="bg-primary/5 rounded-xl p-3 border border-primary/10">
-                        <h4 className="text-sm font-bold text-primary flex items-center gap-2 mb-2">
-                            <Icon name="sparkles" className="w-4 h-4" />
-                            {t('symmetry_details_title')}
-                        </h4>
-                        <p className="text-xs text-text-secondary leading-relaxed mb-4">
-                            {t('symmetry_desc')}
-                        </p>
+                    <div className="bg-primary/5 rounded-xl py-3 px-1 border border-primary/10">
+                        <div className="px-2">
+                            <h4 className="text-sm font-bold text-primary flex items-center gap-2 mb-2">
+                                <Icon name="sparkles" className="w-4 h-4" />
+                                {t('symmetry_details_title')}
+                            </h4>
+                            <p className="text-xs text-text-secondary leading-relaxed mb-4">
+                                {t('symmetry_desc')}
+                            </p>
+                        </div>
 
-                        <div className="bg-white/5 border border-white/5 rounded-lg p-2.5 mb-4 flex flex-col gap-1">
+                        <div className="bg-white/5 border border-white/5 rounded-lg p-2.5 mb-4 mx-1 flex flex-col gap-1">
                             <div className="flex justify-between items-center w-full">
                                 <span className="text-[10px] text-text-secondary uppercase font-bold">{t('symmetry_driver_lift')}</span>
                                 <span className="text-[10px] text-primary font-mono font-bold">{stats.driverLabel}: {stats.driverValue} {unitLabel}</span>
@@ -130,9 +134,13 @@ const StrengthProfile: React.FC = () => {
                             <span className="text-[9px] text-text-secondary/60 italic text-right">{stats.driverExName}</span>
                         </div>
 
-                        <div className="space-y-4">
+                        <p className="text-[10px] text-text-secondary/80 italic mb-4 px-1 leading-normal">
+                            {t('symmetry_leader_desc')}
+                        </p>
+
+                        <div className="space-y-3 px-1">
                             {stats.details.map(item => (
-                                <div key={item.key} className="bg-white/5 rounded-xl p-3 border border-white/5">
+                                <div key={item.key} className="bg-white/5 rounded-xl px-2 py-3 border border-white/5">
                                     <div className="flex justify-between items-center mb-2">
                                         <span className="text-sm font-bold text-white">{item.label}</span>
                                         <span className="text-[10px] text-text-secondary font-mono tracking-tighter bg-white/5 px-1.5 py-0.5 rounded">
@@ -140,7 +148,10 @@ const StrengthProfile: React.FC = () => {
                                         </span>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-2 gap-3 relative">
+                                        <div className="absolute top-[-38px] right-0 text-[8px] text-text-primary/20 font-mono tracking-tighter">
+                                            Base: {Math.round(item.raw / parseFloat(item.ratio))}
+                                        </div>
                                         <div>
                                             <p className="text-[10px] text-text-secondary uppercase font-bold mb-1">{t('symmetry_current_max')}</p>
                                             <p className="text-sm font-mono font-black text-white">{item.raw} {unitLabel}</p>

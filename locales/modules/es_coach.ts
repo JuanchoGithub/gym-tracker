@@ -106,8 +106,9 @@ export const es_coach = {
   symmetry_desc: "Se utilizan relaciones de fuerza estandarizadas (Sentadilla:Pecho 4:3, Peso Muerto:Sentadilla 5:4) para detectar eslabones débiles. Equilibrarlos previene lesiones y optimiza la potencia atlética.",
   symmetry_ratio_label: "Relación Objetivo: {ratio}",
   symmetry_driver_lift: "Líder (Patrón más fuerte)",
-  symmetry_pattern_posterior: "Peso Muerto / Posterior",
-  symmetry_pattern_vertical: "Tracción Vertical",
+  symmetry_leader_desc: "El líder es el levantamiento que actualmente es más alto en relación con las proporciones ideales de tu cuerpo. Todos los demás 'Máximos sugeridos' se basan en alcanzar este nivel.",
+  symmetry_pattern_posterior: "Cadera y Posterior (Peso Muerto)",
+  symmetry_pattern_vertical: "Dorsales y Tracción",
 
   // CNS
   cns_load_label: "Carga Sistémica",
