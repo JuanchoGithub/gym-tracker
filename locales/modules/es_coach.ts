@@ -107,6 +107,8 @@ export const es_coach = {
   symmetry_ratio_label: "Relación Objetivo: {ratio}",
   symmetry_driver_lift: "Líder (Patrón más fuerte)",
   symmetry_leader_desc: "El líder es el levantamiento que actualmente es más alto en relación con las proporciones ideales de tu cuerpo. Todos los demás 'Máximos sugeridos' se basan en alcanzar este nivel.",
+  symmetry_base_unit: "Unidad Base Calculada",
+  symmetry_relative_level: "Nivel Relativo",
   symmetry_pattern_posterior: "Cadera y Posterior (Peso Muerto)",
   symmetry_pattern_vertical: "Dorsales y Tracción",
 

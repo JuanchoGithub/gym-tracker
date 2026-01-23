@@ -66,6 +66,8 @@ const StrengthProfile: React.FC = () => {
                 ratio: item.denom.toFixed(1)
             }));
 
+        const balanceScore = Math.round(details.reduce((acc, d) => acc + d.value, 0) / details.length);
+
         return {
             scores,
             details,
@@ -73,7 +75,8 @@ const StrengthProfile: React.FC = () => {
             driverLabel: getPatternLabel(leader.key),
             driverValue: Math.round(leader.weight),
             driverExName: leader.exerciseName,
-            maxImpact: leader.impact
+            maxImpact: leader.impact,
+            balanceScore
         };
     }, [history, exercises, t]);
 
@@ -97,7 +100,12 @@ const StrengthProfile: React.FC = () => {
                         <Icon name="scale" className="w-6 h-6" />
                     </div>
                     <div>
-                        <h3 className="text-lg font-bold text-white">{t('rec_type_imbalance')}</h3>
+                        <div className="flex items-center gap-2">
+                            <h3 className="text-lg font-bold text-white">{t('rec_type_imbalance')}</h3>
+                            <span className="text-[10px] font-black bg-primary/20 text-primary px-1.5 py-0.5 rounded-full border border-primary/20">
+                                {stats.balanceScore}%
+                            </span>
+                        </div>
                         <p className="text-xs text-text-secondary">{t('strength_symmetry_subtext')}</p>
                     </div>
                 </div>
@@ -126,32 +134,41 @@ const StrengthProfile: React.FC = () => {
                             </p>
                         </div>
 
-                        <div className="bg-white/5 border border-white/5 rounded-lg p-2.5 mb-4 mx-1 flex flex-col gap-1">
-                            <div className="flex justify-between items-center w-full">
-                                <span className="text-[10px] text-text-secondary uppercase font-bold">{t('symmetry_driver_lift')}</span>
-                                <span className="text-[10px] text-primary font-mono font-bold">{stats.driverLabel}: {stats.driverValue} {unitLabel}</span>
+                        <div className="bg-primary/10 border border-primary/20 rounded-xl p-3 mb-4 mx-1">
+                            <div className="flex justify-between items-center mb-1.5">
+                                <span className="text-[10px] text-primary uppercase font-black tracking-widest">{t('symmetry_driver_lift')}</span>
+                                <div className="flex items-center gap-1.5">
+                                    <span className="text-[10px] text-white font-mono font-bold">{stats.driverLabel}</span>
+                                    <span className="text-[10px] text-primary font-mono font-black bg-primary/20 px-1.5 py-0.5 rounded transition-all">{stats.driverValue} {unitLabel}</span>
+                                </div>
                             </div>
-                            <span className="text-[9px] text-text-secondary/60 italic text-right">{stats.driverExName}</span>
+                            <div className="flex justify-between items-center">
+                                <span className="text-[8px] text-text-secondary/60 italic truncate max-w-[50%]">{stats.driverExName}</span>
+                                <div className="flex items-center gap-1 text-primary/70">
+                                    <span className="text-[8px] uppercase font-bold tracking-tight">{t('symmetry_base_unit')}:</span>
+                                    <span className="text-[10px] font-mono font-black">{Math.round(stats.maxImpact)} {unitLabel}</span>
+                                </div>
+                            </div>
                         </div>
 
-                        <p className="text-[10px] text-text-secondary/80 italic mb-4 px-1 leading-normal">
+                        <p className="text-[10px] text-text-secondary/80 italic mb-5 px-1 leading-normal">
                             {t('symmetry_leader_desc')}
                         </p>
 
                         <div className="space-y-3 px-1">
                             {stats.details.map(item => (
-                                <div key={item.key} className="bg-white/5 rounded-xl px-2 py-3 border border-white/5">
-                                    <div className="flex justify-between items-center mb-2">
-                                        <span className="text-sm font-bold text-white">{item.label}</span>
+                                <div key={item.key} className="bg-white/5 rounded-xl px-2.5 py-3 border border-white/5 relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 h-full w-10 bg-primary/5 -skew-x-12 translate-x-4 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                                        <span className="text-[9px] font-mono font-black text-primary/30 -rotate-90 origin-center whitespace-nowrap">LVL {Math.round(item.raw / parseFloat(item.ratio))}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center mb-2 px-0.5">
+                                        <span className="text-sm font-bold text-white pr-6">{item.label}</span>
                                         <span className="text-[10px] text-text-secondary font-mono tracking-tighter bg-white/5 px-1.5 py-0.5 rounded">
                                             {t('symmetry_ratio_label', { ratio: item.ratio })}
                                         </span>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-3 relative">
-                                        <div className="absolute top-[-38px] right-0 text-[8px] text-text-primary/20 font-mono tracking-tighter">
-                                            Base: {Math.round(item.raw / parseFloat(item.ratio))}
-                                        </div>
+                                    <div className="grid grid-cols-2 gap-3 relative mr-4">
                                         <div>
                                             <p className="text-[10px] text-text-secondary uppercase font-bold mb-1">{t('symmetry_current_max')}</p>
                                             <p className="text-sm font-mono font-black text-white">{item.raw} {unitLabel}</p>
