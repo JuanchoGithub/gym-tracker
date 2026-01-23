@@ -7,7 +7,7 @@ import { calculateNormalizedStrengthScores, calculateMaxStrengthProfile } from '
 import { Icon } from '../common/Icon';
 
 const StrengthProfile: React.FC = () => {
-    const { history, fontSize, measureUnit } = useContext(AppContext);
+    const { history, fontSize, measureUnit, exercises } = useContext(AppContext);
     const { t } = useI18n();
     const [isExpanded, setIsExpanded] = useState(false);
 
@@ -20,11 +20,11 @@ const StrengthProfile: React.FC = () => {
     }, [fontSize]);
 
     const stats = useMemo(() => {
-        const scores = calculateNormalizedStrengthScores(history);
+        const scores = calculateNormalizedStrengthScores(history, exercises);
         const hasData = Object.values(scores).some(val => val > 0);
         if (!hasData) return null;
 
-        const rawMaxes = calculateMaxStrengthProfile(history);
+        const rawMaxes = calculateMaxStrengthProfile(history, exercises);
 
         // Denominators from analyticsService.ts
         const idealDenominators = {
@@ -40,9 +40,9 @@ const StrengthProfile: React.FC = () => {
             const denom = idealDenominators[k as keyof typeof idealDenominators];
             if (!denom) return best;
 
-            const impact = (v as number) / denom;
-            return impact > best.impact ? { key: k, value: v, impact } : best;
-        }, { key: '', value: 0, impact: 0 });
+            const impact = (v.weight as number) / denom;
+            return impact > best.impact ? { key: k, weight: v.weight, name: v.exerciseName || '', impact } : best;
+        }, { key: '', weight: 0, name: '', impact: 0 });
 
         const maxImpact = maxImpactEntry.impact;
         const driverLabel = maxImpactEntry.key === 'OHP' ? t('body_part_shoulders') :
@@ -54,16 +54,16 @@ const StrengthProfile: React.FC = () => {
                                 '';
 
         const details = [
-            { key: 'OHP', label: t('body_part_shoulders'), value: scores.OHP, raw: Math.round(rawMaxes.OHP), target: Math.round(idealDenominators.OHP * maxImpact), ratio: '2.0' },
-            { key: 'BENCH', label: t('body_part_chest'), value: scores.BENCH, raw: Math.round(rawMaxes.BENCH), target: Math.round(idealDenominators.BENCH * maxImpact), ratio: '3.0' },
-            { key: 'ROW', label: t('body_part_back'), value: scores.ROW, raw: Math.round(rawMaxes.ROW), target: Math.round(idealDenominators.ROW * maxImpact), ratio: '3.0' },
-            { key: 'VERTICAL_PULL', label: t('symmetry_pattern_vertical'), value: scores.VERTICAL_PULL, raw: Math.round(rawMaxes.VERTICAL_PULL), target: Math.round(idealDenominators.VERTICAL_PULL * maxImpact), ratio: '3.0' },
-            { key: 'SQUAT', label: t('body_part_legs'), value: scores.SQUAT, raw: Math.round(rawMaxes.SQUAT), target: Math.round(idealDenominators.SQUAT * maxImpact), ratio: '4.0' },
-            { key: 'DEADLIFT', label: t('symmetry_pattern_posterior'), value: scores.DEADLIFT, raw: Math.round(rawMaxes.DEADLIFT), target: Math.round(idealDenominators.DEADLIFT * maxImpact), ratio: '5.0' },
+            { key: 'OHP', label: t('body_part_shoulders'), value: scores.OHP, raw: Math.round(rawMaxes.OHP.weight), exName: rawMaxes.OHP.exerciseName, target: Math.round(idealDenominators.OHP * maxImpact), ratio: '2.0' },
+            { key: 'BENCH', label: t('body_part_chest'), value: scores.BENCH, raw: Math.round(rawMaxes.BENCH.weight), exName: rawMaxes.BENCH.exerciseName, target: Math.round(idealDenominators.BENCH * maxImpact), ratio: '3.0' },
+            { key: 'ROW', label: t('body_part_back'), value: scores.ROW, raw: Math.round(rawMaxes.ROW.weight), exName: rawMaxes.ROW.exerciseName, target: Math.round(idealDenominators.ROW * maxImpact), ratio: '3.0' },
+            { key: 'VERTICAL_PULL', label: t('symmetry_pattern_vertical'), value: scores.VERTICAL_PULL, raw: Math.round(rawMaxes.VERTICAL_PULL.weight), exName: rawMaxes.VERTICAL_PULL.exerciseName, target: Math.round(idealDenominators.VERTICAL_PULL * maxImpact), ratio: '3.0' },
+            { key: 'SQUAT', label: t('body_part_legs'), value: scores.SQUAT, raw: Math.round(rawMaxes.SQUAT.weight), exName: rawMaxes.SQUAT.exerciseName, target: Math.round(idealDenominators.SQUAT * maxImpact), ratio: '4.0' },
+            { key: 'DEADLIFT', label: t('symmetry_pattern_posterior'), value: scores.DEADLIFT, raw: Math.round(rawMaxes.DEADLIFT.weight), exName: rawMaxes.DEADLIFT.exerciseName, target: Math.round(idealDenominators.DEADLIFT * maxImpact), ratio: '5.0' },
         ];
 
-        return { scores, details, driverLabel, driverValue: Math.round(maxImpactEntry.value as number) };
-    }, [history, t]);
+        return { scores, details, driverLabel, driverValue: Math.round(maxImpactEntry.weight as number), driverExName: maxImpactEntry.name };
+    }, [history, exercises, t]);
 
     const chartData = useMemo(() => {
         if (!stats) return null;
@@ -112,9 +112,12 @@ const StrengthProfile: React.FC = () => {
                             {t('symmetry_desc')}
                         </p>
 
-                        <div className="bg-white/5 border border-white/5 rounded-lg p-2.5 mb-4 flex items-center justify-between">
-                            <span className="text-[10px] text-text-secondary uppercase font-bold">{t('symmetry_driver_lift')}</span>
-                            <span className="text-[10px] text-primary font-mono font-bold">{stats.driverLabel}: {stats.driverValue} {unitLabel}</span>
+                        <div className="bg-white/5 border border-white/5 rounded-lg p-2.5 mb-4 flex flex-col gap-1">
+                            <div className="flex justify-between items-center w-full">
+                                <span className="text-[10px] text-text-secondary uppercase font-bold">{t('symmetry_driver_lift')}</span>
+                                <span className="text-[10px] text-primary font-mono font-bold">{stats.driverLabel}: {stats.driverValue} {unitLabel}</span>
+                            </div>
+                            <span className="text-[9px] text-text-secondary/60 italic text-right">{stats.driverExName}</span>
                         </div>
 
                         <div className="space-y-4">
@@ -131,6 +134,7 @@ const StrengthProfile: React.FC = () => {
                                         <div>
                                             <p className="text-[10px] text-text-secondary uppercase font-bold mb-1">{t('symmetry_current_max')}</p>
                                             <p className="text-sm font-mono font-black text-white">{item.raw} {unitLabel}</p>
+                                            <p className="text-[8px] text-text-secondary/50 truncate max-w-[120px]">{item.exName}</p>
                                         </div>
                                         <div className="text-right">
                                             <p className="text-[10px] text-text-secondary uppercase font-bold mb-1">{t('symmetry_expected_max')}</p>

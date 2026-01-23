@@ -46,15 +46,36 @@ export const MOVEMENT_PATTERNS = {
     VERTICAL_PULL: ['ex-10', 'ex-50', 'ex-52', 'ex-6', 'ex-44']
 };
 
-export const calculateMaxStrengthProfile = (history: WorkoutSession[], cutoffDate: number = Date.now()) => {
-    const profile: Record<string, number> = { SQUAT: 0, DEADLIFT: 0, BENCH: 0, OHP: 0, ROW: 0, VERTICAL_PULL: 0 };
+export interface PatternMax {
+    weight: number;
+    exerciseName?: string;
+}
+
+export const calculateMaxStrengthProfile = (history: WorkoutSession[], allExercises: Exercise[] = [], cutoffDate: number = Date.now()) => {
+    const profile: Record<string, PatternMax> = {
+        SQUAT: { weight: 0 },
+        DEADLIFT: { weight: 0 },
+        BENCH: { weight: 0 },
+        OHP: { weight: 0 },
+        ROW: { weight: 0 },
+        VERTICAL_PULL: { weight: 0 }
+    };
     const sixMonthsBeforeCutoff = cutoffDate - (180 * 24 * 60 * 60 * 1000);
     Object.entries(MOVEMENT_PATTERNS).forEach(([patternName, ids]) => {
         let maxNormalizedE1RM = 0;
+        let bestExName = '';
+
         ids.forEach(id => {
+            const exDef = PREDEFINED_EXERCISES.find(e => e.id === id) || allExercises.find(e => e.id === id);
             const exHistory = getExerciseHistory(history, id);
-            const ratioData = EXERCISE_RATIOS[id];
-            const ratio = ratioData ? ratioData.ratio : 1.0;
+
+            // Get ratio: specific override OR category fallback
+            let ratio = 1.0;
+            if (EXERCISE_RATIOS[id]) {
+                ratio = EXERCISE_RATIOS[id].ratio;
+            } else if (exDef) {
+                ratio = CATEGORY_RATIOS[exDef.category] || 1.0;
+            }
 
             exHistory.forEach(entry => {
                 if (entry.session.startTime > cutoffDate) return;
@@ -64,12 +85,15 @@ export const calculateMaxStrengthProfile = (history: WorkoutSession[], cutoffDat
                     if (set.type === 'normal' && set.isComplete && set.reps > 0 && set.reps <= 12) {
                         const e1rm = calculate1RM(set.weight, set.reps);
                         const normalized = e1rm / ratio;
-                        if (normalized > maxNormalizedE1RM) maxNormalizedE1RM = normalized;
+                        if (normalized > maxNormalizedE1RM) {
+                            maxNormalizedE1RM = normalized;
+                            bestExName = exDef?.name || 'Unknown';
+                        }
                     }
                 });
             });
         });
-        profile[patternName] = maxNormalizedE1RM;
+        profile[patternName] = { weight: maxNormalizedE1RM, exerciseName: bestExName };
     });
     return profile;
 }
@@ -256,15 +280,15 @@ export const getSmartStartingWeight = (
     return suggestion.weight;
 };
 
-export const calculateNormalizedStrengthScores = (history: WorkoutSession[]) => {
-    const maxLifts = calculateMaxStrengthProfile(history);
+export const calculateNormalizedStrengthScores = (history: WorkoutSession[], allExercises: Exercise[] = []) => {
+    const maxLifts = calculateMaxStrengthProfile(history, allExercises);
     const scores = {
-        SQUAT: maxLifts.SQUAT / 4,
-        DEADLIFT: maxLifts.DEADLIFT / 5,
-        BENCH: maxLifts.BENCH / 3,
-        OHP: maxLifts.OHP / 2,
-        ROW: maxLifts.ROW / 3,
-        VERTICAL_PULL: maxLifts.VERTICAL_PULL / 3
+        SQUAT: maxLifts.SQUAT.weight / 4,
+        DEADLIFT: maxLifts.DEADLIFT.weight / 5,
+        BENCH: maxLifts.BENCH.weight / 3,
+        OHP: maxLifts.OHP.weight / 2,
+        ROW: maxLifts.ROW.weight / 3,
+        VERTICAL_PULL: maxLifts.VERTICAL_PULL.weight / 3
     };
     const maxScore = Math.max(...Object.values(scores));
     const scale = maxScore > 0 ? (100 / maxScore) : 0;

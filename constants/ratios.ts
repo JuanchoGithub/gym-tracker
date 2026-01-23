@@ -7,10 +7,10 @@ export interface ExerciseRatio {
 }
 
 export const ANCHOR_EXERCISES = {
-  SQUAT: 'ex-2',
-  BENCH: 'ex-1',
-  DEADLIFT: 'ex-3',
-  OHP: 'ex-4'
+    SQUAT: 'ex-2',
+    BENCH: 'ex-1',
+    DEADLIFT: 'ex-3',
+    OHP: 'ex-4'
 };
 
 // 1. High Precision Ratios (Specific Exercise ID)
@@ -20,19 +20,19 @@ export const EXERCISE_RATIOS: Record<string, { anchorId: string, ratio: number }
     // --- SQUAT ACCESSORIES ---
     'ex-101': { anchorId: ANCHOR_EXERCISES.SQUAT, ratio: 0.85 }, // Front Squat
     'ex-109': { anchorId: ANCHOR_EXERCISES.SQUAT, ratio: 0.50 }, // Goblet Squat
-    'ex-9':   { anchorId: ANCHOR_EXERCISES.SQUAT, ratio: 2.50 }, // Leg Press
+    'ex-9': { anchorId: ANCHOR_EXERCISES.SQUAT, ratio: 2.50 }, // Leg Press
     'ex-102': { anchorId: ANCHOR_EXERCISES.SQUAT, ratio: 1.10 }, // Hack Squat
     'ex-113': { anchorId: ANCHOR_EXERCISES.SQUAT, ratio: 0.90 }, // Jefferson Squat
     'ex-160': { anchorId: ANCHOR_EXERCISES.SQUAT, ratio: 0.30 }, // Air Squat (High rep endurance mapping)
     'ex-100': { anchorId: ANCHOR_EXERCISES.SQUAT, ratio: 0.40 }, // Bulgarian Split Squat (Per leg)
-    'ex-99':  { anchorId: ANCHOR_EXERCISES.SQUAT, ratio: 0.35 }, // Walking Lunge (Per leg)
+    'ex-99': { anchorId: ANCHOR_EXERCISES.SQUAT, ratio: 0.35 }, // Walking Lunge (Per leg)
 
     // --- DEADLIFT ACCESSORIES ---
     'ex-98': { anchorId: ANCHOR_EXERCISES.DEADLIFT, ratio: 0.75 }, // RDL
     'ex-43': { anchorId: ANCHOR_EXERCISES.DEADLIFT, ratio: 1.10 }, // Rack Pull
-    'ex-134':{ anchorId: ANCHOR_EXERCISES.DEADLIFT, ratio: 0.40 }, // KB Swing
+    'ex-134': { anchorId: ANCHOR_EXERCISES.DEADLIFT, ratio: 0.40 }, // KB Swing
     'ex-51': { anchorId: ANCHOR_EXERCISES.DEADLIFT, ratio: 0.90 }, // Shrugs (Strength correlation)
-    
+
     // --- BENCH ACCESSORIES ---
     'ex-12': { anchorId: ANCHOR_EXERCISES.BENCH, ratio: 0.35 }, // Incline DB Press (Per hand)
     'ex-25': { anchorId: ANCHOR_EXERCISES.BENCH, ratio: 0.80 }, // Incline Barbell
@@ -49,12 +49,18 @@ export const EXERCISE_RATIOS: Record<string, { anchorId: string, ratio: number }
     'ex-60': { anchorId: ANCHOR_EXERCISES.OHP, ratio: 0.35 }, // Arnold Press (Per hand)
     'ex-67': { anchorId: ANCHOR_EXERCISES.OHP, ratio: 1.10 }, // Machine Shoulder Press
     'ex-56': { anchorId: ANCHOR_EXERCISES.OHP, ratio: 0.15 }, // Lateral Raise
-    'ex-4':  { anchorId: ANCHOR_EXERCISES.OHP, ratio: 1.00 }, // Self
-    'ex-146':{ anchorId: ANCHOR_EXERCISES.OHP, ratio: 0.80 }, // KB Clean & Press (Single arm usually, or double) - Conservative for single
-    'ex-145':{ anchorId: ANCHOR_EXERCISES.OHP, ratio: 0.40 }, // Turkish Get Up
-    
+    'ex-4': { anchorId: ANCHOR_EXERCISES.OHP, ratio: 1.00 }, // Self
+    'ex-146': { anchorId: ANCHOR_EXERCISES.OHP, ratio: 0.80 }, // KB Clean & Press (Single arm usually, or double) - Conservative for single
+    'ex-145': { anchorId: ANCHOR_EXERCISES.OHP, ratio: 0.40 }, // Turkish Get Up
+
     // --- BAND / REPS ONLY OVERRIDES ---
-    'ex-83': { anchorId: ANCHOR_EXERCISES.DEADLIFT, ratio: 0.40 }, // Band Curl (Approximate resistance correlation to pulling strength)
+    'ex-83': { anchorId: ANCHOR_EXERCISES.DEADLIFT, ratio: 0.40 }, // Band Curl
+
+    // --- BACK / VERTICAL PULL NORMALIZATION ---
+    'ex-10': { anchorId: 'VERTICAL_PULL', ratio: 1.30 }, // Lat Pulldown (Cable advantage)
+    'ex-50': { anchorId: 'VERTICAL_PULL', ratio: 1.00 }, // Chin-Up
+    'ex-6': { anchorId: 'VERTICAL_PULL', ratio: 1.00 }, // Pull Up
+    'ex-44': { anchorId: 'VERTICAL_PULL', ratio: 1.10 }, // Straight-Arm Pulldown
 };
 
 // 2. Fallback Maps (Pattern Matching)
@@ -68,17 +74,17 @@ export const BODY_PART_ANCHORS: Partial<Record<BodyPart, string>> = {
     'Biceps': ANCHOR_EXERCISES.DEADLIFT, // Pulling strength correlation
 };
 
-// Multiplier against the Anchor
+// Multiplier against the Anchor (Barbell = 1.0)
 export const CATEGORY_RATIOS: Partial<Record<ExerciseCategory, number>> = {
-    'Barbell': 0.8,
-    'Dumbbell': 0.35, // Per hand, approx 0.7 total
+    'Barbell': 1.0,
+    'Dumbbell': 0.45, // Per hand, approx 0.9 total
     'Machine': 1.2,
-    'Cable': 0.5,
-    'Kettlebell': 0.3, // Per hand
-    'Smith Machine': 0.95,
-    'Bodyweight': 0.4, // Very rough estimate for bodyweight moves vs loaded barbell
-    'Assisted Bodyweight': 0.4,
-    'Plyometrics': 0, // N/A
+    'Cable': 1.3,     // Pulley advantage
+    'Kettlebell': 0.4, // Per hand
+    'Smith Machine': 1.1,
+    'Bodyweight': 1.0,
+    'Assisted Bodyweight': 1.0,
+    'Plyometrics': 0,
     'Reps Only': 0,
     'Cardio': 0,
     'Duration': 0,
