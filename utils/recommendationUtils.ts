@@ -7,10 +7,10 @@ import { PREDEFINED_EXERCISES } from '../constants/exercises';
 import { PROGRESSION_PATHS } from '../constants/progression';
 import { getExerciseHistory } from './workoutUtils';
 import { predictNextRoutine, getProtectedMuscles, generateGapSession } from './smartCoachUtils';
-import { inferUserProfile, MOVEMENT_PATTERNS, calculateMaxStrengthProfile, calculateMedianWorkoutDuration, analyzeUserHabits, calculateLifterDNA } from '../services/analyticsService';
+import { inferUserProfile, MOVEMENT_PATTERNS, calculateMaxStrengthProfile, calculateMedianWorkoutDuration, analyzeUserHabits, calculateLifterDNA, detectTechnicalPRs } from '../services/analyticsService';
 
 export interface Recommendation {
-    type: 'rest' | 'workout' | 'promotion' | 'active_recovery' | 'imbalance' | 'deload' | 'update_1rm' | 'goal_mismatch' | 'density_warning' | 'stall';
+    type: 'rest' | 'workout' | 'promotion' | 'active_recovery' | 'imbalance' | 'deload' | 'update_1rm' | 'goal_mismatch' | 'density_warning' | 'stall' | 'circadian_nudge' | 'volume_pivot' | 'efficiency_warning' | 'technical_pr';
     titleKey: string;
     titleParams?: Record<string, string | number>;
     reasonKey: string;
@@ -209,10 +209,78 @@ export const detectImbalances = (history: WorkoutSession[], routines: Routine[],
     return worstImbalance;
 }
 
-export const detectStalls = (history: WorkoutSession[], exercises: Exercise[], t: (key: string, replacements?: Record<string, string | number>) => string): Recommendation | null => {
+export const detectCircadianNudge = (t: (key: string, replacements?: Record<string, string | number>) => string): Recommendation | null => {
+    const now = new Date();
+    const hour = now.getHours();
+    const month = now.getMonth(); // 0-11
+    const timezoneOffset = now.getTimezoneOffset(); // mins
+
+    // Simple hemisphere detection: - offset usually means Western/Southern for GMT-3 (South America)
+    // Jan/Feb/Dec is Summer in Southern, Winter in Northern.
+    const isSouthernHemisphere = timezoneOffset < 0 && timezoneOffset >= -360; // Loose check for Americas
+    const isSummer = isSouthernHemisphere ? (month === 0 || month === 1 || month === 11) : (month >= 5 && month <= 7);
+
+    if (hour >= 5 && hour < 9) {
+        return {
+            type: 'circadian_nudge',
+            titleKey: 'rec_title_circadian_morning',
+            reasonKey: isSummer ? 'rec_reason_morning_summer' : 'rec_reason_morning_winter',
+            reasonParams: { count: 8 },
+            suggestedBodyParts: ['Mobility'],
+            relevantRoutineIds: []
+        };
+    }
+
+    if (hour >= 13 && hour < 17) {
+        return {
+            type: 'circadian_nudge',
+            titleKey: 'rec_title_circadian_afternoon',
+            reasonKey: 'rec_reason_afternoon',
+            suggestedBodyParts: [],
+            relevantRoutineIds: []
+        };
+    }
+
+    if (hour >= 20 || hour < 5) {
+        return {
+            type: 'circadian_nudge',
+            titleKey: 'rec_title_circadian_night',
+            reasonKey: 'rec_reason_night',
+            suggestedBodyParts: [],
+            relevantRoutineIds: []
+        };
+    }
+
+    return null;
+};
+
+export const detectEfficiencyIssues = (history: WorkoutSession[]): Recommendation | null => {
+    if (history.length === 0) return null;
+    const lastSession = history[0];
+
+    // Check for "Rest Creep"
+    let longRestSets = 0;
+    lastSession.exercises.forEach(ex => {
+        ex.sets.forEach(s => {
+            if (s.actualRest && s.actualRest > 300) longRestSets++;
+        });
+    });
+
+    if (longRestSets >= 3) {
+        return {
+            type: 'efficiency_warning',
+            titleKey: 'rec_title_efficiency_warning',
+            reasonKey: 'rec_reason_efficiency_warning',
+            suggestedBodyParts: [],
+            relevantRoutineIds: []
+        };
+    }
+    return null;
+};
+
+export const detectStalls = (history: WorkoutSession[], exercises: Exercise[], t: (key: string, replacements?: Record<string, string | number>) => string, profile?: Profile): Recommendation | null => {
     if (history.length < 5) return null;
 
-    // Check core lift patterns or most frequent exercises
     const habitData = analyzeUserHabits(history);
     const frequentExIds = Object.entries(habitData.exerciseFrequency)
         .sort((a, b) => b[1] - a[1])
@@ -223,59 +291,76 @@ export const detectStalls = (history: WorkoutSession[], exercises: Exercise[], t
         const exHistory = getExerciseHistory(history, exId);
         if (exHistory.length < 3) continue;
 
-        let count = 0;
-        let stallWeight = 0;
-        let isStalled = false;
+        let stallCount = 0;
+        let lastWeight = 0;
+        let stallCycleCount = 0; // Tracking how many times they've stalled at this weight across deloads
 
-        for (let i = 0; i < exHistory.length; i++) {
-            const current = exHistory[i];
-            const sets = current.exerciseData.sets.filter(s => s.type === 'normal');
-            if (sets.length === 0) continue;
+        // Scan history to see if they've hit this threshold before
+        const weightInstances = exHistory.map(h => {
+            const sets = h.exerciseData.sets.filter(s => s.type === 'normal');
+            return sets.length > 0 ? Math.max(...sets.map(s => s.weight)) : 0;
+        });
 
-            const maxW = Math.max(...sets.map(s => s.weight));
+        const currentWeight = weightInstances[0];
+        if (currentWeight === 0) continue;
 
-            if (i === 0) {
-                stallWeight = maxW;
-                count = 1;
-                continue;
-            }
-
-            if (maxW <= stallWeight) {
-                count++;
+        // Count consecutive sessions at same/lower weight
+        for (let i = 0; i < weightInstances.length; i++) {
+            if (weightInstances[i] <= currentWeight && weightInstances[i] > 0) {
+                stallCount++;
             } else {
-                break; // Progress made
-            }
-
-            if (count >= 3) {
-                isStalled = true;
                 break;
             }
         }
 
-        if (isStalled && count >= 3) {
+        // Count how many deload cycles happened for this weight (if weight dropped then came back to currentWeight)
+        let foundDeload = false;
+        for (let i = 1; i < weightInstances.length; i++) {
+            if (weightInstances[i] < currentWeight * 0.95) foundDeload = true;
+            if (foundDeload && weightInstances[i] >= currentWeight * 0.98) {
+                stallCycleCount++;
+                foundDeload = false;
+            }
+        }
+
+        if (stallCount >= 3) {
             const exDef = exercises.find(e => e.id === exId) || PREDEFINED_EXERCISES.find(e => e.id === exId);
             if (!exDef) continue;
-
             const name = t(exDef.id as any) !== exDef.id ? t(exDef.id as any) : exDef.name;
 
+            // IF STALLED TWICE (Persistent Plateau) -> Suggest PIVOT
+            if (stallCycleCount >= 1) {
+                const goal = profile?.mainGoal || 'muscle';
+                if (goal === 'strength') {
+                    return {
+                        type: 'volume_pivot',
+                        titleKey: 'rec_title_pivot_volume',
+                        reasonKey: 'rec_reason_pivot_volume',
+                        suggestedBodyParts: [exDef.bodyPart as BodyPart],
+                        relevantRoutineIds: []
+                    };
+                } else if (goal === 'muscle') {
+                    return {
+                        type: 'stall',
+                        titleKey: 'rec_title_pivot_reps',
+                        reasonKey: 'rec_reason_pivot_reps',
+                        reasonParams: { range: '5-8' },
+                        suggestedBodyParts: [exDef.bodyPart as BodyPart],
+                        relevantRoutineIds: []
+                    };
+                }
+            }
+
+            // Regular Stall (First time)
             return {
                 type: 'stall',
                 titleKey: 'rec_title_stall',
                 titleParams: { exercise: name },
                 reasonKey: 'rec_reason_stall',
-                reasonParams: {
-                    weight: stallWeight,
-                    unit: 'kg', // Should ideally come from context but defaulting to kg for now based on backup
-                    count: count
-                },
+                reasonParams: { weight: currentWeight, unit: 'kg', count: stallCount },
                 suggestedBodyParts: [exDef.bodyPart as BodyPart],
-                relevantRoutineIds: [], // We'll show this in the active workout or as a general insight
-                stallData: {
-                    exerciseId: exId,
-                    exerciseName: name,
-                    weight: stallWeight,
-                    sessionsCount: count
-                }
+                relevantRoutineIds: [],
+                stallData: { exerciseId: exId, exerciseName: name, weight: currentWeight, sessionsCount: stallCount }
             };
         }
     }
@@ -306,6 +391,20 @@ export const getWorkoutRecommendation = (
     const trainedToday = lastSession && (lastSession.startTime >= todayStart || (lastSession.endTime > 0 && lastSession.endTime >= todayStart));
 
     if (trainedToday) {
+        const techPRs = detectTechnicalPRs(history, exercises, t);
+        if (techPRs.length > 0) {
+            const pr = techPRs[0];
+            return {
+                type: 'technical_pr',
+                titleKey: 'rec_title_technical_pr',
+                reasonKey: 'rec_reason_technical_pr',
+                reasonParams: { weight: pr.weight.toString(), unit: 'kg', percent: pr.restReductionPercent.toString() },
+                suggestedBodyParts: [],
+                relevantRoutineIds: [],
+                systemicFatigue
+            };
+        }
+
         const volume = lastSession?.exercises.reduce((total, ex) => total + ex.sets.reduce((t, s) => t + (s.isComplete ? s.weight * s.reps : 0), 0), 0) || 0;
         return { type: 'active_recovery', titleKey: "rec_title_workout_complete", reasonKey: "rec_reason_workout_complete", reasonParams: { volume: volume.toString() }, suggestedBodyParts: ['Mobility'], relevantRoutineIds: routines.filter(r => r.name.includes('Mobility') || r.exercises.some(ex => exercises.find(e => e.id === ex.exerciseId)?.bodyPart === 'Mobility')).map(r => r.id), systemicFatigue };
     }
@@ -333,8 +432,14 @@ export const getWorkoutRecommendation = (
         return { type: 'deload', titleKey: 'rec_title_deload', reasonKey: 'rec_reason_cns_fatigue', reasonParams: { score: systemicFatigue.score.toString() }, suggestedBodyParts: ['Mobility', 'Cardio'], relevantRoutineIds: [], generatedRoutine: generateGapSession([], exercises, history, t, userProfile, freshness, currentBodyweight, profile), systemicFatigue };
     }
 
-    const stallRec = detectStalls(history, exercises, t);
+    const stallRec = detectStalls(history, exercises, t, profile);
     if (stallRec) return stallRec;
+
+    const circadianRec = detectCircadianNudge(t);
+    if (circadianRec) return circadianRec;
+
+    const efficiencyRec = detectEfficiencyIssues(history);
+    if (efficiencyRec) return efficiencyRec;
 
     if (isOnboardingPhase && customRoutines.length > 0) {
         if (history.length === 0) return { type: 'workout', titleKey: "rec_title_onboarding_complete", reasonKey: "rec_reason_onboarding_complete", suggestedBodyParts: [], relevantRoutineIds: [customRoutines[0].id], systemicFatigue };

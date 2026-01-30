@@ -68,10 +68,32 @@ export const en_coach = {
   rec_action_disable_detection: "Don't ask again",
   rec_alternatives_label: "Or choose from these templates:",
 
-  // Stall / Plateau Detection
-  rec_title_stall: "Plateau Detected: {exercise}",
-  rec_reason_stall: "You've been training with {weight}{unit} for {count} sessions. Your body has adapted; a 'Plateau Buster' deload (10-15%) is recommended to reset and push past this limit.",
   rec_action_plateau_buster: "Apply Plateau Buster",
+
+  // Circadian Rhythms
+  rec_title_circadian_morning: "Morning Warrior Optimization",
+  rec_title_circadian_afternoon: "Peak Performance Window",
+  rec_title_circadian_night: "Sleep Hygiene Optimization",
+  rec_reason_morning_winter: "Early sessions in winter require longer dynamic warmups. Let's prime your joints for {count} mins.",
+  rec_reason_morning_summer: "Ambient temperature is high. You can save energy with a shorter, focused warmup protocol today.",
+  rec_reason_afternoon: "Your core temperature is peaking. This 1pm-5pm window is statistically ideal for heavy CNS load and PR attempts.",
+  rec_reason_night: "Training late can spike cortisol. Avoid absolute failure on heavy compound lifts to ensure deep sleep tonight.",
+
+  // Diversified Plateau Busters
+  rec_title_pivot_volume: "Volume Consolidation",
+  rec_title_pivot_reps: "Rep Range Pivot",
+  rec_title_pivot_density: "Metabolic Density Pivot",
+  rec_title_pivot_variation: "Movement Variation",
+  rec_reason_pivot_volume: "You've stalled twice here. We'll drop a set to 3x5; keeping the weight high while slashing the fatigue debt.",
+  rec_reason_pivot_reps: "Your muscles have adapted to this rep range. Shifting to {range} reps will shock the fibers and restart growth.",
+  rec_reason_pivot_density: "Stalled on weight? Let's win on time. Reducing rest to {rest}s to build metabolic efficiency.",
+  rec_reason_pivot_variation: "Physical and mental burnout detected. Let's swap {from} for {to} for two weeks to rebuild momentum.",
+
+  // Efficiency & Technical PRs
+  rec_title_efficiency_warning: "Efficiency Warning",
+  rec_reason_efficiency_warning: "Rest has exceeded 5 mins while performance is dropping. This signal suggests systemic fatigue rather than just muscle failure.",
+  rec_title_technical_pr: "Technical PR!",
+  rec_reason_technical_pr: "You crushed {weight}{unit} with {percent}% less rest time than your previous personal best. That's real growth!",
 
   // Bio-Adaptive
   coach_warning_density_drop_title: "Efficiency Leak",
