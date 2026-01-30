@@ -251,6 +251,26 @@ export const getSmartWeightSuggestion = (
                 const deloadWeight = Math.round((lastWeight * 0.9) / increment) * increment;
                 return { weight: deloadWeight, reason: 'insight_reason_rust', trend: 'decrease' };
             }
+
+            // Stall Detection within Suggestion
+            let consecutiveStallCount = 1;
+            for (let i = 1; i < exHistory.length; i++) {
+                const prev = exHistory[i];
+                const prevSets = prev.exerciseData.sets.filter(s => s.type === 'normal');
+                if (prevSets.length === 0) continue;
+                const prevMaxW = Math.max(...prevSets.map(s => s.weight));
+                if (prevMaxW <= lastWeight) {
+                    consecutiveStallCount++;
+                } else {
+                    break;
+                }
+            }
+
+            if (consecutiveStallCount >= 3) {
+                const plateauWeight = Math.round((lastWeight * 0.9) / increment) * increment;
+                return { weight: plateauWeight, reason: 'rec_reason_stall', trend: 'decrease' };
+            }
+
             const exerciseDef = allExercises.find(e => e.id === exerciseId) || PREDEFINED_EXERCISES.find(e => e.id === exerciseId);
             const targetRest = 90;
             const performance = analyzePerformance(lastEntry, targetRest);

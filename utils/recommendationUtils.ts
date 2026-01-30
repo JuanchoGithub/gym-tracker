@@ -10,35 +10,41 @@ import { predictNextRoutine, getProtectedMuscles, generateGapSession } from './s
 import { inferUserProfile, MOVEMENT_PATTERNS, calculateMaxStrengthProfile, calculateMedianWorkoutDuration, analyzeUserHabits, calculateLifterDNA } from '../services/analyticsService';
 
 export interface Recommendation {
-  type: 'rest' | 'workout' | 'promotion' | 'active_recovery' | 'imbalance' | 'deload' | 'update_1rm' | 'goal_mismatch' | 'density_warning';
-  titleKey: string;
-  titleParams?: Record<string, string | number>;
-  reasonKey: string;
-  reasonParams?: Record<string, string | number>;
-  suggestedBodyParts: BodyPart[];
-  relevantRoutineIds: string[];
-  generatedRoutine?: Routine;
-  promotionData?: {
-      fromId: string;
-      toId: string;
-      fromName: string;
-      toName: string;
-  };
-  systemicFatigue?: {
-      score: number;
-      level: 'Low' | 'Medium' | 'High';
-  };
-  update1RMData?: {
-      exerciseId: string;
-      exerciseName: string;
-      oldMax: number;
-      newMax: number;
-  };
-  goalMismatchData?: {
-      currentGoal: UserGoal;
-      detectedGoal: UserGoal;
-      avgReps: number;
-  };
+    type: 'rest' | 'workout' | 'promotion' | 'active_recovery' | 'imbalance' | 'deload' | 'update_1rm' | 'goal_mismatch' | 'density_warning' | 'stall';
+    titleKey: string;
+    titleParams?: Record<string, string | number>;
+    reasonKey: string;
+    reasonParams?: Record<string, string | number>;
+    suggestedBodyParts: BodyPart[];
+    relevantRoutineIds: string[];
+    generatedRoutine?: Routine;
+    promotionData?: {
+        fromId: string;
+        toId: string;
+        fromName: string;
+        toName: string;
+    };
+    systemicFatigue?: {
+        score: number;
+        level: 'Low' | 'Medium' | 'High';
+    };
+    update1RMData?: {
+        exerciseId: string;
+        exerciseName: string;
+        oldMax: number;
+        newMax: number;
+    };
+    goalMismatchData?: {
+        currentGoal: UserGoal;
+        detectedGoal: UserGoal;
+        avgReps: number;
+    };
+    stallData?: {
+        exerciseId: string;
+        exerciseName: string;
+        weight: number;
+        sessionsCount: number;
+    };
 }
 
 const PUSH_MUSCLES = [MUSCLES.PECTORALS, MUSCLES.FRONT_DELTS, MUSCLES.TRICEPS];
@@ -70,7 +76,7 @@ export const detectGoalMismatch = (profile: Profile, history: WorkoutSession[]):
     if (profile.goalMismatchSnoozedUntil && Date.now() < profile.goalMismatchSnoozedUntil) return null;
     if (history.length < 10) return null;
     const lifterStats = calculateLifterDNA(history);
-    let detectedGoal: UserGoal = 'muscle'; 
+    let detectedGoal: UserGoal = 'muscle';
     if (lifterStats.archetype === 'powerbuilder') detectedGoal = 'strength';
     else if (lifterStats.archetype === 'bodybuilder') detectedGoal = 'muscle';
     else if (lifterStats.archetype === 'endurance') detectedGoal = 'endurance';
@@ -127,14 +133,14 @@ export const detectPromotions = (history: WorkoutSession[], exercises: Exercise[
 export const detectImbalances = (history: WorkoutSession[], routines: Routine[], exercises: Exercise[], t: (key: string, replacements?: Record<string, string | number>) => string, currentBodyWeight?: number, profile?: Profile): Recommendation | null => {
     if (history.length < 15) return null;
     const currentProfile = calculateMaxStrengthProfile(history);
-    const MIN_STRENGTH_THRESHOLD = 40; 
-    const max1RM = Math.max(currentProfile.SQUAT, currentProfile.DEADLIFT, currentProfile.BENCH);
+    const MIN_STRENGTH_THRESHOLD = 40;
+    const max1RM = Math.max(currentProfile.SQUAT.weight, currentProfile.DEADLIFT.weight, currentProfile.BENCH.weight);
     if (max1RM < MIN_STRENGTH_THRESHOLD) return null;
     const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
     const historicalDate = Date.now() - TWO_WEEKS_MS;
-    const historicalProfile = calculateMaxStrengthProfile(history, historicalDate);
+    const historicalProfile = calculateMaxStrengthProfile(history, [], historicalDate);
     let worstImbalance: Recommendation | null = null;
-    let maxDeviation = 0.15; 
+    let maxDeviation = 0.15;
     let targetFocus: RoutineFocus = 'full_body';
     const getRankedRoutineIds = (targetPatterns: string[]) => {
         const scored = routines.map(r => {
@@ -151,14 +157,14 @@ export const detectImbalances = (history: WorkoutSession[], routines: Routine[],
         return relevant.slice(0, 4).map(x => x.id);
     };
     const analyzePair = (liftA: keyof typeof currentProfile, liftB: keyof typeof currentProfile, ratio: number, titleKey: string, reasonKey: string, bodyParts: BodyPart[], targetPatterns: string[], focusForWeakB: RoutineFocus) => {
-        const valA = currentProfile[liftA], valB = currentProfile[liftB];
+        const valA = currentProfile[liftA].weight, valB = currentProfile[liftB].weight;
         if (valA > MIN_STRENGTH_THRESHOLD && valB > 0) {
             const targetB = valA * ratio;
             if (valB < targetB) {
                 const currentDiff = targetB - valB;
                 const currentDeviation = currentDiff / targetB;
                 if (currentDeviation > maxDeviation) {
-                    const histValA = historicalProfile[liftA] || 0, histValB = historicalProfile[liftB] || 0;
+                    const histValA = historicalProfile[liftA]?.weight || 0, histValB = historicalProfile[liftB]?.weight || 0;
                     if (histValA < MIN_STRENGTH_THRESHOLD || histValB < MIN_STRENGTH_THRESHOLD * 0.5) return null;
                     const histTargetB = histValA * ratio, histDiff = histTargetB - histValB, histDeviation = histDiff / histTargetB;
                     if (histDeviation > 0.10 && currentDeviation >= histDeviation) {
@@ -182,14 +188,14 @@ export const detectImbalances = (history: WorkoutSession[], routines: Routine[],
     if (vertBal) worstImbalance = vertBal;
     if (currentBodyWeight && currentBodyWeight > 0 && profile?.gender && worstImbalance === null) {
         const profGender = profile.gender;
-        const levelSquat = getProficiency('SQUAT', currentProfile.SQUAT, currentBodyWeight, profGender), levelBench = getProficiency('BENCH', currentProfile.BENCH, currentBodyWeight, profGender), levelDeadlift = getProficiency('DEADLIFT', currentProfile.DEADLIFT, currentBodyWeight, profGender), levelOhp = getProficiency('OHP', currentProfile.OHP, currentBodyWeight, profGender);
+        const levelSquat = getProficiency('SQUAT', currentProfile.SQUAT.weight, currentBodyWeight, profGender), levelBench = getProficiency('BENCH', currentProfile.BENCH.weight, currentBodyWeight, profGender), levelDeadlift = getProficiency('DEADLIFT', currentProfile.DEADLIFT.weight, currentBodyWeight, profGender), levelOhp = getProficiency('OHP', currentProfile.OHP.weight, currentBodyWeight, profGender);
         const scoreUpper = Math.max(LEVEL_SCORES[levelBench], LEVEL_SCORES[levelOhp]), scoreLower = Math.max(LEVEL_SCORES[levelSquat], LEVEL_SCORES[levelDeadlift]);
         if (scoreUpper >= scoreLower + 2) {
-             targetFocus = 'legs';
-             worstImbalance = { type: 'imbalance', titleKey: 'imbalance_upper_dominant_title', reasonKey: 'imbalance_upper_dominant_desc', reasonParams: { upper_level: levelBench === 'Untrained' ? levelOhp : levelBench, lower_level: levelSquat === 'Untrained' ? levelDeadlift : levelSquat }, suggestedBodyParts: ['Legs'], relevantRoutineIds: getRankedRoutineIds([...MOVEMENT_PATTERNS.SQUAT, ...MOVEMENT_PATTERNS.DEADLIFT]) };
+            targetFocus = 'legs';
+            worstImbalance = { type: 'imbalance', titleKey: 'imbalance_upper_dominant_title', reasonKey: 'imbalance_upper_dominant_desc', reasonParams: { upper_level: levelBench === 'Untrained' ? levelOhp : levelBench, lower_level: levelSquat === 'Untrained' ? levelDeadlift : levelSquat }, suggestedBodyParts: ['Legs'], relevantRoutineIds: getRankedRoutineIds([...MOVEMENT_PATTERNS.SQUAT, ...MOVEMENT_PATTERNS.DEADLIFT]) };
         } else if (scoreLower >= scoreUpper + 2) {
-             targetFocus = 'upper';
-             worstImbalance = { type: 'imbalance', titleKey: 'imbalance_lower_dominant_title', reasonKey: 'imbalance_lower_dominant_desc', reasonParams: { lower_level: levelSquat === 'Untrained' ? levelDeadlift : levelSquat, upper_level: levelBench === 'Untrained' ? levelOhp : levelBench }, suggestedBodyParts: ['Chest', 'Shoulders', 'Back'], relevantRoutineIds: getRankedRoutineIds([...MOVEMENT_PATTERNS.BENCH, ...MOVEMENT_PATTERNS.OHP]) };
+            targetFocus = 'upper';
+            worstImbalance = { type: 'imbalance', titleKey: 'imbalance_lower_dominant_title', reasonKey: 'imbalance_lower_dominant_desc', reasonParams: { lower_level: levelSquat === 'Untrained' ? levelDeadlift : levelSquat, upper_level: levelBench === 'Untrained' ? levelOhp : levelBench }, suggestedBodyParts: ['Chest', 'Shoulders', 'Back'], relevantRoutineIds: getRankedRoutineIds([...MOVEMENT_PATTERNS.BENCH, ...MOVEMENT_PATTERNS.OHP]) };
         }
     }
     if (worstImbalance) {
@@ -203,141 +209,218 @@ export const detectImbalances = (history: WorkoutSession[], routines: Routine[],
     return worstImbalance;
 }
 
+export const detectStalls = (history: WorkoutSession[], exercises: Exercise[], t: (key: string, replacements?: Record<string, string | number>) => string): Recommendation | null => {
+    if (history.length < 5) return null;
+
+    // Check core lift patterns or most frequent exercises
+    const habitData = analyzeUserHabits(history);
+    const frequentExIds = Object.entries(habitData.exerciseFrequency)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10)
+        .map(e => e[0]);
+
+    for (const exId of frequentExIds) {
+        const exHistory = getExerciseHistory(history, exId);
+        if (exHistory.length < 3) continue;
+
+        let count = 0;
+        let stallWeight = 0;
+        let isStalled = false;
+
+        for (let i = 0; i < exHistory.length; i++) {
+            const current = exHistory[i];
+            const sets = current.exerciseData.sets.filter(s => s.type === 'normal');
+            if (sets.length === 0) continue;
+
+            const maxW = Math.max(...sets.map(s => s.weight));
+
+            if (i === 0) {
+                stallWeight = maxW;
+                count = 1;
+                continue;
+            }
+
+            if (maxW <= stallWeight) {
+                count++;
+            } else {
+                break; // Progress made
+            }
+
+            if (count >= 3) {
+                isStalled = true;
+                break;
+            }
+        }
+
+        if (isStalled && count >= 3) {
+            const exDef = exercises.find(e => e.id === exId) || PREDEFINED_EXERCISES.find(e => e.id === exId);
+            if (!exDef) continue;
+
+            const name = t(exDef.id as any) !== exDef.id ? t(exDef.id as any) : exDef.name;
+
+            return {
+                type: 'stall',
+                titleKey: 'rec_title_stall',
+                titleParams: { exercise: name },
+                reasonKey: 'rec_reason_stall',
+                reasonParams: {
+                    weight: stallWeight,
+                    unit: 'kg', // Should ideally come from context but defaulting to kg for now based on backup
+                    count: count
+                },
+                suggestedBodyParts: [exDef.bodyPart as BodyPart],
+                relevantRoutineIds: [], // We'll show this in the active workout or as a general insight
+                stallData: {
+                    exerciseId: exId,
+                    exerciseName: name,
+                    weight: stallWeight,
+                    sessionsCount: count
+                }
+            };
+        }
+    }
+
+    return null;
+};
+
 export const getWorkoutRecommendation = (
-  history: WorkoutSession[],
-  routines: Routine[],
-  exercises: Exercise[],
-  t: (key: string, replacements?: Record<string, string | number>) => string,
-  currentBodyweight?: number,
-  profile?: Profile
+    history: WorkoutSession[],
+    routines: Routine[],
+    exercises: Exercise[],
+    t: (key: string, replacements?: Record<string, string | number>) => string,
+    currentBodyweight?: number,
+    profile?: Profile
 ): Recommendation | null => {
-  const userProfile = inferUserProfile(history);
-  if (profile?.mainGoal) userProfile.goal = profile.mainGoal;
-  const customRoutines = routines.filter(r => !r.id.startsWith('rt-'));
-  const isOnboardingPhase = history.length < 15;
-  const lastSession = history.length > 0 ? history[0] : null;
-  const habitData = analyzeUserHabits(history);
-  const { routineFrequency, exerciseFrequency } = habitData;
-  const systemicFatigue = calculateSystemicFatigue(history, exercises);
-  const freshness = calculateMuscleFreshness(history, exercises, profile?.mainGoal, profile); 
+    const userProfile = inferUserProfile(history);
+    if (profile?.mainGoal) userProfile.goal = profile.mainGoal;
+    const customRoutines = routines.filter(r => !r.id.startsWith('rt-'));
+    const isOnboardingPhase = history.length < 15;
+    const lastSession = history.length > 0 ? history[0] : null;
+    const habitData = analyzeUserHabits(history);
+    const { routineFrequency, exerciseFrequency } = habitData;
+    const systemicFatigue = calculateSystemicFatigue(history, exercises);
+    const freshness = calculateMuscleFreshness(history, exercises, profile?.mainGoal, profile);
 
-  const now = Date.now();
-  const todayStart = new Date(now).setHours(0,0,0,0);
-  const trainedToday = lastSession && (lastSession.startTime >= todayStart || (lastSession.endTime > 0 && lastSession.endTime >= todayStart));
+    const now = Date.now();
+    const todayStart = new Date(now).setHours(0, 0, 0, 0);
+    const trainedToday = lastSession && (lastSession.startTime >= todayStart || (lastSession.endTime > 0 && lastSession.endTime >= todayStart));
 
-  if (trainedToday) {
-      const volume = lastSession?.exercises.reduce((total, ex) => total + ex.sets.reduce((t, s) => t + (s.isComplete ? s.weight * s.reps : 0), 0), 0) || 0;
-     return { type: 'active_recovery', titleKey: "rec_title_workout_complete", reasonKey: "rec_reason_workout_complete", reasonParams: { volume: volume.toString() }, suggestedBodyParts: ['Mobility'], relevantRoutineIds: routines.filter(r => r.name.includes('Mobility') || r.exercises.some(ex => exercises.find(e => e.id === ex.exerciseId)?.bodyPart === 'Mobility')).map(r => r.id), systemicFatigue };
-  }
-  
-  // Bio-Adaptive Pre-emptive Deload Check (Density Drop)
-  if (profile?.bioAdaptiveEngine && history.length >= 5) {
-      const currentDensity = calculateSessionDensity(history[0]);
-      const avgDensity = calculateAverageDensity(history.slice(1, 6), 5);
-      if (currentDensity > 0 && avgDensity > 0 && currentDensity < avgDensity * 0.8) {
-          const dropPercent = Math.round((1 - currentDensity / avgDensity) * 100);
-          return {
-              type: 'density_warning',
-              titleKey: 'coach_warning_density_drop_title',
-              reasonKey: 'coach_warning_density_drop_desc',
-              reasonParams: { percent: dropPercent.toString() },
-              suggestedBodyParts: ['Mobility', 'Cardio'],
-              relevantRoutineIds: [],
-              generatedRoutine: generateGapSession(['Quads', 'Hamstrings', 'Glutes'] as any, exercises, history, t, userProfile, freshness, currentBodyweight, profile),
-              systemicFatigue
-          };
-      }
-  }
+    if (trainedToday) {
+        const volume = lastSession?.exercises.reduce((total, ex) => total + ex.sets.reduce((t, s) => t + (s.isComplete ? s.weight * s.reps : 0), 0), 0) || 0;
+        return { type: 'active_recovery', titleKey: "rec_title_workout_complete", reasonKey: "rec_reason_workout_complete", reasonParams: { volume: volume.toString() }, suggestedBodyParts: ['Mobility'], relevantRoutineIds: routines.filter(r => r.name.includes('Mobility') || r.exercises.some(ex => exercises.find(e => e.id === ex.exerciseId)?.bodyPart === 'Mobility')).map(r => r.id), systemicFatigue };
+    }
 
-  if (systemicFatigue.level === 'High') {
-      return { type: 'deload', titleKey: 'rec_title_deload', reasonKey: 'rec_reason_cns_fatigue', reasonParams: { score: systemicFatigue.score.toString() }, suggestedBodyParts: ['Mobility', 'Cardio'], relevantRoutineIds: [], generatedRoutine: generateGapSession([], exercises, history, t, userProfile, freshness, currentBodyweight, profile), systemicFatigue };
-  }
+    // Bio-Adaptive Pre-emptive Deload Check (Density Drop)
+    if (profile?.bioAdaptiveEngine && history.length >= 5) {
+        const currentDensity = calculateSessionDensity(history[0]);
+        const avgDensity = calculateAverageDensity(history.slice(1, 6), 5);
+        if (currentDensity > 0 && avgDensity > 0 && currentDensity < avgDensity * 0.8) {
+            const dropPercent = Math.round((1 - currentDensity / avgDensity) * 100);
+            return {
+                type: 'density_warning',
+                titleKey: 'coach_warning_density_drop_title',
+                reasonKey: 'coach_warning_density_drop_desc',
+                reasonParams: { percent: dropPercent.toString() },
+                suggestedBodyParts: ['Mobility', 'Cardio'],
+                relevantRoutineIds: [],
+                generatedRoutine: generateGapSession(['Quads', 'Hamstrings', 'Glutes'] as any, exercises, history, t, userProfile, freshness, currentBodyweight, profile),
+                systemicFatigue
+            };
+        }
+    }
 
-  if (isOnboardingPhase && customRoutines.length > 0) {
-      if (history.length === 0) return { type: 'workout', titleKey: "rec_title_onboarding_complete", reasonKey: "rec_reason_onboarding_complete", suggestedBodyParts: [], relevantRoutineIds: [customRoutines[0].id], systemicFatigue };
-      const lastRoutineIndex = customRoutines.findIndex(r => r.id === lastSession?.routineId);
-      let nextIndex = lastRoutineIndex === -1 ? 0 : (lastRoutineIndex + 1) % customRoutines.length;
-      if (customRoutines.length > 1 && customRoutines[nextIndex].id === lastSession?.routineId) nextIndex = (nextIndex + 1) % customRoutines.length;
-      const nextRoutine = customRoutines[nextIndex];
-      return { type: 'workout', titleKey: "rec_title_next_up", titleParams: { routine: nextRoutine.name }, reasonKey: "rec_reason_next_up", reasonParams: { routine: nextRoutine.name }, suggestedBodyParts: [], relevantRoutineIds: [nextRoutine.id], systemicFatigue };
-  }
+    if (systemicFatigue.level === 'High') {
+        return { type: 'deload', titleKey: 'rec_title_deload', reasonKey: 'rec_reason_cns_fatigue', reasonParams: { score: systemicFatigue.score.toString() }, suggestedBodyParts: ['Mobility', 'Cardio'], relevantRoutineIds: [], generatedRoutine: generateGapSession([], exercises, history, t, userProfile, freshness, currentBodyweight, profile), systemicFatigue };
+    }
 
-  const scores = Object.values(freshness), avgFreshness = scores.reduce((a, b) => a + b, 0) / (scores.length || 1), hasFreshMuscles = scores.some(s => s > 80), predictedNextRoutine = predictNextRoutine(history, routines);
-  
-  if ((avgFreshness < 60 && !hasFreshMuscles)) {
-     const protectedMuscles = Object.entries(freshness).filter(([_, score]) => score < 50).map(([muscle]) => muscle as MuscleGroup);
-     return { type: 'active_recovery', titleKey: "rec_title_gap_workout", reasonKey: "rec_reason_fatigued", suggestedBodyParts: ['Cardio', 'Mobility', 'Core'], relevantRoutineIds: [], generatedRoutine: generateGapSession(protectedMuscles, exercises, history, t, userProfile, freshness, currentBodyweight, profile), systemicFatigue };
-  }
+    const stallRec = detectStalls(history, exercises, t);
+    if (stallRec) return stallRec;
 
-  const getGroupData = (id: string, muscleNames: string[], bodyParts: BodyPart[], focusKey: RoutineFocus) => {
-      const groupScores = muscleNames.map(m => freshness[m] !== undefined ? freshness[m] : 100); 
-      const score = groupScores.reduce((a,b) => a + b, 0) / groupScores.length;
-      let lastTrainedTime = 0;
-      for (const session of history) {
-          if (session.startTime <= lastTrainedTime) continue;
-          let hitGroup = false;
-          for (const ex of session.exercises) { if (exercises.find(e => e.id === ex.exerciseId)?.primaryMuscles?.some(m => muscleNames.includes(m))) { hitGroup = true; break; } }
-          if (hitGroup) { lastTrainedTime = session.startTime; break; }
-      }
-      const daysSince = lastTrainedTime === 0 ? 999 : Math.floor((Date.now() - lastTrainedTime) / (1000 * 60 * 60 * 24));
-      return { id, score, daysSince, bodyParts, focusKey };
-  };
+    if (isOnboardingPhase && customRoutines.length > 0) {
+        if (history.length === 0) return { type: 'workout', titleKey: "rec_title_onboarding_complete", reasonKey: "rec_reason_onboarding_complete", suggestedBodyParts: [], relevantRoutineIds: [customRoutines[0].id], systemicFatigue };
+        const lastRoutineIndex = customRoutines.findIndex(r => r.id === lastSession?.routineId);
+        let nextIndex = lastRoutineIndex === -1 ? 0 : (lastRoutineIndex + 1) % customRoutines.length;
+        if (customRoutines.length > 1 && customRoutines[nextIndex].id === lastSession?.routineId) nextIndex = (nextIndex + 1) % customRoutines.length;
+        const nextRoutine = customRoutines[nextIndex];
+        return { type: 'workout', titleKey: "rec_title_next_up", titleParams: { routine: nextRoutine.name }, reasonKey: "rec_reason_next_up", reasonParams: { routine: nextRoutine.name }, suggestedBodyParts: [], relevantRoutineIds: [nextRoutine.id], systemicFatigue };
+    }
 
-  const pushGroup = getGroupData('Push', PUSH_MUSCLES, ['Chest', 'Shoulders', 'Triceps'], 'push');
-  const pullGroup = getGroupData('Pull', PULL_MUSCLES, ['Back', 'Biceps'], 'pull');
-  const legsGroup = getGroupData('Legs', LEG_MUSCLES, ['Legs', 'Glutes', 'Calves'], 'legs');
-  const fullBodyGroup = getGroupData('Full Body', FULL_BODY_MUSCLES, ['Full Body', 'Chest', 'Back', 'Legs'], 'full_body');
-  const getHabitScore = (focusKey: RoutineFocus): number => {
-      let score = 0, targetMuscles: string[] = [];
-      if (focusKey === 'push') targetMuscles = PUSH_MUSCLES; else if (focusKey === 'pull') targetMuscles = PULL_MUSCLES; else if (focusKey === 'legs') targetMuscles = LEG_MUSCLES; else if (focusKey === 'full_body') targetMuscles = FULL_BODY_MUSCLES;
-      Object.entries(exerciseFrequency).forEach(([exId, freq]) => { const def = exercises.find(e => e.id === exId) || PREDEFINED_EXERCISES.find(e => e.id === exId); if (def && def.primaryMuscles && def.primaryMuscles.some(m => targetMuscles.includes(m))) score += freq; });
-      return score;
-  };
+    const scores = Object.values(freshness), avgFreshness = scores.reduce((a, b) => a + b, 0) / (scores.length || 1), hasFreshMuscles = scores.some(s => s > 80), predictedNextRoutine = predictNextRoutine(history, routines);
 
-  const groups = [pushGroup, pullGroup, legsGroup, fullBodyGroup];
-  const readyGroups = groups.filter(g => {
-      // Bio-Adaptive Modification: Threshold Delta
-      // If user is highly efficient (density > avg), lower freshness threshold to 70%
-      let threshold = 80;
-      if (profile?.bioAdaptiveEngine && history.length >= 2) {
-          const efficiency = calculateLifterDNA(history).efficiencyScore;
-          if (efficiency > 110) threshold = 70;
-      }
-      if (g.daysSince < 2) return false; 
-      return g.score > threshold;
-  });
+    if ((avgFreshness < 60 && !hasFreshMuscles)) {
+        const protectedMuscles = Object.entries(freshness).filter(([_, score]) => score < 50).map(([muscle]) => muscle as MuscleGroup);
+        return { type: 'active_recovery', titleKey: "rec_title_gap_workout", reasonKey: "rec_reason_fatigued", suggestedBodyParts: ['Cardio', 'Mobility', 'Core'], relevantRoutineIds: [], generatedRoutine: generateGapSession(protectedMuscles, exercises, history, t, userProfile, freshness, currentBodyweight, profile), systemicFatigue };
+    }
 
-  if (predictedNextRoutine) {
-      const predictedFocus = predictedNextRoutine.name.toLowerCase();
-      const matchingGroup = readyGroups.find(g => predictedFocus.includes(g.id.toLowerCase().replace('_', ' ')));
-      if (matchingGroup) return { type: 'workout', titleKey: "rec_title_next_up", titleParams: { routine: predictedNextRoutine.name }, reasonKey: "rec_reason_fresh", reasonParams: { muscles: matchingGroup.bodyParts[0], days: matchingGroup.daysSince.toString() }, suggestedBodyParts: matchingGroup.bodyParts, relevantRoutineIds: [predictedNextRoutine.id], systemicFatigue };
-  }
+    const getGroupData = (id: string, muscleNames: string[], bodyParts: BodyPart[], focusKey: RoutineFocus) => {
+        const groupScores = muscleNames.map(m => freshness[m] !== undefined ? freshness[m] : 100);
+        const score = groupScores.reduce((a, b) => a + b, 0) / groupScores.length;
+        let lastTrainedTime = 0;
+        for (const session of history) {
+            if (session.startTime <= lastTrainedTime) continue;
+            let hitGroup = false;
+            for (const ex of session.exercises) { if (exercises.find(e => e.id === ex.exerciseId)?.primaryMuscles?.some(m => muscleNames.includes(m))) { hitGroup = true; break; } }
+            if (hitGroup) { lastTrainedTime = session.startTime; break; }
+        }
+        const daysSince = lastTrainedTime === 0 ? 999 : Math.floor((Date.now() - lastTrainedTime) / (1000 * 60 * 60 * 24));
+        return { id, score, daysSince, bodyParts, focusKey };
+    };
 
-  if (readyGroups.length > 0) {
-      readyGroups.sort((a, b) => { const daysDiff = b.daysSince - a.daysSince; if (Math.abs(daysDiff) > 2) return daysDiff; const habitA = getHabitScore(a.focusKey), habitB = getHabitScore(b.focusKey); return habitB - habitA; });
-      const winner = readyGroups[0];
-      let titleKey = 'rec_title_generic';
-      if (winner.id === 'Push') titleKey = 'rec_title_push'; if (winner.id === 'Pull') titleKey = 'rec_title_pull'; if (winner.id === 'Legs') titleKey = 'rec_title_legs';
-      let relevantRoutineIds: string[] = [], generatedRoutine: Routine | undefined = undefined, reasonKey = winner.daysSince > 4 ? 'rec_reason_neglected' : 'rec_reason_fresh', titleParams: Record<string, string> = { focus: winner.id };
-      const scoredRoutines = routines.map(r => {
-        let score = 0, matchCount = 0;
-        r.exercises.forEach(ex => { const def = exercises.find(e => e.id === ex.exerciseId) || PREDEFINED_EXERCISES.find(e => e.id === ex.exerciseId); if (def) { if (winner.id === 'Full Body') { if (['Chest', 'Back', 'Legs', 'Shoulders'].includes(def.bodyPart)) matchCount++; } else { if (winner.bodyParts.includes(def.bodyPart)) matchCount++; } } });
-        const matchRatio = r.exercises.length > 0 ? matchCount / r.exercises.length : 0;
-        if (matchRatio < 0.3) return { r, score: -10 }; 
-        score += matchRatio * 20;
-        const freq = routineFrequency[r.id] || 0;
-        score += Math.min(20, freq * 2);
-        if (r.name.toLowerCase().includes(winner.id.toLowerCase())) score += 10;
-        if (!r.id.startsWith('rt-')) score += 5;
-        if (lastSession && r.id === lastSession.routineId) score -= 50; 
-        return { r, score };
-      });
-      const validScored = scoredRoutines.filter(x => x.score > 10);
-      validScored.sort((a, b) => b.score - a.score);
-      relevantRoutineIds = validScored.slice(0, 2).map(x => x.r.id);
-      if (!isOnboardingPhase) generatedRoutine = generateSmartRoutine(winner.focusKey, userProfile, t, exercises, exerciseFrequency);
-      const daysText = winner.daysSince === 999 ? t('common_many') : winner.daysSince.toString();
-      return { type: 'workout', titleKey, titleParams, reasonKey, reasonParams: { muscles: winner.bodyParts[0], days: daysText, focus: winner.id }, suggestedBodyParts: winner.bodyParts, relevantRoutineIds, generatedRoutine, systemicFatigue };
-  }
-  return { type: 'active_recovery', titleKey: "rec_title_generic", titleParams: { focus: 'Cardio / Mobility' }, reasonKey: "rec_reason_fatigued", suggestedBodyParts: ['Cardio', 'Mobility'], relevantRoutineIds: routines.filter(r => r.routineType === 'hiit' || r.name.includes('Cardio')).map(r => r.id), generatedRoutine: generateGapSession([], exercises, history, t, userProfile, freshness, currentBodyweight, profile), systemicFatigue };
+    const pushGroup = getGroupData('Push', PUSH_MUSCLES, ['Chest', 'Shoulders', 'Triceps'], 'push');
+    const pullGroup = getGroupData('Pull', PULL_MUSCLES, ['Back', 'Biceps'], 'pull');
+    const legsGroup = getGroupData('Legs', LEG_MUSCLES, ['Legs', 'Glutes', 'Calves'], 'legs');
+    const fullBodyGroup = getGroupData('Full Body', FULL_BODY_MUSCLES, ['Full Body', 'Chest', 'Back', 'Legs'], 'full_body');
+    const getHabitScore = (focusKey: RoutineFocus): number => {
+        let score = 0, targetMuscles: string[] = [];
+        if (focusKey === 'push') targetMuscles = PUSH_MUSCLES; else if (focusKey === 'pull') targetMuscles = PULL_MUSCLES; else if (focusKey === 'legs') targetMuscles = LEG_MUSCLES; else if (focusKey === 'full_body') targetMuscles = FULL_BODY_MUSCLES;
+        Object.entries(exerciseFrequency).forEach(([exId, freq]) => { const def = exercises.find(e => e.id === exId) || PREDEFINED_EXERCISES.find(e => e.id === exId); if (def && def.primaryMuscles && def.primaryMuscles.some(m => targetMuscles.includes(m))) score += freq; });
+        return score;
+    };
+
+    const groups = [pushGroup, pullGroup, legsGroup, fullBodyGroup];
+    const readyGroups = groups.filter(g => {
+        // Bio-Adaptive Modification: Threshold Delta
+        // If user is highly efficient (density > avg), lower freshness threshold to 70%
+        let threshold = 80;
+        if (profile?.bioAdaptiveEngine && history.length >= 2) {
+            const efficiency = calculateLifterDNA(history).efficiencyScore;
+            if (efficiency > 110) threshold = 70;
+        }
+        if (g.daysSince < 2) return false;
+        return g.score > threshold;
+    });
+
+    if (predictedNextRoutine) {
+        const predictedFocus = predictedNextRoutine.name.toLowerCase();
+        const matchingGroup = readyGroups.find(g => predictedFocus.includes(g.id.toLowerCase().replace('_', ' ')));
+        if (matchingGroup) return { type: 'workout', titleKey: "rec_title_next_up", titleParams: { routine: predictedNextRoutine.name }, reasonKey: "rec_reason_fresh", reasonParams: { muscles: matchingGroup.bodyParts[0], days: matchingGroup.daysSince.toString() }, suggestedBodyParts: matchingGroup.bodyParts, relevantRoutineIds: [predictedNextRoutine.id], systemicFatigue };
+    }
+
+    if (readyGroups.length > 0) {
+        readyGroups.sort((a, b) => { const daysDiff = b.daysSince - a.daysSince; if (Math.abs(daysDiff) > 2) return daysDiff; const habitA = getHabitScore(a.focusKey), habitB = getHabitScore(b.focusKey); return habitB - habitA; });
+        const winner = readyGroups[0];
+        let titleKey = 'rec_title_generic';
+        if (winner.id === 'Push') titleKey = 'rec_title_push'; if (winner.id === 'Pull') titleKey = 'rec_title_pull'; if (winner.id === 'Legs') titleKey = 'rec_title_legs';
+        let relevantRoutineIds: string[] = [], generatedRoutine: Routine | undefined = undefined, reasonKey = winner.daysSince > 4 ? 'rec_reason_neglected' : 'rec_reason_fresh', titleParams: Record<string, string> = { focus: winner.id };
+        const scoredRoutines = routines.map(r => {
+            let score = 0, matchCount = 0;
+            r.exercises.forEach(ex => { const def = exercises.find(e => e.id === ex.exerciseId) || PREDEFINED_EXERCISES.find(e => e.id === ex.exerciseId); if (def) { if (winner.id === 'Full Body') { if (['Chest', 'Back', 'Legs', 'Shoulders'].includes(def.bodyPart)) matchCount++; } else { if (winner.bodyParts.includes(def.bodyPart)) matchCount++; } } });
+            const matchRatio = r.exercises.length > 0 ? matchCount / r.exercises.length : 0;
+            if (matchRatio < 0.3) return { r, score: -10 };
+            score += matchRatio * 20;
+            const freq = routineFrequency[r.id] || 0;
+            score += Math.min(20, freq * 2);
+            if (r.name.toLowerCase().includes(winner.id.toLowerCase())) score += 10;
+            if (!r.id.startsWith('rt-')) score += 5;
+            if (lastSession && r.id === lastSession.routineId) score -= 50;
+            return { r, score };
+        });
+        const validScored = scoredRoutines.filter(x => x.score > 10);
+        validScored.sort((a, b) => b.score - a.score);
+        relevantRoutineIds = validScored.slice(0, 2).map(x => x.r.id);
+        if (!isOnboardingPhase) generatedRoutine = generateSmartRoutine(winner.focusKey, userProfile, t, exercises, exerciseFrequency);
+        const daysText = winner.daysSince === 999 ? t('common_many') : winner.daysSince.toString();
+        return { type: 'workout', titleKey, titleParams, reasonKey, reasonParams: { muscles: winner.bodyParts[0], days: daysText, focus: winner.id }, suggestedBodyParts: winner.bodyParts, relevantRoutineIds, generatedRoutine, systemicFatigue };
+    }
+    return { type: 'active_recovery', titleKey: "rec_title_generic", titleParams: { focus: 'Cardio / Mobility' }, reasonKey: "rec_reason_fatigued", suggestedBodyParts: ['Cardio', 'Mobility'], relevantRoutineIds: routines.filter(r => r.routineType === 'hiit' || r.name.includes('Cardio')).map(r => r.id), generatedRoutine: generateGapSession([], exercises, history, t, userProfile, freshness, currentBodyweight, profile), systemicFatigue };
 };

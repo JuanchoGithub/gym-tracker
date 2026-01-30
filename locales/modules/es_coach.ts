@@ -68,6 +68,11 @@ export const es_coach = {
   rec_action_disable_detection: "No volver a preguntar",
   rec_alternatives_label: "O elegí una de estas plantillas:",
 
+  // Stall / Plateau Detection
+  rec_title_stall: "Meseta Detectada: {exercise}",
+  rec_reason_stall: "Viniste entrenando con {weight}{unit} durante {count} sesiones. Tu cuerpo se adaptó; se recomienda una descarga 'Rompe-Meseta' (10-15%) para resetear y superar este límite.",
+  rec_action_plateau_buster: "Aplicar Rompe-Meseta",
+
   // Bio-Adaptive
   coach_warning_density_drop_title: "Fuga de Eficiencia",
   coach_warning_density_drop_desc: "Tu densidad de entrenamiento cayó un {percent}% recientemente. Suele ser señal de fatiga acumulada. Una sesión ligera hoy evitaría un agotamiento mayor.",
