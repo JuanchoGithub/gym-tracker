@@ -68,6 +68,9 @@ export const en_coach = {
   rec_action_disable_detection: "Don't ask again",
   rec_alternatives_label: "Or choose from these templates:",
 
+  // Stall / Plateau Detection
+  rec_title_stall: "Plateau Detected: {exercise}",
+  rec_reason_stall: "You've been training with {weight}{unit} for {count} sessions. Your body has adapted; a 'Plateau Buster' deload (10-15%) is recommended to reset and push past this limit.",
   rec_action_plateau_buster: "Apply Plateau Buster",
 
   // Circadian Rhythms
