@@ -244,6 +244,17 @@ export interface TimedSetInfo {
   set: PerformedSet;
 }
 
+export interface RecommendationLog {
+  id: string;
+  type: string; // 'coach', 'supplement', 'promotion', 'imbalance', '1rm_update'
+  timestamp: number;
+  title: string;
+  reason: string;
+  variables: Record<string, string | number | boolean | null>;
+  actionTaken?: 'apply' | 'dismiss' | 'snooze' | 'take' | 'snooze_stack';
+  appliedValue?: Record<string, string | number | boolean | null>;
+}
+
 export interface UserStatistics {
   recommendation: Recommendation | null;
   activePromotion: Recommendation | null;
@@ -252,4 +263,22 @@ export interface UserStatistics {
   goalMismatchRecommendation: Recommendation | null;
   lastCalculated: number;
   performanceEfficiency?: number; // New: 0-100 score based on density trend
+}
+
+export interface Profile {
+  gender?: 'male' | 'female';
+  height?: number;
+  weightHistory: WeightEntry[];
+  unlocks?: UnlockEvent[];
+  oneRepMaxes?: Record<string, OneRepMaxEntry>;
+  oneRepMaxSnoozes?: Record<string, number>;
+  autoUpdated1RMs?: Record<string, AutoUpdateEntry>;
+  promotionSnoozes?: Record<string, number>;
+  mainGoal?: UserGoal;
+  smartGoalDetection?: boolean;
+  bioAdaptiveEngine?: boolean;
+  goalMismatchSnoozedUntil?: number;
+  lastImported?: number;
+  historyChartConfigs?: HistoryChartConfig[];
+  recommendationLogs?: RecommendationLog[];
 }

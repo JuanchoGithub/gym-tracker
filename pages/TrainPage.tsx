@@ -43,7 +43,7 @@ const TrainPage: React.FC = () => {
     const {
         routines, checkInState, handleCheckInResponse, history, upsertRoutines,
         currentWeight, logUnlock, supplementPlan, takenSupplements, batchTakeSupplements, snoozedSupplements, batchSnoozeSupplements,
-        profile, updateProfileInfo, updateOneRepMax, snoozeOneRepMaxUpdate, undoAutoUpdate, dismissAutoUpdate, getExerciseById, startTemplateEdit, startTemplateDuplicate
+        profile, updateProfileInfo, updateOneRepMax, snoozeOneRepMaxUpdate, undoAutoUpdate, dismissAutoUpdate, getExerciseById, startTemplateEdit, startTemplateDuplicate, logRecommendationLog
     } = useContext(AppContext);
     const { activeWorkout, startWorkout, discardActiveWorkout, maximizeWorkout } = useContext(ActiveWorkoutContext);
     const { stats, refreshStats } = useContext(StatsContext);
@@ -63,6 +63,7 @@ const TrainPage: React.FC = () => {
     const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
     const [onboardingRoutines, setOnboardingRoutines] = useState<Routine[]>([]);
     const [imbalanceSnoozedUntil, setImbalanceSnoozedUntil] = useLocalStorage('imbalanceSnooze', 0);
+    const [expandedCard, setExpandedCard] = useState<'coach' | 'supplement' | null>(null);
 
     const isNewUser = useMemo(() => {
         const hasHistory = history.length > 0;
@@ -565,13 +566,41 @@ const TrainPage: React.FC = () => {
                         </div>
                         <div className="flex gap-3 pl-10">
                             <button
-                                onClick={() => autoUpdatedEntries.forEach(([id]) => undoAutoUpdate(id))}
+                                onClick={() => {
+                                    autoUpdatedEntries.forEach(([id, entry]) => {
+                                        const updateEntry = entry as AutoUpdateEntry;
+                                        logRecommendationLog({
+                                            id: `1rm-undo-${id}-${Date.now()}`,
+                                            type: '1rm_update',
+                                            timestamp: Date.now(),
+                                            title: t('rec_type_strength_update'),
+                                            reason: `Undo auto update for ${id}`,
+                                            variables: { oldMax: updateEntry.oldWeight, newMax: updateEntry.newWeight },
+                                            actionTaken: 'snooze'
+                                        });
+                                        undoAutoUpdate(id);
+                                    });
+                                }}
                                 className="text-xs font-bold text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 px-3 py-1.5 rounded-lg border border-indigo-500/20 transition-colors"
                             >
                                 {t('common_undo')}
                             </button>
                             <button
-                                onClick={() => autoUpdatedEntries.forEach(([id]) => dismissAutoUpdate(id))}
+                                onClick={() => {
+                                    autoUpdatedEntries.forEach(([id, entry]) => {
+                                        const updateEntry = entry as AutoUpdateEntry;
+                                        logRecommendationLog({
+                                            id: `1rm-dismiss-${id}-${Date.now()}`,
+                                            type: '1rm_update',
+                                            timestamp: Date.now(),
+                                            title: t('rec_type_strength_update'),
+                                            reason: `Dismiss auto update for ${id}`,
+                                            variables: { oldMax: updateEntry.oldWeight, newMax: updateEntry.newWeight },
+                                            actionTaken: 'dismiss'
+                                        });
+                                        dismissAutoUpdate(id);
+                                    });
+                                }}
                                 className="text-xs font-bold text-indigo-300/70 hover:text-white transition-colors px-2 py-1.5"
                             >
                                 {t('common_dismiss')}
@@ -580,15 +609,42 @@ const TrainPage: React.FC = () => {
                     </div>
                 )}
 
-                {/* Interactive Smart Stack Card */}
-                {smartStack && (
-                    <SupplementActionCard
-                        title={smartStack.title}
-                        items={smartStack.items}
-                        onLog={handleLogStack}
-                        onSnoozeAll={handleSnoozeStack}
-                    />
-                )}
+                <div className={`grid grid-cols-1 ${(!isRecDismissed && recommendation) && smartStack ? 'sm:grid-cols-2' : ''} gap-4`}>
+                    {/* Interactive Smart Stack Card */}
+                    {smartStack && (
+                        <div className={expandedCard === 'supplement' ? 'sm:col-span-2' : ''}>
+                            <SupplementActionCard
+                                title={smartStack.title}
+                                items={smartStack.items}
+                                onLog={handleLogStack}
+                                onSnoozeAll={handleSnoozeStack}
+                                isCompact={expandedCard !== 'supplement' && (!isRecDismissed && !!recommendation)}
+                                onExpand={() => setExpandedCard('supplement')}
+                            />
+                        </div>
+                    )}
+
+                    {/* Daily Recommendation Card */}
+                    {!isNewUser && recommendation && !isRecDismissed && (
+                        <div className={expandedCard === 'coach' ? 'sm:col-span-2' : ''}>
+                            <SmartRecommendationCard
+                                recommendation={recommendation}
+                                recommendedRoutines={recommendedRoutines}
+                                onDismiss={handleDismissRecommendation}
+                                onRoutineSelect={setSelectedRoutine}
+                                onViewSmartRoutine={() => {
+                                    if (recommendation.generatedRoutine) setSelectedRoutine(recommendation.generatedRoutine);
+                                }}
+                                onUpdate1RM={handleUpdate1RM}
+                                onSnooze1RM={handleSnooze1RM}
+                                onApplyStall={handleApplyStall}
+                                onApplyPivot={handleApplyPivot}
+                                isCompact={expandedCard !== 'coach' && !!smartStack}
+                                onExpand={() => setExpandedCard('coach')}
+                            />
+                        </div>
+                    )}
+                </div>
 
                 {isNewUser && (
                     <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 shadow-lg border border-blue-400/30 relative overflow-hidden mb-6 animate-fadeIn">
@@ -602,23 +658,6 @@ const TrainPage: React.FC = () => {
                             {t('train_onboarding_card_button')}
                         </button>
                     </div>
-                )}
-
-                {/* Daily Recommendation Card */}
-                {!isNewUser && recommendation && !isRecDismissed && (
-                    <SmartRecommendationCard
-                        recommendation={recommendation}
-                        recommendedRoutines={recommendedRoutines}
-                        onDismiss={handleDismissRecommendation}
-                        onRoutineSelect={setSelectedRoutine}
-                        onViewSmartRoutine={() => {
-                            if (recommendation.generatedRoutine) setSelectedRoutine(recommendation.generatedRoutine);
-                        }}
-                        onUpdate1RM={handleUpdate1RM}
-                        onSnooze1RM={handleSnooze1RM}
-                        onApplyStall={handleApplyStall}
-                        onApplyPivot={handleApplyPivot}
-                    />
                 )}
 
                 {checkInState.active && (

@@ -1,7 +1,7 @@
 
 import React, { createContext, useState, ReactNode, useCallback, useMemo, useEffect } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import { Profile, HistoryChartConfig } from '../types';
+import { Profile, HistoryChartConfig, RecommendationLog } from '../types';
 
 export type WeightUnit = 'kg' | 'lbs';
 export type FontSize = 'normal' | 'large' | 'xl';
@@ -40,6 +40,7 @@ export interface UserContextType {
 
     importUserData: (data: any) => void;
     updateHistoryChartConfigs: (configs: HistoryChartConfig[]) => void;
+    logRecommendationLog: (log: RecommendationLog) => void;
 }
 
 export const UserContext = createContext<UserContextType>({} as UserContextType);
@@ -158,6 +159,13 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setProfile(prev => ({ ...prev, historyChartConfigs: configs }));
     }, [setProfile]);
 
+    const logRecommendationLog = useCallback((log: RecommendationLog) => {
+        setProfile(prev => ({
+            ...prev,
+            recommendationLogs: [log, ...(prev.recommendationLogs || [])]
+        }));
+    }, [setProfile]);
+
     const value = useMemo(() => ({
         profile, updateProfileInfo, currentWeight, logWeight, measureUnit, setMeasureUnit,
         updateOneRepMax, snoozeOneRepMaxUpdate, undoAutoUpdate, dismissAutoUpdate, applyCalculated1RM, logUnlock,
@@ -168,7 +176,8 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         selectedVoiceURI, setSelectedVoiceURI,
         fontSize, setFontSize,
         importUserData,
-        updateHistoryChartConfigs
+        updateHistoryChartConfigs,
+        logRecommendationLog
     }), [
         profile, updateProfileInfo, currentWeight, logWeight, measureUnit, setMeasureUnit,
         updateOneRepMax, snoozeOneRepMaxUpdate, undoAutoUpdate, dismissAutoUpdate, applyCalculated1RM, logUnlock,
@@ -179,7 +188,8 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         selectedVoiceURI, setSelectedVoiceURI,
         fontSize, setFontSize,
         importUserData,
-        updateHistoryChartConfigs
+        updateHistoryChartConfigs,
+        logRecommendationLog
     ]);
 
     return <UserContext.Provider value={value}>{children}</UserContext.Provider>;

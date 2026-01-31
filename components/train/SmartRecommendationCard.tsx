@@ -21,6 +21,8 @@ interface SmartRecommendationCardProps {
     onSnooze1RM?: (data: NonNullable<Recommendation['update1RMData']>) => void;
     onApplyStall?: (data: NonNullable<Recommendation['stallData']>) => void;
     onApplyPivot?: (data: NonNullable<Recommendation['pivotData']>) => void;
+    isCompact?: boolean;
+    onExpand?: () => void;
 }
 
 const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
@@ -33,16 +35,36 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
     onUpdate1RM,
     onSnooze1RM,
     onApplyStall,
-    onApplyPivot
+    onApplyPivot,
+    isCompact,
+    onExpand
 }) => {
     const { t } = useI18n();
     const { displayWeight, weightUnit, getStoredWeight } = useMeasureUnit();
-    const { updateProfileInfo, currentWeight, logWeight } = useContext(AppContext);
+    const { updateProfileInfo, currentWeight, logWeight, logRecommendationLog } = useContext(AppContext);
     const [isWeightModalOpen, setIsWeightModalOpen] = useState(false);
 
     let gradientClass = 'from-violet-600/90 to-indigo-700/90 border-indigo-500/30';
     let iconName = 'dumbbell';
     let cardTitle = t('smart_coach_title');
+
+    // Helper for logging
+    const logAction = (action: string, value?: any) => {
+        logRecommendationLog({
+            id: `rec-${Date.now()}`,
+            type: 'coach',
+            timestamp: Date.now(),
+            title: t(recommendation.titleKey as TranslationKey, formattedParams),
+            reason: t(recommendation.reasonKey as TranslationKey, formattedParams),
+            variables: {
+                type: recommendation.type,
+                params: JSON.stringify(recommendation.titleParams || {}),
+                score: recommendation.systemicFatigue?.score || null
+            },
+            actionTaken: action as any,
+            appliedValue: value
+        });
+    };
 
     if (recommendation.type === 'rest' || recommendation.type === 'active_recovery') {
         gradientClass = 'from-emerald-600/90 to-teal-700/90 border-emerald-500/30';
@@ -137,17 +159,20 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
 
     const handleUpdateGoal = () => {
         if (recommendation.goalMismatchData) {
+            logAction('apply', { goal: recommendation.goalMismatchData.detectedGoal });
             updateProfileInfo({ mainGoal: recommendation.goalMismatchData.detectedGoal });
             onDismiss();
         }
     };
 
     const handleKeepGoal = () => {
+        logAction('snooze');
         updateProfileInfo({ goalMismatchSnoozedUntil: Date.now() + 14 * 24 * 60 * 60 * 1000 });
         onDismiss();
     };
 
     const handleDisableDetection = () => {
+        logAction('dismiss');
         updateProfileInfo({ smartGoalDetection: false });
         onDismiss();
     };
@@ -159,8 +184,34 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
 
     const showWeightMissingWarning = recommendation.type === 'active_recovery' && !currentWeight;
 
+    if (isCompact) {
+        return (
+            <button
+                onClick={onExpand}
+                className={`relative overflow-hidden rounded-2xl p-4 shadow-md border bg-gradient-to-br ${gradientClass} transition-all active:scale-[0.98] w-full h-full text-left group`}
+            >
+                <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
+                <div className="flex flex-col h-full justify-between gap-1 relative z-10">
+                    <div className="flex items-center gap-2">
+                        <div className="bg-white/20 p-1.5 rounded-lg group-hover:bg-white/30 transition-colors">
+                            <Icon name={iconName as any} className="w-4 h-4 text-white" />
+                        </div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-white/70">
+                            {cardTitle}
+                        </span>
+                    </div>
+                    <div className="mt-1">
+                        <h3 className="text-sm font-bold text-white leading-tight line-clamp-2">
+                            {t(recommendation.titleKey as TranslationKey, formattedParams || recommendation.titleParams)}
+                        </h3>
+                    </div>
+                </div>
+            </button>
+        );
+    }
+
     return (
-        <div className={`relative overflow-hidden rounded-2xl p-5 shadow-lg border bg-gradient-to-br ${gradientClass} mb-6 animate-fadeIn transition-all`}>
+        <div className={`relative overflow-hidden rounded-2xl p-5 shadow-lg border bg-gradient-to-br ${gradientClass} animate-fadeIn transition-all`}>
             <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
 
             <div className="relative z-10 flex flex-col gap-4">
@@ -218,7 +269,10 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
                 <div className="flex flex-col gap-2 mt-1">
                     {recommendation.type === 'promotion' && onUpgrade && (
                         <button
-                            onClick={onUpgrade}
+                            onClick={() => {
+                                logAction('apply');
+                                onUpgrade();
+                            }}
                             className="w-full bg-white text-amber-600 font-bold py-3 px-4 rounded-xl shadow-md hover:bg-amber-50 transition-colors flex items-center justify-center gap-2 mb-2"
                         >
                             <Icon name="arrow-up" className="w-4 h-4" />
@@ -229,13 +283,19 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
                     {recommendation.type === 'update_1rm' && recommendation.update1RMData && onUpdate1RM && onSnooze1RM && (
                         <div className="flex gap-3 mt-2">
                             <button
-                                onClick={() => onUpdate1RM(recommendation.update1RMData!)}
+                                onClick={() => {
+                                    logAction('apply', { newMax: recommendation.update1RMData!.newMax });
+                                    onUpdate1RM(recommendation.update1RMData!);
+                                }}
                                 className="flex-1 bg-white text-blue-600 font-bold py-3 px-4 rounded-xl shadow-md hover:bg-blue-50 transition-colors"
                             >
                                 {t('rec_action_update_profile')}
                             </button>
                             <button
-                                onClick={() => onSnooze1RM(recommendation.update1RMData!)}
+                                onClick={() => {
+                                    logAction('snooze');
+                                    onSnooze1RM(recommendation.update1RMData!);
+                                }}
                                 className="flex-1 bg-white/20 text-white font-bold py-3 px-4 rounded-xl shadow-sm hover:bg-white/30 transition-colors border border-white/10"
                             >
                                 {t('rec_action_snooze')}
@@ -270,7 +330,10 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
 
                     {(recommendation.type === 'stall' && recommendation.stallData && onApplyStall) && (
                         <button
-                            onClick={() => onApplyStall(recommendation.stallData!)}
+                            onClick={() => {
+                                logAction('apply', recommendation.stallData);
+                                onApplyStall(recommendation.stallData!);
+                            }}
                             className="w-full bg-white text-rose-600 font-bold py-3 px-4 rounded-xl shadow-md hover:bg-rose-50 transition-colors flex items-center justify-center gap-2 mb-2"
                         >
                             <Icon name="zap" className="w-4 h-4" />
@@ -280,7 +343,10 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
 
                     {(recommendation.type === 'volume_pivot' && recommendation.pivotData && onApplyPivot) && (
                         <button
-                            onClick={() => onApplyPivot(recommendation.pivotData!)}
+                            onClick={() => {
+                                logAction('apply', recommendation.pivotData);
+                                onApplyPivot(recommendation.pivotData!);
+                            }}
                             className="w-full bg-white text-rose-600 font-bold py-3 px-4 rounded-xl shadow-md hover:bg-rose-50 transition-colors flex items-center justify-center gap-2 mb-2"
                         >
                             <Icon name="zap" className="w-4 h-4" />
@@ -290,7 +356,10 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
 
                     {recommendation.generatedRoutine && (
                         <button
-                            onClick={onViewSmartRoutine}
+                            onClick={() => {
+                                logAction('apply', { routineId: recommendation.generatedRoutine!.id });
+                                onViewSmartRoutine && onViewSmartRoutine();
+                            }}
                             className={`w-full bg-white font-bold py-3 px-4 rounded-xl shadow-md transition-colors flex items-center justify-center gap-2 mb-2 ${recommendation.type === 'deload'
                                 ? 'text-rose-600 hover:bg-rose-50'
                                 : 'text-indigo-600 hover:bg-indigo-50'
