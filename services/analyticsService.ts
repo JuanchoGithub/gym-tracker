@@ -212,6 +212,58 @@ export const detectPreferredIncrement = (historyEntries: { exerciseData: { sets:
     return 2.5;
 };
 
+export interface TechnicalPRData {
+    exerciseId: string;
+    exerciseName: string;
+    weight: number;
+    restReductionPercent: number;
+}
+
+export const detectTechnicalPRs = (history: WorkoutSession[], exercises: Exercise[], t: (key: string, replacements?: Record<string, string | number>) => string): TechnicalPRData[] => {
+    if (history.length < 2) return [];
+
+    const lastSession = history[0];
+    const techPRs: TechnicalPRData[] = [];
+
+    lastSession.exercises.forEach(ex => {
+        const exHistory = getExerciseHistory(history.slice(1), ex.exerciseId);
+        if (exHistory.length === 0) return;
+
+        // Current best set (normal)
+        const currentSets = ex.sets.filter(s => s.type === 'normal' && s.isComplete && s.weight > 0);
+        if (currentSets.length === 0) return;
+
+        const currentAvgRest = currentSets.reduce((acc, s) => acc + (s.actualRest || 90), 0) / currentSets.length;
+        const currentMaxW = Math.max(...currentSets.map(s => s.weight));
+        const currentMaxR = Math.max(...currentSets.map(s => s.reps));
+
+        // Find previous session with SAME weight and reps (or more)
+        for (const prev of exHistory) {
+            const prevSets = prev.exerciseData.sets.filter(s => s.type === 'normal' && s.isComplete && s.weight === currentMaxW && s.reps === currentMaxR);
+            if (prevSets.length > 0) {
+                const prevAvgRest = prevSets.reduce((acc, s) => acc + (s.actualRest || 90), 0) / prevSets.length;
+
+                // If current rest is > 15% lower than previous same-load rest
+                if (currentAvgRest < prevAvgRest * 0.85) {
+                    const reduction = Math.round((1 - currentAvgRest / prevAvgRest) * 100);
+                    const exDef = exercises.find(e => e.id === ex.exerciseId) || PREDEFINED_EXERCISES.find(e => e.id === ex.exerciseId);
+                    const name = exDef ? (t(exDef.id as any) !== exDef.id ? t(exDef.id as any) : exDef.name) : 'Exercise';
+
+                    techPRs.push({
+                        exerciseId: ex.exerciseId,
+                        exerciseName: name,
+                        weight: currentMaxW,
+                        restReductionPercent: reduction
+                    });
+                    break;
+                }
+            }
+        }
+    });
+
+    return techPRs;
+};
+
 const analyzePerformance = (lastSession: { exerciseData: { sets: PerformedSet[] }, session: WorkoutSession }, targetRest: number): 'good' | 'hard' | 'failed' => {
     const sets = lastSession.exerciseData.sets.filter(s => s.type === 'normal');
     if (sets.length === 0) return 'good';
@@ -251,6 +303,26 @@ export const getSmartWeightSuggestion = (
                 const deloadWeight = Math.round((lastWeight * 0.9) / increment) * increment;
                 return { weight: deloadWeight, reason: 'insight_reason_rust', trend: 'decrease' };
             }
+
+            // Stall Detection within Suggestion
+            let consecutiveStallCount = 1;
+            for (let i = 1; i < exHistory.length; i++) {
+                const prev = exHistory[i];
+                const prevSets = prev.exerciseData.sets.filter(s => s.type === 'normal');
+                if (prevSets.length === 0) continue;
+                const prevMaxW = Math.max(...prevSets.map(s => s.weight));
+                if (prevMaxW <= lastWeight) {
+                    consecutiveStallCount++;
+                } else {
+                    break;
+                }
+            }
+
+            if (consecutiveStallCount >= 3) {
+                const plateauWeight = Math.round((lastWeight * 0.9) / increment) * increment;
+                return { weight: plateauWeight, reason: 'rec_reason_stall', trend: 'decrease' };
+            }
+
             const exerciseDef = allExercises.find(e => e.id === exerciseId) || PREDEFINED_EXERCISES.find(e => e.id === exerciseId);
             const targetRest = 90;
             const performance = analyzePerformance(lastEntry, targetRest);

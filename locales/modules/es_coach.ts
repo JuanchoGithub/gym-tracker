@@ -68,6 +68,33 @@ export const es_coach = {
   rec_action_disable_detection: "No volver a preguntar",
   rec_alternatives_label: "O elegí una de estas plantillas:",
 
+  rec_action_plateau_buster: "Aplicar Rompe-Meseta",
+
+  // Circadian Rhythms
+  rec_title_circadian_morning: "Optimización Guerrero Mañanero",
+  rec_title_circadian_afternoon: "Ventana de Máximo Rendimiento",
+  rec_title_circadian_night: "Optimización de Higiene del Sueño",
+  rec_reason_morning_winter: "Sesiones temprano en invierno requieren entradas en calor más largas. Vamos a preparar tus articulaciones por {count} min.",
+  rec_reason_morning_summer: "La temperatura ambiente es alta. Podés ahorrar energía con un protocolo de entrada en calor más corto y enfocado hoy.",
+  rec_reason_afternoon: "Tu temperatura corporal central está en su punto máximo. Esta ventana de 13hs a 17hs es estadísticamente ideal para cargas pesadas del SNC e intentos de PR.",
+  rec_reason_night: "Entrenar tarde puede disparar el cortisol. Evitá llegar al fallo absoluto en ejercicios pesados para asegurar un sueño profundo hoy.",
+
+  // Diversified Plateau Busters
+  rec_title_pivot_volume: "Consolidación de Volumen",
+  rec_title_pivot_reps: "Pivot de Rango de Repeticiones",
+  rec_title_pivot_density: "Pivot de Densidad Metabólica",
+  rec_title_pivot_variation: "Variación de Movimiento",
+  rec_reason_pivot_volume: "Te estancaste dos veces acá. Vamos a bajar una serie (ej: 3x5); manteniendo el peso alto pero disminuyendo la deuda de fatiga.",
+  rec_reason_pivot_reps: "Tus músculos se adaptaron a este rango. Cambiar a {range} reps va a chocar las fibras y reiniciar el crecimiento.",
+  rec_reason_pivot_density: "¿Estancado en peso? Ganemos en tiempo. Reducción de descanso a {rest}s para mejorar la eficiencia metabólica.",
+  rec_reason_pivot_variation: "Agotamiento físico y mental detectado. Vamos a cambiar {from} por {to} por dos semanas para recuperar el momentum.",
+
+  // Efficiency & Technical PRs
+  rec_title_efficiency_warning: "Alerta de Eficiencia",
+  rec_reason_efficiency_warning: "Los descansos superaron los 5 min mientras el rendimiento cae. Esto sugiere fatiga sistémica más que solo fatiga muscular.",
+  rec_title_technical_pr: "¡PR Técnico!",
+  rec_reason_technical_pr: "Dominaste {weight}{unit} con un {percent}% menos de descanso que tu mejor marca anterior. ¡Eso es crecimiento real!",
+
   // Bio-Adaptive
   coach_warning_density_drop_title: "Fuga de Eficiencia",
   coach_warning_density_drop_desc: "Tu densidad de entrenamiento cayó un {percent}% recientemente. Suele ser señal de fatiga acumulada. Una sesión ligera hoy evitaría un agotamiento mayor.",
