@@ -102,7 +102,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }, [rawExercises]);
 
     // Public filtered state (excluding soft-deleted items)
-    const history = useMemo(() => historyRaw.filter(h => !h.deletedAt), [historyRaw]);
+    const history = useMemo(() =>
+        historyRaw
+            .filter(h => !h.deletedAt)
+            .sort((a, b) => b.startTime - a.startTime),
+        [historyRaw]);
     const routines = useMemo(() => routinesRaw.filter(r => !r.deletedAt), [routinesRaw]);
     const exercises = useMemo(() => rawExercises.filter(e => !e.deletedAt), [rawExercises]);
 
