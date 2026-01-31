@@ -310,11 +310,14 @@ export const detectStalls = (history: WorkoutSession[], exercises: Exercise[], t
         const currentWeight = weightInstances[0];
         if (currentWeight === 0) continue;
 
-        // Count consecutive sessions at same/lower weight
-        for (let i = 0; i < weightInstances.length; i++) {
-            if (weightInstances[i] <= currentWeight && weightInstances[i] > 0) {
+        // Count consecutive sessions without an increase
+        stallCount = 1;
+        for (let i = 1; i < weightInstances.length; i++) {
+            // If the previous weight was the same or higher than now, it is a consecutive session without progress
+            if (weightInstances[i] >= currentWeight && weightInstances[i] > 0) {
                 stallCount++;
             } else {
+                // We found a session with lower weight, meaning progress was happening before that point
                 break;
             }
         }
