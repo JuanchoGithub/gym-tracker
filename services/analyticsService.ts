@@ -177,7 +177,10 @@ export const getInferredMax = (exercise: Exercise, syntheticAnchors: Record<stri
 
 export interface WeightSuggestion {
     weight: number;
+    reps?: number;
+    sets?: number;
     reason: string;
+    actionKey?: string;
     params?: Record<string, string | number>;
     trend: 'increase' | 'decrease' | 'maintain';
 }
@@ -302,27 +305,84 @@ export const getSmartWeightSuggestion = (
             const daysSince = (Date.now() - lastEntry.session.startTime) / (1000 * 60 * 60 * 24);
             if (daysSince > 14) {
                 const deloadWeight = Math.round((lastWeight * 0.9) / increment) * increment;
-                return { weight: deloadWeight, reason: 'insight_reason_rust', trend: 'decrease' };
+                return {
+                    weight: deloadWeight,
+                    reps: lastSets[0].reps,
+                    sets: lastSets.length,
+                    reason: 'insight_reason_rust',
+                    trend: 'decrease'
+                };
             }
 
             // Stall Detection within Suggestion
             let consecutiveStallCount = 1;
             for (let i = 1; i < exHistory.length; i++) {
                 const prev = exHistory[i];
+                const current = exHistory[i - 1];
+
+                // Stop counting if the session is too old (e.g. > 30 days) 
+                // or if there was a major gap (> 21 days) between these specific performances
+                const isTooOld = (Date.now() - prev.session.startTime) > 30 * 24 * 60 * 60 * 1000;
+                const weightGap = (current.session.startTime - prev.session.startTime) / (1000 * 60 * 60 * 24);
+
+                if (isTooOld || weightGap > 21) break;
+
                 const prevSets = prev.exerciseData.sets.filter(s => s.type === 'normal' && s.isComplete);
                 if (prevSets.length === 0) continue;
                 const prevMaxW = Math.max(...prevSets.map(s => s.weight));
 
-                // Fix: Should count strictly consecutive sessions at SAME or HIGHER weight
-                // If previous session was lower, then progress was happening, so break the stall streak
-                if (prevMaxW >= lastWeight && prevMaxW > 0) {
+                // A stall is a streak of sessions at the SAME target weight (or failing to surpass it).
+                // If the previous session had a higher weight, it means we recently deloaded/pivoted,
+                // so the streak for THIS current weight is reset.
+                if (Math.abs(prevMaxW - lastWeight) < 0.1) {
                     consecutiveStallCount++;
                 } else {
                     break;
                 }
             }
 
-            if (consecutiveStallCount >= 3) {
+            // 1. Long-Term Memory: Count how many deload cycles happened for this specific weight
+            let stallCycleCount = 0;
+            let foundDeload = false;
+            const weightInstances = exHistory.map(h => {
+                const sets = h.exerciseData.sets.filter(s => s.type === 'normal');
+                return sets.length > 0 ? Math.max(...sets.map(s => s.weight)) : 0;
+            });
+
+            for (let i = 1; i < weightInstances.length; i++) {
+                if (weightInstances[i] < lastWeight * 0.95) foundDeload = true;
+                if (foundDeload && weightInstances[i] >= lastWeight * 0.98) {
+                    stallCycleCount++;
+                    foundDeload = false;
+                }
+            }
+
+            // 2. Adjust Sensitivity based on history
+            // If we've deloaded before, we only need 2 stalled sessions to trigger a Pivot instead of 3.
+            const stallThreshold = stallCycleCount >= 1 ? 2 : 3;
+
+            if (consecutiveStallCount >= stallThreshold) {
+                if (stallCycleCount >= 1) {
+                    if (goal === 'muscle') {
+                        return {
+                            weight: lastWeight,
+                            reps: 6,
+                            reason: 'rec_reason_pivot_reps',
+                            actionKey: 'rec_action_pivot_reps',
+                            params: { range: '5-8' },
+                            trend: 'maintain'
+                        };
+                    } else if (goal === 'strength') {
+                        return {
+                            weight: lastWeight,
+                            sets: 3,
+                            reason: 'rec_reason_pivot_volume',
+                            actionKey: 'rec_action_pivot_volume',
+                            trend: 'maintain'
+                        };
+                    }
+                }
+
                 const plateauWeight = Math.round((lastWeight * 0.9) / increment) * increment;
                 return {
                     weight: plateauWeight,
@@ -335,10 +395,55 @@ export const getSmartWeightSuggestion = (
             const exerciseDef = allExercises.find(e => e.id === exerciseId) || PREDEFINED_EXERCISES.find(e => e.id === exerciseId);
             const targetRest = 90;
             const performance = analyzePerformance(lastEntry, targetRest);
-            if (performance === 'good') return { weight: lastWeight + increment, reason: 'insight_reason_progression', trend: 'increase' };
-            if (performance === 'hard') return { weight: lastWeight, reason: 'insight_reason_hard', trend: 'maintain' };
-            if (performance === 'failed') return { weight: lastWeight, reason: 'insight_reason_failed', trend: 'maintain' };
-            return { weight: lastWeight, reason: 'insight_reason_maintain', trend: 'maintain' };
+
+            // 3. Early Trigger for Historical Plateaus:
+            // If performance was NOT "good" (i.e. was hard or failed) AND we have stalled here before,
+            // don't even wait for the consecutive count. Offer the Pivot immediately.
+            if (performance !== 'good' && stallCycleCount >= 1) {
+                if (goal === 'muscle') {
+                    return {
+                        weight: lastWeight,
+                        reps: 6,
+                        reason: 'rec_reason_pivot_reps',
+                        actionKey: 'rec_action_pivot_reps',
+                        params: { range: '5-8' },
+                        trend: 'maintain'
+                    };
+                } else if (goal === 'strength') {
+                    return {
+                        weight: lastWeight,
+                        sets: 3,
+                        reason: 'rec_reason_pivot_volume',
+                        actionKey: 'rec_action_pivot_volume',
+                        trend: 'maintain'
+                    };
+                }
+            }
+
+            // Standard performance outcome: keep successful reps/sets
+            const baseSuggestion = {
+                reps: lastSets[0].reps,
+                sets: lastSets.length,
+                weight: lastWeight,
+                trend: 'maintain' as const
+            };
+
+            if (performance === 'good') {
+                return {
+                    ...baseSuggestion,
+                    weight: lastWeight + increment,
+                    reason: 'insight_reason_progression',
+                    trend: 'increase'
+                };
+            }
+            if (performance === 'hard') {
+                return { ...baseSuggestion, reason: 'insight_reason_hard' };
+            }
+            if (performance === 'failed') {
+                return { ...baseSuggestion, reason: 'insight_reason_failed' };
+            }
+
+            return { ...baseSuggestion, reason: 'insight_reason_maintain' };
         }
     }
     const syntheticAnchors = calculateSyntheticAnchors(history, allExercises, profile);

@@ -72,6 +72,8 @@ export const es_coach = {
   rec_title_stall: "Meseta Detectada: {exercise}",
   rec_reason_stall: "Viniste entrenando con {weight}{unit} durante {count} sesiones. Tu cuerpo se adaptó; se recomienda una descarga 'Rompe-Meseta' (10-15%) para resetear y superar este límite.",
   rec_action_plateau_buster: "Aplicar Rompe-Meseta",
+  rec_action_pivot_reps: "Cambiar a {range} Reps",
+  rec_action_pivot_volume: "Consolidar Volumen",
 
   // Circadian Rhythms
   rec_title_circadian_morning: "Optimización Guerrero Mañanero",
@@ -87,8 +89,8 @@ export const es_coach = {
   rec_title_pivot_reps: "Pivot de Rango de Repeticiones",
   rec_title_pivot_density: "Pivot de Densidad Metabólica",
   rec_title_pivot_variation: "Variación de Movimiento",
-  rec_reason_pivot_volume: "Te estancaste dos veces acá. Vamos a bajar una serie (ej: 3x5) para mantener la intensidad alta mientras reducimos la fatiga acumulada.",
-  rec_reason_pivot_reps: "Tus músculos se adaptaron a este rango. Cambiar a {range} reps dará un nuevo estímulo a las fibras para desbloquear el progreso.",
+  rec_reason_pivot_volume: "Te estancaste dos veces en este peso. Vamos a 'Consolidar Volumen': bajamos una serie (ej: de 4 a 3) para mantener el peso pesado pero reduciendo la fatiga acumulada.",
+  rec_reason_pivot_reps: "Tus músculos se adaptaron a este rango. Cambiar a {range} reps dará un nuevo estímulo a las fibras. Al bajar el rango de reps, buscamos aumentar la intensidad (peso) manteniendo una técnica perfecta para romper el estancamiento.",
   rec_reason_pivot_density: "¿Estancado en peso? Ganemos en tiempo. Reducción de descanso a {rest}s para mejorar la eficiencia metabólica.",
   rec_reason_pivot_variation: "Agotamiento físico y mental detectado. Vamos a cambiar {from} por {to} por dos semanas para recuperar el momentum.",
 

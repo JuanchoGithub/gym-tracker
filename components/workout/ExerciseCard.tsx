@@ -90,12 +90,39 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
 
     const handleApplyInsight = () => {
         if (!insight) return;
-        const newSets = workoutExercise.sets.map(set => {
+        let newSets = [...workoutExercise.sets];
+
+        // 1. Handle Weight and Rep Changes for uncompleted sets
+        newSets = newSets.map(set => {
             if (set.type === 'normal' && !set.isComplete) {
-                return { ...set, weight: insight.weight, isWeightInherited: true };
+                const updatedSet = { ...set };
+                if (insight.weight > 0) {
+                    updatedSet.weight = insight.weight;
+                    updatedSet.isWeightInherited = true;
+                }
+                if (insight.reps && insight.reps > 0) {
+                    updatedSet.reps = insight.reps;
+                    updatedSet.isRepsInherited = true;
+                }
+                return updatedSet;
             }
             return set;
         });
+
+        // 2. Handle Set Count Changes (Optional/Advanced)
+        // If the insight suggests a specific set count (e.g. Pivot Volume 5x5 -> 3x5)
+        if (insight.sets && insight.sets > 0 && insight.sets < newSets.length) {
+            // Only remove sets if they are not complete
+            const incompleteIndices = newSets.map((s, i) => !s.isComplete ? i : -1).filter(i => i !== -1);
+            const toRemove = newSets.length - insight.sets;
+
+            if (toRemove > 0) {
+                // Remove from the end of incomplete sets
+                const indicesToRemove = incompleteIndices.slice(-toRemove);
+                newSets = newSets.filter((_, i) => !indicesToRemove.includes(i));
+            }
+        }
+
         onUpdate({ ...workoutExercise, sets: newSets });
         setInsight(null);
     };

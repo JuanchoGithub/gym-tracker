@@ -72,6 +72,8 @@ export const en_coach = {
   rec_title_stall: "Plateau Detected: {exercise}",
   rec_reason_stall: "You've been training with {weight}{unit} for {count} sessions. Your body has adapted; a 'Plateau Buster' deload (10-15%) is recommended to reset and push past this limit.",
   rec_action_plateau_buster: "Apply Plateau Buster",
+  rec_action_pivot_reps: "Switch to {range} Reps",
+  rec_action_pivot_volume: "Consolidate Volume",
 
   // Circadian Rhythms
   rec_title_circadian_morning: "Morning Warrior Optimization",
@@ -87,8 +89,8 @@ export const en_coach = {
   rec_title_pivot_reps: "Rep Range Pivot",
   rec_title_pivot_density: "Metabolic Density Pivot",
   rec_title_pivot_variation: "Movement Variation",
-  rec_reason_pivot_volume: "You've stalled twice here. We'll drop a set to 3x5; keeping the weight high while slashing the fatigue debt.",
-  rec_reason_pivot_reps: "Your muscles have adapted to this rep range. Shifting to {range} reps will shock the fibers and restart growth.",
+  rec_reason_pivot_volume: "You've stalled twice at this weight. We'll 'Consolidate Volume' by dropping a set (e.g., from 4 to 3), which keeps intensity high while reducing systemic fatigue debt.",
+  rec_reason_pivot_reps: "Your muscles have adapted to this rep range. Shifting to {range} reps provides a fresh stimulus. By lowering the rep target, we can focus on increasing intensity (weight) with perfect form to break the stall.",
   rec_reason_pivot_density: "Stalled on weight? Let's win on time. Reducing rest to {rest}s to build metabolic efficiency.",
   rec_reason_pivot_variation: "Physical and mental burnout detected. Let's swap {from} for {to} for two weeks to rebuild momentum.",
 

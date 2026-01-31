@@ -313,11 +313,20 @@ export const detectStalls = (history: WorkoutSession[], exercises: Exercise[], t
         // Count consecutive sessions without an increase
         stallCount = 1;
         for (let i = 1; i < weightInstances.length; i++) {
-            // If the previous weight was the same or higher than now, it is a consecutive session without progress
-            if (weightInstances[i] >= currentWeight && weightInstances[i] > 0) {
+            const prevSession = exHistory[i].session;
+            const currentSession = exHistory[i - 1].session;
+
+            // Stop counting if the session is too old (> 30 days) or there's a major gap (> 21 days)
+            const isTooOld = (Date.now() - prevSession.startTime) > 30 * 24 * 60 * 60 * 1000;
+            const weightGap = (currentSession.startTime - prevSession.startTime) / (1000 * 60 * 60 * 24);
+
+            if (isTooOld || weightGap > 21) break;
+
+            // A stall is a streak of sessions at the SAME weight (failing to increase).
+            // If the previous weight was higher, it means we just deloaded, so the streak resets.
+            if (Math.abs(weightInstances[i] - currentWeight) < 0.1) {
                 stallCount++;
             } else {
-                // We found a session with lower weight, meaning progress was happening before that point
                 break;
             }
         }

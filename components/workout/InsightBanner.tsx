@@ -43,21 +43,33 @@ const InsightBanner: React.FC<InsightBannerProps> = ({ suggestion, onApply, onDi
                     <div className={`text-xs font-medium ${textClass}`}>
                         {t(suggestion.reason as TranslationKey, suggestion.params)}
                     </div>
-                    {suggestion.weight > 0 && (
-                        <div className="text-sm font-bold text-white mt-0.5">
-                            {displayWeight(suggestion.weight)} {t(('workout_' + weightUnit) as TranslationKey)}
-                        </div>
-                    )}
+                    <div className="flex items-center gap-2 mt-0.5">
+                        {suggestion.weight > 0 && (
+                            <div className="text-sm font-bold text-white">
+                                {displayWeight(suggestion.weight)} {t(('workout_' + weightUnit) as TranslationKey)}
+                            </div>
+                        )}
+                        {suggestion.reps && (
+                            <div className="text-sm font-bold text-white">
+                                {suggestion.reps} reps
+                            </div>
+                        )}
+                        {suggestion.sets && (
+                            <div className="text-sm font-bold text-white">
+                                {suggestion.sets} sets
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 
             <div className="flex items-center gap-2">
-                {suggestion.weight > 0 && (
+                {(suggestion.weight > 0 || suggestion.reps || suggestion.sets) && (
                     <button
                         onClick={onApply}
                         className="bg-white/10 hover:bg-white/20 text-white text-xs font-bold py-1.5 px-3 rounded-lg transition-colors border border-white/5"
                     >
-                        {t('insight_apply')}
+                        {suggestion.actionKey ? t(suggestion.actionKey as TranslationKey, suggestion.params) : t('insight_apply')}
                     </button>
                 )}
                 <button onClick={onDismiss} className="p-1.5 text-white/50 hover:text-white transition-colors">
