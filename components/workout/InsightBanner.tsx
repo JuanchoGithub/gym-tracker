@@ -37,32 +37,32 @@ const InsightBanner: React.FC<InsightBannerProps> = ({ suggestion, onApply, onDi
         <div className={`mx-3 sm:mx-4 mt-3 rounded-lg border p-3 flex items-center justify-between ${bgClass} animate-fadeIn`}>
             <div className="flex items-center gap-3">
                 <div className={`p-1.5 rounded-full bg-black/20 ${iconClass}`}>
-                     <Icon name={iconName as any} className="w-4 h-4" />
+                    <Icon name={iconName as any} className="w-4 h-4" />
                 </div>
                 <div>
                     <div className={`text-xs font-medium ${textClass}`}>
-                        {t(suggestion.reason as TranslationKey)}
+                        {t(suggestion.reason as TranslationKey, suggestion.params)}
                     </div>
                     {suggestion.weight > 0 && (
                         <div className="text-sm font-bold text-white mt-0.5">
-                             {displayWeight(suggestion.weight)} {t(('workout_' + weightUnit) as TranslationKey)}
+                            {displayWeight(suggestion.weight)} {t(('workout_' + weightUnit) as TranslationKey)}
                         </div>
                     )}
                 </div>
             </div>
-            
+
             <div className="flex items-center gap-2">
-                 {suggestion.weight > 0 && (
-                     <button 
+                {suggestion.weight > 0 && (
+                    <button
                         onClick={onApply}
                         className="bg-white/10 hover:bg-white/20 text-white text-xs font-bold py-1.5 px-3 rounded-lg transition-colors border border-white/5"
-                     >
-                         {t('insight_apply')}
-                     </button>
-                 )}
-                 <button onClick={onDismiss} className="p-1.5 text-white/50 hover:text-white transition-colors">
-                     <Icon name="x" className="w-4 h-4" />
-                 </button>
+                    >
+                        {t('insight_apply')}
+                    </button>
+                )}
+                <button onClick={onDismiss} className="p-1.5 text-white/50 hover:text-white transition-colors">
+                    <Icon name="x" className="w-4 h-4" />
+                </button>
             </div>
         </div>
     );

@@ -178,6 +178,7 @@ export const getInferredMax = (exercise: Exercise, syntheticAnchors: Record<stri
 export interface WeightSuggestion {
     weight: number;
     reason: string;
+    params?: Record<string, string | number>;
     trend: 'increase' | 'decrease' | 'maintain';
 }
 
@@ -308,10 +309,13 @@ export const getSmartWeightSuggestion = (
             let consecutiveStallCount = 1;
             for (let i = 1; i < exHistory.length; i++) {
                 const prev = exHistory[i];
-                const prevSets = prev.exerciseData.sets.filter(s => s.type === 'normal');
+                const prevSets = prev.exerciseData.sets.filter(s => s.type === 'normal' && s.isComplete);
                 if (prevSets.length === 0) continue;
                 const prevMaxW = Math.max(...prevSets.map(s => s.weight));
-                if (prevMaxW <= lastWeight) {
+
+                // Fix: Should count strictly consecutive sessions at SAME or HIGHER weight
+                // If previous session was lower, then progress was happening, so break the stall streak
+                if (prevMaxW >= lastWeight && prevMaxW > 0) {
                     consecutiveStallCount++;
                 } else {
                     break;
@@ -320,7 +324,12 @@ export const getSmartWeightSuggestion = (
 
             if (consecutiveStallCount >= 3) {
                 const plateauWeight = Math.round((lastWeight * 0.9) / increment) * increment;
-                return { weight: plateauWeight, reason: 'rec_reason_stall', trend: 'decrease' };
+                return {
+                    weight: plateauWeight,
+                    reason: 'rec_reason_stall',
+                    params: { weight: lastWeight, unit: 'kg', count: consecutiveStallCount },
+                    trend: 'decrease'
+                };
             }
 
             const exerciseDef = allExercises.find(e => e.id === exerciseId) || PREDEFINED_EXERCISES.find(e => e.id === exerciseId);
