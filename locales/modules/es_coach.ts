@@ -87,8 +87,8 @@ export const es_coach = {
   rec_title_pivot_reps: "Pivot de Rango de Repeticiones",
   rec_title_pivot_density: "Pivot de Densidad Metabólica",
   rec_title_pivot_variation: "Variación de Movimiento",
-  rec_reason_pivot_volume: "Te estancaste dos veces acá. Vamos a bajar una serie (ej: 3x5); manteniendo el peso alto pero disminuyendo la deuda de fatiga.",
-  rec_reason_pivot_reps: "Tus músculos se adaptaron a este rango. Cambiar a {range} reps va a chocar las fibras y reiniciar el crecimiento.",
+  rec_reason_pivot_volume: "Te estancaste dos veces acá. Vamos a bajar una serie (ej: 3x5) para mantener la intensidad alta mientras reducimos la fatiga acumulada.",
+  rec_reason_pivot_reps: "Tus músculos se adaptaron a este rango. Cambiar a {range} reps dará un nuevo estímulo a las fibras para desbloquear el progreso.",
   rec_reason_pivot_density: "¿Estancado en peso? Ganemos en tiempo. Reducción de descanso a {rest}s para mejorar la eficiencia metabólica.",
   rec_reason_pivot_variation: "Agotamiento físico y mental detectado. Vamos a cambiar {from} por {to} por dos semanas para recuperar el momentum.",
 
