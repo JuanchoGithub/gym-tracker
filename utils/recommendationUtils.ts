@@ -45,6 +45,12 @@ export interface Recommendation {
         weight: number;
         sessionsCount: number;
     };
+    pivotData?: {
+        exerciseId: string;
+        exerciseName: string;
+        fromSets: number;
+        toSets: number;
+    };
 }
 
 const PUSH_MUSCLES = [MUSCLES.PECTORALS, MUSCLES.FRONT_DELTS, MUSCLES.TRICEPS];
@@ -337,7 +343,13 @@ export const detectStalls = (history: WorkoutSession[], exercises: Exercise[], t
                         titleKey: 'rec_title_pivot_volume',
                         reasonKey: 'rec_reason_pivot_volume',
                         suggestedBodyParts: [exDef.bodyPart as BodyPart],
-                        relevantRoutineIds: []
+                        relevantRoutineIds: [],
+                        pivotData: {
+                            exerciseId: exId,
+                            exerciseName: name,
+                            fromSets: 5, // Assuming 5x5 as base for strength pivot
+                            toSets: 3
+                        }
                     };
                 } else if (goal === 'muscle') {
                     return {
