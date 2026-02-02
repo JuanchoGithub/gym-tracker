@@ -2,6 +2,7 @@
 export const en_supplements_ui = {
   // Supplement Action Card
   supplement_action_card_title: "It's {time}!",
+  supplement_stack_title: "Supplement Stack",
   supplement_stack_post_workout: "Workout Debrief",
   supplement_stack_morning_training: "Morning Training Stack",
   supplement_stack_morning: "Morning Routine",
