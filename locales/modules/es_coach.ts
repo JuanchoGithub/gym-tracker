@@ -70,10 +70,14 @@ export const es_coach = {
 
   // Stall / Plateau Detection
   rec_title_stall: "Meseta Detectada: {exercise}",
+  rec_title_stall_plural: "Múltiples Mesetas Detectadas",
   rec_reason_stall: "Viniste entrenando con {weight}{unit} durante {count} sesiones. Tu cuerpo se adaptó; se recomienda una descarga 'Rompe-Meseta' (10-15%) para resetear y superar este límite.",
+  rec_reason_stall_plural: "Detectamos que te estancaste en varios ejercicios. Se recomienda aplicar ajustes de descarga o pivot durante tu entrenamiento para seguir progresando.",
   rec_action_plateau_buster: "Aplicar Rompe-Meseta",
   rec_action_pivot_reps: "Cambiar a {range} Reps",
   rec_action_pivot_volume: "Consolidar Volumen",
+  rec_title_pivot_plural: "Pivote de Volumen Necesario",
+  rec_reason_pivot_plural: "Tu rendimiento sugiere que varios ejercicios necesitan un ajuste de volumen para superar el estancamiento.",
 
   // Circadian Rhythms
   rec_title_circadian_morning: "Optimización Guerrero Mañanero",

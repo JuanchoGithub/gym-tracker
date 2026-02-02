@@ -70,10 +70,14 @@ export const en_coach = {
 
   // Stall / Plateau Detection
   rec_title_stall: "Plateau Detected: {exercise}",
+  rec_title_stall_plural: "Multiple Plateaus Detected",
   rec_reason_stall: "You've been training with {weight}{unit} for {count} sessions. Your body has adapted; a 'Plateau Buster' deload (10-15%) is recommended to reset and push past this limit.",
+  rec_reason_stall_plural: "We've detected that you've stalled on several exercises. Applying deload or pivot adjustments during your workout is recommended to maintain progress.",
   rec_action_plateau_buster: "Apply Plateau Buster",
   rec_action_pivot_reps: "Switch to {range} Reps",
   rec_action_pivot_volume: "Consolidate Volume",
+  rec_title_pivot_plural: "Volume Pivot Recommended",
+  rec_reason_pivot_plural: "Your performance suggests that several exercises need a volume adjustment to break through their current plateaus.",
 
   // Circadian Rhythms
   rec_title_circadian_morning: "Morning Warrior Optimization",

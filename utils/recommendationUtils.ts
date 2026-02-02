@@ -39,18 +39,23 @@ export interface Recommendation {
         detectedGoal: UserGoal;
         avgReps: number;
     };
-    stallData?: {
-        exerciseId: string;
-        exerciseName: string;
-        weight: number;
-        sessionsCount: number;
-    };
-    pivotData?: {
-        exerciseId: string;
-        exerciseName: string;
-        fromSets: number;
-        toSets: number;
-    };
+    stalledExercises?: StallItem[];
+    pivotExercises?: PivotItem[];
+}
+
+export interface StallItem {
+    exerciseId: string;
+    exerciseName: string;
+    weight: number;
+    sessionsCount: number;
+}
+
+export interface PivotItem {
+    exerciseId: string;
+    exerciseName: string;
+    fromSets: number;
+    toSets: number;
+    goal: UserGoal;
 }
 
 const PUSH_MUSCLES = [MUSCLES.PECTORALS, MUSCLES.FRONT_DELTS, MUSCLES.TRICEPS];
@@ -290,18 +295,19 @@ export const detectStalls = (history: WorkoutSession[], exercises: Exercise[], t
     const habitData = analyzeUserHabits(history);
     const frequentExIds = Object.entries(habitData.exerciseFrequency)
         .sort((a, b) => b[1] - a[1])
-        .slice(0, 10)
+        .slice(0, 15) // Check more exercises
         .map(e => e[0]);
+
+    const stalledExercises: StallItem[] = [];
+    const pivotExercises: PivotItem[] = [];
 
     for (const exId of frequentExIds) {
         const exHistory = getExerciseHistory(history, exId);
         if (exHistory.length < 3) continue;
 
         let stallCount = 0;
-        let lastWeight = 0;
-        let stallCycleCount = 0; // Tracking how many times they've stalled at this weight across deloads
+        let stallCycleCount = 0;
 
-        // Scan history to see if they've hit this threshold before
         const weightInstances = exHistory.map(h => {
             const sets = h.exerciseData.sets.filter(s => s.type === 'normal');
             return sets.length > 0 ? Math.max(...sets.map(s => s.weight)) : 0;
@@ -310,20 +316,15 @@ export const detectStalls = (history: WorkoutSession[], exercises: Exercise[], t
         const currentWeight = weightInstances[0];
         if (currentWeight === 0) continue;
 
-        // Count consecutive sessions without an increase
         stallCount = 1;
         for (let i = 1; i < weightInstances.length; i++) {
             const prevSession = exHistory[i].session;
             const currentSession = exHistory[i - 1].session;
-
-            // Stop counting if the session is too old (> 30 days) or there's a major gap (> 21 days)
             const isTooOld = (Date.now() - prevSession.startTime) > 30 * 24 * 60 * 60 * 1000;
             const weightGap = (currentSession.startTime - prevSession.startTime) / (1000 * 60 * 60 * 24);
 
             if (isTooOld || weightGap > 21) break;
 
-            // A stall is a streak of sessions at the SAME weight (failing to increase).
-            // If the previous weight was higher, it means we just deloaded, so the streak resets.
             if (Math.abs(weightInstances[i] - currentWeight) < 0.1) {
                 stallCount++;
             } else {
@@ -331,7 +332,6 @@ export const detectStalls = (history: WorkoutSession[], exercises: Exercise[], t
             }
         }
 
-        // Count how many deload cycles happened for this weight (if weight dropped then came back to currentWeight)
         let foundDeload = false;
         for (let i = 1; i < weightInstances.length; i++) {
             if (weightInstances[i] < currentWeight * 0.95) foundDeload = true;
@@ -346,50 +346,50 @@ export const detectStalls = (history: WorkoutSession[], exercises: Exercise[], t
             if (!exDef) continue;
             const name = t(exDef.id as any) !== exDef.id ? t(exDef.id as any) : exDef.name;
 
-            // IF STALLED TWICE (Persistent Plateau) -> Suggest PIVOT
             if (stallCycleCount >= 1) {
                 const goal = profile?.mainGoal || 'muscle';
-                if (goal === 'strength') {
-                    return {
-                        type: 'volume_pivot',
-                        titleKey: 'rec_title_pivot_volume',
-                        reasonKey: 'rec_reason_pivot_volume',
-                        suggestedBodyParts: [exDef.bodyPart as BodyPart],
-                        relevantRoutineIds: [],
-                        pivotData: {
-                            exerciseId: exId,
-                            exerciseName: name,
-                            fromSets: 5, // Assuming 5x5 as base for strength pivot
-                            toSets: 3
-                        }
-                    };
-                } else if (goal === 'muscle') {
-                    return {
-                        type: 'stall',
-                        titleKey: 'rec_title_pivot_reps',
-                        reasonKey: 'rec_reason_pivot_reps',
-                        reasonParams: { range: '5-8' },
-                        suggestedBodyParts: [exDef.bodyPart as BodyPart],
-                        relevantRoutineIds: []
-                    };
-                }
+                pivotExercises.push({
+                    exerciseId: exId,
+                    exerciseName: name,
+                    fromSets: goal === 'strength' ? 5 : 4,
+                    toSets: goal === 'strength' ? 3 : 3,
+                    goal
+                });
+            } else {
+                stalledExercises.push({
+                    exerciseId: exId,
+                    exerciseName: name,
+                    weight: currentWeight,
+                    sessionsCount: stallCount
+                });
             }
-
-            // Regular Stall (First time)
-            return {
-                type: 'stall',
-                titleKey: 'rec_title_stall',
-                titleParams: { exercise: name },
-                reasonKey: 'rec_reason_stall',
-                reasonParams: { weight: currentWeight, unit: 'kg', count: stallCount },
-                suggestedBodyParts: [exDef.bodyPart as BodyPart],
-                relevantRoutineIds: [],
-                stallData: { exerciseId: exId, exerciseName: name, weight: currentWeight, sessionsCount: stallCount }
-            };
         }
     }
 
-    return null;
+    if (stalledExercises.length === 0 && pivotExercises.length === 0) return null;
+
+    // Return combined recommendation
+    const firstItem = stalledExercises[0] || pivotExercises[0];
+    const exDef = exercises.find(e => e.id === firstItem.exerciseId) || PREDEFINED_EXERCISES.find(e => e.id === firstItem.exerciseId);
+
+    const totalItems = stalledExercises.length + pivotExercises.length;
+    const isPlural = totalItems > 1;
+
+    return {
+        type: pivotExercises.length > 0 ? 'volume_pivot' : 'stall',
+        titleKey: pivotExercises.length > 0
+            ? (isPlural ? 'rec_title_pivot_plural' : 'rec_title_pivot_volume')
+            : (isPlural ? 'rec_title_stall_plural' : 'rec_title_stall'),
+        titleParams: { exercise: firstItem.exerciseName },
+        reasonKey: pivotExercises.length > 0
+            ? (isPlural ? 'rec_reason_pivot_plural' : 'rec_reason_pivot_volume')
+            : (isPlural ? 'rec_reason_stall_plural' : 'rec_reason_stall'),
+        reasonParams: { weight: (firstItem as any).weight || 0, unit: 'kg', count: (firstItem as any).sessionsCount || 0 },
+        suggestedBodyParts: [exDef?.bodyPart as BodyPart || 'Full Body'],
+        relevantRoutineIds: [],
+        stalledExercises: stalledExercises.slice(0, 3),
+        pivotExercises: pivotExercises.slice(0, 3)
+    };
 };
 
 export const getWorkoutRecommendation = (

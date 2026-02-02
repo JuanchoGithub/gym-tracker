@@ -13,9 +13,10 @@ interface SupplementActionCardProps {
     onSnoozeAll: () => void;
     isCompact?: boolean;
     onExpand?: () => void;
+    onCollapse?: () => void;
 }
 
-const SupplementActionCard: React.FC<SupplementActionCardProps> = ({ items, title, onLog, onSnoozeAll, isCompact, onExpand }) => {
+const SupplementActionCard: React.FC<SupplementActionCardProps> = ({ items, title, onLog, onSnoozeAll, isCompact, onExpand, onCollapse }) => {
     const { t } = useI18n();
     const { logRecommendationLog } = useContext(AppContext);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -98,6 +99,18 @@ const SupplementActionCard: React.FC<SupplementActionCardProps> = ({ items, titl
                         </div>
                         {title}
                     </h3>
+                    {onCollapse && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onCollapse();
+                            }}
+                            className="bg-white/10 p-1.5 rounded-lg text-white/70 hover:text-white hover:bg-white/20 transition-all active:scale-95"
+                            title="Collapse"
+                        >
+                            <Icon name="chevron-up" className="w-4 h-4" />
+                        </button>
+                    )}
                 </div>
 
                 <div className="space-y-2 mb-5">

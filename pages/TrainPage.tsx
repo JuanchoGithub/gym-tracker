@@ -478,35 +478,6 @@ const TrainPage: React.FC = () => {
         snoozeOneRepMaxUpdate(data.exerciseId, twoWeeks);
     };
 
-    const handleApplyStall = (data: NonNullable<Recommendation['stallData']>) => {
-        // Just dismiss, the deload is automatic in weight suggestions
-        handleDismissRecommendation();
-    };
-
-    const handleApplyPivot = (data: NonNullable<Recommendation['pivotData']>) => {
-        const { exerciseId, exerciseName, fromSets, toSets } = data;
-
-        const updatedRoutines = routines.map(r => {
-            if (r.exercises.some(ex => ex.exerciseId === exerciseId)) {
-                return {
-                    ...r,
-                    exercises: r.exercises.map(ex => {
-                        if (ex.exerciseId === exerciseId) {
-                            return {
-                                ...ex,
-                                sets: ex.sets.slice(0, toSets)
-                            };
-                        }
-                        return ex;
-                    })
-                };
-            }
-            return r;
-        });
-
-        upsertRoutines(updatedRoutines);
-        handleDismissRecommendation();
-    };
 
     const handleLogStack = (itemIds: string[]) => {
         const effectiveDate = getEffectiveDate();
@@ -620,6 +591,7 @@ const TrainPage: React.FC = () => {
                                 onSnoozeAll={handleSnoozeStack}
                                 isCompact={expandedCard !== 'supplement' && (!isRecDismissed && !!recommendation)}
                                 onExpand={() => setExpandedCard('supplement')}
+                                onCollapse={() => setExpandedCard(null)}
                             />
                         </div>
                     )}
@@ -637,10 +609,9 @@ const TrainPage: React.FC = () => {
                                 }}
                                 onUpdate1RM={handleUpdate1RM}
                                 onSnooze1RM={handleSnooze1RM}
-                                onApplyStall={handleApplyStall}
-                                onApplyPivot={handleApplyPivot}
                                 isCompact={expandedCard !== 'coach' && !!smartStack}
                                 onExpand={() => setExpandedCard('coach')}
+                                onCollapse={() => setExpandedCard(null)}
                             />
                         </div>
                     )}

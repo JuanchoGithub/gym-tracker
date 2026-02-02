@@ -19,10 +19,9 @@ interface SmartRecommendationCardProps {
     onUpgrade?: () => void;
     onUpdate1RM?: (data: NonNullable<Recommendation['update1RMData']>) => void;
     onSnooze1RM?: (data: NonNullable<Recommendation['update1RMData']>) => void;
-    onApplyStall?: (data: NonNullable<Recommendation['stallData']>) => void;
-    onApplyPivot?: (data: NonNullable<Recommendation['pivotData']>) => void;
     isCompact?: boolean;
     onExpand?: () => void;
+    onCollapse?: () => void;
 }
 
 const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
@@ -34,10 +33,9 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
     onUpgrade,
     onUpdate1RM,
     onSnooze1RM,
-    onApplyStall,
-    onApplyPivot,
     isCompact,
-    onExpand
+    onExpand,
+    onCollapse
 }) => {
     const { t } = useI18n();
     const { displayWeight, weightUnit, getStoredWeight } = useMeasureUnit();
@@ -236,9 +234,26 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
                             </div>
                         )}
 
-                        {!recommendation.systemicFatigue && (
-                            <button onClick={onDismiss} className="ml-auto text-white/70 hover:text-white"><Icon name="x" className="w-5 h-5" /></button>
-                        )}
+                        <div className="ml-auto flex items-center gap-2">
+                            {onCollapse && (
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onCollapse();
+                                    }}
+                                    className="bg-white/10 p-1.5 rounded-lg text-white/70 hover:text-white hover:bg-white/20 transition-all active:scale-95"
+                                    title="Collapse"
+                                >
+                                    <Icon name="chevron-up" className="w-4 h-4" />
+                                </button>
+                            )}
+
+                            {!recommendation.systemicFatigue && (
+                                <button onClick={onDismiss} className="text-white/70 hover:text-white transition-colors">
+                                    <Icon name="x" className="w-5 h-5" />
+                                </button>
+                            )}
+                        </div>
                     </div>
 
                     <h3 className="text-xl sm:text-2xl font-bold text-white mb-1">
@@ -248,6 +263,23 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
                     <p className="text-white/90 text-sm leading-relaxed max-w-lg">
                         {t(recommendation.reasonKey as TranslationKey, formattedParams || recommendation.reasonParams)}
                     </p>
+
+                    {(recommendation.stalledExercises || recommendation.pivotExercises) && (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                            {recommendation.stalledExercises?.map(ex => (
+                                <div key={ex.exerciseId} className="bg-white/10 border border-white/20 px-3 py-1.5 rounded-lg flex items-center gap-2">
+                                    <Icon name="warning" className="w-3.5 h-3.5 text-rose-300" />
+                                    <span className="text-xs font-bold text-white">{ex.exerciseName}</span>
+                                </div>
+                            ))}
+                            {recommendation.pivotExercises?.map(ex => (
+                                <div key={ex.exerciseId} className="bg-white/10 border border-white/20 px-3 py-1.5 rounded-lg flex items-center gap-2">
+                                    <Icon name="zap" className="w-3.5 h-3.5 text-amber-300" />
+                                    <span className="text-xs font-bold text-white">{ex.exerciseName}</span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 {showWeightMissingWarning && (
@@ -328,31 +360,6 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
                         </div>
                     )}
 
-                    {(recommendation.type === 'stall' && recommendation.stallData && onApplyStall) && (
-                        <button
-                            onClick={() => {
-                                logAction('apply', recommendation.stallData);
-                                onApplyStall(recommendation.stallData!);
-                            }}
-                            className="w-full bg-white text-rose-600 font-bold py-3 px-4 rounded-xl shadow-md hover:bg-rose-50 transition-colors flex items-center justify-center gap-2 mb-2"
-                        >
-                            <Icon name="zap" className="w-4 h-4" />
-                            <span>{t('rec_action_plateau_buster')}</span>
-                        </button>
-                    )}
-
-                    {(recommendation.type === 'volume_pivot' && recommendation.pivotData && onApplyPivot) && (
-                        <button
-                            onClick={() => {
-                                logAction('apply', recommendation.pivotData);
-                                onApplyPivot(recommendation.pivotData!);
-                            }}
-                            className="w-full bg-white text-rose-600 font-bold py-3 px-4 rounded-xl shadow-md hover:bg-rose-50 transition-colors flex items-center justify-center gap-2 mb-2"
-                        >
-                            <Icon name="zap" className="w-4 h-4" />
-                            <span>{t('rec_action_plateau_buster')}</span>
-                        </button>
-                    )}
 
                     {recommendation.generatedRoutine && (
                         <button
