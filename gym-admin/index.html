@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full w-full overflow-hidden overscroll-none">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+  <title>Fortachon Gym Admin</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            'primary': '#f472b6', // pink-400 (Different color for admin)
+            'primary-content': '#db2777', // pink-600
+            'secondary': '#94a3b8', // slate-400
+            'background': '#020617', // slate-950
+            'surface': '#1e293b', // slate-800
+            'surface-highlight': '#334155', // slate-700
+            'text-primary': '#f8fafc', // slate-50
+            'text-secondary': '#e2e8f0', // slate-200
+            'success': '#4ade80', // green-400
+            'warning': '#fbbf24', // amber-400
+            'danger': '#f87171', // red-400
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    .safe-area-bottom {
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+  </style>
+  <script type="importmap">
+  {
+    "imports": {
+      "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+      "react/": "https://aistudiocdn.com/react@^19.2.0/",
+      "react": "https://aistudiocdn.com/react@^19.2.0"
+    }
+  }
+  </script>
+</head>
+<body class="bg-background text-text-primary h-full w-full overflow-hidden overscroll-none font-sans selection:bg-primary/30 selection:text-primary-content antialiased">
+  <div id="root" class="h-full w-full"></div>
+  <script type="module" src="/gym-admin/index.tsx"></script>
+</body>
+</html>

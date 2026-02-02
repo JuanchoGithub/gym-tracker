@@ -65,6 +65,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 }
             }
         }
+        // 1.5. Fetch Gym-Assigned Routines
+        const gymRoutinesResult = await db.execute({
+            sql: `
+                SELECT gr.id, gr.name, gr.data_json, gr.updated_at 
+                FROM gym_routines gr
+                JOIN user_gym_routines ugr ON gr.id = ugr.gym_routine_id
+                WHERE ugr.user_id = ? AND gr.updated_at > ?
+            `,
+            args: [payload.userId, since]
+        });
+
+        for (const row of gymRoutinesResult.rows) {
+            try {
+                const routine = JSON.parse(row.data_json as string);
+                // Ensure it has the correct ID and name from the table
+                const routineItem = {
+                    ...routine,
+                    id: row.id,
+                    name: row.name,
+                    updatedAt: row.updated_at,
+                    isGymRoutine: true // Mark as gym routine so UI can distinguish
+                };
+                data.routines.push(routineItem);
+                if ((row.updated_at as number) > maxUpdatedAt) {
+                    maxUpdatedAt = row.updated_at as number;
+                }
+            } catch (e) {
+                console.error('Error parsing gym routine:', e);
+            }
+        }
 
         // 2. Fetch from blob-level table (user_data)
         const blobResult = await db.execute({

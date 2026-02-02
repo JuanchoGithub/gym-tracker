@@ -623,6 +623,18 @@ const ProfilePage: React.FC = () => {
                             <Icon name="share" className="w-5 h-5 text-text-secondary" />
                         </SettingsItem>
                     </SettingsGroup>
+
+                    <SettingsGroup title="For Gym Owners">
+                        <SettingsItem onClick={() => window.location.href = '/gym-admin/index.html'}>
+                            <div className="flex flex-col">
+                                <span className="text-primary font-bold">Gym Admin Portal</span>
+                                <span className="text-xs text-text-secondary">Manage your gym, members and routines</span>
+                            </div>
+                            <div className="bg-primary/10 p-2 rounded-lg">
+                                <Icon name="arrow-right" className="w-5 h-5 text-primary" />
+                            </div>
+                        </SettingsItem>
+                    </SettingsGroup>
                 </div>
             )}
 
