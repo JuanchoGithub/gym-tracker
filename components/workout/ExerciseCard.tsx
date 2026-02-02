@@ -69,6 +69,9 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
     const [insight, setInsight] = useState<WeightSuggestion | null>(null);
     const [isInsightDismissed, setIsInsightDismissed] = useState(false);
     const [isPromotionDismissed, setIsPromotionDismissed] = useState(false);
+    const [previousWorkoutExercise, setPreviousWorkoutExercise] = useState<WorkoutExercise | null>(null);
+    const [isInsightApplied, setIsInsightApplied] = useState(false);
+    const [changeSummary, setChangeSummary] = useState<string | null>(null);
 
     const lastPerformance = useMemo(() => {
         const history = getExerciseHistory(allHistory, exerciseInfo.id);
@@ -77,7 +80,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
 
     useEffect(() => {
         const isTimed = workoutExercise.sets.some(s => s.type === 'timed');
-        if (!isTimed && !isInsightDismissed) {
+        if (!isTimed && !isInsightDismissed && !isInsightApplied) {
             const suggestion = getSmartWeightSuggestion(exerciseInfo.id, allHistory, profile, rawExercises, profile.mainGoal);
             if (suggestion.weight > 0 && suggestion.reason && suggestion.trend !== 'maintain') {
                 const currentFirstSet = workoutExercise.sets.find(s => s.type === 'normal');
@@ -86,10 +89,19 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
                 }
             }
         }
-    }, [allHistory, exerciseInfo.id, profile, rawExercises]);
+    }, [allHistory, exerciseInfo.id, profile, rawExercises, isInsightApplied, isInsightDismissed]);
 
     const handleApplyInsight = () => {
         if (!insight) return;
+
+        // Save current state for undo
+        const oldState = { ...workoutExercise, sets: workoutExercise.sets.map(s => ({ ...s })) };
+        setPreviousWorkoutExercise(oldState);
+
+        const oldSet = workoutExercise.sets.find(s => s.type === 'normal' && !s.isComplete);
+        const oldWeight = oldSet?.weight || 0;
+        const oldReps = oldSet?.reps || 0;
+
         let newSets = [...workoutExercise.sets];
 
         // 1. Handle Weight and Rep Changes for uncompleted sets
@@ -110,21 +122,39 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
         });
 
         // 2. Handle Set Count Changes (Optional/Advanced)
-        // If the insight suggests a specific set count (e.g. Pivot Volume 5x5 -> 3x5)
         if (insight.sets && insight.sets > 0 && insight.sets < newSets.length) {
-            // Only remove sets if they are not complete
             const incompleteIndices = newSets.map((s, i) => !s.isComplete ? i : -1).filter(i => i !== -1);
             const toRemove = newSets.length - insight.sets;
 
             if (toRemove > 0) {
-                // Remove from the end of incomplete sets
                 const indicesToRemove = incompleteIndices.slice(-toRemove);
                 newSets = newSets.filter((_, i) => !indicesToRemove.includes(i));
             }
         }
 
         onUpdate({ ...workoutExercise, sets: newSets });
-        setInsight(null);
+
+        // Calculate change summary
+        let summary = "";
+        if (insight.weight > 0 && Math.abs(oldWeight - insight.weight) > 0.1) {
+            summary = `${displayWeight(oldWeight)} → ${displayWeight(insight.weight)} ${t(`workout_${weightUnit}` as TranslationKey)}`;
+        } else if (insight.reps && oldReps !== insight.reps) {
+            summary = `${oldReps} → ${insight.reps} reps`;
+        }
+
+        if (summary) {
+            setChangeSummary(summary);
+            setTimeout(() => setChangeSummary(null), 3000);
+        }
+
+        setIsInsightApplied(true);
+    };
+
+    const handleUndoInsight = () => {
+        if (!previousWorkoutExercise) return;
+        onUpdate(previousWorkoutExercise);
+        setIsInsightApplied(false);
+        setPreviousWorkoutExercise(null);
     };
 
     const isBodyweight = ['Bodyweight', 'Plyometrics'].includes(exerciseInfo.category);
@@ -404,11 +434,25 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
             )}
 
             {!isCollapsed && insight && (
-                <InsightBanner
-                    suggestion={insight}
-                    onApply={handleApplyInsight}
-                    onDismiss={() => { setInsight(null); setIsInsightDismissed(true); }}
-                />
+                <div className="relative">
+                    <InsightBanner
+                        suggestion={insight}
+                        onApply={handleApplyInsight}
+                        onDismiss={() => { setInsight(null); setIsInsightDismissed(true); }}
+                        isApplied={isInsightApplied}
+                        onUndo={handleUndoInsight}
+                    />
+
+                    {/* Change Summary Popup */}
+                    {changeSummary && (
+                        <div className="absolute left-1/2 -top-12 -translate-x-1/2 z-50 animate-bounce">
+                            <div className="bg-emerald-500 text-white px-4 py-2 rounded-full shadow-lg text-sm font-bold flex items-center gap-2 whitespace-nowrap">
+                                <Icon name="check" className="w-4 h-4" />
+                                {changeSummary}
+                            </div>
+                        </div>
+                    )}
+                </div>
             )}
 
             {!isCollapsed && (

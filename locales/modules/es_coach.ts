@@ -78,6 +78,8 @@ export const es_coach = {
   rec_action_pivot_volume: "Consolidar Volumen",
   rec_title_pivot_plural: "Pivote de Volumen Necesario",
   rec_reason_pivot_plural: "Tu rendimiento sugiere que varios ejercicios necesitan un ajuste de volumen para superar el estancamiento.",
+  insight_applied_title: "Ajuste Aplicado",
+  common_undo: "Deshacer",
 
   // Circadian Rhythms
   rec_title_circadian_morning: "Optimización Guerrero Mañanero",

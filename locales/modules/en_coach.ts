@@ -78,6 +78,8 @@ export const en_coach = {
   rec_action_pivot_volume: "Consolidate Volume",
   rec_title_pivot_plural: "Volume Pivot Recommended",
   rec_reason_pivot_plural: "Your performance suggests that several exercises need a volume adjustment to break through their current plateaus.",
+  insight_applied_title: "Adjustment Applied",
+  common_undo: "Undo",
 
   // Circadian Rhythms
   rec_title_circadian_morning: "Morning Warrior Optimization",
