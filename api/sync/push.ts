@@ -3,7 +3,7 @@ import { getDb } from '../db.js';
 import { verifyToken } from '../jwt.js';
 
 // Valid data keys that can be synced
-const VALID_KEYS = ['history', 'routines', 'exercises', 'profile', 'settings'];
+const VALID_KEYS = ['history', 'routines', 'exercises', 'profile', 'settings', 'supplementPlan', 'userSupplements', 'takenSupplements', 'supplementLogs', 'snoozedSupplements', 'dayOverrides', 'dismissedSuggestions'];
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Enable CORS
@@ -79,8 +79,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }
         }
 
-        // 2. Handle blob-level data (profile, settings - kept in user_data for backward compat)
-        const blobKeys = ['profile', 'settings'];
+        // 2. Handle blob-level data (profile, settings, supplements - kept in user_data for backward compat)
+        const blobKeys = ['profile', 'settings', 'supplementPlan', 'userSupplements', 'takenSupplements', 'supplementLogs', 'snoozedSupplements', 'dayOverrides', 'dismissedSuggestions'];
         for (const key of blobKeys) {
             if (data[key] !== undefined) {
                 await db.execute({

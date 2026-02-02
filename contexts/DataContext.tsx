@@ -235,6 +235,14 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 // settings and profile are still blobs for now (logic can be expanded)
                 settings: localStorage.getItem('settings') ? JSON.parse(localStorage.getItem('settings')!) : undefined,
                 profile: localStorage.getItem('profile') ? JSON.parse(localStorage.getItem('profile')!) : undefined,
+                // Supplements
+                supplementPlan: localStorage.getItem('supplementPlan') ? JSON.parse(localStorage.getItem('supplementPlan')!) : undefined,
+                userSupplements: localStorage.getItem('userSupplements') ? JSON.parse(localStorage.getItem('userSupplements')!) : undefined,
+                takenSupplements: localStorage.getItem('takenSupplements') ? JSON.parse(localStorage.getItem('takenSupplements')!) : undefined,
+                supplementLogs: localStorage.getItem('supplementLogs') ? JSON.parse(localStorage.getItem('supplementLogs')!) : undefined,
+                snoozedSupplements: localStorage.getItem('snoozedSupplements') ? JSON.parse(localStorage.getItem('snoozedSupplements')!) : undefined,
+                dayOverrides: localStorage.getItem('dayOverrides') ? JSON.parse(localStorage.getItem('dayOverrides')!) : undefined,
+                dismissedSuggestions: localStorage.getItem('dismissedSuggestions') ? JSON.parse(localStorage.getItem('dismissedSuggestions')!) : undefined,
             };
 
             // 2. Push local changes
@@ -305,7 +313,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
 
             setLastSyncTime(now);
-            return { success: true };
+            return { success: true, remoteData: pullResult.data };
         } catch (error) {
             console.error('Sync error:', error);
             return { success: false, error: 'Synchronization failed' };

@@ -2,6 +2,7 @@ import React, { useState, useContext } from 'react';
 import { AuthContext } from '../../contexts/AuthContext';
 import { DataContext } from '../../contexts/DataContext';
 import { UserContext } from '../../contexts/UserContext';
+import { SupplementContext } from '../../contexts/SupplementContext';
 import { pushData, pullData, getLastSyncTime, setLastSyncTime } from '../../services/syncService';
 import { useI18n } from '../../hooks/useI18n';
 import { Icon } from '../common/Icon';
@@ -13,6 +14,7 @@ const AccountSection: React.FC = () => {
     const { user, isAuthenticated, logout, token, isLoading: authLoading } = useContext(AuthContext);
     const { history, routines, rawExercises, importDataData, syncWithCloud } = useContext(DataContext);
     const { profile, measureUnit, defaultRestTimes, useLocalizedExerciseNames, keepScreenAwake, enableNotifications, selectedVoiceURI, fontSize, importUserData } = useContext(UserContext);
+    const { supplementPlan, userSupplements, takenSupplements, supplementLogs, snoozedSupplements, dayOverrides, importSupplementData } = useContext(SupplementContext);
 
     const [showAuthModal, setShowAuthModal] = useState(false);
     const [showSyncChoice, setShowSyncChoice] = useState(false);
@@ -44,7 +46,14 @@ const AccountSection: React.FC = () => {
             enableNotifications,
             selectedVoiceURI,
             fontSize,
-        }
+        },
+        supplementPlan,
+        userSupplements,
+        takenSupplements,
+        supplementLogs,
+        snoozedSupplements,
+        dayOverrides,
+        dismissedSuggestions: localStorage.getItem('dismissedSuggestions') ? JSON.parse(localStorage.getItem('dismissedSuggestions')!) : undefined
     });
 
     const handleSync = async () => {
@@ -52,9 +61,18 @@ const AccountSection: React.FC = () => {
         setIsSyncing(true);
         setSyncMessage(null);
 
-        const result = await syncWithCloud(token);
+        const result = await syncWithCloud(token) as any;
 
         if (result.success) {
+            if (result.remoteData) {
+                if (result.remoteData.profile || result.remoteData.settings) {
+                    importUserData({
+                        profile: result.remoteData.profile,
+                        settings: result.remoteData.settings,
+                    });
+                }
+                importSupplementData(result.remoteData);
+            }
             setSyncMessage(t('sync_success'));
         } else {
             setSyncMessage(result.error || t('profile_import_error'));
@@ -108,6 +126,10 @@ const AccountSection: React.FC = () => {
                     settings: result.data.settings,
                 });
             }
+
+            // Import Supplement Data
+            importSupplementData(result.data);
+
             if (result.lastUpdated) {
                 setLastSyncTime(result.lastUpdated);
             }
