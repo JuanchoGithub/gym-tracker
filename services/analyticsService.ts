@@ -183,6 +183,7 @@ export interface WeightSuggestion {
     actionKey?: string;
     params?: Record<string, string | number>;
     trend: 'increase' | 'decrease' | 'maintain';
+    phase?: 'maintenance' | 'progression' | 'deload' | 'pivot' | 'shock';
 }
 
 /**
@@ -314,8 +315,61 @@ export const getSmartWeightSuggestion = (
                 };
             }
 
-            // Stall Detection within Suggestion
+            // 0. Global Phase Detection (Stall Busters)
+            // Check for recent applied recommendations in logs or history signature
+            const exerciseDef = allExercises.find(e => e.id === exerciseId) || PREDEFINED_EXERCISES.find(e => e.id === exerciseId);
+            const targetRest = 90;
+            let activePhase: 'maintenance' | 'progression' | 'deload' | 'pivot' | 'shock' = 'maintenance';
             let consecutiveStallCount = 1;
+            if (profile.recommendationLogs) {
+                const twoWeeksAgo = Date.now() - (14 * 24 * 60 * 60 * 1000);
+                const recentLogs = profile.recommendationLogs.filter(l =>
+                    l.timestamp > twoWeeksAgo &&
+                    l.actionTaken === 'apply' &&
+                    l.type === 'stall' &&
+                    l.title.includes(exerciseDef?.name || '')
+                );
+
+                if (recentLogs.length > 0) {
+                    const lastLog = recentLogs[recentLogs.length - 1];
+                    if (lastLog.reason.includes('6-12-25')) activePhase = 'shock';
+                    else if (lastLog.reason.includes('Consolidate')) activePhase = 'pivot';
+                    else if (lastLog.reason.includes('Plateau Buster')) activePhase = 'deload';
+                }
+            }
+
+            // Sync Logic: If phase is active, force the suggestion to match the phase
+            // even if *this specific routine* hasn't stalled yet.
+            if (activePhase === 'deload') {
+                const deloadWeight = Math.round((lastWeight * 0.9) / increment) * increment;
+                // Only suggest if we are currently heavier than the target deload
+                if (lastWeight > deloadWeight) {
+                    return {
+                        weight: deloadWeight,
+                        reason: 'rec_reason_stall', // Reuse generic stall reason or new sync reason
+                        params: { weight: lastWeight, unit: 'kg', count: consecutiveStallCount },
+                        trend: 'decrease',
+                        phase: 'deload'
+                    };
+                }
+            }
+            if (activePhase === 'pivot') {
+                if (goal === 'muscle') {
+                    return {
+                        weight: lastWeight,
+                        reps: 6,
+                        reason: 'rec_reason_pivot_reps',
+                        actionKey: 'rec_action_pivot_reps',
+                        params: { range: '5-8' },
+                        trend: 'maintain',
+                        phase: 'pivot'
+                    };
+                }
+            }
+            // Note: 'shock' (6-12-25) is a routine generator, not just a weight suggestion, 
+            // so it's harder to sync via a simple banner. 
+            // We'll leave 'shock' for the routine generator to pick up or a specific larger banner.
+
             for (let i = 1; i < exHistory.length; i++) {
                 const prev = exHistory[i];
                 const current = exHistory[i - 1];
@@ -370,7 +424,8 @@ export const getSmartWeightSuggestion = (
                             reason: 'rec_reason_pivot_reps',
                             actionKey: 'rec_action_pivot_reps',
                             params: { range: '5-8' },
-                            trend: 'maintain'
+                            trend: 'maintain',
+                            phase: 'pivot'
                         };
                     } else if (goal === 'strength') {
                         return {
@@ -378,7 +433,8 @@ export const getSmartWeightSuggestion = (
                             sets: 3,
                             reason: 'rec_reason_pivot_volume',
                             actionKey: 'rec_action_pivot_volume',
-                            trend: 'maintain'
+                            trend: 'maintain',
+                            phase: 'pivot'
                         };
                     }
                 }
@@ -388,12 +444,11 @@ export const getSmartWeightSuggestion = (
                     weight: plateauWeight,
                     reason: 'rec_reason_stall',
                     params: { weight: lastWeight, unit: 'kg', count: consecutiveStallCount },
-                    trend: 'decrease'
+                    trend: 'decrease',
+                    phase: 'deload'
                 };
             }
 
-            const exerciseDef = allExercises.find(e => e.id === exerciseId) || PREDEFINED_EXERCISES.find(e => e.id === exerciseId);
-            const targetRest = 90;
             const performance = analyzePerformance(lastEntry, targetRest);
 
             // 3. Early Trigger for Historical Plateaus:
@@ -407,7 +462,8 @@ export const getSmartWeightSuggestion = (
                         reason: 'rec_reason_pivot_reps',
                         actionKey: 'rec_action_pivot_reps',
                         params: { range: '5-8' },
-                        trend: 'maintain'
+                        trend: 'maintain',
+                        phase: 'pivot'
                     };
                 } else if (goal === 'strength') {
                     return {
@@ -415,7 +471,8 @@ export const getSmartWeightSuggestion = (
                         sets: 3,
                         reason: 'rec_reason_pivot_volume',
                         actionKey: 'rec_action_pivot_volume',
-                        trend: 'maintain'
+                        trend: 'maintain',
+                        phase: 'pivot'
                     };
                 }
             }
@@ -425,7 +482,8 @@ export const getSmartWeightSuggestion = (
                 reps: lastSets[0].reps,
                 sets: lastSets.length,
                 weight: lastWeight,
-                trend: 'maintain' as const
+                trend: 'maintain' as const,
+                phase: 'maintenance' as const
             };
 
             if (performance === 'good') {
@@ -433,7 +491,8 @@ export const getSmartWeightSuggestion = (
                     ...baseSuggestion,
                     weight: lastWeight + increment,
                     reason: 'insight_reason_progression',
-                    trend: 'increase'
+                    trend: 'increase',
+                    phase: 'progression'
                 };
             }
             if (performance === 'hard') {
@@ -459,9 +518,9 @@ export const getSmartWeightSuggestion = (
         if (goal === 'strength') percentage = 0.8;
         if (goal === 'endurance') percentage = 0.6;
         const target = Math.round((oneRepMax * percentage) / 2.5) * 2.5;
-        return { weight: target, reason: 'insight_reason_new', trend: 'increase' };
+        return { weight: target, reason: 'insight_reason_new', trend: 'increase', phase: 'progression' };
     }
-    return { weight: 0, reason: '', trend: 'maintain' };
+    return { weight: 0, reason: '', trend: 'maintain', phase: 'maintenance' };
 };
 
 export const getSmartStartingWeight = (

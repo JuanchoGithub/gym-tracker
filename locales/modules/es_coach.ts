@@ -78,6 +78,9 @@ export const es_coach = {
   rec_action_pivot_volume: "Consolidar Volumen",
   rec_title_pivot_plural: "Pivote de Volumen Necesario",
   rec_reason_pivot_plural: "Tu rendimiento sugiere que varios ejercicios necesitan un ajuste de volumen para superar el estancamiento.",
+  rec_title_stall_poliquin: "Meseta Avanzada: Método 6-12-25",
+  rec_reason_stall_poliquin: "Te estancaste varias veces en {exercise}. El método 6-12-25 de Charles Poliquin usa triseries de alta intensidad para generar nuevo crecimiento muscular.",
+  rec_action_poliquin: "Aplicar Triserie 6-12-25",
   insight_applied_title: "Ajuste Aplicado",
   common_undo: "Deshacer",
 

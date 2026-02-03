@@ -1,5 +1,5 @@
 
-import { WorkoutSession, Routine, Exercise, BodyPart, Profile, UserGoal, MuscleGroup } from '../types';
+import { WorkoutSession, Routine, Exercise, BodyPart, Profile, UserGoal, MuscleGroup, WorkoutExercise } from '../types';
 import { calculateMuscleFreshness, calculateSystemicFatigue, calculateSessionDensity, calculateAverageDensity } from './fatigueUtils';
 import { MUSCLES } from '../constants/muscles';
 import { generateSmartRoutine, RoutineFocus, RoutineLevel, SurveyAnswers } from './routineGenerator';
@@ -7,7 +7,8 @@ import { PREDEFINED_EXERCISES } from '../constants/exercises';
 import { PROGRESSION_PATHS } from '../constants/progression';
 import { getExerciseHistory } from './workoutUtils';
 import { predictNextRoutine, getProtectedMuscles, generateGapSession } from './smartCoachUtils';
-import { inferUserProfile, MOVEMENT_PATTERNS, calculateMaxStrengthProfile, calculateMedianWorkoutDuration, analyzeUserHabits, calculateLifterDNA, detectTechnicalPRs } from '../services/analyticsService';
+import { inferUserProfile, MOVEMENT_PATTERNS, calculateMaxStrengthProfile, calculateMedianWorkoutDuration, analyzeUserHabits, calculateLifterDNA, detectTechnicalPRs, getSmartStartingWeight } from '../services/analyticsService';
+import { PARENT_CHILD_EXERCISES } from '../constants/ratios';
 
 export interface Recommendation {
     type: 'rest' | 'workout' | 'promotion' | 'active_recovery' | 'imbalance' | 'deload' | 'update_1rm' | 'goal_mismatch' | 'density_warning' | 'stall' | 'circadian_nudge' | 'volume_pivot' | 'efficiency_warning' | 'technical_pr';
@@ -265,6 +266,53 @@ export const detectCircadianNudge = (t: (key: string, replacements?: Record<stri
     return null;
 };
 
+const select61225Exercises = (stalledEx: Exercise, allExercises: Exercise[]): Exercise[] => {
+    const stalledId = stalledEx.id;
+    const bodyPart = stalledEx.bodyPart;
+    const ex1 = stalledEx;
+    let ex2Candidates = (PARENT_CHILD_EXERCISES[stalledId] || [])
+        .map(c => allExercises.find(e => e.id === c.targetId))
+        .filter((e): e is Exercise => !!e && ['Machine', 'Dumbbell', 'Smith Machine'].includes(e.category));
+    let ex2 = ex2Candidates[0];
+    if (!ex2) ex2 = allExercises.find(e => e.bodyPart === bodyPart && e.id !== stalledId && ['Machine', 'Dumbbell', 'Smith Machine', 'Cable'].includes(e.category));
+    let ex3 = allExercises.find(e => e.bodyPart === bodyPart && e.id !== stalledId && e.id !== ex2?.id && (e.name.toLowerCase().includes('extension') || e.name.toLowerCase().includes('curl') || e.name.toLowerCase().includes('fly') || e.name.toLowerCase().includes('raise') || e.category === 'Cable'));
+    if (!ex3) ex3 = allExercises.find(e => e.bodyPart === bodyPart && e.id !== stalledId && e.id !== ex2?.id);
+    return [ex1, ex2, ex3].filter((e): e is Exercise => !!e);
+};
+
+const generate61225Routine = (stalledEx: Exercise, allExercises: Exercise[], history: WorkoutSession[], t: (key: string, replacements?: Record<string, string | number>) => string, profile: Profile): Routine => {
+    const triSet = select61225Exercises(stalledEx, allExercises);
+    const supersetId = `ss-61225-${Date.now()}`;
+    const exercises: WorkoutExercise[] = triSet.map((ex, idx) => {
+        const reps = idx === 0 ? 6 : (idx === 1 ? 12 : 25);
+        const weight = getSmartStartingWeight(ex.id, history, profile, allExercises, profile.mainGoal || 'muscle');
+        const adjustedWeight = idx === 0 ? weight : (idx === 1 ? weight * 0.7 : weight * 0.5);
+        const finalWeight = Math.round(adjustedWeight / 2.5) * 2.5;
+        return {
+            id: `we-61225-${idx}-${Math.random().toString(36).substr(2, 9)}`,
+            exerciseId: ex.id,
+            supersetId,
+            sets: Array.from({ length: 3 }, (_, i) => ({
+                id: `set-61225-${idx}-${i}`,
+                reps: reps,
+                weight: finalWeight,
+                type: 'normal',
+                isComplete: false
+            })),
+            restTime: { normal: idx === 2 ? 120 : 10, warmup: 30, drop: 30, timed: 10, effort: 60, failure: 90 }
+        };
+    });
+
+    return {
+        id: `routine-61225-${Date.now()}`,
+        name: `6-12-25: ${stalledEx.bodyPart}`,
+        description: t('rec_reason_stall_poliquin', { exercise: stalledEx.name }),
+        exercises,
+        supersets: { [supersetId]: { id: supersetId, name: '6-12-25 Tri-Set', color: '#FF4444' } },
+        isTemplate: false
+    };
+};
+
 export const detectEfficiencyIssues = (history: WorkoutSession[]): Recommendation | null => {
     if (history.length === 0) return null;
     const lastSession = history[0];
@@ -346,7 +394,20 @@ export const detectStalls = (history: WorkoutSession[], exercises: Exercise[], t
             if (!exDef) continue;
             const name = t(exDef.id as any) !== exDef.id ? t(exDef.id as any) : exDef.name;
 
-            if (stallCycleCount >= 1) {
+            if (stallCycleCount >= 2 && profile) {
+                return {
+                    type: 'stall',
+                    titleKey: 'rec_title_stall_poliquin',
+                    titleParams: { exercise: name },
+                    reasonKey: 'rec_reason_stall_poliquin',
+                    reasonParams: { exercise: name },
+                    suggestedBodyParts: [exDef.bodyPart],
+                    relevantRoutineIds: [],
+                    generatedRoutine: generate61225Routine(exDef, exercises, history, t, profile)
+                };
+            }
+
+            if (stallCycleCount === 1) {
                 const goal = profile?.mainGoal || 'muscle';
                 pivotExercises.push({
                     exerciseId: exId,

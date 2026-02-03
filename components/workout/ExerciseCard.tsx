@@ -351,7 +351,22 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
         shadowClass = 'shadow-success/5';
     }
 
-    const headerBgClass = (isCollapsed && hasInvalidSets) ? 'bg-red-500/10' : 'bg-surface';
+    // Phase Overrides
+    if (insight?.phase === 'deload') {
+        borderClass = 'border-amber-500/50';
+        shadowClass = 'shadow-amber-500/10';
+    } else if (insight?.phase === 'pivot') {
+        borderClass = 'border-purple-500/50';
+        shadowClass = 'shadow-purple-500/10';
+    } else if (insight?.phase === 'shock') {
+        borderClass = 'border-red-500/70 border-dashed';
+        shadowClass = 'shadow-red-500/20';
+    }
+
+    const headerBgClass = (isCollapsed && hasInvalidSets) ? 'bg-red-500/10' :
+        (insight?.phase === 'deload' ? 'bg-amber-500/5' :
+            (insight?.phase === 'pivot' ? 'bg-purple-500/5' :
+                (insight?.phase === 'shock' ? 'bg-red-500/5' : 'bg-surface')));
 
     let normalSetCounter = 0;
 

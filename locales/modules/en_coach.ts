@@ -78,6 +78,9 @@ export const en_coach = {
   rec_action_pivot_volume: "Consolidate Volume",
   rec_title_pivot_plural: "Volume Pivot Recommended",
   rec_reason_pivot_plural: "Your performance suggests that several exercises need a volume adjustment to break through their current plateaus.",
+  rec_title_stall_poliquin: "Advanced Plateau: 6-12-25 Method",
+  rec_reason_stall_poliquin: "You've stalled multiple times on {exercise}. The Charles Poliquin 6-12-25 method uses high-intensity tri-sets to shock the muscle into new growth.",
+  rec_action_poliquin: "Apply 6-12-25 Tri-Set",
   insight_applied_title: "Adjustment Applied",
   common_undo: "Undo",
 
