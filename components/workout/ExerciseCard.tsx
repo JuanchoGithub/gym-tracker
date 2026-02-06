@@ -82,9 +82,16 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
         const isTimed = workoutExercise.sets.some(s => s.type === 'timed');
         if (!isTimed && !isInsightDismissed && !isInsightApplied) {
             const suggestion = getSmartWeightSuggestion(exerciseInfo.id, allHistory, profile, rawExercises, profile.mainGoal);
-            if (suggestion.weight > 0 && suggestion.reason && suggestion.trend !== 'maintain') {
-                const currentFirstSet = workoutExercise.sets.find(s => s.type === 'normal');
-                if (currentFirstSet && currentFirstSet.weight !== suggestion.weight && !currentFirstSet.isComplete) {
+            const currentFirstSet = workoutExercise.sets.find(s => s.type === 'normal');
+
+            if (suggestion.weight > 0 && suggestion.reason && currentFirstSet) {
+                const hasChange = (
+                    Math.abs(suggestion.weight - currentFirstSet.weight) > 0.1 ||
+                    (suggestion.reps && suggestion.reps !== currentFirstSet.reps) ||
+                    (suggestion.sets && workoutExercise.sets.filter(s => s.type === 'normal').length !== suggestion.sets)
+                );
+
+                if (hasChange && (suggestion.trend !== 'maintain' || suggestion.phase === 'pivot')) {
                     setInsight(suggestion);
                 }
             }
