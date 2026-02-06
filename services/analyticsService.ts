@@ -454,7 +454,18 @@ export const getSmartWeightSuggestion = (
             // 3. Early Trigger for Historical Plateaus:
             // If performance was NOT "good" (i.e. was hard or failed) AND we have stalled here before,
             // don't even wait for the consecutive count. Offer the Pivot immediately.
-            if (performance !== 'good' && stallCycleCount >= 1) {
+            // FIX: Only trigger this if we are actually close to our historical max (>= 95%).
+            // This prevents triggering a pivot during a re-ramp phase (e.g. voluntary deload).
+            // UPDATE: Use a rolling window (e.g. 3 months) to define "Max".
+            const ninetyDaysAgo = Date.now() - (90 * 24 * 60 * 60 * 1000);
+            const relevantHistory = exHistory.filter(h => h.session.startTime > ninetyDaysAgo);
+            const maxHistoricalWeight = relevantHistory.reduce((max, h) => {
+                const sets = h.exerciseData.sets.filter(s => s.type === 'normal');
+                const sessionMax = sets.length > 0 ? Math.max(...sets.map(s => s.weight)) : 0;
+                return Math.max(max, sessionMax);
+            }, 0);
+
+            if (performance !== 'good' && stallCycleCount >= 1 && lastWeight >= maxHistoricalWeight * 0.95) {
                 if (goal === 'muscle') {
                     return {
                         weight: lastWeight,
