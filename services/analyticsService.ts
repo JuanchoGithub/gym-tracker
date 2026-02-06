@@ -355,10 +355,73 @@ export const getSmartWeightSuggestion = (
             }
             if (activePhase === 'pivot') {
                 if (goal === 'muscle') {
+                    const lastReps = lastSets[0].reps;
+                    const allComplete = lastSets.every(s => s.isComplete && s.reps >= lastReps);
+
+                    // Logic for "Coach" progression through the 5-8 rep range
+                    // Base Case: Not yet started the pivot (still doing 5s)
+                    if (lastReps < 6) {
+                        return {
+                            weight: lastWeight,
+                            reps: 6,
+                            reason: 'rec_reason_pivot_reps',
+                            actionKey: 'rec_action_pivot_reps',
+                            params: { range: '5-8' },
+                            trend: 'maintain',
+                            phase: 'pivot'
+                        };
+                    }
+
+                    // In the Pivot: Check if ready to move up
+                    if (allComplete) {
+                        const totalRest = lastSets.reduce((sum, s) => sum + (s.actualRest || 0), 0);
+                        const avgRest = lastSets.length > 0 ? totalRest / lastSets.length : 0;
+                        // Note: Allow up to 4 mins (240s) for heavy pivots before holding back
+                        const goodRest = avgRest <= 240;
+
+                        if (lastReps === 6 && goodRest) {
+                            return {
+                                weight: lastWeight,
+                                reps: 7,
+                                reason: 'rec_reason_pivot_progression',
+                                params: { current: 6, next: 7 },
+                                trend: 'increase', // Intensity increase via Reps
+                                phase: 'pivot'
+                            };
+                        }
+                        if (lastReps === 7 && goodRest) {
+                            return {
+                                weight: lastWeight,
+                                reps: 8,
+                                reason: 'rec_reason_pivot_progression',
+                                params: { current: 7, next: 8 },
+                                trend: 'increase',
+                                phase: 'pivot'
+                            };
+                        }
+                        if (lastReps >= 8 && goodRest) {
+                            // Graduation!
+                            const newWeight = lastWeight + increment;
+                            return {
+                                weight: newWeight,
+                                reps: 5,
+                                sets: 5,
+                                reason: 'rec_reason_pivot_graduation',
+                                params: { newWeight: newWeight, unit: 'kg' },
+                                trend: 'increase',
+                                phase: 'progression' // Effectively exits pivot
+                            };
+                        }
+                    }
+
+                    // Default: Repeat current step (if failed or resting too long)
+                    let reason = 'rec_reason_pivot_reps';
+                    if (allComplete) reason = 'rec_reason_pivot_consolidate'; // Completed but maybe rest was high
+
                     return {
                         weight: lastWeight,
-                        reps: 6,
-                        reason: 'rec_reason_pivot_reps',
+                        reps: lastReps, // Stick to 6, 7, or 8
+                        reason: reason,
                         actionKey: 'rec_action_pivot_reps',
                         params: { range: '5-8' },
                         trend: 'maintain',
