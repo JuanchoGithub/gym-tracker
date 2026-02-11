@@ -68,7 +68,7 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
   const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => setTime(e.target.value);
 
   const commitChanges = (overrides: Partial<PerformedSet> = {}) => {
-    const parsedWeight = parseFloat(weight);
+    const parsedWeight = parseFloat(weight.replace(',', '.'));
     const finalWeight = isNaN(parsedWeight) ? 0 : getStoredWeight(parsedWeight);
 
     const parsedReps = parseInt(reps, 10);
@@ -256,10 +256,8 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
           <>
             <div className="col-span-1 flex justify-center">
               <input
-                type="number"
+                type="text"
                 inputMode="decimal"
-                step="0.5"
-                min="0"
                 value={weight}
                 onChange={handleWeightChange}
                 onFocus={(e) => { setIsWeightFocused(true); e.target.select(); }}
