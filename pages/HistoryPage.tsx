@@ -89,12 +89,12 @@ const HistoryPage: React.FC = () => {
   }
 
   const StatItem: React.FC<{ icon: React.ReactNode; label: string; value: string | number }> = ({ icon, label, value }) => (
-    <div className="flex flex-col justify-center bg-slate-900/50 p-2 rounded-lg h-full">
+    <div className="flex flex-col justify-between bg-slate-900/50 p-2 rounded-lg h-full">
       <div className="flex items-center space-x-1.5 mb-0.5">
         <div className="text-primary w-4 h-4">{icon}</div>
         <div className="text-[10px] uppercase font-bold text-text-secondary tracking-wide">{label}</div>
       </div>
-      <div className="font-bold text-base leading-none pl-0.5">{value}</div>
+      <div className="font-bold text-base leading-none text-right">{value}</div>
     </div>
   );
 
@@ -121,6 +121,8 @@ const HistoryPage: React.FC = () => {
         {activeTab === 'list' && (
           <div className="space-y-4">
             {visibleHistory.map((session: WorkoutSession) => {
+              const titleLen = session.routineName.length;
+              const titleClass = titleLen > 35 ? 'text-xs tracking-tight' : titleLen > 25 ? 'text-sm' : titleLen > 18 ? 'text-base' : 'text-lg';
               const totalTime = session.endTime > 0 ? formatDurationCompact(Math.round((session.endTime - session.startTime) / 1000)) : 'N/A';
               const totalVolume = session.exercises.reduce((total, ex) => {
                 return total + ex.sets.reduce((exTotal, set) => exTotal + (set.isComplete ? (set.weight * set.reps) : 0), 0);
@@ -131,7 +133,7 @@ const HistoryPage: React.FC = () => {
                   <div className="p-3 sm:p-4" onClick={() => setViewingSession(session)}>
                     <div className="flex justify-between items-start mb-3 overflow-hidden">
                       <div className="min-w-0 flex-1 pr-2">
-                        <h2 className="font-bold text-lg text-primary whitespace-nowrap overflow-hidden text-ellipsis leading-tight">{session.routineName}</h2>
+                        <h2 className={`font-bold ${titleClass} text-primary whitespace-nowrap overflow-hidden text-ellipsis leading-tight`}>{session.routineName}</h2>
                         <span className="text-sm text-text-secondary block">
                           {new Date(session.startTime).toLocaleString()}
                         </span>

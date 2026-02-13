@@ -15,6 +15,7 @@ import { convertCmToFtIn, convertFtInToCm } from '../utils/weightUtils';
 import { calculateLifterDNA } from '../services/analyticsService';
 import LifterDNA from '../components/profile/LifterDNA';
 import UnlockHistory from '../components/profile/UnlockHistory';
+import RecommendationHistory from '../components/profile/RecommendationHistory';
 import StrengthProfile from '../components/profile/StrengthProfile';
 import MuscleHeatmap from '../components/insights/MuscleHeatmap';
 import { calculateMuscleFreshness } from '../utils/fatigueUtils';
@@ -414,6 +415,7 @@ const ProfilePage: React.FC = () => {
                         })}
                     </SettingsGroup>
                     <UnlockHistory unlocks={profile.unlocks || []} />
+                    <RecommendationHistory logs={profile.recommendationLogs || []} />
                     <div className="bg-surface border border-white/10 rounded-2xl p-5 shadow-lg mb-6">
                         <div className="flex items-center gap-3 mb-4 border-b border-white/5 pb-4">
                             <div className="p-2 rounded-full bg-slate-700 text-text-secondary">

@@ -18,12 +18,12 @@ interface HistoryDetailModalProps {
 }
 
 const StatItem: React.FC<{ icon: React.ReactNode; label: string; value: string | number }> = ({ icon, label, value }) => (
-    <div className="flex flex-col justify-center bg-slate-900/40 border border-white/5 p-2 rounded-lg h-full">
+    <div className="flex flex-col justify-between bg-slate-900/40 border border-white/5 p-2 rounded-lg h-full">
         <div className="flex items-center space-x-1.5 mb-0.5">
             <div className="text-primary w-4 h-4">{icon}</div>
             <div className="text-[10px] uppercase font-bold text-text-secondary tracking-wide">{label}</div>
         </div>
-        <div className="font-bold text-base leading-none pl-0.5">{value}</div>
+        <div className="font-bold text-base leading-none text-right">{value}</div>
     </div>
 );
 
@@ -31,6 +31,9 @@ const HistoryDetailModal: React.FC<HistoryDetailModalProps> = ({ session, isOpen
     const { history: allHistory, getExerciseById } = useContext(AppContext);
     const { t } = useI18n();
     const { displayWeight, weightUnit } = useMeasureUnit();
+
+    const titleLen = session.routineName.length;
+    const titleClass = titleLen > 35 ? 'text-sm' : titleLen > 25 ? 'text-base' : titleLen > 20 ? 'text-lg' : 'text-xl';
 
     const totalTime = session.endTime > 0 ? formatDurationCompact(Math.round((session.endTime - session.startTime) / 1000)) : 'N/A';
     const totalVolume = session.exercises.reduce((total, ex) => {
@@ -76,7 +79,7 @@ const HistoryDetailModal: React.FC<HistoryDetailModalProps> = ({ session, isOpen
             <div className="flex flex-col h-full">
                 <div className="flex justify-between items-start p-4 sm:p-6 pb-0 flex-shrink-0 bg-[#0f172a] z-10 overflow-hidden">
                     <div className="min-w-0 pr-4">
-                        <h2 className="font-bold text-xl text-primary leading-tight whitespace-nowrap overflow-hidden text-ellipsis">{session.routineName}</h2>
+                        <h2 className={`font-bold ${titleClass} text-primary leading-tight whitespace-nowrap overflow-hidden text-ellipsis`}>{session.routineName}</h2>
                         <span className="text-sm text-text-secondary">{new Date(session.startTime).toLocaleString()}</span>
                     </div>
                     <button onClick={onClose} className="p-2 -mr-2 -mt-2 text-text-secondary hover:text-primary rounded-full hover:bg-white/5 transition-colors flex-shrink-0">
