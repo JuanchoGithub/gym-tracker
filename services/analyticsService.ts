@@ -321,20 +321,21 @@ export const getSmartWeightSuggestion = (
             const targetRest = 90;
             let activePhase: 'maintenance' | 'progression' | 'deload' | 'pivot' | 'shock' = 'maintenance';
             let consecutiveStallCount = 1;
+            
             if (profile.recommendationLogs) {
                 const twoWeeksAgo = Date.now() - (14 * 24 * 60 * 60 * 1000);
                 const recentLogs = profile.recommendationLogs.filter(l =>
                     l.timestamp > twoWeeksAgo &&
                     l.actionTaken === 'apply' &&
-                    l.type === 'stall' &&
-                    l.title.includes(exerciseDef?.name || '')
+                    (l.type === 'stall' || l.type === 'coach') &&
+                    (l.variables?.exerciseId === exerciseId || l.title.includes(exerciseDef?.name || ''))
                 );
 
                 if (recentLogs.length > 0) {
-                    const lastLog = recentLogs[recentLogs.length - 1];
-                    if (lastLog.reason.includes('6-12-25')) activePhase = 'shock';
-                    else if (lastLog.reason.includes('Consolidate')) activePhase = 'pivot';
-                    else if (lastLog.reason.includes('Plateau Buster')) activePhase = 'deload';
+                    const lastLog = recentLogs[0]; // Most recent first
+                    if (lastLog.reason.includes('6-12-25') || lastLog.variables?.suggestionType === '6-12-25') activePhase = 'shock';
+                    else if (lastLog.reason.includes('Pivot') || lastLog.reason.includes('5-8') || lastLog.variables?.phase === 'pivot') activePhase = 'pivot';
+                    else if (lastLog.reason.includes('Plateau Buster') || lastLog.variables?.phase === 'deload') activePhase = 'deload';
                 }
             }
 
@@ -346,7 +347,7 @@ export const getSmartWeightSuggestion = (
                 if (lastWeight > deloadWeight) {
                     return {
                         weight: deloadWeight,
-                        reason: 'rec_reason_stall', // Reuse generic stall reason or new sync reason
+                        reason: 'rec_reason_stall', 
                         params: { weight: lastWeight, unit: 'kg', count: consecutiveStallCount },
                         trend: 'decrease',
                         phase: 'deload'
@@ -358,34 +359,29 @@ export const getSmartWeightSuggestion = (
                     const lastReps = lastSets[0].reps;
                     const allComplete = lastSets.every(s => s.isComplete && s.reps >= lastReps);
 
-                    // Logic for "Coach" progression through the 5-8 rep range
-                    // Base Case: Not yet started the pivot (still doing 5s)
-                    if (lastReps < 6) {
-                        return {
-                            weight: lastWeight,
-                            reps: 6,
-                            reason: 'rec_reason_pivot_reps',
-                            actionKey: 'rec_action_pivot_reps',
-                            params: { range: '5-8' },
-                            trend: 'maintain',
-                            phase: 'pivot'
-                        };
-                    }
-
-                    // In the Pivot: Check if ready to move up
+                    // Journey Logic: Based on last session performance
                     if (allComplete) {
                         const totalRest = lastSets.reduce((sum, s) => sum + (s.actualRest || 0), 0);
                         const avgRest = lastSets.length > 0 ? totalRest / lastSets.length : 0;
-                        // Note: Allow up to 4 mins (240s) for heavy pivots before holding back
                         const goodRest = avgRest <= 240;
 
+                        if (lastReps < 6) {
+                            return {
+                                weight: lastWeight,
+                                reps: 6,
+                                reason: 'rec_reason_pivot_progression',
+                                params: { current: lastReps, next: 6 },
+                                trend: 'increase',
+                                phase: 'pivot'
+                            };
+                        }
                         if (lastReps === 6 && goodRest) {
                             return {
                                 weight: lastWeight,
                                 reps: 7,
                                 reason: 'rec_reason_pivot_progression',
                                 params: { current: 6, next: 7 },
-                                trend: 'increase', // Intensity increase via Reps
+                                trend: 'increase',
                                 phase: 'pivot'
                             };
                         }
@@ -409,19 +405,16 @@ export const getSmartWeightSuggestion = (
                                 reason: 'rec_reason_pivot_graduation',
                                 params: { newWeight: newWeight, unit: 'kg' },
                                 trend: 'increase',
-                                phase: 'progression' // Effectively exits pivot
+                                phase: 'progression'
                             };
                         }
                     }
 
-                    // Default: Repeat current step (if failed or resting too long)
-                    let reason = 'rec_reason_pivot_reps';
-                    if (allComplete) reason = 'rec_reason_pivot_consolidate'; // Completed but maybe rest was high
-
+                    // Default Pivot Suggestion (if failed or just started)
                     return {
                         weight: lastWeight,
-                        reps: lastReps, // Stick to 6, 7, or 8
-                        reason: reason,
+                        reps: Math.max(6, lastReps),
+                        reason: allComplete ? 'rec_reason_pivot_consolidate' : 'rec_reason_pivot_reps',
                         actionKey: 'rec_action_pivot_reps',
                         params: { range: '5-8' },
                         trend: 'maintain',

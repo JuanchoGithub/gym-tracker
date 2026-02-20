@@ -48,6 +48,7 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
 
     // Helper for logging
     const logAction = (action: string, value?: any) => {
+        const firstExerciseId = recommendation.stalledExercises?.[0]?.exerciseId || recommendation.pivotExercises?.[0]?.exerciseId;
         logRecommendationLog({
             id: `rec-${Date.now()}`,
             type: 'coach',
@@ -56,6 +57,7 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
             reason: t(recommendation.reasonKey as TranslationKey, formattedParams),
             variables: {
                 type: recommendation.type,
+                exerciseId: firstExerciseId, // Crucial for Journey tracking
                 params: JSON.stringify(recommendation.titleParams || {}),
                 score: recommendation.systemicFatigue?.score || null
             },
@@ -374,6 +376,19 @@ const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = ({
                         >
                             <Icon name="sparkles" className="w-4 h-4" />
                             <span>{recommendation.generatedRoutine.tags?.includes('gap_session') ? t('smart_gap_session') : t('smart_coach_title')}</span>
+                        </button>
+                    )}
+
+                    {!recommendation.generatedRoutine && (recommendation.type === 'stall' || recommendation.type === 'volume_pivot') && (
+                        <button
+                            onClick={() => {
+                                logAction('apply');
+                                onDismiss();
+                            }}
+                            className="w-full bg-white text-rose-600 font-bold py-3 px-4 rounded-xl shadow-md hover:bg-rose-50 transition-colors flex items-center justify-center gap-2 mb-2"
+                        >
+                            <Icon name="zap" className="w-4 h-4" />
+                            <span>{t('rec_action_plateau_buster')}</span>
                         </button>
                     )}
 

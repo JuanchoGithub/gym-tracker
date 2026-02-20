@@ -58,7 +58,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
     } = props;
     const { t } = useI18n();
     const { weightUnit, displayWeight } = useMeasureUnit();
-    const { history: allHistory, profile, rawExercises, getExerciseById } = useContext(AppContext);
+    const { history: allHistory, profile, rawExercises, getExerciseById, logRecommendationLog } = useContext(AppContext);
     const { activeTimerInfo } = useContext(TimerContext);
     const getExerciseName = useExerciseName();
     const [completedSets, setCompletedSets] = useState(workoutExercise.sets.filter(s => s.isComplete).length);
@@ -100,6 +100,23 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
 
     const handleApplyInsight = () => {
         if (!insight) return;
+
+        // Persist to recommendation logs so the engine knows a phase is active
+        logRecommendationLog({
+            id: `apply-${Date.now()}-${exerciseInfo.id}`,
+            type: 'coach',
+            timestamp: Date.now(),
+            title: t(insight.reason as any, insight.params),
+            reason: insight.reason,
+            variables: {
+                exerciseId: exerciseInfo.id,
+                phase: insight.phase || 'progression',
+                suggestionType: insight.actionKey || 'weight_insight',
+                weight: insight.weight,
+                reps: insight.reps || 0
+            },
+            actionTaken: 'apply'
+        });
 
         // Save current state for undo
         const oldState = { ...workoutExercise, sets: workoutExercise.sets.map(s => ({ ...s })) };
