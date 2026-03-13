@@ -146,13 +146,29 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
         });
 
         // 2. Handle Set Count Changes (Optional/Advanced)
-        if (insight.sets && insight.sets > 0 && insight.sets < newSets.length) {
-            const incompleteIndices = newSets.map((s, i) => !s.isComplete ? i : -1).filter(i => i !== -1);
-            const toRemove = newSets.length - insight.sets;
+        if (insight.sets && insight.sets > 0) {
+            if (insight.sets < newSets.length) {
+                const incompleteIndices = newSets.map((s, i) => !s.isComplete ? i : -1).filter(i => i !== -1);
+                const toRemove = newSets.length - insight.sets;
 
-            if (toRemove > 0) {
-                const indicesToRemove = incompleteIndices.slice(-toRemove);
-                newSets = newSets.filter((_, i) => !indicesToRemove.includes(i));
+                if (toRemove > 0) {
+                    const indicesToRemove = incompleteIndices.slice(-toRemove);
+                    newSets = newSets.filter((_, i) => !indicesToRemove.includes(i));
+                }
+            } else if (insight.sets > newSets.length) {
+                const toAdd = insight.sets - newSets.length;
+                const lastSet = newSets[newSets.length - 1];
+                for (let i = 0; i < toAdd; i++) {
+                    newSets.push({
+                        ...lastSet,
+                        id: `set-added-${Date.now()}-${i}`,
+                        isComplete: false,
+                        weight: insight.weight,
+                        reps: insight.reps || lastSet.reps,
+                        isWeightInherited: true,
+                        isRepsInherited: true
+                    });
+                }
             }
         }
 

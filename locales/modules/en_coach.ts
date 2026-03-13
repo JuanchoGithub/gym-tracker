@@ -102,6 +102,7 @@ export const en_coach = {
   rec_reason_pivot_reps: "Your muscles have adapted to this rep range. Shifting to {range} reps provides a fresh stimulus. By lowering the rep target, we can focus on increasing intensity (weight) with perfect form to break the stall.",
   rec_reason_pivot_density: "Stalled on weight? Let's win on time. Reducing rest to {rest}s to build metabolic efficiency.",
   rec_reason_pivot_variation: "Physical and mental burnout detected. Let's swap {from} for {to} for two weeks to rebuild momentum.",
+  rec_reason_pivot_graduation: "Plateau broken! Increasing weight to {newWeight}{unit} and resetting to a baseline volume of 5x5 to maintain progress.",
 
   // Efficiency & Technical PRs
   rec_title_efficiency_warning: "Efficiency Warning",

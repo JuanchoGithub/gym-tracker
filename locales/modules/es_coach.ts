@@ -102,6 +102,7 @@ export const es_coach = {
   rec_reason_pivot_reps: "Tus músculos se adaptaron a este rango. Cambiar a {range} reps dará un nuevo estímulo a las fibras. Al bajar el rango de reps, buscamos aumentar la intensidad (peso) manteniendo una técnica perfecta para romper el estancamiento.",
   rec_reason_pivot_density: "¿Estancado en peso? Ganemos en tiempo. Reducción de descanso a {rest}s para mejorar la eficiencia metabólica.",
   rec_reason_pivot_variation: "Agotamiento físico y mental detectado. Vamos a cambiar {from} por {to} por dos semanas para recuperar el momentum.",
+  rec_reason_pivot_graduation: "¡Superaste la meseta con éxito! Aumentamos el peso a {newWeight}{unit} y reiniciamos a un volumen base de 5x5 para seguir progresando.",
 
   // Efficiency & Technical PRs
   rec_title_efficiency_warning: "Alerta de Eficiencia",
