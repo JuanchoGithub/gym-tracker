@@ -25,7 +25,7 @@ const CheckInCard: React.FC<CheckInCardProps> = ({ onCheckIn }) => {
                 </div>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <button 
                     onClick={() => onCheckIn('busy')}
                     className="bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-200 py-3 px-4 rounded-xl text-sm font-semibold transition-colors"
@@ -43,6 +43,12 @@ const CheckInCard: React.FC<CheckInCardProps> = ({ onCheckIn }) => {
                     className="bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-200 py-3 px-4 rounded-xl text-sm font-semibold transition-colors"
                 >
                     {t('checkin_option_injury')}
+                </button>
+                <button 
+                    onClick={() => onCheckIn('vacation')}
+                    className="bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-200 py-3 px-4 rounded-xl text-sm font-semibold transition-colors"
+                >
+                    {t('checkin_option_vacation')}
                 </button>
             </div>
         </div>

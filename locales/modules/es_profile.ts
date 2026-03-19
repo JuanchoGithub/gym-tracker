@@ -64,6 +64,7 @@ export const es_profile = {
   checkin_option_busy: "Ocupado",
   checkin_option_deload: "Descarga",
   checkin_option_injury: "Lesión",
+  checkin_option_vacation: "Vacaciones",
 
   // Fatigue Monitor
   fatigue_title: "Estado de Recuperación",

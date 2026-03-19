@@ -64,6 +64,7 @@ export const en_profile = {
   checkin_option_busy: "Busy",
   checkin_option_deload: "Deload",
   checkin_option_injury: "Injury",
+  checkin_option_vacation: "Vacation",
 
   // Fatigue Monitor
   fatigue_title: "Training Readiness",

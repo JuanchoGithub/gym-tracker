@@ -281,4 +281,5 @@ export interface Profile {
   lastImported?: number;
   historyChartConfigs?: HistoryChartConfig[];
   recommendationLogs?: RecommendationLog[];
+  lastCheckInDismissedAt?: number;
 }

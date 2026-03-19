@@ -9,7 +9,7 @@ import ChangeTimerModal from '../modals/ChangeTimerModal';
 import { formatSecondsToMMSS } from '../../utils/timeUtils';
 import { AppContext } from '../../contexts/AppContext';
 import { TimerContext } from '../../contexts/TimerContext';
-import { getExerciseHistory } from '../../utils/workoutUtils';
+import { getExerciseHistory, calculateWarmupWeights } from '../../utils/workoutUtils';
 import { TranslationKey } from '../../contexts/I18nContext';
 import { useExerciseName } from '../../hooks/useExerciseName';
 import { getSmartWeightSuggestion, WeightSuggestion } from '../../services/analyticsService';
@@ -129,10 +129,12 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
         let newSets = [...workoutExercise.sets];
 
         // 1. Handle Weight and Rep Changes for uncompleted sets
+        let weightChangedSignificantly = false;
         newSets = newSets.map(set => {
             if (set.type === 'normal' && !set.isComplete) {
                 const updatedSet = { ...set };
                 if (insight.weight > 0) {
+                    if (Math.abs(updatedSet.weight - insight.weight) > 1) weightChangedSignificantly = true;
                     updatedSet.weight = insight.weight;
                     updatedSet.isWeightInherited = true;
                 }
@@ -145,30 +147,67 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
             return set;
         });
 
-        // 2. Handle Set Count Changes (Optional/Advanced)
+        // 2. Handle Set Count Changes (Targeting Normal Sets)
         if (insight.sets && insight.sets > 0) {
-            if (insight.sets < newSets.length) {
-                const incompleteIndices = newSets.map((s, i) => !s.isComplete ? i : -1).filter(i => i !== -1);
-                const toRemove = newSets.length - insight.sets;
+            const currentNormalSets = newSets.filter(s => s.type === 'normal' || s.type === 'failure');
+            const warmupSets = newSets.filter(s => s.type === 'warmup');
+            const otherSets = newSets.filter(s => s.type !== 'normal' && s.type !== 'failure' && s.type !== 'warmup');
 
-                if (toRemove > 0) {
-                    const indicesToRemove = incompleteIndices.slice(-toRemove);
-                    newSets = newSets.filter((_, i) => !indicesToRemove.includes(i));
+            if (insight.sets < currentNormalSets.length) {
+                const toRemove = currentNormalSets.length - insight.sets;
+                let removedSoFar = 0;
+                // Remove from the end of normal sets that are incomplete
+                const updatedNormalSets = [...currentNormalSets];
+                for (let i = updatedNormalSets.length - 1; i >= 0 && removedSoFar < toRemove; i--) {
+                    if (!updatedNormalSets[i].isComplete) {
+                        updatedNormalSets.splice(i, 1);
+                        removedSoFar++;
+                    }
                 }
-            } else if (insight.sets > newSets.length) {
-                const toAdd = insight.sets - newSets.length;
-                const lastSet = newSets[newSets.length - 1];
+                newSets = [...warmupSets, ...updatedNormalSets, ...otherSets];
+            } else if (insight.sets > currentNormalSets.length) {
+                const toAdd = insight.sets - currentNormalSets.length;
+                const lastNormalSet = currentNormalSets[currentNormalSets.length - 1] || newSets[newSets.length - 1];
+                const addedSets: PerformedSet[] = [];
                 for (let i = 0; i < toAdd; i++) {
-                    newSets.push({
-                        ...lastSet,
+                    addedSets.push({
+                        ...lastNormalSet,
                         id: `set-added-${Date.now()}-${i}`,
                         isComplete: false,
-                        weight: insight.weight,
-                        reps: insight.reps || lastSet.reps,
+                        weight: insight.weight || lastNormalSet.weight,
+                        reps: insight.reps || lastNormalSet.reps,
                         isWeightInherited: true,
                         isRepsInherited: true
                     });
                 }
+                // Insert after last normal set or at the end
+                let lastNormalIndex = -1;
+                for (let i = newSets.length - 1; i >= 0; i--) {
+                    if (newSets[i].type === 'normal' || newSets[i].type === 'failure') {
+                        lastNormalIndex = i;
+                        break;
+                    }
+                }
+                
+                if (lastNormalIndex !== -1) {
+                    newSets.splice(lastNormalIndex + 1, 0, ...addedSets);
+                } else {
+                    newSets.push(...addedSets);
+                }
+            }
+        }
+
+        // 3. Intelligently Adjust Warmups if weight changed significantly
+        if (weightChangedSignificantly && insight.weight > 0) {
+            const warmupIndices = newSets.map((s, i) => s.type === 'warmup' && !s.isComplete ? i : -1).filter(i => i !== -1);
+            if (warmupIndices.length > 0) {
+                const increment = 2.5; // Default increment
+                const newWarmupWeights = calculateWarmupWeights(insight.weight, warmupIndices.length, increment);
+                warmupIndices.forEach((idx, i) => {
+                    if (newWarmupWeights[i] !== undefined) {
+                        newSets[idx] = { ...newSets[idx], weight: newWarmupWeights[i] };
+                    }
+                });
             }
         }
 

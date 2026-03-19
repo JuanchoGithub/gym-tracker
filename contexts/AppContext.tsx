@@ -15,7 +15,7 @@ import { getSmartStartingWeight } from '../services/analyticsService';
 import { getDateString } from '../utils/timeUtils';
 import { detectWorkoutIntensity, createSmartWorkoutExercise } from '../utils/workoutUtils';
 
-export type CheckInReason = 'busy' | 'deload' | 'injury';
+export type CheckInReason = 'busy' | 'deload' | 'injury' | 'vacation';
 export type WeightUnit = 'kg' | 'lbs';
 
 export interface AppContextType {
@@ -302,10 +302,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         exportToJson(exportPayload, `fortachon-backup-${dateStr}`);
     }, [data, user, supplements]);
 
-    // Helper for checkin string casting
+    // Helper for checkin state with profile support
+    const checkInState = useMemo(() => {
+        const now = Date.now();
+        const lastSession = data.history.length > 0 ? data.history[0] : null;
+        if (!lastSession) return { active: false };
+        
+        // If dismissed in the last 7 days, don't show
+        if (user.profile.lastCheckInDismissedAt && (now - user.profile.lastCheckInDismissedAt) < (1000 * 60 * 60 * 24 * 7)) {
+            return { active: false };
+        }
+
+        const daysSince = (now - lastSession.startTime) / (1000 * 60 * 60 * 24);
+        return { active: daysSince > 10 };
+    }, [data.history, user.profile.lastCheckInDismissedAt]);
+
     const handleCheckInResponseWrapper = useCallback((reason: CheckInReason) => {
         data.handleCheckInResponse(reason);
-    }, [data]);
+        user.updateProfileInfo({ lastCheckInDismissedAt: Date.now() });
+    }, [data, user]);
 
     const value = useMemo(() => ({
         ...user,
@@ -321,6 +336,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         endAddExercisesToTemplate: endAddExercisesToTemplateWrapper,
         triggerManualPlanReview: triggerManualPlanReviewWrapper,
         handleCheckInResponse: handleCheckInResponseWrapper,
+        checkInState,
         importData,
         exportData
     }), [user, data, supplements, editor, startTemplateDuplicate, startExerciseDuplicate, endTemplateEditWrapper, endExerciseEditWrapper, endHistoryEditWrapper, endAddExercisesToTemplateWrapper, triggerManualPlanReviewWrapper, handleCheckInResponseWrapper, importData, exportData]);

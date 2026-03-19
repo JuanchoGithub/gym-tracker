@@ -554,6 +554,20 @@ export const getSmartWeightSuggestion = (
             };
 
             if (performance === 'good') {
+                // Rust Recovery: If we are below our recent PR and perform well, jump back faster.
+                if (lastWeight <= maxHistoricalWeight * 0.95) {
+                    const recoveryIncrement = increment * 2;
+                    const targetWeight = Math.round(Math.min(maxHistoricalWeight, lastWeight + recoveryIncrement) / increment) * increment;
+                    
+                    return {
+                        ...baseSuggestion,
+                        weight: targetWeight,
+                        reason: 'insight_reason_recovery',
+                        trend: 'increase',
+                        phase: 'progression'
+                    };
+                }
+
                 return {
                     ...baseSuggestion,
                     weight: lastWeight + increment,

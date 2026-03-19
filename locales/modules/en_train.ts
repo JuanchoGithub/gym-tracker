@@ -165,5 +165,6 @@ export const en_train = {
   insight_reason_maintain: "Maintain weight.",
   insight_reason_rust: "It's been a while. Easing back in.",
   insight_reason_new: "Suggested starting weight.",
+  insight_reason_recovery: "Performance is high! Returning to your previous peak.",
   insight_apply: "Apply",
 };
