@@ -18,6 +18,8 @@ export const en_train = {
   train_quick_hiit_desc: "{work}s work / {rest}s rest, {rounds} rounds",
   train_quick_hiit_label: "Quick HIIT",
   train_quick_hiit_desc_short: "Instant intensity",
+  train_programs_tile: "Programs",
+  train_programs_tile_sub: "100 pushups & more",
 
   // Active Workout
   active_workout_no_active: "No active workout.",

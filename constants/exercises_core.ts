@@ -4,6 +4,7 @@ import { MUSCLES } from './muscles';
 
 export const CORE_EXERCISES: Exercise[] = [
   { id: 'ex-20', name: 'Crunches', bodyPart: 'Core', category: 'Bodyweight', primaryMuscles: [MUSCLES.ABS], secondaryMuscles: [] },
+  { id: 'ex-situp', name: 'Sit-Up', bodyPart: 'Core', category: 'Bodyweight', primaryMuscles: [MUSCLES.ABS, MUSCLES.HIP_FLEXORS], secondaryMuscles: [MUSCLES.OBLIQUES] },
   { id: 'ex-15', name: 'Plank', bodyPart: 'Core', category: 'Bodyweight', isTimed: true, primaryMuscles: [MUSCLES.ABS, MUSCLES.TRANSVERSE_ABDOMINIS], secondaryMuscles: [MUSCLES.OBLIQUES, MUSCLES.FRONT_DELTS] },
   { id: 'ex-117', name: 'Russian Twist', bodyPart: 'Core', category: 'Dumbbell', primaryMuscles: [MUSCLES.OBLIQUES, MUSCLES.ABS], secondaryMuscles: [MUSCLES.HIP_FLEXORS] },
   { id: 'ex-118', name: 'Leg Raise', bodyPart: 'Core', category: 'Bodyweight', primaryMuscles: [MUSCLES.ABS, MUSCLES.HIP_FLEXORS], secondaryMuscles: [] },

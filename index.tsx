@@ -11,6 +11,7 @@ import { DataProvider } from './contexts/DataContext';
 import { SupplementProvider } from './contexts/SupplementContext';
 import { EditorProvider } from './contexts/EditorContext';
 import { AuthProvider } from './contexts/AuthContext';
+import { ProgramProvider } from './contexts/ProgramContext';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -28,11 +29,13 @@ root.render(
               <SupplementProvider>
                 <TimerProvider>
                   <AppProvider>
+                    <ProgramProvider>
                     <ActiveWorkoutProvider>
                       <StatsProvider>
                         <App />
                       </StatsProvider>
                     </ActiveWorkoutProvider>
+                    </ProgramProvider>
                   </AppProvider>
                 </TimerProvider>
               </SupplementProvider>

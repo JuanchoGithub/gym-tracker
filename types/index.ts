@@ -103,6 +103,8 @@ export interface WorkoutSession {
   prCount?: number;
   updatedAt?: number;
   deletedAt?: number | null;
+  source?: 'manual' | 'program';
+  programId?: string;
 }
 
 export interface ActiveHiitSession {
@@ -242,6 +244,41 @@ export interface ActiveTimerInfo {
 export interface TimedSetInfo {
   exercise: WorkoutExercise;
   set: PerformedSet;
+}
+
+export type ProgramStatus = 'active' | 'needs-retest' | 'done' | 'cancelled' | 'dropped';
+
+export interface ProgramEnrollment {
+  id: string;
+  programId: string;
+  userTarget: number;
+  unit: 'reps' | 'seconds';
+  column: 1 | 2 | 3;
+  startWeek: number;
+  startSessionIndex?: number;
+  currentWeek: number;
+  currentDay: 1 | 2 | 3;
+  currentSessionIndex?: number;
+  daysPerWeek: number;
+  initialTest: number;
+  lastActiveAt: number;
+  createdAt: number;
+  status: ProgramStatus;
+  showInRecent: boolean;
+  failedStreak: number;
+  lastCompleted?: { week: number; day: number; sessionIndex?: number; date: number; summary: string };
+}
+
+export interface ProgramCompletion {
+  id: string;
+  enrollmentId: string;
+  programId: string;
+  week: number;
+  day: number;
+  sessionIndex?: number;
+  date: number;
+  values: number[];
+  passed: boolean;
 }
 
 export interface RecommendationLog {

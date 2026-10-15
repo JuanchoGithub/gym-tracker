@@ -17,18 +17,19 @@ import ExerciseEditorPage from './pages/ExerciseEditorPage';
 import HistoryWorkoutEditorPage from './pages/HistoryWorkoutEditorPage';
 import AddExercisePage from './pages/AddExercisePage';
 import SupplementPage from './pages/SupplementPage';
+import ProgramsPage from './pages/ProgramsPage';
 import ConfirmModal from './components/modals/ConfirmModal';
 import { useI18n } from './hooks/useI18n';
 import SilentAudioPlayer from './components/common/SilentAudioPlayer';
 import NotificationManager from './components/managers/NotificationManager';
 
-export type Page = 'TRAIN' | 'HISTORY' | 'EXERCISES' | 'SUPPLEMENTS' | 'PROFILE' | 'ACTIVE_WORKOUT' | 'TIMERS';
+export type Page = 'TRAIN' | 'HISTORY' | 'EXERCISES' | 'SUPPLEMENTS' | 'PROFILE' | 'ACTIVE_WORKOUT' | 'TIMERS' | 'PROGRAMS';
 
 const App: React.FC = () => {
   // Routing Logic: Initialize state from Hash
   const getPageFromHash = (): Page => {
     const hash = window.location.hash.replace('#/', '').toUpperCase();
-    const validPages: Page[] = ['TRAIN', 'HISTORY', 'EXERCISES', 'SUPPLEMENTS', 'PROFILE', 'TIMERS'];
+    const validPages: Page[] = ['TRAIN', 'HISTORY', 'EXERCISES', 'SUPPLEMENTS', 'PROFILE', 'TIMERS', 'PROGRAMS'];
     return validPages.includes(hash as Page) ? (hash as Page) : 'TRAIN';
   };
 
@@ -151,6 +152,7 @@ const App: React.FC = () => {
       case 'EXERCISES': return <ExercisesPage />;
       case 'SUPPLEMENTS': return <SupplementPage />;
       case 'PROFILE': return <ProfilePage />;
+      case 'PROGRAMS': return <ProgramsPage />;
       // Timer page is handled outside to keep it mounted
       default: return <TrainPage />;
     }

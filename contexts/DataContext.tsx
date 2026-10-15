@@ -189,6 +189,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const importDataData = useCallback((data: any) => {
         if (Array.isArray(data.history)) setHistoryRaw(data.history);
+        if (Array.isArray(data.calisthenicsEnrollments)) {
+            try { window.localStorage.setItem('calisthenicsEnrollments', JSON.stringify(data.calisthenicsEnrollments)); } catch { /* noop */ }
+        }
+        if (Array.isArray(data.calisthenicsCompletions)) {
+            try { window.localStorage.setItem('calisthenicsCompletions', JSON.stringify(data.calisthenicsCompletions)); } catch { /* noop */ }
+        }
         if (Array.isArray(data.routines)) {
             setRoutinesRaw(() => {
                 const merged = [...PREDEFINED_ROUTINES];
@@ -243,6 +249,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 snoozedSupplements: localStorage.getItem('snoozedSupplements') ? JSON.parse(localStorage.getItem('snoozedSupplements')!) : undefined,
                 dayOverrides: localStorage.getItem('dayOverrides') ? JSON.parse(localStorage.getItem('dayOverrides')!) : undefined,
                 dismissedSuggestions: localStorage.getItem('dismissedSuggestions') ? JSON.parse(localStorage.getItem('dismissedSuggestions')!) : undefined,
+                calisthenicsEnrollments: localStorage.getItem('calisthenicsEnrollments') ? JSON.parse(localStorage.getItem('calisthenicsEnrollments')!) : undefined,
+                calisthenicsCompletions: localStorage.getItem('calisthenicsCompletions') ? JSON.parse(localStorage.getItem('calisthenicsCompletions')!) : undefined,
             };
 
             // 2. Push local changes
@@ -309,6 +317,14 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                         });
                         return next;
                     });
+                }
+
+                // Merge calisthenics enrollments/completions (replace with remote copy when present)
+                if (Array.isArray(remoteData.calisthenicsEnrollments)) {
+                    try { window.localStorage.setItem('calisthenicsEnrollments', JSON.stringify(remoteData.calisthenicsEnrollments)); } catch { /* noop */ }
+                }
+                if (Array.isArray(remoteData.calisthenicsCompletions)) {
+                    try { window.localStorage.setItem('calisthenicsCompletions', JSON.stringify(remoteData.calisthenicsCompletions)); } catch { /* noop */ }
                 }
             }
 

@@ -18,6 +18,8 @@ export const es_train = {
   train_quick_hiit_desc: "{work}s trabajo / {rest}s descanso, {rounds} rondas",
   train_quick_hiit_label: "HIIT Rápido",
   train_quick_hiit_desc_short: "Intensidad instantánea",
+  train_programs_tile: "Programas",
+  train_programs_tile_sub: "100 flexiones y más",
 
   // Active Workout
   active_workout_no_active: "No hay entrenamiento activo.",

@@ -84,6 +84,11 @@ const QuickTrainingSection: React.FC<QuickTrainingSectionProps> = ({ isOpen, onT
                         <Icon name="weight" className="w-6 h-6 mb-1" />
                         <span className="text-sm">{t('orm_title')}</span>
                     </button>
+                    <button onClick={() => { window.location.hash = '/programs'; }} className="bg-surface hover:bg-slate-700 text-emerald-300 font-bold py-3 px-2 rounded-lg text-lg transition-colors flex flex-col items-center justify-center border border-emerald-500/30">
+                        <Icon name="trophy" className="w-6 h-6 mb-1" />
+                        <span className="text-sm">{t('train_programs_tile')}</span>
+                        <span className="text-xs font-normal text-text-secondary">{t('train_programs_tile_sub')}</span>
+                    </button>
                 </div>
             )}
             <OneRepMaxHub isOpen={isOrmHubOpen} onClose={() => setIsOrmHubOpen(false)} />

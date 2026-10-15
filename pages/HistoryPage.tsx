@@ -137,6 +137,9 @@ const HistoryPage: React.FC = () => {
                         <span className="text-sm text-text-secondary block">
                           {new Date(session.startTime).toLocaleString()}
                         </span>
+                        {session.source === 'program' && (
+                          <span className="inline-block mt-1 text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border text-emerald-300 border-emerald-500/30 bg-emerald-500/10">Program{session.programId ? ` · ${session.programId}` : ''}</span>
+                        )}
                       </div>
                       <div className="relative flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                         <button onClick={() => setMenuOpenId(mid => mid === session.id ? null : session.id)} className="p-2 -mt-2 -mr-2 text-text-secondary hover:text-primary">

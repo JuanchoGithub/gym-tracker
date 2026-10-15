@@ -26,6 +26,8 @@ import { useMeasureUnit } from '../hooks/useWeight';
 import { TranslationKey } from '../contexts/I18nContext';
 import { TimerContext } from '../contexts/TimerContext';
 import PromotionReviewModal from '../components/modals/PromotionReviewModal';
+import { ProgramContext } from '../contexts/ProgramContext';
+import ContinueProgramCard from '../components/programs/ContinueProgramCard';
 
 // Updated Regex to catch both translation keys and plain text words
 const timeKeywords = {
@@ -113,9 +115,19 @@ const TrainPage: React.FC = () => {
         return stats.recommendation;
     }, [stats.recommendation, stats.imbalanceRecommendation, onboardingRoutines, imbalanceSnoozedUntil]);
 
+    const { enrollments } = useContext(ProgramContext);
+
+    const showRecentProgramIds = useMemo(() => {
+        const ids = new Set<string>();
+        enrollments.forEach((e) => { if (e.showInRecent) ids.add(e.programId); });
+        return ids;
+    }, [enrollments]);
+
     const { latestWorkouts, customTemplates, sampleWorkouts, sampleHiit } = useMemo(() => {
         // Generate latest workouts from history (Last 10 distinct sessions)
+        // Program sessions are hidden from Recents by default; opt-in per enrollment via showInRecent.
         const latest = history
+            .filter((s) => s.source !== 'program' || (s.programId && showRecentProgramIds.has(s.programId)))
             .slice(0, 10)
             .map(session => {
                 const originalRoutine = routines.find(r => r.id === session.routineId);
@@ -138,7 +150,7 @@ const TrainPage: React.FC = () => {
         const hiit = templates.filter(r => r.routineType === 'hiit');
 
         return { latestWorkouts: latest, customTemplates: custom, sampleWorkouts: samples, sampleHiit: hiit };
-    }, [routines, history]);
+    }, [routines, history, showRecentProgramIds]);
 
     // Retrieve actual routine objects for the recommendation
     const recommendedRoutines = useMemo(() => {
@@ -634,6 +646,8 @@ const TrainPage: React.FC = () => {
                 {checkInState.active && (
                     <CheckInCard onCheckIn={handleCheckInResponse} />
                 )}
+
+                <ContinueProgramCard />
 
                 <button
                     onClick={handleStartEmptyWorkout}
