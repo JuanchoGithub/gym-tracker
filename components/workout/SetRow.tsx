@@ -18,9 +18,10 @@ interface SetRowProps {
   previousSetData?: PerformedSet;
   isWeightOptional: boolean;
   isValid?: boolean; // New prop for validation
+  actualRest?: number;
 }
 
-const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSet, onStartTimedSet, previousSetData, isWeightOptional, isValid = true }) => {
+const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSet, onStartTimedSet, previousSetData, isWeightOptional, isValid = true, actualRest }) => {
   const { displayWeight, getStoredWeight } = useMeasureUnit();
   const { t } = useI18n();
   const { fontSize } = useContext(AppContext);
@@ -34,6 +35,17 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
   const [isWeightFocused, setIsWeightFocused] = useState(false);
   const [isRepsFocused, setIsRepsFocused] = useState(false);
   const [isTimeFocused, setIsTimeFocused] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  // Auto-collapse when a set transitions to complete
+  const prevIsComplete = useRef(!!set.isComplete);
+  useEffect(() => {
+    const wasComplete = prevIsComplete.current;
+    prevIsComplete.current = !!set.isComplete;
+    if (!wasComplete && set.isComplete) {
+      setIsExpanded(false);
+    }
+  }, [set.isComplete]);
 
   // Refs to track previous props to avoid overwriting local state on unrelated re-renders
   // or preventing the "reset on blur" race condition.
@@ -195,6 +207,63 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
   const prevIsFailure = previousSetData?.type === 'failure';
   const prevDataStyle = prevIsFailure ? 'text-purple-400 font-bold opacity-100' : 'text-slate-400 opacity-70';
 
+  const isCompact = !!set.isComplete && !isExpanded;
+
+  if (isCompact) {
+    const summary = set.type === 'timed'
+      ? `${formatSecondsToMMSS(set.time ?? 0)} × ${set.reps}`
+      : `${displayWeight(set.weight)} × ${set.reps}`;
+    const ariaSummary = set.type === 'timed'
+      ? `${formatSecondsToMMSS(set.time ?? 0)} for ${set.reps} reps`
+      : `${displayWeight(set.weight)} for ${set.reps} reps`;
+
+    return (
+      <>
+        <div className={`flex items-center gap-2 pl-1.5 pr-1 py-1 h-10 rounded-xl border transition-all duration-300 ${getSetTypeStyles(set.type, true)}`}>
+          <button
+            onClick={() => setIsTypeModalOpen(true)}
+            aria-label={`Set ${setNumber} type`}
+            className={`w-6 h-6 rounded-md flex items-center justify-center text-xs flex-shrink-0 ${getSetIdentifierStyles(set.type)}`}
+          >
+            {renderSetIdentifier()}
+          </button>
+
+          <button
+            onClick={() => setIsExpanded(true)}
+            aria-expanded="false"
+            aria-label={`Expand completed set ${setNumber}, ${ariaSummary}`}
+            className="flex-1 min-w-0 flex items-center gap-2 text-left"
+          >
+            <span className="text-sm font-bold text-success truncate whitespace-nowrap">
+              {summary}
+            </span>
+            {actualRest !== undefined && (
+              <span className="flex-shrink-0 text-[11px] font-medium text-success bg-success/10 px-1.5 py-px rounded-full border border-success/20 whitespace-nowrap">
+                {formatSecondsToMMSS(actualRest)} rest
+              </span>
+            )}
+            <Icon name="chevron-down" className="w-4 h-4 text-text-secondary/60 flex-shrink-0" />
+          </button>
+
+          <button
+            onClick={handleComplete}
+            aria-label={`Mark set ${setNumber} as not complete`}
+            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 active:scale-95 flex-shrink-0 ${getCheckmarkButtonStyle()}`}
+          >
+            <Icon name={isValid ? "check" : "warning"} className="w-4 h-4" />
+          </button>
+        </div>
+        <SetTypeModal
+          isOpen={isTypeModalOpen}
+          onClose={() => setIsTypeModalOpen(false)}
+          currentType={set.type}
+          onSelectType={handleSelectSetType}
+          onDelete={onDeleteSet}
+        />
+      </>
+    );
+  }
+
   return (
     <>
       <div className={`grid grid-cols-[38px_1fr_1.1fr_0.9fr_48px] items-center gap-1.5 p-1.5 rounded-2xl border transition-all duration-300 ${getSetTypeStyles(set.type, !!set.isComplete)}`}>
@@ -207,9 +276,22 @@ const SetRow: React.FC<SetRowProps> = ({ set, setNumber, onUpdateSet, onDeleteSe
           </button>
         </div>
 
-        <div className={`col-span-1 text-center text-xs font-mono px-0.5 whitespace-nowrap overflow-hidden text-ellipsis ${prevDataStyle}`}>
-          {set.type !== 'timed' && (previousSetData ? `${displayWeight(previousSetData.weight)}x${previousSetData.reps}` : '-')}
-        </div>
+        {set.isComplete ? (
+          <div className="col-span-1 flex justify-center">
+            <button
+              onClick={() => setIsExpanded(false)}
+              aria-expanded="true"
+              aria-label={`Collapse set ${setNumber}`}
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-text-secondary hover:bg-white/5 transition-colors"
+            >
+              <Icon name="chevron-up" className="w-4 h-4" />
+            </button>
+          </div>
+        ) : (
+          <div className={`col-span-1 text-center text-xs font-mono px-0.5 whitespace-nowrap overflow-hidden text-ellipsis ${prevDataStyle}`}>
+            {set.type !== 'timed' && (previousSetData ? `${displayWeight(previousSetData.weight)}x${previousSetData.reps}` : '-')}
+          </div>
+        )}
 
         {set.type === 'timed' ? (
           <>

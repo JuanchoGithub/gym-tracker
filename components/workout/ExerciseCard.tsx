@@ -6,7 +6,6 @@ import { useI18n } from '../../hooks/useI18n';
 import ExerciseHeader from './ExerciseHeader';
 import { useMeasureUnit } from '../../hooks/useWeight';
 import ChangeTimerModal from '../modals/ChangeTimerModal';
-import { formatSecondsToMMSS } from '../../utils/timeUtils';
 import { AppContext } from '../../contexts/AppContext';
 import { TimerContext } from '../../contexts/TimerContext';
 import { getExerciseHistory, calculateWarmupWeights } from '../../utils/workoutUtils';
@@ -619,29 +618,18 @@ const ExerciseCard: React.FC<ExerciseCardProps> = (props) => {
                             }
 
                             return (
-                                <React.Fragment key={set.id}>
-                                    <SetRow
-                                        set={displaySet}
-                                        setNumber={normalSetCounter}
-                                        onUpdateSet={handleUpdateSet}
-                                        onDeleteSet={() => handleDeleteSet(set.id)}
-                                        onStartTimedSet={(s) => onStartTimedSet?.(workoutExercise, s)}
-                                        previousSetData={previousSetData}
-                                        isWeightOptional={isWeightOptional}
-                                        isValid={isValid}
-                                    />
-                                    {showFinishedTimer && set.actualRest !== undefined && (
-                                        <div className="w-full animate-fadeIn">
-                                            <div className="flex items-center justify-center text-xs text-success font-medium">
-                                                <div className="flex-grow h-px bg-success/10"></div>
-                                                <span className="mx-3 bg-success/10 px-2 py-0.5 rounded-full border border-success/20">
-                                                    {formatSecondsToMMSS(set.actualRest)} rest
-                                                </span>
-                                                <div className="flex-grow h-px bg-success/10"></div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </React.Fragment>
+                                <SetRow
+                                    key={set.id}
+                                    set={displaySet}
+                                    setNumber={normalSetCounter}
+                                    onUpdateSet={handleUpdateSet}
+                                    onDeleteSet={() => handleDeleteSet(set.id)}
+                                    onStartTimedSet={(s) => onStartTimedSet?.(workoutExercise, s)}
+                                    previousSetData={previousSetData}
+                                    isWeightOptional={isWeightOptional}
+                                    isValid={isValid}
+                                    actualRest={showFinishedTimer ? set.actualRest : undefined}
+                                />
                             );
                         })}
                     </div>
