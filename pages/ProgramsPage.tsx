@@ -7,6 +7,7 @@ import { progName, progDesc, progCue, progStatus, progUnit } from '../utils/prog
 import { PerformedSet, ProgramEnrollment, WorkoutExercise, WorkoutPlan, WorkoutSession } from '../types';
 import { Icon } from '../components/common/Icon';
 import { useI18n } from '../hooks/useI18n';
+import { useWakeLock } from '../hooks/useWakeLock';
 
 type View =
   | { mode: 'hub' }
@@ -335,6 +336,7 @@ const PlayerView: React.FC<{ enrollmentIds: string[]; onDone: () => void; onDeta
   const [holdLeft, setHoldLeft] = useState<number>(0);
   const [holdRunning, setHoldRunning] = useState(false);
   const [startTime] = useState(Date.now());
+  useWakeLock(true);
 
   const activeId = runIdx < sequence.length ? sequence[runIdx] : undefined;
   const enrollment = activeId ? enrollments.find((e) => e.id === activeId) : undefined;
@@ -494,20 +496,18 @@ const PlayerView: React.FC<{ enrollmentIds: string[]; onDone: () => void; onDeta
               <input
                 type="number" min={0} value={actuals[i] ?? prescribed}
                 onChange={(e) => setActuals((prev) => prev.map((v, j) => (j === i ? Math.max(0, parseInt(e.target.value || '0', 10)) : v)))}
-                className={`ml-auto w-20 text-right text-lg font-medium bg-black/20 border border-white/10 rounded-xl px-1 py-2 outline-none focus:ring-2 focus:ring-primary ${done ? 'text-success border-transparent bg-transparent' : ''}`}
+                className={`ml-auto w-14 text-right text-lg font-medium bg-black/20 border border-white/10 rounded-xl px-1 py-2 outline-none focus:ring-2 focus:ring-primary ${done ? 'text-success border-transparent bg-transparent' : ''}`}
               />
               <button
-                onClick={() => setSetDone((prev) => prev.map((v, j) => (j === i ? !v : v)))}
+                onClick={() => {
+                  setSetDone((prev) => prev.map((v, j) => (j === i ? !v : v)));
+                  if (!done) setRestLeft(day.rest);
+                }}
                 aria-label={t('programs_set_n', { n: i + 1 })}
-                className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all active:scale-95 flex-shrink-0 ${done ? 'bg-success text-white' : 'bg-surface-highlight/40 text-text-secondary hover:bg-success/20 hover:text-success border border-white/5'}`}
+                title={t('programs_rest_button')}
+                className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all active:scale-95 flex-shrink-0 ${done ? 'bg-success text-white' : 'bg-surface-highlight/40 text-text-secondary hover:bg-success/20 hover:text-success border border-white/5'}`}
               >
                 <Icon name="check" className="w-5 h-5" />
-              </button>
-              <button
-                onClick={() => { if (!done) setSetDone((prev) => prev.map((v, j) => (j === i ? true : v))); setRestLeft(day.rest); }}
-                className="text-sm bg-white/10 px-3 py-2 rounded-lg flex-shrink-0"
-              >
-                {t('programs_rest_button')}
               </button>
               {def.unit === 'seconds' && (
                 <button onClick={() => { setHoldLeft(actuals[i] ?? prescribed); setHoldRunning(true); }} className="text-sm bg-indigo-500/30 border border-indigo-500/40 px-3 py-2 rounded flex-shrink-0">{t('programs_time_it')}</button>
