@@ -195,6 +195,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (Array.isArray(data.calisthenicsCompletions)) {
             try { window.localStorage.setItem('calisthenicsCompletions', JSON.stringify(data.calisthenicsCompletions)); } catch { /* noop */ }
         }
+        if (data.calisthenicsPlan && typeof data.calisthenicsPlan === 'object' && Array.isArray(data.calisthenicsPlan.programIds)) {
+            try { window.localStorage.setItem('calisthenicsPlan', JSON.stringify(data.calisthenicsPlan)); } catch { /* noop */ }
+        }
         if (Array.isArray(data.routines)) {
             setRoutinesRaw(() => {
                 const merged = [...PREDEFINED_ROUTINES];
@@ -251,6 +254,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 dismissedSuggestions: localStorage.getItem('dismissedSuggestions') ? JSON.parse(localStorage.getItem('dismissedSuggestions')!) : undefined,
                 calisthenicsEnrollments: localStorage.getItem('calisthenicsEnrollments') ? JSON.parse(localStorage.getItem('calisthenicsEnrollments')!) : undefined,
                 calisthenicsCompletions: localStorage.getItem('calisthenicsCompletions') ? JSON.parse(localStorage.getItem('calisthenicsCompletions')!) : undefined,
+                calisthenicsPlan: localStorage.getItem('calisthenicsPlan') ? JSON.parse(localStorage.getItem('calisthenicsPlan')!) : undefined,
             };
 
             // 2. Push local changes
@@ -325,6 +329,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 }
                 if (Array.isArray(remoteData.calisthenicsCompletions)) {
                     try { window.localStorage.setItem('calisthenicsCompletions', JSON.stringify(remoteData.calisthenicsCompletions)); } catch { /* noop */ }
+                }
+                if (remoteData.calisthenicsPlan && typeof remoteData.calisthenicsPlan === 'object' && Array.isArray(remoteData.calisthenicsPlan.programIds)) {
+                    try { window.localStorage.setItem('calisthenicsPlan', JSON.stringify(remoteData.calisthenicsPlan)); } catch { /* noop */ }
                 }
             }
 

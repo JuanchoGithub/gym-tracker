@@ -105,6 +105,7 @@ export interface WorkoutSession {
   deletedAt?: number | null;
   source?: 'manual' | 'program';
   programId?: string;
+  programIds?: string[];
 }
 
 export interface ActiveHiitSession {
@@ -247,6 +248,11 @@ export interface TimedSetInfo {
 }
 
 export type ProgramStatus = 'active' | 'needs-retest' | 'done' | 'cancelled' | 'dropped';
+
+export interface WorkoutPlan {
+  programIds: string[];
+  updatedAt: number;
+}
 
 export interface ProgramEnrollment {
   id: string;

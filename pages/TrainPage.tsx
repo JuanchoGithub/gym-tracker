@@ -127,7 +127,11 @@ const TrainPage: React.FC = () => {
         // Generate latest workouts from history (Last 10 distinct sessions)
         // Program sessions are hidden from Recents by default; opt-in per enrollment via showInRecent.
         const latest = history
-            .filter((s) => s.source !== 'program' || (s.programId && showRecentProgramIds.has(s.programId)))
+            .filter((s) => {
+                if (s.source !== 'program') return true;
+                const ids = s.programIds ?? (s.programId ? [s.programId] : []);
+                return ids.length === 0 || ids.some((id) => showRecentProgramIds.has(id));
+            })
             .slice(0, 10)
             .map(session => {
                 const originalRoutine = routines.find(r => r.id === session.routineId);

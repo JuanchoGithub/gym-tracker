@@ -1,6 +1,7 @@
 import React, { useContext } from 'react';
 import { ProgramContext } from '../../contexts/ProgramContext';
 import { getProgramDef, getScaledDay, getScaledSession, formatDayLabel } from '../../utils/calisthenicsEngine';
+import { ProgramEnrollment } from '../../types';
 
 export const requestProgramContinue = (enrollmentId: string) => {
   try { window.localStorage.setItem('programContinueId', enrollmentId); } catch { /* noop */ }
@@ -8,13 +9,37 @@ export const requestProgramContinue = (enrollmentId: string) => {
 };
 
 const ContinueProgramCard: React.FC = () => {
-  const { enrollments, cancelEnrollment } = useContext(ProgramContext);
-  const visible = enrollments.filter((e) => e.status === 'active' || e.status === 'needs-retest');
-  if (visible.length === 0) return null;
+  const { enrollments, cancelEnrollment, plan } = useContext(ProgramContext);
+  const active = enrollments.filter((e) => e.status === 'active' || e.status === 'needs-retest');
+  const planEnrollments = plan.programIds
+    .map((pid) => active.find((e) => e.programId === pid))
+    .filter((e): e is ProgramEnrollment => Boolean(e));
+  const inPlan = new Set(plan.programIds);
+  const individual = active.filter((e) => !inPlan.has(e.programId));
+  if (planEnrollments.length === 0 && individual.length === 0) return null;
+  const runnable = planEnrollments.filter((e) => e.status === 'active');
 
   return (
     <div className="space-y-2">
-      {visible.map((e) => {
+      {planEnrollments.length > 0 && (
+        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-4 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <div className="text-xs uppercase tracking-wider text-emerald-300 font-bold">My plan — back to back</div>
+            <div className="font-bold text-text-primary truncate">
+              {planEnrollments.map((e, i) => `${i + 1}. ${getProgramDef(e.programId)?.name ?? e.programId}${e.status === 'needs-retest' ? ' (paused)' : ''}`).join(' → ')}
+            </div>
+            <div className="text-xs text-text-secondary">{planEnrollments.length} {planEnrollments.length === 1 ? 'program' : 'programs'} run in order, one after another</div>
+          </div>
+          <button
+            onClick={() => requestProgramContinue('__plan__')}
+            disabled={runnable.length === 0}
+            className="bg-emerald-600 text-white font-bold px-4 py-2 rounded-lg text-sm flex-shrink-0 disabled:opacity-40"
+          >
+            Start plan
+          </button>
+        </div>
+      )}
+      {individual.map((e) => {
         const def = getProgramDef(e.programId);
         if (!def) return null;
         const day = def.sessions

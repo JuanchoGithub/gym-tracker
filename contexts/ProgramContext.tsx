@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useMemo } from 'react';
-import { ProgramCompletion, ProgramEnrollment, ProgramStatus } from '../types';
+import { ProgramCompletion, ProgramEnrollment, ProgramStatus, WorkoutPlan } from '../types';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { getProgramDef, isHiatus14, isHiatus28 } from '../utils/calisthenicsEngine';
 
@@ -13,6 +13,8 @@ export interface EnrollInput {
 export interface ProgramContextType {
   enrollments: ProgramEnrollment[];
   completions: ProgramCompletion[];
+  plan: WorkoutPlan;
+  setPlanProgramIds: (ids: string[]) => void;
   enroll: (input: EnrollInput) => ProgramEnrollment;
   updateEnrollment: (id: string, updates: Partial<ProgramEnrollment>) => void;
   cancelEnrollment: (id: string) => void;
@@ -27,6 +29,11 @@ export const ProgramContext = createContext<ProgramContextType>({} as ProgramCon
 export const ProgramProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [enrollmentsRaw, setEnrollmentsRaw] = useLocalStorage<ProgramEnrollment[]>('calisthenicsEnrollments', []);
   const [completionsRaw, setCompletionsRaw] = useLocalStorage<ProgramCompletion[]>('calisthenicsCompletions', []);
+  const [plan, setPlanRaw] = useLocalStorage<WorkoutPlan>('calisthenicsPlan', { programIds: [], updatedAt: 0 });
+
+  const setPlanProgramIds = useCallback((ids: string[]) => {
+    setPlanRaw({ programIds: ids, updatedAt: Date.now() });
+  }, [setPlanRaw]);
 
   const updateEnrollment = useCallback((id: string, updates: Partial<ProgramEnrollment>) => {
     setEnrollmentsRaw((prev) => prev.map((e) => (e.id === id ? { ...e, ...updates } : e)));
@@ -117,6 +124,8 @@ export const ProgramProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const value = useMemo(() => ({
     enrollments: enrollmentsRaw,
     completions: completionsRaw,
+    plan,
+    setPlanProgramIds,
     enroll,
     updateEnrollment,
     cancelEnrollment,
@@ -124,7 +133,7 @@ export const ProgramProvider: React.FC<{ children: React.ReactNode }> = ({ child
     retestEnrollment,
     completeDay,
     refreshHiatus,
-  }), [enrollmentsRaw, completionsRaw, enroll, updateEnrollment, cancelEnrollment, dropEnrollment, retestEnrollment, completeDay, refreshHiatus]);
+  }), [enrollmentsRaw, completionsRaw, plan, setPlanProgramIds, enroll, updateEnrollment, cancelEnrollment, dropEnrollment, retestEnrollment, completeDay, refreshHiatus]);
 
   return <ProgramContext.Provider value={value}>{children}</ProgramContext.Provider>;
 };

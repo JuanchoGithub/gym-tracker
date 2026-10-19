@@ -3,31 +3,38 @@ import { AppContext } from '../contexts/AppContext';
 import { ProgramContext } from '../contexts/ProgramContext';
 import { CALISTHENICS_PROGRAMS, PROGRAM_COL_TABLES, scaleDay } from '../constants/calisthenicsPrograms';
 import { getProgramDef, getScaledDay, getScaledSession, formatDayLabel, nextPointer, totalWeeks, scaleForTarget } from '../utils/calisthenicsEngine';
-import { PerformedSet, ProgramEnrollment, WorkoutSession } from '../types';
+import { PerformedSet, ProgramEnrollment, WorkoutExercise, WorkoutPlan, WorkoutSession } from '../types';
 import { Icon } from '../components/common/Icon';
 
 type View =
   | { mode: 'hub' }
   | { mode: 'test'; programId: string }
-  | { mode: 'player'; enrollmentId: string }
+  | { mode: 'player'; enrollmentIds: string[] }
   | { mode: 'detail'; enrollmentId: string };
 
 const ProgramsPage: React.FC = () => {
-  const { enrollments, updateEnrollment, cancelEnrollment, dropEnrollment, refreshHiatus } = useContext(ProgramContext);
+  const { enrollments, plan, setPlanProgramIds, updateEnrollment, cancelEnrollment, dropEnrollment, refreshHiatus } = useContext(ProgramContext);
   const [view, setView] = useState<View>({ mode: 'hub' });
 
   useEffect(() => { refreshHiatus(); }, [refreshHiatus]);
 
-  // Deep-link from Continue card
+  // Deep-link from Train page cards ('__plan__' launches the back-to-back plan run)
   useEffect(() => {
     try {
       const id = window.localStorage.getItem('programContinueId');
       if (id) {
         window.localStorage.removeItem('programContinueId');
+        if (id === '__plan__') {
+          const ordered = plan.programIds
+            .map((pid) => enrollments.find((e) => e.programId === pid && e.status === 'active'))
+            .filter((e): e is ProgramEnrollment => Boolean(e));
+          if (ordered.length > 0) setView({ mode: 'player', enrollmentIds: ordered.map((e) => e.id) });
+          return;
+        }
         const found = enrollments.find((e) => e.id === id);
         if (found) {
           if (found.status === 'needs-retest') setView({ mode: 'test', programId: found.programId });
-          else if (found.status === 'active') setView({ mode: 'player', enrollmentId: id });
+          else if (found.status === 'active') setView({ mode: 'player', enrollmentIds: [id] });
           else setView({ mode: 'detail', enrollmentId: id });
         }
       }
@@ -57,8 +64,11 @@ const ProgramsPage: React.FC = () => {
         <HubView
           activeEnrollments={activeEnrollments}
           pastEnrollments={pastEnrollments}
+          plan={plan}
+          onPlanChange={setPlanProgramIds}
+          onRunPlan={(ids) => setView({ mode: 'player', enrollmentIds: ids })}
           onTest={(programId) => setView({ mode: 'test', programId })}
-          onOpen={(enrollmentId) => setView({ mode: 'player', enrollmentId })}
+          onOpen={(enrollmentId) => setView({ mode: 'player', enrollmentIds: [enrollmentId] })}
           onDetail={(enrollmentId) => setView({ mode: 'detail', enrollmentId })}
           onCancel={cancelEnrollment}
           onDrop={dropEnrollment}
@@ -70,16 +80,16 @@ const ProgramsPage: React.FC = () => {
         <TestView
           programId={view.programId}
           existingId={activeEnrollments.find((e) => e.programId === view.programId && e.status === 'needs-retest')?.id}
-          onDone={(enrollmentId) => setView({ mode: 'player', enrollmentId })}
+          onDone={(enrollmentId) => setView({ mode: 'player', enrollmentIds: [enrollmentId] })}
           onBack={() => setView({ mode: 'hub' })}
         />
       )}
 
       {view.mode === 'player' && (
         <PlayerView
-          enrollmentId={view.enrollmentId}
+          enrollmentIds={view.enrollmentIds}
           onDone={() => setView({ mode: 'hub' })}
-          onDetail={() => setView({ mode: 'detail', enrollmentId: view.enrollmentId })}
+          onDetail={(enrollmentId) => setView({ mode: 'detail', enrollmentId })}
         />
       )}
 
@@ -94,15 +104,77 @@ const ProgramsPage: React.FC = () => {
 const HubView: React.FC<{
   activeEnrollments: ProgramEnrollment[];
   pastEnrollments: ProgramEnrollment[];
+  plan: WorkoutPlan;
+  onPlanChange: (ids: string[]) => void;
+  onRunPlan: (enrollmentIds: string[]) => void;
   onTest: (programId: string) => void;
   onOpen: (enrollmentId: string) => void;
   onDetail: (enrollmentId: string) => void;
   onCancel: (id: string) => void;
   onDrop: (id: string) => void;
   onToggleRecent: (e: ProgramEnrollment) => void;
-}> = ({ activeEnrollments, pastEnrollments, onTest, onOpen, onDetail, onCancel, onDrop, onToggleRecent }) => {
+}> = ({ activeEnrollments, pastEnrollments, plan, onPlanChange, onRunPlan, onTest, onOpen, onDetail, onCancel, onDrop, onToggleRecent }) => {
+  const planEntries = plan.programIds
+    .map((pid) => activeEnrollments.find((e) => e.programId === pid))
+    .filter((e): e is ProgramEnrollment => Boolean(e));
+  const addable = CALISTHENICS_PROGRAMS.filter(
+    (p) => !plan.programIds.includes(p.id) && activeEnrollments.some((e) => e.programId === p.id)
+  );
+  const movePlan = (idx: number, dir: -1 | 1) => {
+    const next = plan.programIds.slice();
+    const to = idx + dir;
+    if (to < 0 || to >= next.length) return;
+    [next[idx], next[to]] = [next[to], next[idx]];
+    onPlanChange(next);
+  };
   return (
     <div className="space-y-4">
+      <div className="bg-surface border border-white/10 rounded-2xl p-4 space-y-3">
+        <div className="flex justify-between items-center">
+          <h2 className="text-lg font-semibold">My plan</h2>
+          <span className="text-xs text-text-secondary">Programs run back to back, in order</span>
+        </div>
+        {plan.programIds.length === 0 ? (
+          <p className="text-sm text-text-secondary">Empty — add your active programs below to build one back-to-back workout.</p>
+        ) : planEntries.length === 0 ? (
+          <p className="text-sm text-text-secondary">Planned programs are not active right now (paused, done or cancelled).</p>
+        ) : (
+          <div className="space-y-2">
+            {planEntries.map((e, i) => {
+              const def = getProgramDef(e.programId);
+              const planIdx = plan.programIds.indexOf(e.programId);
+              return (
+                <div key={e.programId} className="flex items-center gap-2 bg-white/5 rounded-lg px-3 py-2">
+                  <span className="font-bold text-sm flex-1 truncate min-w-0">
+                    {i + 1}. {def?.name ?? e.programId}
+                    {e.status === 'needs-retest' && <span className="text-yellow-400 font-medium"> · paused</span>}
+                  </span>
+                  <button onClick={() => movePlan(planIdx, -1)} disabled={planIdx === 0} className="px-2 text-text-secondary disabled:opacity-30" aria-label="Move up">↑</button>
+                  <button onClick={() => movePlan(planIdx, 1)} disabled={planIdx === plan.programIds.length - 1} className="px-2 text-text-secondary disabled:opacity-30" aria-label="Move down">↓</button>
+                  <button onClick={() => onPlanChange(plan.programIds.filter((x) => x !== e.programId))} className="px-2 text-red-400" aria-label="Remove from plan">✕</button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        {addable.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {addable.map((p) => (
+              <button key={p.id} onClick={() => onPlanChange([...plan.programIds, p.id])} className="text-xs bg-white/5 border border-white/10 px-3 py-1.5 rounded-full hover:bg-white/10">
+                + {p.name}
+              </button>
+            ))}
+          </div>
+        )}
+        {planEntries.length > 1 && (
+          <button
+            onClick={() => onRunPlan(planEntries.map((e) => e.id))}
+            className="w-full bg-primary text-white font-bold py-3 rounded-xl"
+          >
+            Start plan ({planEntries.length} programs)
+          </button>
+        )}
+      </div>
       {activeEnrollments.length > 0 && (
         <div className="space-y-2">
           <h2 className="text-lg font-semibold">Active</h2>
@@ -244,17 +316,22 @@ const TestView: React.FC<{ programId: string; existingId?: string; onDone: (enro
   );
 };
 
-// ---------- Player ----------
-const PlayerView: React.FC<{ enrollmentId: string; onDone: () => void; onDetail: () => void }> = ({ enrollmentId, onDone, onDetail }) => {
+// ---------- Player (runs all or part of a plan back to back; single program = 1-item sequence) ----------
+const PlayerView: React.FC<{ enrollmentIds: string[]; onDone: () => void; onDetail: (enrollmentId: string) => void }> = ({ enrollmentIds, onDone, onDetail }) => {
   const { saveCompletedWorkout } = useContext(AppContext);
   const { enrollments, updateEnrollment, completeDay } = useContext(ProgramContext);
-  const enrollment = enrollments.find((e) => e.id === enrollmentId);
-  const def = CALISTHENICS_PROGRAMS.find((p) => p.id === enrollment?.programId);
+  const [sequence] = useState<string[]>(() => enrollmentIds.slice());
+  const [runIdx, setRunIdx] = useState(0);
+  const [collected, setCollected] = useState<WorkoutExercise[]>([]);
   const [actuals, setActuals] = useState<number[]>([]);
   const [restLeft, setRestLeft] = useState<number>(0);
   const [holdLeft, setHoldLeft] = useState<number>(0);
   const [holdRunning, setHoldRunning] = useState(false);
   const [startTime] = useState(Date.now());
+
+  const activeId = runIdx < sequence.length ? sequence[runIdx] : undefined;
+  const enrollment = activeId ? enrollments.find((e) => e.id === activeId) : undefined;
+  const def = enrollment ? CALISTHENICS_PROGRAMS.find((p) => p.id === enrollment?.programId) : undefined;
 
   const day = useMemo(() => {
     if (!enrollment || !def) return null;
@@ -268,7 +345,7 @@ const PlayerView: React.FC<{ enrollmentId: string; onDone: () => void; onDetail:
     setRestLeft(0);
     setHoldLeft(0);
     setHoldRunning(false);
-  }, [day, enrollmentId]);
+  }, [day, enrollment?.id]);
 
   useEffect(() => {
     if (restLeft <= 0) return;
@@ -282,14 +359,39 @@ const PlayerView: React.FC<{ enrollmentId: string; onDone: () => void; onDetail:
     return () => window.clearTimeout(t);
   }, [holdRunning, holdLeft]);
 
-  if (!enrollment || !def || !day) return <div>Enrollment not found.</div>;
+  const exit = () => {
+    if (collected.length > 0 && !window.confirm('Completed programs get their individual day logged. Exit now? (The combined history entry will not be saved.)')) return;
+    onDone();
+  };
+
+  if (runIdx >= sequence.length) {
+    return (
+      <div className="bg-surface border border-white/10 rounded-2xl p-4 space-y-3 text-sm">
+        <p>Plan complete. Nice work.</p>
+        <button onClick={onDone} className="bg-primary text-white font-bold px-4 py-2 rounded-lg">Back to hub</button>
+      </div>
+    );
+  }
+
+  if (!enrollment || !def || !day) {
+    return (
+      <div className="bg-surface border border-white/10 rounded-2xl p-4 space-y-3 text-sm">
+        <p>Program unavailable (paused, done or removed). Skipping to the next one.</p>
+        <div className="flex gap-2">
+          <button onClick={() => setRunIdx((v) => v + 1)} className="bg-primary text-white font-bold px-4 py-2 rounded-lg">Next program</button>
+          <button onClick={exit} className="bg-white/5 border border-white/10 px-4 py-2 rounded-lg">Exit without saving</button>
+        </div>
+      </div>
+    );
+  }
+
   if (enrollment.status !== 'active') {
     return (
       <div className="bg-surface border border-white/10 rounded-2xl p-4 space-y-3 text-sm">
-        <p>This program is {enrollment.status}. {enrollment.status === 'needs-retest' ? 'Retest from the hub to continue.' : 'View the plan below.'}</p>
+        <p>{def.name} is {enrollment.status} — skipped in this run. {enrollment.status === 'needs-retest' ? 'Retest from the hub to resume it.' : ''}</p>
         <div className="flex gap-2">
-          <button onClick={onDone} className="bg-white/5 border border-white/10 px-4 py-2 rounded-lg">Back to hub</button>
-          <button onClick={onDetail} className="bg-primary text-white font-bold px-4 py-2 rounded-lg">View plan</button>
+          <button onClick={() => setRunIdx((v) => v + 1)} className="bg-primary text-white font-bold px-4 py-2 rounded-lg">Next program</button>
+          <button onClick={exit} className="bg-white/5 border border-white/10 px-4 py-2 rounded-lg">Exit without saving</button>
         </div>
       </div>
     );
@@ -314,24 +416,13 @@ const PlayerView: React.FC<{ enrollmentId: string; onDone: () => void; onDetail:
       isComplete: true,
       completedAt: Date.now(),
     }));
-    const session: WorkoutSession = {
-      id: `prog-${Date.now()}`,
-      routineId: `prog-${def.id}-w${enrollment.currentWeek}d${enrollment.currentDay}s${enrollment.currentSessionIndex ?? 0}`,
-      routineName: def.sessions ? `${def.name} S${(enrollment.currentSessionIndex ?? 0) + 1}` : `${def.name} W${enrollment.currentWeek}D${enrollment.currentDay}`,
-      startTime,
-      endTime: Date.now(),
-      exercises: [{
-        id: `we-${Date.now()}`,
-        exerciseId: def.exerciseId,
-        sets,
-        restTime: { normal: day.rest, warmup: 60, drop: 30, timed: 10, effort: 180, failure: 300 },
-        note: summary,
-      }],
-      source: 'program',
-      programId: def.id,
-      updatedAt: Date.now(),
+    const exercise: WorkoutExercise = {
+      id: `we-${Date.now()}-${runIdx}`,
+      exerciseId: def.exerciseId,
+      sets,
+      restTime: { normal: day.rest, warmup: 60, drop: 30, timed: 10, effort: 180, failure: 300 },
+      note: summary,
     };
-    saveCompletedWorkout(session);
     completeDay(enrollment.id, values, passed, summary);
     if (!passed) {
       updateEnrollment(enrollment.id, { failedStreak: (enrollment.failedStreak ?? 0) + 1, lastActiveAt: Date.now(), lastCompleted: { week: enrollment.currentWeek, day: enrollment.currentDay, sessionIndex: enrollment.currentSessionIndex ?? 0, date: Date.now(), summary: `${summary} (repeat)` } });
@@ -343,14 +434,40 @@ const PlayerView: React.FC<{ enrollmentId: string; onDone: () => void; onDetail:
         updateEnrollment(enrollment.id, { currentWeek: next.week, currentDay: next.day as 1 | 2 | 3, currentSessionIndex: next.sessionIndex, failedStreak: 0, lastActiveAt: Date.now(), lastCompleted: { week: enrollment.currentWeek, day: enrollment.currentDay, sessionIndex: enrollment.currentSessionIndex ?? 0, date: Date.now(), summary } });
       }
     }
+    const allExercises = [...collected, exercise];
+    if (runIdx < sequence.length - 1) {
+      setCollected(allExercises);
+      setRunIdx((v) => v + 1);
+      return;
+    }
+    const programIdOf = (id: string) => enrollments.find((e) => e.id === id)?.programId ?? '';
+    const programIds = sequence.map(programIdOf).filter(Boolean);
+    const multi = sequence.length > 1;
+    const names = programIds.map((pid) => getProgramDef(pid)?.name ?? pid);
+    const session: WorkoutSession = {
+      id: `prog-${Date.now()}`,
+      routineId: multi ? `plan-${programIds.join('_')}` : `prog-${def.id}-w${enrollment.currentWeek}d${enrollment.currentDay}s${enrollment.currentSessionIndex ?? 0}`,
+      routineName: multi ? names.join(' + ') : (def.sessions ? `${def.name} S${(enrollment.currentSessionIndex ?? 0) + 1}` : `${def.name} W${enrollment.currentWeek}D${enrollment.currentDay}`),
+      startTime,
+      endTime: Date.now(),
+      exercises: allExercises,
+      source: 'program',
+      programId: multi ? undefined : def.id,
+      programIds: programIds,
+      updatedAt: Date.now(),
+    };
+    saveCompletedWorkout(session);
     onDone();
   };
 
   return (
     <div className="bg-surface border border-white/10 rounded-2xl p-4 space-y-3">
       <div className="flex justify-between items-center">
-        <h2 className="text-lg font-bold">{def.name} — {def.sessions ? `Session ${(enrollment.currentSessionIndex ?? 0) + 1}` : `W${enrollment.currentWeek}D${enrollment.currentDay}`}</h2>
-        <button onClick={onDetail} className="text-xs text-primary font-semibold">Plan</button>
+        <h2 className="text-lg font-bold">
+          {def.name} — {def.sessions ? `Session ${(enrollment.currentSessionIndex ?? 0) + 1}` : `W${enrollment.currentWeek}D${enrollment.currentDay}`}
+          {sequence.length > 1 && <span className="text-xs text-text-secondary font-medium ml-2">{runIdx + 1}/{sequence.length}</span>}
+        </h2>
+        {sequence.length === 1 && <button onClick={() => onDetail(enrollment.id)} className="text-xs text-primary font-semibold">Plan</button>}
       </div>
       <p className="text-xs text-text-secondary">{def.cue} Rest {day.rest}s between {def.unit === 'seconds' ? 'holds' : 'sets'}. Last is max (≥ {day.minLast}{def.unit === 'seconds' ? 's' : ''}).</p>
       {(restLeft > 0) && <div className="bg-indigo-500/20 border border-indigo-500/30 rounded-lg p-2 text-center font-mono">Rest {restLeft}s</div>}
@@ -380,8 +497,8 @@ const PlayerView: React.FC<{ enrollmentId: string; onDone: () => void; onDetail:
       <div className={`text-sm font-semibold ${passed ? 'text-green-400' : 'text-yellow-400'}`}>
         {passed ? 'On target — will advance.' : 'Below target — will repeat this day (canon).'}
       </div>
-      <button onClick={finish} className="w-full bg-primary text-white font-bold py-3 rounded-xl">Finish day</button>
-      <button onClick={onDone} className="w-full text-xs text-text-secondary">Exit without saving</button>
+      <button onClick={finish} className="w-full bg-primary text-white font-bold py-3 rounded-xl">{sequence.length > 1 ? 'Finish exercise' : 'Finish day'}</button>
+      <button onClick={exit} className="w-full text-xs text-text-secondary">Exit without saving</button>
     </div>
   );
 };
