@@ -273,8 +273,8 @@ const ActiveRow: React.FC<{
       <details className="text-xs text-text-secondary">
         <summary className="cursor-pointer">{t('programs_settings')}</summary>
         <div className="flex gap-2 mt-2 items-center">
-          <label>{t('programs_target')} <input type="number" value={e.userTarget} min={1} onChange={(ev) => updateEnrollment(e.id, { userTarget: Math.max(1, parseInt(ev.target.value || '1', 10)) })} className="bg-slate-900 border border-white/10 rounded px-2 py-1 w-20" /></label>
-          <label>{t('programs_days_wk')} <input type="number" value={e.daysPerWeek} min={2} max={7} onChange={(ev) => updateEnrollment(e.id, { daysPerWeek: Math.min(7, Math.max(2, parseInt(ev.target.value || '3', 10))) })} className="bg-slate-900 border border-white/10 rounded px-2 py-1 w-16" /></label>
+          <label>{t('programs_target')} <input type="number" inputMode="numeric" pattern="[0-9]*" value={e.userTarget} min={1} onChange={(ev) => updateEnrollment(e.id, { userTarget: Math.max(1, parseInt(ev.target.value || '1', 10)) })} className="bg-slate-900 border border-white/10 rounded px-2 py-1 w-20" /></label>
+          <label>{t('programs_days_wk')} <input type="number" inputMode="numeric" pattern="[0-9]*" value={e.daysPerWeek} min={2} max={7} onChange={(ev) => updateEnrollment(e.id, { daysPerWeek: Math.min(7, Math.max(2, parseInt(ev.target.value || '3', 10))) })} className="bg-slate-900 border border-white/10 rounded px-2 py-1 w-16" /></label>
         </div>
       </details>
     </div>
@@ -494,7 +494,7 @@ const PlayerView: React.FC<{ enrollmentIds: string[]; onDone: () => void; onDeta
               <span className="text-sm text-text-secondary w-14">{t('programs_set_n', { n: i + 1 })}</span>
               <span className="text-sm">{t('programs_goal')} {prescribed}{def.unit === 'seconds' ? 's' : ''}{i === day.sets.length - 1 ? `+ (min ${day.minLast})` : ''}</span>
               <input
-                type="number" min={0} value={actuals[i] ?? prescribed}
+                type="number" min={0} inputMode="numeric" pattern="[0-9]*" value={actuals[i] ?? prescribed}
                 onChange={(e) => setActuals((prev) => prev.map((v, j) => (j === i ? Math.max(0, parseInt(e.target.value || '0', 10)) : v)))}
                 className={`ml-auto w-14 text-right text-lg font-medium bg-black/20 border border-white/10 rounded-xl px-1 py-2 outline-none focus:ring-2 focus:ring-primary ${done ? 'text-success border-transparent bg-transparent' : ''}`}
               />
