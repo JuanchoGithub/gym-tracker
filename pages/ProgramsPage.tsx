@@ -496,6 +496,7 @@ const PlayerView: React.FC<{ enrollmentIds: string[]; onDone: () => void; onDeta
               <input
                 type="number" min={0} inputMode="numeric" pattern="[0-9]*" value={actuals[i] ?? prescribed}
                 onChange={(e) => setActuals((prev) => prev.map((v, j) => (j === i ? Math.max(0, parseInt(e.target.value || '0', 10)) : v)))}
+                onFocus={(e) => e.target.select()}
                 className={`ml-auto w-14 text-right text-lg font-medium bg-black/20 border border-white/10 rounded-xl px-1 py-2 outline-none focus:ring-2 focus:ring-primary ${done ? 'text-success border-transparent bg-transparent' : ''}`}
               />
               <button
